@@ -377,34 +377,36 @@ def weekday(dt1, dt2, byweekday):
     return count
 
 
-def f_xnpv(rate, values, dates):
+def f_xnpv(data, rate):
     '''Equivalent of Excel's XNPV function.
     https://support.office.com/en-us/article/XNPV-function-1b42bbf6-370f-4532-a0eb-d67c16b664b7
 
     >>> from datetime import date
     >>> dates = [date(2016, 2, 16), date(2016, 3, 10), date(2016, 9, 1), date(2017, 1, 17), ]
     >>> values = [-90, 5, 5, 105, ]
-    >>> f_xnpv(0.09, values, dates)
+    >>> data = [(d, v) for d, v in zip(dates, values)]
+    >>> f_xnpv(0.09, data)
     16.7366702148651
     '''
     # _l.debug('xnpv > rate=%s', rate)
 
     if rate <= -1.0:
         return float('inf')
-    d0 = dates[0]  # or min(dates)
+    d0, v0 = data[0]  # or min(dates)
     return sum(
         vi / ((1.0 + rate) ** ((di - d0).days / 365.0))
-        for vi, di in zip(values, dates)
+        for di, vi in data
     )
 
 
-def f_xirr(values, dates):
+def f_xirr(data, x0=0.0, tol=0.0001, maxiter=None, a=-1.0, b=1e10, xtol=0.0001, rtol=0.0001, method=None):
     '''Equivalent of Excel's XIRR function.
     https://support.office.com/en-us/article/XIRR-function-de1242ec-6477-445b-b11b-a303ad9adc9d
 
     >>> from datetime import date
     >>> dates = [date(2016, 2, 16), date(2016, 3, 10), date(2016, 9, 1), date(2017, 1, 17), ]
     >>> values = [-90, 5, 5, 105, ]
+    >>> data = [(d, v) for d, v in zip(dates, values)]
     >>> f_xirr(values, dates)
     0.3291520343150294
     '''
@@ -415,13 +417,27 @@ def f_xirr(values, dates):
     #        brentq(lambda r: xnpv(r, values, dates), -1.0, 1e10)
     # return newton(lambda r: xnpv(r, values, dates), 0.0)
     # return brentq(lambda r: xnpv(r, values, dates), -1.0, 1e10)
-    try:
-        return newton(lambda r: f_xnpv(r, values, dates), 0.0)
-    except RuntimeError:  # Failed to converge?
-        return brentq(lambda r: f_xnpv(r, values, dates), -1.0, 1e10)
+    if method == 'newton':
+        try:
+            kw = {}
+            if tol is not None:
+                kw['tol'] = tol
+            if maxiter is not None:
+                kw['maxiter'] = maxiter
+            return newton(func=lambda r: f_xnpv(data, r), x0=x0, **kw)
+        except RuntimeError:  # Failed to converge?
+            pass
+    kw = {}
+    if xtol is not None:
+        kw['xtol'] = xtol
+    if rtol is not None:
+        kw['rtol'] = rtol
+    if maxiter is not None:
+        kw['maxiter'] = maxiter
+    return brentq(f=lambda r: f_xnpv(data, r), a=a, b=b, **kw)
 
 
-def f_duration(values, dates, ytm=None):
+def f_duration(data, ytm=None):
     # _l.debug('duration >')
     '''Equivalent of Excel's XIRR function.
     https://support.office.com/en-us/article/XIRR-function-de1242ec-6477-445b-b11b-a303ad9adc9d
@@ -429,14 +445,15 @@ def f_duration(values, dates, ytm=None):
     >>> from datetime import date
     >>> dates = [date(2016, 2, 16), date(2016, 3, 10), date(2016, 9, 1), date(2017, 1, 17), ]
     >>> values = [-90, 5, 5, 105, ]
-    >>> f_xirr(values, dates)
+    >>> data = [(d, v) for d, v in zip(dates, values)]
+    >>> f_xirr(data)
     0.6438341602180792
     '''
 
     if ytm is None:
-        ytm = f_xirr(values=values, dates=dates)
-    d0 = dates[0]
-    v0 = -values[0]
+        ytm = f_xirr(data)
+    d0, v0 = data[0]
+    v0 = -v0
 
     # if _l.isEnabledFor(logging.DEBUG):
     #     discounted_cf = [(vi / ((1 + ytm) ** ((di - d0).days / 365.0)))
@@ -452,7 +469,7 @@ def f_duration(values, dates, ytm=None):
 
     return sum(
         ((di - d0).days / 365.0) * (vi / ((1 + ytm) ** ((di - d0).days / 365.0)))
-        for vi, di in zip(values, dates)
+        for di, vi in data
     ) / v0 / (1 + ytm)
 
 
@@ -485,9 +502,9 @@ if __name__ == "__main__":
     print('-' * 10)
     for periodicity in Periodicity.objects.all():
         d = d0
-        td0 = periodicity.to_timedelta(delta=0, same_date=d)
-        td1 = periodicity.to_timedelta(delta=1, same_date=d)
-        td2 = periodicity.to_timedelta(delta=2, same_date=d)
+        td0 = periodicity.to_timedelta(n=0, i=1, same_date=d)
+        td1 = periodicity.to_timedelta(n=1, i=1, same_date=d)
+        td2 = periodicity.to_timedelta(n=2, i=1, same_date=d)
         print(0, periodicity.id, periodicity.system_code, td0, td1, td2)
         print('\t', d + td0, d + td1, d + td2)
 

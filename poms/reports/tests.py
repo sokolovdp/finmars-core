@@ -7,7 +7,9 @@ from django.utils.functional import cached_property
 
 from poms.accounts.models import AccountType, Account
 from poms.currencies.models import Currency, CurrencyHistory
-from poms.instruments.models import Instrument, PriceHistory, PricingPolicy, CostMethod, InstrumentType, InstrumentClass
+from poms.instruments.models import Instrument, PriceHistory, PricingPolicy, CostMethod, InstrumentType, \
+    InstrumentClass, \
+    AccrualCalculationSchedule, AccrualCalculationModel, Periodicity
 from poms.portfolios.models import Portfolio
 from poms.reports.builders import Report, ReportBuilder, VirtualTransaction, ReportItem
 from poms.reports.utils import calc_cash_for_contract_for_difference
@@ -906,16 +908,45 @@ class ReportTestCase(TestCase):
                                               is_calculate_for_all=True,
                                               save=True)
 
-    def test_xnpv_xirr(self):
+    def test_xnpv_xirr_duration(self):
         from poms.common.formula_accruals import f_xnpv, f_xirr, f_duration
         from datetime import date
 
         # dates = [date(2008, 1, 1), date(2008, 3, 1), date(2008, 10, 30), date(2009, 2, 15), date(2009, 4, 1), ]
         # values = [-10000, 2750, 4250, 3250, 2750, ]
 
+        # dates = [date(2016, 2, 16), date(2016, 3, 10), date(2016, 9, 1), date(2017, 1, 17), ]
+        # values = [-90, 5, 5, 105, ]
+
         dates = [date(2016, 2, 16), date(2016, 3, 10), date(2016, 9, 1), date(2017, 1, 17), ]
         values = [-90, 5, 5, 105, ]
+        data = [(d, v) for d, v in zip(dates, values)]
 
-        _l.debug('xnpv.1: %s', f_xnpv(0.09, values, dates))
-        _l.debug('xirr.1: %s', f_xirr(values, dates))
-        _l.debug('duration.1: %s', f_duration(values, dates))
+        # xnpv    : 16.7366702148651
+        # xirr    : 0.3291520343150294
+        # duration: 0.6438341602180792
+        _l.debug('>')
+        _l.debug('xnpv.1: %s', f_xnpv(data, 0.09))
+        _l.debug('xirr.1.skip: %s', f_xirr(data))
+        _l.debug('xirr.2.skip: %s', f_xirr(data, method='newton'))
+        _l.debug('xirr.1: %s', f_xirr(data))
+        _l.debug('xirr.2: %s', f_xirr(data, method='newton'))
+        _l.debug('duration.1: %s', f_duration(data))
+
+        ti1 = Instrument.objects.create(master_user=self.m, name="a", instrument_type=self.m.instrument_type,
+                                        pricing_currency=self.usd, price_multiplier=1.0,
+                                        accrued_currency=self.usd, accrued_multiplier=1.0,
+                                        maturity_date=date(2017, 1, 1), maturity_price=100)
+        AccrualCalculationSchedule.objects.create(instrument=ti1,
+                                                  accrual_start_date=date(2016, 1, 1),
+                                                  first_payment_date=date(2016, 2, 1),
+                                                  accrual_size=5,
+                                                  accrual_calculation_model_id=AccrualCalculationModel.ACT_365,
+                                                  periodicity_id=Periodicity.MONTHLY,
+                                                  periodicity_n=1)
+        _l.debug('accruals_by_date.1: %s', ti1.get_accruals_by_date())
+        _l.debug('accruals_by_date.2: %s', ti1.get_accruals_by_date(begin_date=date(2016, 2, 27)))
+        _l.debug('accruals_by_date.2: %s', ti1.get_accruals_by_date(begin_date=date(2016, 3, 1)))
+        data = [(date(2016, 3, 14), 83)]
+        _l.debug('accruals_by_date.2: %s', ti1.get_accruals_by_date(data=data, begin_date=date(2016, 3, 15)))
+        _l.debug('accruals_by_date.2: %s', ti1.get_accruals_by_date(data=data))
