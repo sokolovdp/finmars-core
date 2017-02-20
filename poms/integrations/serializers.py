@@ -157,7 +157,7 @@ class InstrumentDownloadSchemeSerializer(serializers.ModelSerializer):
             'id', 'master_user', 'scheme_name', 'provider', 'provider_object', 'inputs',
             'reference_for_pricing', 'user_code', 'name', 'short_name', 'public_name', 'notes',
             'instrument_type', 'pricing_currency', 'price_multiplier', 'accrued_currency', 'accrued_multiplier',
-            'user_text_1', 'user_text_2', 'user_text_3', 'maturity_date',
+            'user_text_1', 'user_text_2', 'user_text_3', 'maturity_date', 'maturity_price',
             'payment_size_detail', 'payment_size_detail_object',
             'daily_pricing_model', 'daily_pricing_model_object',
             'price_download_scheme', 'price_download_scheme_object',
