@@ -15,7 +15,7 @@ from suds.transport.http import HttpAuthenticated
 
 from poms.common import formula
 from poms.currencies.models import CurrencyHistory
-from poms.instruments.models import AccrualCalculationSchedule, Periodicity, InstrumentFactorSchedule, PriceHistory
+from poms.instruments.models import AccrualCalculationSchedule, InstrumentFactorSchedule, PriceHistory
 from poms.integrations.models import FactorScheduleDownloadMethod, AccrualScheduleDownloadMethod, ProviderClass, \
     InstrumentDownloadScheme, PriceDownloadScheme
 from poms.integrations.providers.base import AbstractProvider, ProviderException, parse_date_iso
@@ -196,12 +196,31 @@ class BloombergDataProvider(AbstractProvider):
         return response.statusCode.code == 0
 
     def _bbg_instr(self, code):
-        instr = code.split(maxsplit=2)
-        if len(instr) != 2:
-            instr = [instr[0], '']
-        instr_id = instr[0]
-        instr_yellowkey = instr[1]
-        return {"id": instr_id, "yellowkey": instr_yellowkey,}
+        allparts = code.split()
+        parts = [p for p in allparts if not p.startswith('@')]
+        overrides = [o[1:] for o in allparts if o.startswith('@')]
+        if not parts:
+            raise BloombergException('Invalid code')
+        id0 = parts[0]
+        try:
+            yellowkey = parts[1]
+        except IndexError:
+            yellowkey = None
+
+        ret = self.soap_client.factory.create('Instrument')
+        # ret = {"id": id0}
+        ret.id = id0
+        if yellowkey:
+            ret.yellowkey = yellowkey
+            # ret['yellowkey'] = yellowkey
+        if overrides:
+            for o in overrides:
+                override = self.soap_client.factory.create('Override')
+                override.field = 'PRICING_SOURCE'
+                override.value = o
+                ret.overrides.override.append(override)
+            # ret['overrides'] = [{'field': 'PRICING_SOURCE', 'value': o} for o in overrides]
+        return ret
 
     def _invoke_sync(self, name, request_func, request_kwargs, response_func):
         _l.debug('|> %s', name)
