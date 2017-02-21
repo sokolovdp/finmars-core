@@ -986,7 +986,7 @@ class ReportItem(_Base):
     pos_size = 0.0  # +
     market_value_res = 0.0  # +
     market_value_loc = 0.0  # +
-    cost_res = 0.0
+    cost_res = 0.0  # +
     ytm = 0.0  # ?
     modified_duration = 0.0  # ?
     ytm_at_cost = 0.0  #
@@ -997,7 +997,7 @@ class ReportItem(_Base):
     net_cost_loc = 0.0  # +
     amount_invested_res = 0.0  # +
     amount_invested_loc = 0.0  # +
-    pos_return_res = 0.0  #
+    pos_return_res = 0.0  # +
     pos_return_loc = 0.0  # +
     daily_price_change = 0.0  #
     mtd_price_change = 0.0  #
@@ -1230,9 +1230,14 @@ class ReportItem(_Base):
             if trn.trn_cls.id in [TransactionClass.BUY, TransactionClass.SELL]:
                 item.last_notes = trn.notes
 
-                cost_mul = (1.0 - trn.multiplier) / trn.pos_size / trn.instr.price_multiplier
-                item.gross_cost_res += trn.principal_res * cost_mul
-                item.net_cost_res += (trn.principal_res + trn.overheads_res) * cost_mul
+                # cost_mul = (1.0 - trn.multiplier) / trn.pos_size / trn.instr.price_multiplier
+                cost_mul = safe_div(1.0 - trn.multiplier, trn.pos_size * trn.instr.price_multiplier)
+                item.gross_cost_res = trn.principal_res * cost_mul
+                item.net_cost_res = (trn.principal_res + trn.overheads_res) * cost_mul
+
+                # remaining_pos_size = abs(trn.pos_size * (1.0 - trn.multiplier))
+                # remaining_pos_percent = safe_div(remaining_pos_size, trn.pos)
+                # item.time_invested = (report.report_date - trn.acc_date).days
 
         elif item.type == ReportItem.TYPE_CURRENCY:
             item.acc = acc or trn.acc_cash

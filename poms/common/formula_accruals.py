@@ -400,7 +400,7 @@ def f_xnpv(data, rate):
     )
 
 
-def f_xirr(data, x0=0.0, tol=0.0001, maxiter=None, a=-1.0, b=1e10, xtol=0.0001, rtol=0.0001, method=None):
+def f_xirr(data, x0=0.0, tol=0.0001, maxiter=None, a=-1.0, b=1e10, xtol=0.0001, rtol=0.0001, method='newton'):
     '''Equivalent of Excel's XIRR function.
     https://support.office.com/en-us/article/XIRR-function-de1242ec-6477-445b-b11b-a303ad9adc9d
 

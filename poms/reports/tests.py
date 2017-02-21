@@ -908,7 +908,7 @@ class ReportTestCase(TestCase):
                                               is_calculate_for_all=True,
                                               save=True)
 
-    def test_xnpv_xirr_duration(self):
+    def _test_xnpv_xirr_duration(self):
         from poms.common.formula_accruals import f_xnpv, f_xirr, f_duration
         from datetime import date
 
@@ -927,11 +927,13 @@ class ReportTestCase(TestCase):
         # duration: 0.6438341602180792
         _l.debug('>')
         _l.debug('xnpv.1: %s', f_xnpv(data, 0.09))
-        _l.debug('xirr.1.skip: %s', f_xirr(data))
-        _l.debug('xirr.2.skip: %s', f_xirr(data, method='newton'))
         _l.debug('xirr.1: %s', f_xirr(data))
         _l.debug('xirr.2: %s', f_xirr(data, method='newton'))
         _l.debug('duration.1: %s', f_duration(data))
+
+        import timeit
+        for i in range(100, 1000, 100):
+            _l.debug('timeit.xirr.1.skip: %s -> %s', i, timeit.Timer(lambda: f_xirr(data)).timeit(i))
 
         ti1 = Instrument.objects.create(master_user=self.m, name="a", instrument_type=self.m.instrument_type,
                                         pricing_currency=self.usd, price_multiplier=1.0,
@@ -948,5 +950,23 @@ class ReportTestCase(TestCase):
         _l.debug('get_future_accrual_payments.2: %s', ti1.get_future_accrual_payments(begin_date=date(2016, 2, 27)))
         _l.debug('get_future_accrual_payments.2: %s', ti1.get_future_accrual_payments(begin_date=date(2016, 3, 1)))
         data = [(date(2016, 3, 14), 83)]
-        _l.debug('get_future_accrual_payments.2: %s', ti1.get_future_accrual_payments(data=data, begin_date=date(2016, 3, 15)))
+        _l.debug('get_future_accrual_payments.2: %s',
+                 ti1.get_future_accrual_payments(data=data, begin_date=date(2016, 3, 15)))
         _l.debug('get_future_accrual_payments.2: %s', ti1.get_future_accrual_payments(data=data))
+
+    def test_xnpv_xirr_duration_perf(self):
+        from poms.common.formula_accruals import f_xirr
+        from datetime import date
+
+        dates = [date(2016, 2, 16), date(2016, 3, 10), date(2016, 9, 1), date(2017, 1, 17), ]
+        values = [-90, 5, 5, 105, ]
+        data = [(d, v) for d, v in zip(dates, values)]
+
+        import timeit
+
+        _l.debug('-' * 79)
+        _l.debug('xirr:')
+        for method in ['newton']:
+            _l.debug('  method: %s', method)
+            for i in range(1000, 30000, 1000):
+                _l.debug('    %s -> %s', i, timeit.Timer(lambda: f_xirr(data, method=method)).timeit(i))
