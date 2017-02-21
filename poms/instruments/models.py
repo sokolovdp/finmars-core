@@ -602,7 +602,7 @@ class Instrument(NamedModel, FakeDeletableModel):
                                        dt3=accrual.first_payment_date)
         return accrual.accrual_size * factor
 
-    def get_accruals_by_date(self, data=None, begin_date=None, accruals=None):
+    def get_future_accrual_payments(self, data=None, begin_date=None, accruals=None):
         # accrual_start_date
         # accrual_end_date -> fake
         # first_payment_date

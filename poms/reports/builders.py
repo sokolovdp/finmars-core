@@ -16,6 +16,7 @@ from django.utils.translation import ugettext, ugettext_lazy
 
 from poms.accounts.models import Account, AccountType
 from poms.common import formula
+from poms.common.formula_accruals import f_xirr, f_duration
 from poms.common.utils import date_now, isclose, safe_div
 from poms.currencies.models import Currency
 from poms.instruments.models import Instrument, InstrumentType, CostMethod, InstrumentClass
@@ -972,34 +973,34 @@ class ReportItem(_Base):
     pricing_ccy_cur_fx = 0.0
 
     # instr
-    instr_principal_res = 0.0
-    instr_accrued_res = 0.0
-    exposure_res = 0.0
-    exposure_loc = 0.0
+    instr_principal_res = 0.0  # +
+    instr_accrued_res = 0.0  # +
+    exposure_res = 0.0  # +
+    exposure_loc = 0.0  # +
 
-    instr_accrual = None  # Current Payment Size, Current Payment Frequency, Current Payment Periodicity N
-    instr_accrual_accrued_price = 0.0
+    instr_accrual = None  # +
+    instr_accrual_accrued_price = 0.0  # +
 
     # ----------------------------------------------------
 
-    pos_size = 0.0
-    market_value_res = 0.0
-    market_value_loc = 0.0
+    pos_size = 0.0  # +
+    market_value_res = 0.0  # +
+    market_value_loc = 0.0  # +
     cost_res = 0.0
-    ytm = 0.0
-    modified_duration = 0.0
-    ytm_at_cost = 0.0
-    time_invested = 0.0
-    gross_cost_res = 0.0
-    gross_cost_loc = 0.0
-    net_cost_res = 0.0
-    net_cost_loc = 0.0
-    amount_invested_res = 0.0
-    amount_invested_loc = 0.0
-    pos_return_res = 0.0
-    pos_return_loc = 0.0
-    daily_price_change = 0.0
-    mtd_price_change = 0.0
+    ytm = 0.0  # ?
+    modified_duration = 0.0  # ?
+    ytm_at_cost = 0.0  #
+    time_invested = 0.0  #
+    gross_cost_res = 0.0  # +
+    gross_cost_loc = 0.0  # +
+    net_cost_res = 0.0  # +
+    net_cost_loc = 0.0  # +
+    amount_invested_res = 0.0  # +
+    amount_invested_loc = 0.0  # +
+    pos_return_res = 0.0  #
+    pos_return_loc = 0.0  # +
+    daily_price_change = 0.0  #
+    mtd_price_change = 0.0  #
 
     # P&L ----------------------------------------------------
 
@@ -1229,6 +1230,10 @@ class ReportItem(_Base):
             if trn.trn_cls.id in [TransactionClass.BUY, TransactionClass.SELL]:
                 item.last_notes = trn.notes
 
+                cost_mul = (1.0 - trn.multiplier) / trn.pos_size / trn.instr.price_multiplier
+                item.gross_cost_res += trn.principal_res * cost_mul
+                item.net_cost_res += (trn.principal_res + trn.overheads_res) * cost_mul
+
         elif item.type == ReportItem.TYPE_CURRENCY:
             item.acc = acc or trn.acc_cash
             item.str1 = str1 or trn.str1_cash
@@ -1415,6 +1420,9 @@ class ReportItem(_Base):
             if o.last_notes is not None:
                 self.last_notes = o.last_notes
 
+            self.gross_cost_res += o.gross_cost_res
+            self.net_cost_res += o.net_cost_res
+
         # elif self.type == ReportItem.TYPE_SUMMARY or self.type == ReportItem.TYPE_INVESTED_SUMMARY:
         elif self.type == ReportItem.TYPE_SUMMARY:
             self.market_value_res += o.market_value_res
@@ -1484,6 +1492,12 @@ class ReportItem(_Base):
 
             self.amount_invested_res = self.principal_res + self.carry_res
 
+            if self.instr:
+                data = [(self.report.report_date, self.market_value_res)]
+                data = self.instr.get_future_accrual_payments(data)
+                self.ytm = f_xirr(data)
+                self.modified_duration = f_duration(data, ytm=self.ytm)
+
         elif self.type == ReportItem.TYPE_MISMATCH:
             # self.market_value_res = self.pos_size * self.ccy_cur_fx
             #
@@ -1502,7 +1516,10 @@ class ReportItem(_Base):
 
         self.market_value_loc = safe_div(self.market_value_res, self.pricing_ccy_cur_fx)
         self.exposure_loc = safe_div(self.exposure_res, self.pricing_ccy_cur_fx)
+        self.gross_cost_loc = safe_div(self.gross_cost_res, self.pricing_ccy_cur_fx)
+        self.net_cost_loc = safe_div(self.net_cost_res, self.pricing_ccy_cur_fx)
         self.amount_invested_loc = safe_div(self.amount_invested_res, self.pricing_ccy_cur_fx)
+        self.pos_return_loc = safe_div(self.pos_return_res, self.pricing_ccy_cur_fx)
 
         # is_empty
 

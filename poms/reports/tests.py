@@ -944,9 +944,9 @@ class ReportTestCase(TestCase):
                                                   accrual_calculation_model_id=AccrualCalculationModel.ACT_365,
                                                   periodicity_id=Periodicity.MONTHLY,
                                                   periodicity_n=1)
-        _l.debug('accruals_by_date.1: %s', ti1.get_accruals_by_date())
-        _l.debug('accruals_by_date.2: %s', ti1.get_accruals_by_date(begin_date=date(2016, 2, 27)))
-        _l.debug('accruals_by_date.2: %s', ti1.get_accruals_by_date(begin_date=date(2016, 3, 1)))
+        _l.debug('get_future_accrual_payments.1: %s', ti1.get_future_accrual_payments())
+        _l.debug('get_future_accrual_payments.2: %s', ti1.get_future_accrual_payments(begin_date=date(2016, 2, 27)))
+        _l.debug('get_future_accrual_payments.2: %s', ti1.get_future_accrual_payments(begin_date=date(2016, 3, 1)))
         data = [(date(2016, 3, 14), 83)]
-        _l.debug('accruals_by_date.2: %s', ti1.get_accruals_by_date(data=data, begin_date=date(2016, 3, 15)))
-        _l.debug('accruals_by_date.2: %s', ti1.get_accruals_by_date(data=data))
+        _l.debug('get_future_accrual_payments.2: %s', ti1.get_future_accrual_payments(data=data, begin_date=date(2016, 3, 15)))
+        _l.debug('get_future_accrual_payments.2: %s', ti1.get_future_accrual_payments(data=data))
