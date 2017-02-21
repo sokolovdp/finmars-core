@@ -262,8 +262,8 @@ class BloombergDataProvider(AbstractProvider):
 
     def is_valid_reference(self, value):
         if value:
-            value = value.split(maxsplit=2)
-            if len(value) == 2:
+            value = value.split()
+            if len(value) in [2, 3]:
                 return True
         return False
 
