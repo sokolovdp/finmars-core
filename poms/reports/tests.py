@@ -966,7 +966,7 @@ class ReportTestCase(TestCase):
 
         _l.debug('-' * 79)
         _l.debug('xirr:')
-        for method in ['newton']:
+        for method in ['newton', 'brentq']:
             _l.debug('  method: %s', method)
             for i in range(1000, 30000, 1000):
                 _l.debug('    %s -> %s', i, timeit.Timer(lambda: f_xirr(data, method=method)).timeit(i))
