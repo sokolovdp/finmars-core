@@ -4,6 +4,7 @@ import calendar
 from datetime import date, timedelta
 
 from dateutil import relativedelta, rrule
+from scipy.optimize import newton, brentq
 
 
 def coupon_accrual_factor(
@@ -410,8 +411,6 @@ def f_xirr(data, x0=0.0, tol=0.0001, maxiter=None, a=-1.0, b=1e10, xtol=0.0001, 
     >>> f_xirr(values, dates)
     0.3291520343150294
     '''
-
-    from scipy.optimize import newton, brentq
 
     # return newton(lambda r: xnpv(r, values, dates), 0.0), \
     #        brentq(lambda r: xnpv(r, values, dates), -1.0, 1e10)
