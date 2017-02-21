@@ -40,11 +40,12 @@ from poms.users.fields import MasterUserField, HiddenMemberField
 class CustomFieldSerializer(serializers.ModelSerializer):
     master_user = MasterUserField()
     expr = ExpressionField(required=False, allow_blank=True, default='""')
+    layout = serializers.JSONField(required=False, allow_null=True)
 
     class Meta:
         model = CustomField
         fields = [
-            'id', 'master_user', 'name', 'expr'
+            'id', 'master_user', 'name', 'expr', 'layout'
         ]
 
 
