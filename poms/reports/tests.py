@@ -131,6 +131,9 @@ class ReportTestCase(TestCase):
                     s = Strategy1.objects.create(master_user=self.m, subgroup=sg, name='%s-%s-%s' % (g_i, sg_i, s_i))
                     setattr(self, 's1_%s_%s_%s' % (g_i, sg_i, s_i), s)
 
+        # from django.conf import settings
+        # settings.DEBUG = True
+
     def _d(self, days=None):
         if days is None or days == 0:
             return self.report_date
@@ -772,7 +775,7 @@ class ReportTestCase(TestCase):
         b.build()
         self._dump(b, 'test_mismatch_0')
 
-    def _test_approach_alloc_0(self):
+    def test_approach_alloc_0(self):
         self.bond0.user_code = 'I1'
         self.bond0.price_multiplier = 5.0
         self.bond0.accrued_multiplier = 0.0
@@ -798,7 +801,7 @@ class ReportTestCase(TestCase):
                 stl_ccy=self.usd, principal=20, carry=0, overheads=0,
                 alloc_bl=self.bond3, alloc_pl=self.bond3)
 
-        r = Report(master_user=self.m, pricing_policy=self.pp, report_date=self._d(0),
+        r = Report(master_user=self.m, pricing_policy=self.pp, report_date=self._d(1),
                    approach_multiplier=1.0)
         b = ReportBuilder(instance=r)
         b.build()
@@ -954,7 +957,7 @@ class ReportTestCase(TestCase):
                  ti1.get_future_accrual_payments(data=data, begin_date=date(2016, 3, 15)))
         _l.debug('get_future_accrual_payments.2: %s', ti1.get_future_accrual_payments(data=data))
 
-    def test_xnpv_xirr_duration_perf(self):
+    def _test_xnpv_xirr_duration_perf(self):
         from poms.common.formula_accruals import f_xirr
         from datetime import date
 

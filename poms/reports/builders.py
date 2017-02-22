@@ -257,16 +257,17 @@ class VirtualTransaction(_Base):
     dump_columns = [
         'pk',
         # 'lid',
-        # 'is_hidden',
+        'is_cloned',
+        'is_hidden',
         # 'is_mismatch',
         'trn_cls',
         # 'case',
         # 'avco_multiplier',
         # 'avco_closed_by',
-        'fifo_multiplier',
-        'fifo_closed_by',
-        # 'multiplier',
-        # 'closed_by',
+        # 'fifo_multiplier',
+        # 'fifo_closed_by',
+        'multiplier',
+        'closed_by',
         'acc_date',
         # 'cash_date',
         'instr',
@@ -565,8 +566,8 @@ class VirtualTransaction(_Base):
             self.mismatch = self.cash - self.total
 
     def calc_pass2(self, balance_pos_size):
-        # called after balance
-        if self.trn_cls.id in [TransactionClass.BUY, TransactionClass.SELL] and self.instr:
+        # called after "balance"
+        if not self.is_cloned and self.trn_cls.id in [TransactionClass.BUY, TransactionClass.SELL] and self.instr:
             self.remaining_pos_size = self.pos_size * (1 - self.multiplier)
             self.remaining_pos_size_percent = safe_div(self.remaining_pos_size, balance_pos_size)
 
@@ -640,8 +641,11 @@ class VirtualTransaction(_Base):
 
             t.mismatch = 0.0
             t.avco_multiplier = 0.0
+            t.avco_closed_by = []
             t.fifo_multiplier = 0.0
+            t.fifo_closed_by = []
             t.multiplier = 1.0
+            t.closed_by = []
             t.cash = 0.0
             t.cash_res = 0.0
 
@@ -1875,7 +1879,7 @@ class ReportBuilder(object):
             'instrument',
             'instrument__instrument_type',
             'instrument__instrument_type__instrument_class',
-            'instrument__pricing_currency'
+            'instrument__pricing_currency',
             'instrument__accrued_currency',
             'instrument__accrual_calculation_schedules',
             'instrument__accrual_calculation_schedules__accrual_calculation_model',
