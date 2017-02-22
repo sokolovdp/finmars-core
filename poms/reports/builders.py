@@ -82,24 +82,24 @@ class VirtualTransaction(_Base):
     avco_closed_by = None
     fifo_multiplier = 0.0
     fifo_closed_by = None
-    multiplier = 1.0
+    multiplier = 0.0
     closed_by = None
 
     # Position related
     instr = None
     trn_ccy = None
-    pos_size = None
+    pos_size = 0.0
 
     # Cash related
     stl_ccy = None
-    cash = None
+    cash = 0.0
 
     # P&L related
-    principal = None
-    carry = None
-    overheads = None
+    principal = 0.0
+    carry = 0.0
+    overheads = 0.0
 
-    ref_fx = None
+    ref_fx = 0.0
 
     # accounting dates
     trn_date = None
@@ -128,6 +128,8 @@ class VirtualTransaction(_Base):
     # allocations
     alloc_bl = None
     alloc_pl = None
+
+    trade_price = 0.0
 
     # total_real_res = 0.0
     # total_unreal_res = 0.0
@@ -177,6 +179,15 @@ class VirtualTransaction(_Base):
     instr_principal_res = 0.0
     instr_accrued = 0.0
     instr_accrued_res = 0.0
+
+    remaining_pos_size = 0.0
+    remaining_pos_size_percent = 0.0  # calculated in second pass
+    ytm = 0.0
+    time_invested_days = 0.0
+    time_invested = 0.0
+    weighted_ytm = 0.0  # calculated in second pass
+    weighted_time_invested_days = 0.0  # calculated in second pass
+    weighted_time_invested = 0.0  # calculated in second pass
 
     # Cash related ----------------------------------------------------
 
@@ -390,6 +401,8 @@ class VirtualTransaction(_Base):
         self.alloc_bl = overrides.get('allocation_balance', trn.allocation_balance)
         self.alloc_pl = overrides.get('allocation_pl', trn.allocation_pl)
 
+        self.trade_price = overrides.get('trade_price', trn.trade_price)
+
         self.notes = overrides.get('notes', trn.notes)
 
         # ----
@@ -547,6 +560,25 @@ class VirtualTransaction(_Base):
             self.mismatch = 0.0
         else:
             self.mismatch = self.cash - self.total
+
+    def calc_pass_2(self, balance_pos_size):
+        if self.trn_cls.id in [TransactionClass.BUY, TransactionClass.SELL]:
+            self.remaining_pos_size = self.pos_size * (1 - self.multiplier)
+            self.remaining_pos_size_percent = self.remaining_pos_size / balance_pos_size
+
+            future_accrual_payments = self.instr.get_future_accrual_payments(d0=self.acc_date, v0=self.trade_price)
+            self.ytm = f_xirr(future_accrual_payments)
+
+            # data = [(self.report.report_date, self.market_value_res)]
+            # data = self.instr.get_future_accrual_payments(data)
+            # self.ytm = f_xirr(data)
+
+            self.time_invested_days = (self.report.report_date - self.acc_date).days
+            self.time_invested = self.time_invested_days / 365.0
+
+            self.weighted_ytm = self.ytm * self.remaining_pos_size_percent
+            self.weighted_time_invested_days = self.time_invested * self.remaining_pos_size_percent
+            self.weighted_time_invested = self.time_invested * self.remaining_pos_size_percent
 
     @staticmethod
     def approach_clone(cur, closed, mul_delta):
@@ -1498,10 +1530,10 @@ class ReportItem(_Base):
             self.amount_invested_res = self.principal_res + self.carry_res
 
             if self.instr:
-                data = [(self.report.report_date, self.market_value_res)]
-                data = self.instr.get_future_accrual_payments(data)
-                self.ytm = f_xirr(data)
-                self.modified_duration = f_duration(data, ytm=self.ytm)
+                future_accrual_payments = self.instr.get_future_accrual_payments(d0=self.report.report_date,
+                                                                                 v0=self.market_value_res)
+                self.ytm = f_xirr(future_accrual_payments)
+                self.modified_duration = f_duration(future_accrual_payments, ytm=self.ytm)
 
         elif self.type == ReportItem.TYPE_MISMATCH:
             # self.market_value_res = self.pos_size * self.ccy_cur_fx
@@ -1918,8 +1950,8 @@ class ReportBuilder(object):
             'instrument',
             'instrument__instrument_type',
             'instrument__instrument_type__instrument_class',
-            'instrument__pricing_currency'
-            'instrument__accrued_currency'
+            'instrument__pricing_currency',
+            'instrument__accrued_currency',
             'instrument__accrual_calculation_schedules',
             'instrument__accrual_calculation_schedules__accrual_calculation_model',
             'instrument__accrual_calculation_schedules__periodicity',

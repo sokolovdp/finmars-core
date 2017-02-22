@@ -1,10 +1,13 @@
 from __future__ import unicode_literals, division
 
 import calendar
+import logging
 from datetime import date, timedelta
 
 from dateutil import relativedelta, rrule
 from scipy.optimize import newton, brentq
+
+_l = logging.getLogger('poms.common')
 
 
 def coupon_accrual_factor(
@@ -394,10 +397,22 @@ def f_xnpv(data, rate):
     if rate <= -1.0:
         return float('inf')
     d0, v0 = data[0]  # or min(dates)
-    return sum(
-        vi / ((1.0 + rate) ** ((di - d0).days / 365.0))
-        for di, vi in data
-    )
+
+    # for di, vi in data:
+    #     _l.debug('f_xnpv: di=%s, vi=%s 1rate=%s, days=%s, exp=%s',
+    #              di, vi, (1.0 + rate), (di - d0).days, ((di - d0).days / 365.0) )
+    #     try:
+    #         _l.debug('    res=%s', vi / ((1.0 + rate) ** ((di - d0).days / 365.0)))
+    #     except Exception as e:
+    #         _l.debug('    res=%s', repr(e))
+
+    try:
+        return sum(
+            vi / ((1.0 + rate) ** ((di - d0).days / 365.0))
+            for di, vi in data
+        )
+    except (OverflowError, ZeroDivisionError):
+        return 0.0
 
 
 def f_xirr(data, x0=0.0, tol=0.0001, maxiter=None, a=-1.0, b=1e10, xtol=0.0001, rtol=0.0001, method='newton'):
@@ -411,6 +426,7 @@ def f_xirr(data, x0=0.0, tol=0.0001, maxiter=None, a=-1.0, b=1e10, xtol=0.0001, 
     >>> f_xirr(values, dates)
     0.3291520343150294
     '''
+    # _l.debug('f_xirr: data=%s', data)
 
     # return newton(lambda r: xnpv(r, values, dates), 0.0), \
     #        brentq(lambda r: xnpv(r, values, dates), -1.0, 1e10)
@@ -466,10 +482,13 @@ def f_duration(data, ytm=None):
     #     _l.debug('discounted_cf: %s', discounted_cf)
     #     _l.debug('dur1: %s', dur1)
 
-    return sum(
-        ((di - d0).days / 365.0) * (vi / ((1 + ytm) ** ((di - d0).days / 365.0)))
-        for di, vi in data
-    ) / v0 / (1 + ytm)
+    try:
+        return sum(
+            ((di - d0).days / 365.0) * (vi / ((1.0 + ytm) ** ((di - d0).days / 365.0)))
+            for di, vi in data
+        ) / v0 / (1 + ytm)
+    except (OverflowError, ZeroDivisionError):
+        return 0.0
 
 
 if __name__ == "__main__":

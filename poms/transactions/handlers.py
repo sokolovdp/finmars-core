@@ -32,8 +32,8 @@ class TransactionTypeProcess(object):
 
         self.default_values = default_values or {}
 
-        self.calculate = calculate or False
-        self.store = store or False
+        self.calculate = bool(calculate) if calculate is not None else False
+        self.store = bool(store) if store is not None else False
 
         # self.expressions = expressions or {}
         # self.expressions_error = None
@@ -109,6 +109,7 @@ class TransactionTypeProcess(object):
             return None
 
         self.values = {}
+        self.values.update(self.default_values)
 
         if self.complex_transaction and self.complex_transaction.id is not None and self.complex_transaction.id > 0:
             # load previous values if need

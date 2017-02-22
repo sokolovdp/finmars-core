@@ -586,7 +586,6 @@ class SimpleEval2(object):
             return False
 
     def _find_name(self, name):
-
         try:
             val = self._table[name]
             val = self._check_value(val)

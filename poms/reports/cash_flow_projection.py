@@ -92,134 +92,62 @@ class TransactionReportItem:
                  allocation_balance=empty,
                  allocation_pl=empty,
                  reference_fx_rate=empty,
+
+                 factor=empty,
+                 trade_price=empty,
+                 position_amount=empty,
+                 principal_amount=empty,
+                 carry_amount=empty,
+                 overheads=empty,
+                 notes=empty,
+
                  attributes=empty):
-        # self.id = id if id is not empty else \
-        #     getattr(trn, 'id', None)
         self.id = _val(trn, id, 'id')
-
-        # self.complex_transaction = complex_transaction if complex_transaction is not empty else \
-        #     getattr(trn, 'complex_transaction', None)
         self.complex_transaction = _val(trn, complex_transaction, 'complex_transaction')
-
-        # self.complex_transaction_order = complex_transaction_order if complex_transaction_order is not empty else \
-        #     getattr(trn, 'complex_transaction_order', None)
         self.complex_transaction_order = _val(trn, complex_transaction_order, 'complex_transaction_order')
-
-        # self.transaction_code = transaction_code if transaction_code is not empty else \
-        #     getattr(trn, 'transaction_code', None)
         self.transaction_code = _val(trn, transaction_code, 'transaction_code')
-
-        # self.transaction_class = transaction_class if transaction_class is not empty else \
-        #     getattr(trn, 'transaction_class', None)
         self.transaction_class = _val(trn, transaction_class, 'transaction_class')
 
-        # self.instrument = instrument if instrument is not empty else \
-        #     getattr(trn, 'instrument', None)
         self.instrument = _val(trn, instrument, 'instrument')
-
-        # self.transaction_currency = transaction_currency if transaction_currency is not empty else \
-        #     getattr(trn, 'transaction_currency', None)
         self.transaction_currency = _val(trn, transaction_currency, 'transaction_currency')
-
-        # self.position_size_with_sign = position_size_with_sign if position_size_with_sign is not empty else \
-        #     getattr(trn, 'position_size_with_sign', 0.0)
         self.position_size_with_sign = _val(trn, position_size_with_sign, 'position_size_with_sign')
-
-        # self.settlement_currency = settlement_currency if settlement_currency is not empty else \
-        #     getattr(trn, 'settlement_currency', None)
         self.settlement_currency = _val(trn, settlement_currency, 'settlement_currency')
-
-        # self.cash_consideration = cash_consideration if cash_consideration is not empty else \
-        #     getattr(trn, 'cash_consideration', 0.0)
         self.cash_consideration = _val(trn, cash_consideration, 'cash_consideration')
-
-        # self.principal_with_sign = principal_with_sign if principal_with_sign is not empty else \
-        #     getattr(trn, 'principal_with_sign', 0.0)
         self.principal_with_sign = _val(trn, principal_with_sign, 'principal_with_sign')
-
-        # self.carry_with_sign = carry_with_sign if carry_with_sign is not empty else \
-        #     getattr(trn, 'carry_with_sign', 0.0)
         self.carry_with_sign = _val(trn, carry_with_sign, 'carry_with_sign')
-
-        # self.overheads_with_sign = overheads_with_sign if overheads_with_sign is not empty else \
-        #     getattr(trn, 'overheads_with_sign', 0.0)
         self.overheads_with_sign = _val(trn, overheads_with_sign, 'overheads_with_sign')
 
-        # self.transaction_date = transaction_date if transaction_date is not empty else \
-        #     getattr(trn, 'transaction_date', datetime.date.min)
         self.transaction_date = _val(trn, transaction_date, 'transaction_date')
-
-        # self.accounting_date = accounting_date if accounting_date is not empty else \
-        #     getattr(trn, 'accounting_date', datetime.date.min)
         self.accounting_date = _val(trn, accounting_date, 'accounting_date')
-
-        # self.cash_date = cash_date if cash_date is not empty else \
-        #     getattr(trn, 'cash_date', datetime.date.min)
         self.cash_date = _val(trn, cash_date, 'cash_date')
 
-        # self.portfolio = portfolio if portfolio is not empty else \
-        #     getattr(trn, 'portfolio', None)
         self.portfolio = _val(trn, portfolio, 'portfolio')
-
-        # self.account_position = account_position if account_position is not empty else \
-        #     getattr(trn, 'account_position', None)
         self.account_position = _val(trn, account_position, 'account_position')
-
-        # self.account_cash = account_cash if account_cash is not empty else \
-        #     getattr(trn, 'account_cash', None)
         self.account_cash = _val(trn, account_cash, 'account_cash')
-
-        # self.account_interim = account_interim if account_interim is not empty else \
-        #     getattr(trn, 'account_interim', None)
         self.account_interim = _val(trn, account_interim, 'account_interim')
 
-        # self.strategy1_position = strategy1_position if strategy1_position is not empty else \
-        #     getattr(trn, 'strategy1_position', None)
         self.strategy1_position = _val(trn, strategy1_position, 'strategy1_position')
-
-        # self.strategy1_cash = strategy1_cash if strategy1_cash is not empty else \
-        #     getattr(trn, 'strategy1_cash', None)
         self.strategy1_cash = _val(trn, strategy1_cash, 'strategy1_cash')
-
-        # self.strategy2_position = strategy2_position if strategy2_position is not empty else \
-        #     getattr(trn, 'strategy2_position', None)
         self.strategy2_position = _val(trn, strategy2_position, 'strategy2_position')
-
-        # self.strategy2_cash = strategy2_cash if strategy2_cash is not empty else \
-        #     getattr(trn, 'strategy2_cash', None)
         self.strategy2_cash = _val(trn, strategy2_cash, 'strategy2_cash')
-
-        # self.strategy3_position = strategy3_position if strategy3_position is not empty else \
-        #     getattr(trn, 'strategy3_position', None)
         self.strategy3_position = _val(trn, strategy3_position, 'strategy3_position')
-
-        # self.strategy3_cash = strategy3_cash if strategy3_cash is not empty else \
-        #     getattr(trn, 'strategy3_cash', None)
         self.strategy3_cash = _val(trn, strategy3_cash, 'strategy3_cash')
 
-        # self.responsible = responsible if responsible is not empty else \
-        #     getattr(trn, 'responsible', None)
         self.responsible = _val(trn, responsible, 'responsible')
-
-        # self.counterparty = counterparty if counterparty is not empty else \
-        #     getattr(trn, 'counterparty', None)
         self.counterparty = _val(trn, counterparty, 'counterparty')
 
-        # self.linked_instrument = linked_instrument if linked_instrument is not empty else \
-        #     getattr(trn, 'linked_instrument', None)
         self.linked_instrument = _val(trn, linked_instrument, 'linked_instrument')
-
-        # self.allocation_balance = allocation_balance if allocation_balance is not empty else \
-        #     getattr(trn, 'allocation_balance', None)
         self.allocation_balance = _val(trn, allocation_balance, 'allocation_balance')
-
-        # self.allocation_pl = allocation_pl if allocation_pl is not empty else \
-        #     getattr(trn, 'allocation_pl', None)
         self.allocation_pl = _val(trn, allocation_pl, 'allocation_pl')
 
-        # self.reference_fx_rate = reference_fx_rate if reference_fx_rate is not empty else \
-        #     getattr(trn, 'reference_fx_rate', None)
         self.reference_fx_rate = _val(trn, reference_fx_rate, 'reference_fx_rate')
+        self.factor = _val(trn, factor, 'factor')
+        self.trade_price = _val(trn, trade_price, 'trade_price')
+        self.position_amount = _val(trn, position_amount, 'position_amount')
+        self.principal_amount = _val(trn, principal_amount, 'principal_amount')
+        self.carry_amount = _val(trn, carry_amount, 'carry_amount')
+        self.overheads = _val(trn, overheads, 'overheads')
+        self.notes = _val(trn, notes, 'notes')
 
         if self.id is None or self.id < 0:
             self.attributes = []
@@ -332,7 +260,8 @@ class TransactionReportBuilder:
             master_user=self.instance.master_user,
             is_deleted=False,
         ).filter(
-            Q(complex_transaction__status=ComplexTransaction.PRODUCTION) | Q(complex_transaction__isnull=True)
+            Q(complex_transaction__isnull=True) | Q(complex_transaction__status=ComplexTransaction.PRODUCTION,
+                                                    complex_transaction__is_deleted=False)
         ).prefetch_related(
             'complex_transaction',
             # 'instrument',
@@ -364,9 +293,9 @@ class TransactionReportBuilder:
                 for a in t.complex_transaction.attributes.all():
                     self._set_ref(a, 'attribute_type', clazz=GenericAttributeType)
 
-                if not hasattr(t.complex_transaction, '_fake_transactions'):
-                    t.complex_transaction._fake_transactions = []
-                t.complex_transaction._fake_transactions.append(t)
+                    # if not hasattr(t.complex_transaction, '_fake_transactions'):
+                    #     t.complex_transaction._fake_transactions = []
+                    # t.complex_transaction._fake_transactions.append(t)
             self._set_ref(t, 'transaction_class', clazz=TransactionClass)
             self._set_ref(t, 'instrument', clazz=Instrument)
             # if t.instrument:
@@ -396,6 +325,7 @@ class TransactionReportBuilder:
 
     def _set_items_refs(self, items):
         for t in items:
+            self._set_ref(t, 'complex_transaction', clazz=ComplexTransaction)
             if t.complex_transaction:
                 self._set_ref(t.complex_transaction, 'transaction_type', clazz=TransactionType)
             self._set_ref(t, 'transaction_class', clazz=TransactionClass)
@@ -432,6 +362,15 @@ class TransactionReportBuilder:
 
     def _refresh_from_db(self):
         _l.info('> _refresh_from_db')
+
+        complex_transactions = self._similar_cache[ComplexTransaction]
+        if complex_transactions:
+            qs = ComplexTransaction.objects.filter(
+                transaction_type__master_user=self.instance.master_user,
+            ).prefetch_related(
+                get_attributes_prefetch(),
+            )
+            complex_transactions.update(qs.in_bulk(id_list=complex_transactions.keys()))
 
         transaction_types = self._similar_cache[TransactionType]
         if transaction_types:
@@ -863,7 +802,7 @@ class CashFlowProjectionReportBuilder(TransactionReportBuilder):
             # override by '-'
             if itype in [CashFlowProjectionReportItem.BALANCE, CashFlowProjectionReportItem.ROLLING]:
                 ctrn = ComplexTransaction(
-                    id=self._fake_id_gen(),
+                    # id=self._fake_id_gen(),
                     date=self.instance.balance_date,
                     status=ComplexTransaction.PRODUCTION,
                     code=-sys.maxsize,
@@ -871,7 +810,7 @@ class CashFlowProjectionReportBuilder(TransactionReportBuilder):
                 ctrn._fake_transactions = []
                 item = CashFlowProjectionReportItem(
                     type=itype,
-                    id=self._fake_id_gen(),
+                    # id=self._fake_id_gen(),
                     complex_transaction=ctrn,
                     complex_transaction_order=0,
                     transaction_code=-sys.maxsize,
@@ -1009,11 +948,11 @@ class CashFlowProjectionReportBuilder(TransactionReportBuilder):
                                     generated_event=e,
                                     action=a,
                                     calculate=True,
-                                    store=False,
+                                    store=True,
                                     # complex_transaction_date=now,
                                     fake_id_gen=self._fake_id_gen,
                                     transaction_order_gen=self._trn_order_gen,
-                                    now=lambda: now
+                                    now=now
                                 )
                                 gep.process()
                                 if gep.has_errors:

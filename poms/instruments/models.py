@@ -13,6 +13,7 @@ from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext, ugettext_lazy
 from mptt.models import MPTTModel
 
+from poms.common.formula_accruals import f_xirr
 from poms.common.models import NamedModel, AbstractClassModel, FakeDeletableModel
 from poms.common.utils import date_now, isclose
 from poms.obj_attrs.models import GenericAttribute
@@ -602,7 +603,7 @@ class Instrument(NamedModel, FakeDeletableModel):
                                        dt3=accrual.first_payment_date)
         return accrual.accrual_size * factor
 
-    def get_future_accrual_payments(self, data=None, begin_date=None, accruals=None):
+    def get_future_accrual_payments(self, data=None, d0=None, v0=None, begin_date=None, accruals=None):
         # accrual_start_date
         # accrual_end_date -> fake
         # first_payment_date
@@ -611,11 +612,24 @@ class Instrument(NamedModel, FakeDeletableModel):
         # periodicity -> Periodicity
         # periodicity_n
         if accruals is None:
-            accruals = [
-                a for a in self.accrual_calculation_schedules.select_related(
-                    'accrual_calculation_model', 'periodicity',
-                ).order_by('accrual_start_date')
-                ]
+            # accruals = list(self.accrual_calculation_schedules.select_related(
+            #     'accrual_calculation_model', 'periodicity',
+            # ).order_by('accrual_start_date').all())
+            # accruals = list(self.accrual_calculation_schedules.all())
+            # accruals = sorted(accruals, key=lambda x: x.accrual_start_date)
+            try:
+                accruals = self._get_future_accrual_payments_accruals
+            except AttributeError:
+                accruals = list(self.accrual_calculation_schedules.all())
+                accruals = sorted(accruals, key=lambda x: x.accrual_start_date)
+                self._get_future_accrual_payments_accruals = accruals
+
+        if data is None:
+            data = []
+
+        if d0 is not None and v0 is not None:
+            data.append((d0, v0))
+
         if begin_date is None:
             if data:
                 d0, v0 = data[-1]
@@ -628,9 +642,9 @@ class Instrument(NamedModel, FakeDeletableModel):
             if a is not None:
                 a.accrual_end_date = next_a.accrual_start_date
             a = next_a
-        a.accrual_end_date = self.maturity_date
-        if data is None:
-            data = []
+        if a:
+            a.accrual_end_date = self.maturity_date
+
         for a in accruals:
             if a.accrual_end_date <= begin_date:
                 continue
@@ -642,6 +656,7 @@ class Instrument(NamedModel, FakeDeletableModel):
                 if d <= begin_date:
                     continue
                 data.append((d, a.accrual_size))
+
         if self.maturity_date >= begin_date:
             if data:
                 last_d, last_p = data[-1]
@@ -651,7 +666,16 @@ class Instrument(NamedModel, FakeDeletableModel):
                     data.append((self.maturity_date, self.maturity_price))
             else:
                 data.append((self.maturity_date, self.maturity_price))
+
         return data
+
+    def xirr(self, d0, v0):
+        data = [(d0, v0)]
+        data = self.get_future_accrual_payments(data)
+        return data, f_xirr(data)
+
+    def duration(self, data, ytm):
+        return f_duration(data, self.ytm)
 
 
 @python_2_unicode_compatible
