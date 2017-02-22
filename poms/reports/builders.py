@@ -999,6 +999,7 @@ class ReportItem(_Base):
     ytm = 0.0  # ?
     modified_duration = 0.0  # ?
     ytm_at_cost = 0.0  #
+    time_invested_days = 0.0  #
     time_invested = 0.0  #
     gross_cost_res = 0.0  # +
     gross_cost_loc = 0.0  # +
@@ -1547,9 +1548,24 @@ class ReportItem(_Base):
                             isclose(self.total_opened_res, 0.0)
 
     def add_pass2(self, o):
-        self.ytm_at_cost += o.weighted_ytm
-        self.time_invested += o.weighted_time_invested
-        pass
+        if self.type == ReportItem.TYPE_INSTRUMENT:
+            self.ytm_at_cost += o.weighted_ytm
+            self.time_invested_days += o.weighted_time_invested_days
+            self.time_invested += o.weighted_time_invested
+
+    def close_pass2(self):
+        if self.type == ReportItem.TYPE_INSTRUMENT:
+            # Daily Price Change, %
+            #  = (Current Price - Gross Cost Price) / Gross Cost Price, if Time Invested in days= 1 day
+            #  = (Current Price at T -  Price from Price History at T-1) / (Price from Price History at T-1) , if Time Invested > 1 day
+            # T - report date
+            pass
+
+            # MTD Price Change, %
+            #  = (Current Price - Gross Cost Price) / Gross Cost Price, if Time Invested in days <= Day(Report Date)
+            #  = (Current Price -  Price from Price History at end_of_previous_month (Report Date)) / (Price from Price History at end_of_previous_month (Report Date)) , if Time Invested > Day(Report Date)
+            # T - report date
+            pass
 
     # ----------------------------------------------------
     @property
@@ -2398,7 +2414,7 @@ class ReportBuilder(object):
             else:
                 raise RuntimeError('Invalid transaction class: %s' % trn.trn_cls.id)
 
-        def _group_key(item):
+        def _item_key(item):
             return (
                 item.type,
                 getattr(item.prtfl, 'id', -1),
@@ -2414,13 +2430,43 @@ class ReportBuilder(object):
                 getattr(item.detail_trn, 'id', -1),
             )
 
-        _items = sorted(self._items, key=_group_key)
+        def _pass2_item_key(trn=None, item=None):
+            if trn:
+                return (
+                    getattr(trn.prtfl, 'id', -1),
+                    getattr(trn.acc_pos, 'id', -1),
+                    getattr(trn.str1_pos, 'id', -1),
+                    getattr(trn.str2_pos, 'id', -1),
+                    getattr(trn.str3_pos, 'id', -1),
+                    getattr(trn.alloc_bl, 'id', -1),
+                    getattr(trn.alloc_pl, 'id', -1),
+                    getattr(trn.instr, 'id', -1),
+                    # getattr(trn.ccy, 'id', -1),
+                    # getattr(trn.trn_ccy, 'id', -1),
+                )
+            elif item:
+                return (
+                    getattr(item.prtfl, 'id', -1),
+                    getattr(item.acc, 'id', -1),
+                    getattr(item.str1, 'id', -1),
+                    getattr(item.str2, 'id', -1),
+                    getattr(item.str3, 'id', -1),
+                    getattr(item.alloc_bl, 'id', -1),
+                    getattr(item.alloc_pl, 'id', -1),
+                    getattr(item.instr, 'id', -1),
+                    # getattr(item.ccy, 'id', -1),
+                    # getattr(item.trn_ccy, 'id', -1),
+                )
+            else:
+                raise RuntimeError('code bug')
+
+        _items = sorted(self._items, key=_item_key)
 
         # aggregate items
 
         res_items = []
         res_items_for_instr = {}
-        for k, g in groupby(_items, key=_group_key):
+        for k, g in groupby(_items, key=_item_key):
             res_item = None
 
             for item in g:
@@ -2434,16 +2480,21 @@ class ReportBuilder(object):
                 res_item.pricing()
                 res_item.close()
                 res_items.append(res_item)
-                if res_item.instr:
-                    res_items_for_instr[res_item.instr.id] = res_item
+                if res_item.type == ReportItem.TYPE_INSTRUMENT and res_item.instr:
+                    pass2_item_key = _pass2_item_key(item=res_item)
+                    res_items_for_instr[pass2_item_key] = res_item
 
         # pass 2 - some values can calculate only after "balance"
         for trn in transactions:
             if trn.trn_cls.id in [TransactionClass.BUY, TransactionClass.SELL]:
-                item = res_items_for_instr.get(trn.instr.id, None)
+                pass2_item_key = _pass2_item_key(trn=trn)
+                item = res_items_for_instr.get(pass2_item_key, None)
                 if item:
                     trn.calc_pass2(item.pos_size)
                     item.add_pass2(trn)
+
+        for item in res_items:
+            item.close_pass2()
 
         # ReportItem.dumps(_items)
 

@@ -1,3 +1,5 @@
+from datetime import timedelta
+
 from django.db.models import Q
 
 from poms.currencies.models import CurrencyHistory
@@ -59,6 +61,8 @@ class InstrumentPricingProvider(AbstractProvider):
             pricing_policy=self._pricing_policy
         ).filter(
             Q(date=self._report_date) |
+            Q(date=self._report_date - timedelta(days=1)) |
+            Q(date=self._report_date - timedelta(days=self._report_date.day - 1)) |
             Q(date__in=transaction_queryset.values_list('accounting_date', flat=True))
         ).filter(
             Q(instrument__in=transaction_queryset.values_list('instrument', flat=True))
@@ -103,6 +107,8 @@ class CurrencyFxRateProvider(AbstractProvider):
             pricing_policy=self._pricing_policy
         ).filter(
             Q(date=self._report_date) |
+            Q(date=self._report_date - timedelta(days=1)) |
+            Q(date=self._report_date - timedelta(days=self._report_date.day - 1)) |
             Q(date__in=transaction_queryset.values_list('cash_date', flat=True)) |
             Q(date__in=transaction_queryset.values_list('accounting_date', flat=True))
         ).filter(
