@@ -393,6 +393,8 @@ def f_xnpv(data, rate):
     16.7366702148651
     '''
     # _l.debug('xnpv > rate=%s', rate)
+    if not data:
+        return 0.0
 
     if rate <= -1.0:
         return float('inf')
@@ -432,6 +434,10 @@ def f_xirr(data, x0=0.0, tol=0.0001, maxiter=None, a=-1.0, b=1e10, xtol=0.0001, 
     #        brentq(lambda r: xnpv(r, values, dates), -1.0, 1e10)
     # return newton(lambda r: xnpv(r, values, dates), 0.0)
     # return brentq(lambda r: xnpv(r, values, dates), -1.0, 1e10)
+
+    if not data:
+        return 0.0
+
     if method == 'newton':
         try:
             kw = {}
@@ -453,7 +459,6 @@ def f_xirr(data, x0=0.0, tol=0.0001, maxiter=None, a=-1.0, b=1e10, xtol=0.0001, 
 
 
 def f_duration(data, ytm=None):
-    # _l.debug('duration >')
     '''Equivalent of Excel's XIRR function.
     https://support.office.com/en-us/article/XIRR-function-de1242ec-6477-445b-b11b-a303ad9adc9d
 
@@ -464,6 +469,10 @@ def f_duration(data, ytm=None):
     >>> f_xirr(data)
     0.6438341602180792
     '''
+    # _l.debug('duration >')
+
+    if not data:
+        return 0.0
 
     if ytm is None:
         ytm = f_xirr(data)
@@ -492,7 +501,6 @@ def f_duration(data, ytm=None):
 
 
 if __name__ == "__main__":
-
     # noinspection PyUnresolvedReferences
     import env_ai
     import django

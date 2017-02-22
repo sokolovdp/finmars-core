@@ -35,6 +35,7 @@ _l = logging.getLogger('poms.reports')
 
 
 class _Base:
+    is_cloned = False
     report = None
     pricing_provider = None
     fx_rate_provider = None
@@ -47,7 +48,9 @@ class _Base:
         self.fx_rate_provider = fx_rate_provider
 
     def clone(self):
-        return copy.copy(self)
+        ret = copy.copy(self)
+        ret.is_cloned = True
+        return ret
 
     def dump_values(self, columns=None):
         if columns is None:
@@ -561,10 +564,11 @@ class VirtualTransaction(_Base):
         else:
             self.mismatch = self.cash - self.total
 
-    def calc_pass_2(self, balance_pos_size):
-        if self.trn_cls.id in [TransactionClass.BUY, TransactionClass.SELL]:
+    def calc_pass2(self, balance_pos_size):
+        # called after balance
+        if self.trn_cls.id in [TransactionClass.BUY, TransactionClass.SELL] and self.instr:
             self.remaining_pos_size = self.pos_size * (1 - self.multiplier)
-            self.remaining_pos_size_percent = self.remaining_pos_size / balance_pos_size
+            self.remaining_pos_size_percent = safe_div(self.remaining_pos_size, balance_pos_size)
 
             future_accrual_payments = self.instr.get_future_accrual_payments(d0=self.acc_date, v0=self.trade_price)
             self.ytm = f_xirr(future_accrual_payments)
@@ -904,37 +908,6 @@ class VirtualTransaction(_Base):
         if self.case in [1, 2] and self.report.show_transaction_details:
             return acc and acc.type and acc.type.show_transaction_details
         return False
-
-
-# additional fields
-#
-# Pricing currency => Instrument Pricing Ccy for instrumen;= System CCY (by default USD, but may be changed) for Currency
-# Current Price, pricing ccy => Pricing CCY for enitiy = Currency (not instrument) is System Currency (by default USD, but may be changed)
-# Current Accrued, accrued ccy =>
-# Pricing Ccy FX rate => FX of Pricing CCY vs Reporting CCY
-# Accrued currency FX rate => Accrued currency FX rate
-# Current Payment Size, accrued ccy => from Accruals Schedule - coupon size used to calculate Annual Coupon and Coupon Yield
-# Current Payment Frequency => Current Payment Frequency
-# Current Payment Periodicity N => from Accruals  Schedule.
-#
-# YTM =>
-# Modified Duration =>
-#
-# Last Notes => Front Office Notes - last Note from Basic Transaction Buy/Sell
-# Gross Cost Price, pricing ccy => doesn't include overheads
-# Net Cost Price, pricing ccy => includes overheads
-# YTM at Cost =>
-# Time Invested =>
-# Amount invested, rep ccy => principal + carry (no overheads)
-# Amount invested, pricing ccy =>
-#
-# Mkt Value, pricing ccy =>
-# Exposure, pricing ccy =>
-
-# Position Return, rep ccy => pos return / time invested
-# Position Return, pricing ccy =>
-# Daily Price Change, % =>  (Current Price - Fross Cost Price) / Gross Cost Price, if Time Invested = 1 day
-# MTD Price Change, %
 
 
 class ReportItem(_Base):
@@ -1569,34 +1542,10 @@ class ReportItem(_Base):
                             isclose(self.total_closed_res, 0.0) and \
                             isclose(self.total_opened_res, 0.0)
 
-    # ----------------------------------------------------
-    # @staticmethod
-    # def group_key(report, item):
-    #     return (
-    #         item.type,
-    #         getattr(item.prtfl, 'id', None),
-    #         getattr(item.acc, 'id', None),
-    #         getattr(item.str1, 'id', None),
-    #         getattr(item.str2, 'id', None),
-    #         getattr(item.str3, 'id', None),
-    #         getattr(item.alloc_bl, 'id', None),
-    #         getattr(item.alloc_pl, 'id', None),
-    #         getattr(item.instr, 'id', None),
-    #         getattr(item.ccy, 'id', None),
-    #         getattr(item.detail_trn, 'id', None),
-    #     )
-    #
-    # @staticmethod
-    # def mismatch_group_key(report, item):
-    #     return (
-    #         item.type,
-    #         getattr(item.prtfl, 'id', None),
-    #         getattr(item.acc, 'id', None),
-    #         getattr(item.instr, 'id', None),
-    #         getattr(item.mismatch_prtfl, 'id', None),
-    #         getattr(item.mismatch_acc, 'id', None),
-    #         getattr(item.mismatch_ccy, 'id', None),
-    #     )
+    def add_pass2(self, o):
+        self.ytm_at_cost += o.weighted_ytm
+        self.time_invested += o.weighted_time_invested
+        pass
 
     # ----------------------------------------------------
     @property
@@ -1762,26 +1711,6 @@ class ReportItem(_Base):
 
         return '<ERROR>'
 
-    # @property
-    # def detail(self):
-    #     from poms.reports.serializers import ReportItemSerializer
-    #     my_data = formula.get_model_data(self, ReportItemSerializer, context=self.context)
-    #
-    #     try:
-    #         return formula.safe_eval('item.instr', names={'item': self})
-    #     except formula.InvalidExpression:
-    #         return 'OLALALALALALA'
-    #
-    #     if self.detail_trn:
-    #         expr = self.acc.type.transaction_details_expr
-    #         if expr:
-    #             try:
-    #                 value = formula.safe_eval(expr, names={'item': self})
-    #             except formula.InvalidExpression:
-    #                 value = ugettext('Invalid expression')
-    #             return value
-    #     return None
-
     @property
     def trn_cls(self):
         return getattr(self.trn, 'trn_cls', None)
@@ -1919,10 +1848,6 @@ class ReportBuilder(object):
 
         self._items = []
 
-    # @property
-    # def _system_currency(self):
-    #     return self.instance.master_user.system_currency
-
     @cached_property
     def _trn_cls_sell(self):
         return TransactionClass.objects.get(pk=TransactionClass.SELL)
@@ -1950,7 +1875,7 @@ class ReportBuilder(object):
             'instrument',
             'instrument__instrument_type',
             'instrument__instrument_type__instrument_class',
-            'instrument__pricing_currency',
+            'instrument__pricing_currency'
             'instrument__accrued_currency',
             'instrument__accrual_calculation_schedules',
             'instrument__accrual_calculation_schedules__accrual_calculation_model',
@@ -2058,47 +1983,27 @@ class ReportBuilder(object):
             kw_filters['instrument__in'] = self.instance.instruments
 
         if self.instance.portfolios:
-            # queryset = queryset.filter(portfolio__in=self.instance.portfolios)
             kw_filters['portfolio__in'] = self.instance.portfolios
 
         if self.instance.accounts:
-            # queryset = queryset.filter(account_position__in=self.instance.accounts)
-            # queryset = queryset.filter(account_cash__in=self.instance.accounts)
-            # queryset = queryset.filter(account_interim__in=self.instance.accounts)
             kw_filters['account_position__in'] = self.instance.accounts
             kw_filters['account_cash__in'] = self.instance.accounts
             kw_filters['account_interim__in'] = self.instance.accounts
 
         if self.instance.strategies1:
-            # queryset = queryset.filter(strategy1_position__in=self.instance.strategies1)
-            # queryset = queryset.filter(strategy1_cash__in=self.instance.strategies1)
             kw_filters['strategy1_position__in'] = self.instance.strategies1
             kw_filters['strategy1_cash__in'] = self.instance.strategies1
 
         if self.instance.strategies2:
-            # queryset = queryset.filter(strategy2_position__in=self.instance.strategies2)
-            # queryset = queryset.filter(strategy2_cash__in=self.instance.strategies2)
             kw_filters['strategy2_position__in'] = self.instance.strategies2
             kw_filters['strategy2_cash__in'] = self.instance.strategies2
 
         if self.instance.strategies3:
-            # queryset = queryset.filter(strategy3_position__in=self.instance.strategies3)
-            # queryset = queryset.filter(strategy3_cash__in=self.instance.strategies3)
             kw_filters['strategy3_position__in'] = self.instance.strategies3
             kw_filters['strategy3_cash__in'] = self.instance.strategies3
 
         if self.instance.transaction_classes:
-            # queryset = queryset.filter(transaction_class__in=self.instance.transaction_classes)
             kw_filters['transaction_class__in'] = self.instance.transaction_classes
-
-        # queryset = queryset.filter(
-        #     master_user=self.instance.master_user,
-        #     is_deleted=False,
-        #     **{'%s__lte' % self.instance.date_field: self.instance.report_date}
-        # ).filter(
-        #     Q(complex_transaction__isnull=True) | Q(complex_transaction__status=ComplexTransaction.PRODUCTION,
-        #                                             complex_transaction__is_deleted=False)
-        # )
 
         queryset = queryset.filter(*a_filters, **kw_filters)
 
@@ -2233,161 +2138,9 @@ class ReportBuilder(object):
 
         return res
 
-    # def _calc_multipliers(self, src):
-    #     rolling_positions = Counter()
-    #     items = defaultdict(list)
-    #
-    #     res = []
-    #
-    #     def _set_mul(t0, multiplier):
-    #         delta = multiplier - t0.multiplier
-    #         t0.multiplier = multiplier
-    #         return delta
-    #
-    #     def _close_by(closed, cur, delta):
-    #         closed.closed_by.append((cur, delta))
-    #
-    #     for t in src:
-    #         res.append(t)
-    #
-    #         if t.trn_cls.id not in [TransactionClass.BUY, TransactionClass.SELL]:
-    #             continue
-    #
-    #         t_key = (
-    #             getattr(t.prtfl, 'id', None) if self.instance.portfolio_mode == Report.MODE_INDEPENDENT else None,
-    #             getattr(t.acc_pos, 'id', None) if self.instance.account_mode == Report.MODE_INDEPENDENT else None,
-    #             getattr(t.str1_pos, 'id', None) if self.instance.strategy1_mode == Report.MODE_INDEPENDENT else None,
-    #             getattr(t.str2_pos, 'id', None) if self.instance.strategy2_mode == Report.MODE_INDEPENDENT else None,
-    #             getattr(t.str3_pos, 'id', None) if self.instance.strategy3_mode == Report.MODE_INDEPENDENT else None,
-    #             getattr(t.instr, 'id', None),
-    #         )
-    #
-    #         t.multiplier = 0.0
-    #         t.closed_by = []
-    #         rolling_position = rolling_positions[t_key]
-    #
-    #         if isclose(rolling_position, 0.0):
-    #             k = -1
-    #         else:
-    #             k = - t.pos_size / rolling_position
-    #
-    #         if self.instance.cost_method.id == CostMethod.AVCO:
-    #
-    #             if k > 1.0:
-    #                 if t_key in items:
-    #                     for t0 in items[t_key]:
-    #                         delta = _set_mul(t0, 1.0)
-    #                         _close_by(t0, t, delta)
-    #                     del items[t_key]
-    #                 items[t_key].append(t)
-    #                 _set_mul(t, 1.0 / k)
-    #                 rolling_position = t.pos_size * (1.0 - t.multiplier)
-    #
-    #             elif isclose(k, 1.0):
-    #                 if t_key in items:
-    #                     for t0 in items[t_key]:
-    #                         delta = _set_mul(t0, 1.0)
-    #                         _close_by(t0, t, delta)
-    #                     del items[t_key]
-    #                 _set_mul(t, 1.0)
-    #                 rolling_position = 0.0
-    #
-    #             elif k > 0.0:
-    #                 if t_key in items:
-    #                     for t0 in items[t_key]:
-    #                         delta = _set_mul(t0, t0.multiplier + k * (1.0 - t0.multiplier))
-    #                         _close_by(t0, t, delta)
-    #                 _set_mul(t, 1.0)
-    #                 rolling_position += t.pos_size
-    #
-    #             else:
-    #                 items[t_key].append(t)
-    #                 rolling_position += t.pos_size
-    #
-    #         elif self.instance.cost_method.id == CostMethod.FIFO:
-    #
-    #             if k > 1.0:
-    #                 if t_key in items:
-    #                     for t0 in items[t_key]:
-    #                         delta = _set_mul(t0, 1.0)
-    #                         _close_by(t0, t, delta)
-    #                     items[t_key].clear()
-    #                 items[t_key].append(t)
-    #                 _set_mul(t, 1.0 / k)
-    #                 rolling_position = t.pos_size * (1.0 - t.multiplier)
-    #
-    #             elif isclose(k, 1.0):
-    #                 if t_key in items:
-    #                     for t0 in items[t_key]:
-    #                         delta = _set_mul(t0, 1.0)
-    #                         _close_by(t0, t, delta)
-    #                     del items[t_key]
-    #                 _set_mul(t, 1.0)
-    #                 rolling_position = 0.0
-    #
-    #             elif k > 0.0:
-    #                 position = t.pos_size
-    #                 if t_key in items:
-    #                     t_items = items[t_key]
-    #                     for t0 in t_items:
-    #                         remaining = t0.pos_size * (1.0 - t0.multiplier)
-    #                         k0 = - position / remaining
-    #                         if k0 > 1.0:
-    #                             delta = _set_mul(t0, 1.0)
-    #                             _close_by(t0, t, delta)
-    #                             position += remaining
-    #                         elif isclose(k0, 1.0):
-    #                             delta = _set_mul(t0, 1.0)
-    #                             _close_by(t0, t, delta)
-    #                             position += remaining
-    #                         elif k0 > 0.0:
-    #                             position += remaining * k0
-    #                             delta = _set_mul(t0, t0.multiplier + k0 * (1.0 - t0.multiplier))
-    #                             _close_by(t0, t, delta)
-    #                         # else:
-    #                         #     break
-    #                         if isclose(position, 0.0):
-    #                             break
-    #                     t_items = [t0 for t0 in t_items if not isclose(t0.multiplier, 1.0)]
-    #                     if t_items:
-    #                         items[t_key] = t_items
-    #                     else:
-    #                         del items[t_key]
-    #
-    #                 _set_mul(t, abs((t.pos_size - position) / t.pos_size))
-    #                 rolling_position += t.pos_size * t.multiplier
-    #
-    #             else:
-    #                 items[t_key].append(t)
-    #                 rolling_position += t.pos_size
-    #
-    #         rolling_positions[t_key] = rolling_position
-    #
-    #     return res
-
     def calc_multipliers(self, transactions):
-        # # TO DO: check. approach_clone
-        # if self.instance.cost_method.id == CostMethod.AVCO:
-        #     self._calc_avco_multipliers(src)
-        # elif self.instance.cost_method.id == CostMethod.FIFO:
-        #     self._calc_fifo_multipliers(src)
         self.calc_avco_multipliers(transactions)
         self.calc_fifo_multipliers(transactions)
-
-        # res = []
-        # if self.instance.cost_method.id == CostMethod.AVCO:
-        #     for t in src:
-        #         # res.append(t)
-        #         t.multiplier = t.avco_multiplier
-        # elif self.instance.cost_method.id == CostMethod.FIFO:
-        #     for t in src:
-        #         # res.append(t)
-        #         t.multiplier = t.fifo_multiplier
-        # else:
-        #     for t in src:
-        #         # res.append(t)
-        #         t.multiplier = 0.0
-        #         # return src
 
         for t in transactions:
             # res.append(t)
@@ -2662,6 +2415,7 @@ class ReportBuilder(object):
         # aggregate items
 
         res_items = []
+        res_items_for_instr = {}
         for k, g in groupby(_items, key=_group_key):
             res_item = None
 
@@ -2676,6 +2430,16 @@ class ReportBuilder(object):
                 res_item.pricing()
                 res_item.close()
                 res_items.append(res_item)
+                if res_item.instr:
+                    res_items_for_instr[res_item.instr.id] = res_item
+
+        # pass 2 - some values can calculate only after "balance"
+        for trn in transactions:
+            if trn.trn_cls.id in [TransactionClass.BUY, TransactionClass.SELL]:
+                item = res_items_for_instr.get(trn.instr.id, None)
+                if item:
+                    trn.calc_pass2(item.pos_size)
+                    item.add_pass2(trn)
 
         # ReportItem.dumps(_items)
 
