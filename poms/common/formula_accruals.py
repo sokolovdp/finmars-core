@@ -5,7 +5,7 @@ import logging
 from datetime import date, timedelta
 
 from dateutil import relativedelta, rrule
-from scipy.optimize import newton, brentq
+from scipy.optimize import newton
 
 _l = logging.getLogger('poms.common')
 
@@ -417,7 +417,7 @@ def f_xnpv(data, rate):
         return 0.0
 
 
-def f_xirr(data, x0=0.0, tol=0.0001, maxiter=None, a=-1.0, b=1e10, xtol=0.0001, rtol=0.0001, method='newton'):
+def f_xirr(data, x0=0.0, tol=0.0001, maxiter=None):
     '''Equivalent of Excel's XIRR function.
     https://support.office.com/en-us/article/XIRR-function-de1242ec-6477-445b-b11b-a303ad9adc9d
 
@@ -438,24 +438,16 @@ def f_xirr(data, x0=0.0, tol=0.0001, maxiter=None, a=-1.0, b=1e10, xtol=0.0001, 
     if not data:
         return 0.0
 
-    if method == 'newton':
-        try:
-            kw = {}
-            if tol is not None:
-                kw['tol'] = tol
-            if maxiter is not None:
-                kw['maxiter'] = maxiter
-            return newton(func=lambda r: f_xnpv(data, r), x0=x0, **kw)
-        except RuntimeError:  # Failed to converge?
-            pass
-    kw = {}
-    if xtol is not None:
-        kw['xtol'] = xtol
-    if rtol is not None:
-        kw['rtol'] = rtol
-    if maxiter is not None:
-        kw['maxiter'] = maxiter
-    return brentq(f=lambda r: f_xnpv(data, r), a=a, b=b, **kw)
+    try:
+        kw = {}
+        if tol is not None:
+            kw['tol'] = tol
+        if maxiter is not None:
+            kw['maxiter'] = maxiter
+        return newton(func=lambda r: f_xnpv(data, r), x0=x0, **kw)
+    except RuntimeError:  # Failed to converge?
+        # _l.debug('newton error', exc_info=True)
+        return 0.0
 
 
 def f_duration(data, ytm=None):

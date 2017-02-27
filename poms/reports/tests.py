@@ -933,7 +933,7 @@ class ReportTestCase(TestCase):
         _l.debug('>')
         _l.debug('xnpv.1: %s', f_xnpv(data, 0.09))
         _l.debug('xirr.1: %s', f_xirr(data))
-        _l.debug('xirr.2: %s', f_xirr(data, method='newton'))
+        # _l.debug('xirr.2: %s', f_xirr(data, method='newton'))
         _l.debug('duration.1: %s', f_duration(data))
 
         import timeit
@@ -971,10 +971,12 @@ class ReportTestCase(TestCase):
 
         _l.debug('-' * 79)
         _l.debug('xirr:')
-        for method in ['newton', 'brentq']:
-            _l.debug('  method: %s', method)
-            for i in range(1000, 30000, 1000):
-                _l.debug('    %s -> %s', i, timeit.Timer(lambda: f_xirr(data, method=method)).timeit(i))
+        # for method in ['newton', 'brentq']:
+        #     _l.debug('  method: %s', method)
+        #     for i in range(1000, 30000, 1000):
+        #         _l.debug('    %s -> %s', i, timeit.Timer(lambda: f_xirr(data, method=method)).timeit(i))
+        for i in range(1000, 30000, 1000):
+            _l.debug('    %s -> %s', i, timeit.Timer(lambda: f_xirr(data)).timeit(i))
 
     def test_olala(self):
         from poms.common.utils import sfloat
