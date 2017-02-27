@@ -49,6 +49,50 @@ def safe_div(a, b, default=0.0):
         return default
 
 
+class sfloat(float):
+    def __truediv__(self, other):
+        # print('__truediv__: self=%s, other=%s' % (self, other))
+        try:
+            return super(sfloat, self).__truediv__(other)
+        except (ZeroDivisionError, OverflowError):
+            return 0.0
+
+    def __rtruediv__(self, other):
+        # print('__rtruediv__: self=%s, other=%s' % (self, other))
+        try:
+            return super(sfloat, self).__rtruediv__(other)
+        except (ZeroDivisionError, OverflowError):
+            return 0.0
+
+    def __floordiv__(self, other):
+        # print('__floordiv__: self=%s, other=%s' % (self, other))
+        try:
+            return super(sfloat, self).__floordiv__(other)
+        except (ZeroDivisionError, OverflowError):
+            return 0.0
+
+    def __rfloordiv__(self, other):
+        # print('__floordiv__: self=%s, other=%s' % (self, other))
+        try:
+            return super(sfloat, self).__rfloordiv__(other)
+        except (ZeroDivisionError, OverflowError):
+            return 0.0
+
+    def __pow__(self, power):
+        # print('__pow__: self=%s, other=%s' % (self, other))
+        try:
+            return super(sfloat, self).__pow__(power)
+        except (ZeroDivisionError, OverflowError):
+            return 0.0
+
+    def __rpow__(self, power):
+        # print('__rpow__: self=%s, other=%s' % (self, other))
+        try:
+            return super(sfloat, self).__rpow__(power)
+        except (ZeroDivisionError, OverflowError):
+            return 0.0
+
+
 def add_view_and_manage_permissions():
     from django.contrib.contenttypes.models import ContentType
     from django.contrib.auth.models import Permission

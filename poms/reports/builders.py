@@ -571,7 +571,12 @@ class VirtualTransaction(_Base):
             self.remaining_pos_size = self.pos_size * (1 - self.multiplier)
             self.remaining_pos_size_percent = safe_div(self.remaining_pos_size, balance_pos_size)
 
-            future_accrual_payments = self.instr.get_future_accrual_payments(d0=self.acc_date, v0=self.trade_price)
+            future_accrual_payments = self.instr.get_future_accrual_payments(
+                d0=self.acc_date,
+                v0=self.trade_price,
+                principal_ccy_fx=self.instr_pricing_ccy_cur_fx,
+                accrual_ccy_fx=self.instr_accrued_ccy_cur_fx
+            )
             self.ytm = f_xirr(future_accrual_payments)
 
             # data = [(self.report.report_date, self.market_value_res)]
@@ -982,13 +987,13 @@ class ReportItem(_Base):
     pricing_ccy_cur_fx = 0.0
 
     # instr
-    instr_principal_res = 0.0  # +
-    instr_accrued_res = 0.0  # +
-    exposure_res = 0.0  # +
-    exposure_loc = 0.0  # +
+    instr_principal_res = 0.0
+    instr_accrued_res = 0.0
+    exposure_res = 0.0
+    exposure_loc = 0.0
 
-    instr_accrual = None  # +
-    instr_accrual_accrued_price = 0.0  # +
+    instr_accrual = None
+    instr_accrual_accrued_price = 0.0
 
     # ----------------------------------------------------
 
@@ -999,18 +1004,18 @@ class ReportItem(_Base):
     ytm = 0.0  # ?
     modified_duration = 0.0  # ?
     ytm_at_cost = 0.0  #
-    time_invested_days = 0.0  #
-    time_invested = 0.0  #
+    time_invested_days = 0.0  # +
+    time_invested = 0.0  # +
     gross_cost_res = 0.0  # +
     gross_cost_loc = 0.0  # +
     net_cost_res = 0.0  # +
     net_cost_loc = 0.0  # +
     amount_invested_res = 0.0  # +
     amount_invested_loc = 0.0  # +
-    pos_return_res = 0.0  # +
+    pos_return_res = 0.0  # -
     pos_return_loc = 0.0  # +
-    daily_price_change = 0.0  #
-    mtd_price_change = 0.0  #
+    daily_price_change = 0.0  # +
+    mtd_price_change = 0.0  # +
 
     # P&L ----------------------------------------------------
 
@@ -1508,8 +1513,15 @@ class ReportItem(_Base):
             self.amount_invested_res = self.principal_res + self.carry_res
 
             if self.instr:
-                future_accrual_payments = self.instr.get_future_accrual_payments(d0=self.report.report_date,
-                                                                                 v0=self.market_value_res)
+                # YTM/Duration - берем price из price history на дату репорта.
+                # Для записка итеративного алгоритма, для x0 из accrued schedule
+                # берем на текущую дату - (accrued_size * accrued_multiplier)/(price * price_multiplier).
+                future_accrual_payments = self.instr.get_future_accrual_payments(
+                    d0=self.report.report_date,
+                    v0=self.instr_price_cur_principal_price,
+                    principal_ccy_fx=self.instr_pricing_ccy_cur_fx,
+                    accrual_ccy_fx=self.instr_accrued_ccy_cur_fx
+                )
                 self.ytm = f_xirr(future_accrual_payments)
                 self.modified_duration = f_duration(future_accrual_payments, ytm=self.ytm)
 
@@ -1547,25 +1559,86 @@ class ReportItem(_Base):
                             isclose(self.total_closed_res, 0.0) and \
                             isclose(self.total_opened_res, 0.0)
 
-    def add_pass2(self, o):
-        if self.type == ReportItem.TYPE_INSTRUMENT:
-            self.ytm_at_cost += o.weighted_ytm
-            self.time_invested_days += o.weighted_time_invested_days
-            self.time_invested += o.weighted_time_invested
+    def add_pass2(self, trn):
+        if trn.is_cloned and self.type == ReportItem.TYPE_INSTRUMENT:
+            self.ytm_at_cost += trn.weighted_ytm
+            self.time_invested_days += trn.weighted_time_invested_days
+            # self.time_invested += trn.weighted_time_invested
 
     def close_pass2(self):
         if self.type == ReportItem.TYPE_INSTRUMENT:
-            # Daily Price Change, %
-            #  = (Current Price - Gross Cost Price) / Gross Cost Price, if Time Invested in days= 1 day
-            #  = (Current Price at T -  Price from Price History at T-1) / (Price from Price History at T-1) , if Time Invested > 1 day
-            # T - report date
-            pass
+            self.time_invested = self.time_invested_days / 365.0
 
-            # MTD Price Change, %
-            #  = (Current Price - Gross Cost Price) / Gross Cost Price, if Time Invested in days <= Day(Report Date)
-            #  = (Current Price -  Price from Price History at end_of_previous_month (Report Date)) / (Price from Price History at end_of_previous_month (Report Date)) , if Time Invested > Day(Report Date)
-            # T - report date
-            pass
+            if self.time_invested_days < 1.0 or isclose(self.time_invested_days, 1.0):
+                # T - report date
+                #  = (Current Price - Gross Cost Price) / Gross Cost Price, if Time Invested in days= 1 day
+                # self.pricing()
+                self.daily_price_change = safe_div(self.instr_price_cur.principal_price - self.gross_cost_loc,
+                                                   self.gross_cost_loc)
+            else:
+                #  = (Current Price at T -  Price from Price History at T-1) / (Price from Price History at T-1) , if Time Invested > 1 day
+                price_yest = self.pricing_provider[self.instr, self.report.report_date - timedelta(days=1)]
+                self.daily_price_change = safe_div(self.instr_price_cur.principal_price - price_yest.principal_price,
+                                                   price_yest.principal_price)
+
+            if self.time_invested_days <= self.report.report_date.day or isclose(self.time_invested_days,
+                                                                                 self.report.report_date.day):
+                # T - report date
+                #  = (Current Price - Gross Cost Price) / Gross Cost Price, if Time Invested in days <= Day(Report Date)
+                self.mtd_price_change = safe_div(self.instr_price_cur.principal_price - self.gross_cost_loc,
+                                                 self.gross_cost_loc)
+            else:
+                #  = (Current Price -  Price from Price History at end_of_previous_month (Report Date)) / (Price from Price History at end_of_previous_month (Report Date)) , if Time Invested > Day(Report Date)
+                price_eom = self.pricing_provider[
+                    self.instr, self.report.report_date - timedelta(days=self.report.report_date.day)]
+                self.mtd_price_change = safe_div(self.instr_price_cur.principal_price - price_eom.principal_price,
+                                                 price_eom.principal_price)
+
+    def pl_sub_item(self, o):
+        self.principal_res -= o.principal_res
+        self.carry_res -= o.carry_res
+        self.overheads_res -= o.overheads_res
+        self.total_res -= o.total_res
+
+        self.principal_closed_res -= o.principal_closed_res
+        self.carry_closed_res -= o.carry_closed_res
+        self.overheads_closed_res -= o.overheads_closed_res
+        self.total_closed_res -= o.total_closed_res
+
+        self.principal_opened_res -= o.principal_opened_res
+        self.carry_opened_res -= o.carry_opened_res
+        self.overheads_opened_res -= o.overheads_opened_res
+        self.total_opened_res -= o.total_opened_res
+
+        self.principal_fx_res -= o.principal_fx_res
+        self.carry_fx_res -= o.carry_fx_res
+        self.overheads_fx_res -= o.overheads_fx_res
+        self.total_fx_res -= o.total_fx_res
+
+        self.principal_fx_closed_res -= o.principal_fx_closed_res
+        self.carry_fx_closed_res -= o.carry_fx_closed_res
+        self.overheads_fx_closed_res -= o.overheads_fx_closed_res
+        self.total_fx_closed_res -= o.total_fx_closed_res
+
+        self.principal_fx_opened_res -= o.principal_fx_opened_res
+        self.carry_fx_opened_res -= o.carry_fx_opened_res
+        self.overheads_fx_opened_res -= o.overheads_fx_opened_res
+        self.total_fx_opened_res -= o.total_fx_opened_res
+
+        self.principal_fixed_res -= o.principal_fixed_res
+        self.carry_fixed_res -= o.carry_fixed_res
+        self.overheads_fixed_res -= o.overheads_fixed_res
+        self.total_fixed_res -= o.total_fixed_res
+
+        self.principal_fixed_closed_res -= o.principal_fixed_closed_res
+        self.carry_fixed_closed_res -= o.carry_fixed_closed_res
+        self.overheads_fixed_closed_res -= o.overheads_fixed_closed_res
+        self.total_fixed_closed_res -= o.total_fixed_closed_res
+
+        self.principal_fixed_opened_res -= o.principal_fixed_opened_res
+        self.carry_fixed_opened_res -= o.carry_fixed_opened_res
+        self.overheads_fixed_opened_res -= o.overheads_fixed_opened_res
+        self.total_fixed_opened_res -= o.total_fixed_opened_res
 
     # ----------------------------------------------------
     @property
@@ -2480,18 +2553,21 @@ class ReportBuilder(object):
                 res_item.pricing()
                 res_item.close()
                 res_items.append(res_item)
+
                 if res_item.type == ReportItem.TYPE_INSTRUMENT and res_item.instr:
                     pass2_item_key = _pass2_item_key(item=res_item)
                     res_items_for_instr[pass2_item_key] = res_item
 
         # pass 2 - some values can calculate only after "balance"
         for trn in transactions:
-            if trn.trn_cls.id in [TransactionClass.BUY, TransactionClass.SELL]:
+            if not trn.is_cloned and trn.trn_cls.id in [TransactionClass.BUY, TransactionClass.SELL]:
                 pass2_item_key = _pass2_item_key(trn=trn)
                 item = res_items_for_instr.get(pass2_item_key, None)
                 if item:
-                    trn.calc_pass2(item.pos_size)
+                    trn.calc_pass2(balance_pos_size=item.pos_size)
                     item.add_pass2(trn)
+                else:
+                    raise RuntimeError('Oh error')
 
         for item in res_items:
             item.close_pass2()

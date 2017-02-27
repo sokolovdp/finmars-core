@@ -15,7 +15,7 @@ from mptt.models import MPTTModel
 
 from poms.common.formula_accruals import f_xirr
 from poms.common.models import NamedModel, AbstractClassModel, FakeDeletableModel
-from poms.common.utils import date_now, isclose
+from poms.common.utils import date_now, isclose, safe_div
 from poms.obj_attrs.models import GenericAttribute
 from poms.obj_perms.models import GenericObjectPermission
 from poms.tags.models import TagLink
@@ -603,7 +603,8 @@ class Instrument(NamedModel, FakeDeletableModel):
                                        dt3=accrual.first_payment_date)
         return accrual.accrual_size * factor
 
-    def get_future_accrual_payments(self, data=None, d0=None, v0=None, begin_date=None, accruals=None):
+    def get_future_accrual_payments(self, data=None, d0=None, v0=None, begin_date=None, accruals=None,
+                                    principal_ccy_fx=1.0, accrual_ccy_fx=1.0):
         # accrual_start_date
         # accrual_end_date -> fake
         # first_payment_date
@@ -645,6 +646,8 @@ class Instrument(NamedModel, FakeDeletableModel):
         if a:
             a.accrual_end_date = self.maturity_date
 
+        a_to_p_mul = None  # lazy
+
         for a in accruals:
             if a.accrual_end_date <= begin_date:
                 continue
@@ -655,7 +658,13 @@ class Instrument(NamedModel, FakeDeletableModel):
                     break
                 if d <= begin_date:
                     continue
-                data.append((d, a.accrual_size))
+
+                if a_to_p_mul is None:
+                    a_to_p_mul = safe_div(self.accrued_multiplier, self.price_multiplier)
+                    if not isclose(principal_ccy_fx, accrual_ccy_fx):
+                        a_to_p_mul *= safe_div(accrual_ccy_fx, principal_ccy_fx)
+
+                data.append((d, a.accrual_size * a_to_p_mul))
 
         if self.maturity_date >= begin_date:
             if data:

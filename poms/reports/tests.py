@@ -131,8 +131,8 @@ class ReportTestCase(TestCase):
                     s = Strategy1.objects.create(master_user=self.m, subgroup=sg, name='%s-%s-%s' % (g_i, sg_i, s_i))
                     setattr(self, 's1_%s_%s_%s' % (g_i, sg_i, s_i), s)
 
-        # from django.conf import settings
-        # settings.DEBUG = True
+                    # from django.conf import settings
+                    # settings.DEBUG = True
 
     def _d(self, days=None):
         if days is None or days == 0:
@@ -775,7 +775,9 @@ class ReportTestCase(TestCase):
         b.build()
         self._dump(b, 'test_mismatch_0')
 
-    def test_approach_alloc_0(self):
+    def _test_approach_alloc_0(self):
+        # settings.DEBUG = True
+
         self.bond0.user_code = 'I1'
         self.bond0.price_multiplier = 5.0
         self.bond0.accrued_multiplier = 0.0
@@ -801,7 +803,7 @@ class ReportTestCase(TestCase):
                 stl_ccy=self.usd, principal=20, carry=0, overheads=0,
                 alloc_bl=self.bond3, alloc_pl=self.bond3)
 
-        r = Report(master_user=self.m, pricing_policy=self.pp, report_date=self._d(1),
+        r = Report(master_user=self.m, pricing_policy=self.pp, report_date=self._d(10),
                    approach_multiplier=1.0)
         b = ReportBuilder(instance=r)
         b.build()
@@ -973,3 +975,10 @@ class ReportTestCase(TestCase):
             _l.debug('  method: %s', method)
             for i in range(1000, 30000, 1000):
                 _l.debug('    %s -> %s', i, timeit.Timer(lambda: f_xirr(data, method=method)).timeit(i))
+
+    def test_olala(self):
+        from poms.common.utils import sfloat
+        _l.info(sfloat(1) / 2)
+        _l.info(1 / sfloat(2))
+        _l.info(sfloat(1) / sfloat(2))
+        _l.info(sfloat(1) / sfloat(0.0))

@@ -1,9 +1,12 @@
+import logging
 from datetime import timedelta
 
 from django.db.models import Q
 
 from poms.currencies.models import CurrencyHistory
 from poms.instruments.models import PriceHistory
+
+_l = logging.getLogger('poms.reports')
 
 
 class AbstractProvider:
@@ -60,15 +63,18 @@ class InstrumentPricingProvider(AbstractProvider):
             instrument__master_user=self._master_user,
             pricing_policy=self._pricing_policy
         ).filter(
-            Q(date=self._report_date) |
-            Q(date=self._report_date - timedelta(days=1)) |
-            Q(date=self._report_date - timedelta(days=self._report_date.day - 1)) |
-            Q(date__in=transaction_queryset.values_list('accounting_date', flat=True))
+            Q(date__in=[
+                self._report_date,
+                self._report_date - timedelta(days=1),
+                self._report_date - timedelta(days=self._report_date.day)
+            ]) | Q(date__in=transaction_queryset.values_list('accounting_date', flat=True))
         ).filter(
             Q(instrument__in=transaction_queryset.values_list('instrument', flat=True))
         )
+        _l.info('1' * 79)
         for h in qs:
             self._cache[(h.instrument_id, h.date)] = h
+        _l.info('1' * 79)
 
     def _on_missed(self, item, d):
         if self._lazy:
@@ -106,9 +112,11 @@ class CurrencyFxRateProvider(AbstractProvider):
             currency__master_user=self._master_user,
             pricing_policy=self._pricing_policy
         ).filter(
-            Q(date=self._report_date) |
-            Q(date=self._report_date - timedelta(days=1)) |
-            Q(date=self._report_date - timedelta(days=self._report_date.day - 1)) |
+            Q(date__in=[
+                self._report_date,
+                self._report_date - timedelta(days=1),
+                self._report_date - timedelta(days=self._report_date.day)
+            ]) |
             Q(date__in=transaction_queryset.values_list('cash_date', flat=True)) |
             Q(date__in=transaction_queryset.values_list('accounting_date', flat=True))
         ).filter(
@@ -118,8 +126,10 @@ class CurrencyFxRateProvider(AbstractProvider):
             Q(currency__in=transaction_queryset.values_list('instrument__pricing_currency', flat=True)) |
             Q(currency__in=transaction_queryset.values_list('instrument__accrued_currency', flat=True))
         )
+        _l.info('2' * 79)
         for h in qs:
             self._cache[(h.currency_id, h.date)] = h
+        _l.info('2' * 79)
 
     def _on_missed(self, item, d):
         if self._lazy:
