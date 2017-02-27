@@ -7,6 +7,7 @@ from django.conf import settings
 from django.utils.functional import cached_property
 from django.utils.translation import ugettext_lazy, ugettext
 from rest_framework import serializers
+from rest_framework.exceptions import ValidationError
 
 from poms.accounts.fields import AccountField
 from poms.accounts.serializers import AccountSerializer, AccountViewSerializer
@@ -599,7 +600,10 @@ class ReportSerializer(serializers.Serializer):
     master_user = MasterUserField()
     member = HiddenMemberField()
     pricing_policy = PricingPolicyField()
-    report_date = serializers.DateField(required=False, allow_null=True, default=date_now)
+    pl_first_date = serializers.DateField(required=False, allow_null=True,
+                                          help_text=ugettext_lazy('First date for pl report'))
+    report_date = serializers.DateField(required=False, allow_null=True, default=date_now,
+                                        help_text=ugettext_lazy('Report date or second date for pl report'))
     report_currency = CurrencyField(required=False, allow_null=True, default=SystemCurrencyDefault())
     cost_method = serializers.PrimaryKeyRelatedField(queryset=CostMethod.objects, allow_null=True, allow_empty=True)
 
@@ -660,6 +664,14 @@ class ReportSerializer(serializers.Serializer):
                 attrs['report_date'] = date(2017, 2, 12)
             else:
                 attrs['report_date'] = date_now() - timedelta(days=1)
+
+        pl_first_date = attrs.get('pl_first_date', None)
+        if pl_first_date and pl_first_date >= attrs['report_date']:
+            raise ValidationError(ugettext('"pl_first_date" must be lesser than "report_date"'))
+
+        if not attrs.get('pl_first_date', None):
+            if settings.DEBUG:
+                attrs['pl_first_date'] = date(2017, 2, 10)
 
         if not attrs.get('report_currency', None):
             attrs['report_currency'] = attrs['master_user'].system_currency

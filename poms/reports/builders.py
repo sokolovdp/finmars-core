@@ -266,9 +266,10 @@ class VirtualTransaction(_Base):
         # 'avco_closed_by',
         # 'fifo_multiplier',
         # 'fifo_closed_by',
-        'multiplier',
-        'closed_by',
-        'acc_date',
+        # 'multiplier',
+        # 'closed_by',
+        'trn_date',
+        # 'acc_date',
         # 'cash_date',
         'instr',
         # 'trn_ccy',
@@ -1076,8 +1077,8 @@ class ReportItem(_Base):
     dump_columns = [
         'type_code',
         'user_code',
-        'short_name',
-        'name',
+        # 'short_name',
+        # 'name',
         # 'trn',
         # 'prtfl',
         # 'acc',
@@ -1094,7 +1095,7 @@ class ReportItem(_Base):
         # 'mismatch_prtfl',
         # 'mismatch_acc',
         # 'mismatch_ccy',
-        'mismatch',
+        # 'mismatch',
 
         'pos_size',
         'market_value_res',
@@ -1104,58 +1105,58 @@ class ReportItem(_Base):
         # 'instr_accrued_res',
 
         # full ----------------------------------------------------
-        # 'principal_res',
-        # 'carry_res',
-        # 'overheads_res',
+        'principal_res',
+        'carry_res',
+        'overheads_res',
         'total_res',
 
         # full / closed ----------------------------------------------------
         # 'principal_closed_res',
         # 'carry_closed_res',
         # 'overheads_closed_res',
-        'total_closed_res',
+        # 'total_closed_res',
 
         # full / opened ----------------------------------------------------
         # 'principal_opened_res',
         # 'carry_opened_res',
         # 'overheads_opened_res',
-        'total_opened_res',
+        # 'total_opened_res',
 
         # fx ----------------------------------------------------
         # 'principal_fx_res',
         # 'carry_fx_res',
         # 'overheads_fx_res',
-        'total_fx_res',
+        # 'total_fx_res',
 
         # fx / closed ----------------------------------------------------
         # 'principal_fx_closed_res',
         # 'carry_fx_closed_res',
         # 'overheads_fx_closed_res',
-        'total_fx_closed_res',
+        # 'total_fx_closed_res',
 
         # fx / opened ----------------------------------------------------
         # 'principal_fx_opened_res',
         # 'carry_fx_opened_res',
         # 'overheads_fx_opened_res',
-        'total_fx_opened_res',
+        # 'total_fx_opened_res',
 
         # fixed ----------------------------------------------------
         # 'principal_fixed_res',
         # 'carry_fixed_res',
         # 'overheads_fixed_res',
-        'total_fixed_res',
+        # 'total_fixed_res',
 
         # fixed / closed ----------------------------------------------------
         # 'principal_fixed_closed_res',
         # 'carry_fixed_closed_res',
         # 'overheads_fixed_closed_res',
-        'total_fixed_closed_res',
+        # 'total_fixed_closed_res',
 
         # fixed / opened ----------------------------------------------------
         # 'principal_fixed_opened_res',
         # 'carry_fixed_opened_res',
         # 'overheads_fixed_opened_res',
-        'total_fixed_opened_res',
+        # 'total_fixed_opened_res',
     ]
 
     def __init__(self, report, pricing_provider, fx_rate_provider, type):
@@ -1852,6 +1853,7 @@ class Report(object):
                  member=None,
                  task_id=None,
                  task_status=None,
+                 pl_first_date=None,
                  report_date=None,
                  report_currency=None,
                  pricing_policy=None,
@@ -1884,6 +1886,7 @@ class Report(object):
             'member': self.member,
         }
         self.pricing_policy = pricing_policy
+        self.pl_first_date = pl_first_date
         self.report_date = report_date or (date_now() - timedelta(days=1))
         self.report_currency = report_currency or master_user.system_currency
         self.cost_method = cost_method or CostMethod.objects.get(pk=CostMethod.AVCO)
@@ -1934,10 +1937,12 @@ class Report(object):
 
 
 class ReportBuilder(object):
-    def __init__(self, instance=None, queryset=None, transactions=None):
+    def __init__(self, instance=None, queryset=None, transactions=None, pricing_provider=None, fx_rate_provider=None):
         self.instance = instance
         self._queryset = queryset
         self._transactions = transactions
+        self._pricing_provider = pricing_provider
+        self._fx_rate_provider = fx_rate_provider
 
         self._items = []
 
@@ -2127,25 +2132,29 @@ class ReportBuilder(object):
 
         return sorted(transactions, key=_trn_key)
 
-    @cached_property
+    @property
     def pricing_provider(self):
-        if self.instance.pricing_policy is None:
-            return FakeInstrumentPricingProvider(self.instance.master_user, None, self.instance.report_date)
-        else:
-            p = InstrumentPricingProvider(self.instance.master_user, self.instance.pricing_policy,
-                                          self.instance.report_date)
-            p.fill_using_transactions(self._trn_qs(), lazy=False)
-            return p
+        if self._pricing_provider is None:
+            if self.instance.pricing_policy is None:
+                p = FakeInstrumentPricingProvider(self.instance.master_user, None, self.instance.report_date)
+            else:
+                p = InstrumentPricingProvider(self.instance.master_user, self.instance.pricing_policy,
+                                              self.instance.report_date)
+                p.fill_using_transactions(self._trn_qs(), lazy=False)
+            self._pricing_provider = p
+        return self._pricing_provider
 
-    @cached_property
+    @property
     def fx_rate_provider(self):
-        if self.instance.pricing_policy is None:
-            return FakeCurrencyFxRateProvider(self.instance.master_user, None, self.instance.report_date)
-        else:
-            p = CurrencyFxRateProvider(self.instance.master_user, self.instance.pricing_policy,
-                                       self.instance.report_date)
-            p.fill_using_transactions(self._trn_qs(), currencies=[self.instance.report_currency], lazy=False)
-            return p
+        if self._fx_rate_provider is None:
+            if self.instance.pricing_policy is None:
+                p = FakeCurrencyFxRateProvider(self.instance.master_user, None, self.instance.report_date)
+            else:
+                p = CurrencyFxRateProvider(self.instance.master_user, self.instance.pricing_policy,
+                                           self.instance.report_date)
+                p.fill_using_transactions(self._trn_qs(), currencies=[self.instance.report_currency], lazy=False)
+            self._fx_rate_provider = p
+        return self._fx_rate_provider
 
     def get_transactions(self):
         if self._transactions is not None:
@@ -2617,6 +2626,9 @@ class ReportBuilder(object):
         # self.instance.items = res_items + mismatch_items + [summary, ] + invested_items + [invested_summary, ]
         self.instance.items = res_items + mismatch_items + summaries
 
+        if self.instance.pl_first_date and self.instance.pl_first_date != date.min:
+            self._build_on_pl_first_date()
+
         if full:
             self._refresh_with_perms()
 
@@ -2631,6 +2643,91 @@ class ReportBuilder(object):
         # _l.debug('3' * 100)
 
         return self.instance
+
+    def _build_on_pl_first_date(self):
+        report_on_pl_first_date = Report(
+            master_user=self.instance.master_user,
+            member=self.instance.member,
+            pl_first_date=None,
+            report_date=self.instance.pl_first_date,
+            report_currency=self.instance.report_currency,
+            pricing_policy=self.instance.pricing_policy,
+            cost_method=self.instance.cost_method,
+            portfolio_mode=self.instance.portfolio_mode,
+            account_mode=self.instance.account_mode,
+            strategy1_mode=self.instance.strategy1_mode,
+            strategy2_mode=self.instance.strategy2_mode,
+            strategy3_mode=self.instance.strategy3_mode,
+            show_transaction_details=self.instance.show_transaction_details,
+            approach_multiplier=self.instance.approach_multiplier,
+            instruments=self.instance.instruments,
+            portfolios=self.instance.portfolios,
+            accounts=self.instance.accounts,
+            strategies1=self.instance.strategies1,
+            strategies2=self.instance.strategies2,
+            strategies3=self.instance.strategies3,
+            transaction_classes=self.instance.transaction_classes,
+            date_field=self.instance.date_field,
+            custom_fields=self.instance.custom_fields,
+        )
+
+        builder = self.__class__(report_on_pl_first_date)
+        builder.build(full=False)
+
+        if not report_on_pl_first_date.items:
+            return
+
+        def _item_key(item):
+            return (
+                item.type,
+                getattr(item.prtfl, 'id', -1),
+                getattr(item.acc, 'id', -1),
+                getattr(item.str1, 'id', -1),
+                getattr(item.str2, 'id', -1),
+                getattr(item.str3, 'id', -1),
+                getattr(item.alloc_bl, 'id', -1),
+                getattr(item.alloc_pl, 'id', -1),
+                getattr(item.instr, 'id', -1),
+                getattr(item.ccy, 'id', -1),
+                getattr(item.trn_ccy, 'id', -1),
+                getattr(item.detail_trn, 'id', -1),
+            )
+
+        items_on_rep_date = {_item_key(i): i for i in self.instance.items}
+        # items_on_pl_start_date = {_item_key(i): i for i in report_on_pl_first_date.items}
+
+        for item_plsd in report_on_pl_first_date.items:
+            key = _item_key(item_plsd)
+            item_rpd = items_on_rep_date.get(key, None)
+
+            if item_rpd:
+                item_rpd.pl_sub_item(item_plsd)
+
+            else:
+                item_rpd = ReportItem(self.instance, self.pricing_provider, self.fx_rate_provider, item_plsd.type)
+
+                item_rpd.instr = item_plsd.instr
+                item_rpd.ccy = item_plsd.ccy
+                item_rpd.trn_ccy = item_plsd.trn_ccy
+                item_rpd.prtfl = item_plsd.prtfl
+                item_rpd.instr = item_plsd.instr
+                item_rpd.acc = item_plsd.acc
+                item_rpd.str1 = item_plsd.str1
+                item_rpd.str2 = item_plsd.str2
+                item_rpd.str3 = item_plsd.str3
+                item_rpd.pricing_ccy = item_plsd.pricing_ccy
+                item_rpd.trn = item_plsd.trn
+                item_rpd.alloc_bl = item_plsd.alloc_bl
+                item_rpd.alloc_pl = item_plsd.alloc_pl
+                item_rpd.mismatch_prtfl = item_plsd.mismatch_prtfl
+                item_rpd.mismatch_acc = item_plsd.mismatch_acc
+
+                item_rpd.pricing()
+                item_rpd.pl_sub_item(item_plsd)
+
+                self.instance.items.append(item_rpd)
+
+        return report_on_pl_first_date
 
     def _add_instr(self, trn):
         if trn.case == 0:

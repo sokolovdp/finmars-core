@@ -248,18 +248,15 @@ class ReportTestCase(TestCase):
         _l.debug('%s:', name)
         ReportItem.dumps(items)
 
-    def _dump(self, builder, name, print_transactions=None, print_items=None):
-        _l.debug('Report: %s', name)
+    def _dump(self, builder, name, show_trns=True, show_items=True):
+        if show_trns or show_items:
+            _l.debug('Report: %s', name)
 
-        if print_transactions is None:
-            print_transactions = self._print_transactions
-        print_transactions(builder.instance.transactions)
+            if show_trns:
+                self._print_transactions(builder.instance.transactions)
 
-        if print_items is None:
-            print_items = self._print_items
-        print_items('Items', builder, builder.instance.items)
-
-        pass
+            if show_items:
+                self._print_items('Items', builder, builder.instance.items)
 
     def _test_avco_prtfl_0(self):
         self._t(t_class=self._buy, instr=self.bond0, position=5,
@@ -978,9 +975,37 @@ class ReportTestCase(TestCase):
         for i in range(1000, 30000, 1000):
             _l.debug('    %s -> %s', i, timeit.Timer(lambda: f_xirr(data)).timeit(i))
 
-    def test_olala(self):
-        from poms.common.utils import sfloat
-        _l.info(sfloat(1) / 2)
-        _l.info(1 / sfloat(2))
-        _l.info(sfloat(1) / sfloat(2))
-        _l.info(sfloat(1) / sfloat(0.0))
+    def test_pl_date_interval_1(self):
+        show_trns = False
+
+        self._t(t_class=self._buy, instr=self.bond0, position=100,
+                stl_ccy=self.usd, principal=-180., carry=-5., overheads=-15.,
+                acc_date_days=1, cash_date_days=1)
+
+        self._t(t_class=self._sell, instr=self.bond0, position=-50,
+                stl_ccy=self.usd, principal=90., carry=2.5, overheads=-15.,
+                acc_date_days=11, cash_date_days=11)
+
+        self._t(t_class=self._sell, instr=self.bond0, position=-50,
+                stl_ccy=self.usd, principal=90., carry=2.5, overheads=-15.,
+                acc_date_days=11, cash_date_days=11)
+
+        # pl_first_date = self._d(10)
+        # report_date = self._d(14)
+        pl_first_date=self._d(10)
+        report_date=self._d(21)
+
+        r = Report(master_user=self.m, pricing_policy=self.pp, report_date=pl_first_date)
+        b = ReportBuilder(instance=r)
+        b.build()
+        self._dump(b, 'test_pl_date_interval_1: on pl_first_date', show_trns=show_trns)
+
+        r = Report(master_user=self.m, pricing_policy=self.pp, report_date=report_date)
+        b = ReportBuilder(instance=r)
+        b.build()
+        self._dump(b, 'test_pl_date_interval_1: on report_date', show_trns=show_trns)
+
+        r = Report(master_user=self.m, pricing_policy=self.pp, pl_first_date=pl_first_date, report_date=report_date)
+        b = ReportBuilder(instance=r)
+        b.build()
+        self._dump(b, 'test_pl_date_interval_1', show_trns=show_trns)
