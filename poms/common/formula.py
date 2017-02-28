@@ -362,45 +362,52 @@ def _simple_range(val, ranges, default=None):
             start = float('-inf')
         else:
             start = float(start)
+
         if end is None:
             end = float('inf')
         else:
             end = float(end)
+
         if start <= val < end:
             return text
+
     return default
 
 
-def _date_range(val, ranges, default=None):
+def _date_range(evaluator, val, ranges, default=None):
     val = _parse_date(val)
-    _l.info('_date_range: val=%s', val)
+    # _l.info('_date_range: val=%s', val)
     for start, end, step, text in ranges:
         if start is None:
             start = datetime.date.min
+            # start = datetime.date(1970, 1, 1)
         else:
             start = _parse_date(start)
+
         if end is None:
             end = datetime.date.max
         else:
             end = _parse_date(end)
+
         if start <= val < end:
             if not isinstance(step, (datetime.timedelta, relativedelta.relativedelta,)):
                 step = _timedelta(days=step)
-            _l.info('start=%s, end=%s, step=%s', start, end, step)
+            # _l.info('start=%s, end=%s, step=%s', start, end, step)
+
             d = start
-            i = 0
             while d < end:
                 lstart = d
                 lend = d + step
-                _l.info('  i=%s, lstart=%s, lend=%s', i, lstart, lend)
+                # _l.info('  lstart=%s, lend=%s', lstart, lend)
                 if lstart <= val < lend:
                     return text
                 d = lend
-                i += 1
-                if i > 1000:
-                    return default
+
+                evaluator.check_time()
+
     return default
 
+_date_range.evaluator = True
 
 def _find_name(*args):
     for s in args:
@@ -628,6 +635,12 @@ class SimpleEval2(object):
         except Exception as e:
             raise InvalidExpression(e)
 
+    def check_time(self):
+        self.tik_time = time.time()
+        if self.tik_time - self.start_time > self.max_time:
+            raise InvalidExpression("Execution exceeded time limit, max runtime is %s" % self.max_time)
+
+
     @staticmethod
     def is_valid(expr):
         try:
@@ -693,9 +706,10 @@ class SimpleEval2(object):
 
     def _eval(self, node):
         # _l.info('%s - %s - %s', node, type(node), node.__class__)
-        self.tik_time = time.time()
-        if self.tik_time - self.start_time > self.max_time:
-            raise InvalidExpression("Execution exceeded time limit, max runtime is %s" % self.max_time)
+        # self.tik_time = time.time()
+        # if self.tik_time - self.start_time > self.max_time:
+        #     raise InvalidExpression("Execution exceeded time limit, max runtime is %s" % self.max_time)
+        self.check_time()
 
         try:
             if isinstance(node, (list, tuple)):
@@ -1683,6 +1697,9 @@ accrual_NL_365_NO_EOM(date(2000, 1, 1), date(2000, 1, 25))
         _l.info('13: %s', safe_eval('simple_range(25, [[None,10,"o1"],[10,None,"o2"]], "o3")'))
 
         _l.info('100: %s', safe_eval('date_range("2001-11-21", [["2000-01-01","2001-01-01",10,"o1"],["2001-01-01","2002-01-01",timedelta(months=1, day=31),"o2"]], "o3")'))
+        _l.info('101: %s', safe_eval('date_range("2002-11-21", [["2000-01-01","2001-01-01",10,"o1"],["2001-01-01","2002-01-01",timedelta(months=1, day=31),"o2"]], "o3")'))
+
+        _l.info('102: %s', safe_eval('date_range("2000-11-21", [[None,"2001-01-01",30,"o1"],["2001-01-01","2002-01-01",timedelta(months=1, day=31),"o2"]], "o3")'))
 
 
     range_test()
