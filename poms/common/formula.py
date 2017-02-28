@@ -223,6 +223,41 @@ def _parse_date(date_string, format=None):
     return datetime.datetime.strptime(date_string, format).date()
 
 
+def _format_date2(date, format=None, locale=None):
+    if not isinstance(date, datetime.date):
+        date = _parse_date2(str(date))
+    if format is None:
+        format = 'yyyy-MM-dd'
+    else:
+        format = str(format)
+
+    from babel.dates import format_date, LC_TIME
+    from babel import Locale
+
+    l = Locale.parse(locale or LC_TIME)
+    return format_date(date, format=format, locale=l)
+
+
+def _parse_date2(date_string, format=None, locale=None):
+    # babel haven't supported parse by dynamic pattern
+    if not date_string:
+        return None
+    if isinstance(date_string, datetime.date):
+        return date_string
+    date_string = str(date_string)
+    if format is None:
+        format = 'yyyy-MM-dd'
+    else:
+        format = str(format)
+
+    from babel.dates import parse_pattern, LC_TIME
+    from babel import Locale
+
+    l = Locale.parse(locale or LC_TIME)
+    p = parse_pattern(format)
+    return p.apply(date_string, l)
+
+
 def _format_number(number, decimal_sep='.', decimal_pos=None, grouping=3, thousand_sep='', use_grouping=False):
     number = float(number)
     decimal_sep = str(decimal_sep)
@@ -357,18 +392,18 @@ _get_instrument_accrued_price.evaluator = True
 
 
 def _simple_group(val, ranges, default=None):
-    for start, end, text in ranges:
-        if start is None:
-            start = float('-inf')
+    for begin, end, text in ranges:
+        if begin is None:
+            begin = float('-inf')
         else:
-            start = float(start)
+            begin = float(begin)
 
         if end is None:
             end = float('inf')
         else:
             end = float(end)
 
-        if start <= val < end:
+        if begin < val <= end:
             return text
 
     return default
@@ -376,46 +411,47 @@ def _simple_group(val, ranges, default=None):
 
 def _date_group(evaluator, val, ranges, default=None):
     val = _parse_date(val)
+
     # _l.info('_date_group: val=%s', val)
 
-    def _make_name(start, end, fmt):
+    def _make_name(begin, end, fmt):
         if isinstance(fmt, (list, tuple)):
             ifmt = iter(fmt)
             s1 = str(next(ifmt, ''))
-            start_fmt = str(next(ifmt, ''))
+            begin_fmt = str(next(ifmt, ''))
             s3 = str(next(ifmt, ''))
             s4 = str(next(ifmt, ''))
             end_fmt = str(next(ifmt, ''))
             s6 = str(next(ifmt, ''))
-            sstart = _format_date(start, start_fmt) if start_fmt else ''
+            sbegin = _format_date(begin, begin_fmt) if begin_fmt else ''
             send = _format_date(end, end_fmt) if end_fmt else ''
-            return ''.join([s1, sstart, s3, s4, send, s6])
+            return ''.join([s1, sbegin, s3, s4, send, s6])
         else:
             return str(fmt)
 
-    for start, end, step, fmt in ranges:
-        if start is None:
-            start = datetime.date.min
+    for begin, end, step, fmt in ranges:
+        if begin is None:
+            begin = datetime.date.min
             # start = datetime.date(1970, 1, 1)
         else:
-            start = _parse_date(start)
+            begin = _parse_date(begin)
 
         if end is None:
             end = datetime.date.max
         else:
             end = _parse_date(end)
 
-        if start <= val < end:
+        if begin < val <= end:
             if step:
                 if not isinstance(step, (datetime.timedelta, relativedelta.relativedelta,)):
                     step = _timedelta(days=step)
                 # _l.info('start=%s, end=%s, step=%s', start, end, step)
 
-                lstart = start
-                while lstart < end:
-                    lend = lstart + step
+                lbegin = begin
+                while lbegin < end:
+                    lend = lbegin + step
                     # _l.info('  lstart=%s, lend=%s', lstart, lend)
-                    if lstart <= val < lend:
+                    if lbegin < val <= lend:
                         # if isinstance(fmt, (list, tuple)):
                         #     ifmt = iter(fmt)
                         #     s1 = str(next(ifmt, ''))
@@ -429,15 +465,17 @@ def _date_group(evaluator, val, ranges, default=None):
                         #     return ''.join([s1, sstart, s3, s4, send, s6])
                         # else:
                         #     return str(fmt)
-                        return _make_name(lstart, lend, fmt)
-                    lstart = lend
+                        return _make_name(lbegin, lend, fmt)
+                    lbegin = lend
                     evaluator.check_time()
             else:
-                return _make_name(start, end, fmt)
+                return _make_name(begin, end, fmt)
 
     return default
 
+
 _date_group.evaluator = True
+
 
 def _find_name(*args):
     for s in args:
@@ -603,8 +641,11 @@ FUNCTIONS = [
     SimpleEval2Def('add_days', _add_days),
     SimpleEval2Def('add_weeks', _add_weeks),
     SimpleEval2Def('add_workdays', _add_workdays),
+
     SimpleEval2Def('format_date', _format_date),
     SimpleEval2Def('parse_date', _parse_date),
+    SimpleEval2Def('format_date2', _format_date2),
+    SimpleEval2Def('parse_date2', _parse_date2),
 
     SimpleEval2Def('format_number', _format_number),
     SimpleEval2Def('parse_number', _parse_number),
@@ -669,7 +710,6 @@ class SimpleEval2(object):
         self.tik_time = time.time()
         if self.tik_time - self.start_time > self.max_time:
             raise InvalidExpression("Execution exceeded time limit, max runtime is %s" % self.max_time)
-
 
     @staticmethod
     def is_valid(expr):
@@ -1720,7 +1760,8 @@ accrual_NL_365_NO_EOM(date(2000, 1, 1), date(2000, 1, 25))
         _l.info('2: %s', safe_eval('simple_group(5, [[1,10,"o1"],[10,20,"o2"]], "o3")'))
         _l.info('3: %s', safe_eval('simple_group(15, [[1,10,"o1"],[10,20,"o2"]], "o3")'))
         _l.info('4: %s', safe_eval('simple_group(25, [[1,10,"o1"],[10,20,"o2"]], "o3")'))
-        _l.info('5: %s', safe_eval('simple_group(4, [["-inf",10,"o1"],[10,20,"o2"]], "o3")'))
+        _l.info('5: %s', safe_eval('simple_group(4, [["-inf",10,"o1"],[10,20,"o2"]], default="Olala")'))
+        _l.info('5: %s', safe_eval('simple_group(4, [["begin","end","name"],...], default="Olala")'))
 
         _l.info('10: %s', safe_eval('simple_group(0, [[None,10,"o1"],[10,20,"o2"]], "o3")'))
         _l.info('11: %s', safe_eval('simple_group(5, [[None,10,"o1"],[10,20,"o2"]], "o3")'))
@@ -1745,14 +1786,16 @@ accrual_NL_365_NO_EOM(date(2000, 1, 1), date(2000, 1, 25))
                                      '["2000-01-01","2002-01-01",timedelta(months=1, day=31),"o2"]'
                                      '], "o3")'))
 
+        # simple_group("expr", [["begin","end","name"],...], default="Olala")
+        # date_group("expr", [["begin","end", "step" or None,"str" or ["str1","begin_date_fmt", "str3", "str4","end_date_fmt", "str6"]],...], default="Olala")
+        # account.attributes
+        # account.attributes.str1.value
+        # account.attributes["SomeClassifier"].value
+        # account.attributes["SomeClassifier"].value.parent.parent.parent.name
+
         # _l.info('102: %s', safe_eval('date_range("2000-11-21", [[None,"2001-01-01",30,"o1"],["2001-01-01","2002-01-01",timedelta(months=1, day=31),"o2"]], "o3")'))
 
-        from babel.dates import parse_pattern, format_date, LC_TIME
-        from babel import Locale
-        locale = Locale.parse(LC_TIME)
-        _l.info(format_date(datetime.date(2012,1,4)))
-        _l.info(parse_pattern("MMMMd"))
-        _l.info(parse_pattern("MMMMd").apply(datetime.date(2012,1,4), locale))
+        # _l.info('1: %s', safe_eval('format_date2("2001-12-12", "yyyy/MM/dd")'))
 
 
     group_test()
