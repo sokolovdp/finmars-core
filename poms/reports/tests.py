@@ -988,24 +988,23 @@ class ReportTestCase(TestCase):
 
         self._t(t_class=self._sell, instr=self.bond0, position=-50,
                 stl_ccy=self.usd, principal=90., carry=2.5, overheads=-15.,
-                acc_date_days=11, cash_date_days=11)
+                acc_date_days=21, cash_date_days=21)
 
-        # pl_first_date = self._d(10)
-        # report_date = self._d(14)
-        pl_first_date=self._d(10)
-        report_date=self._d(21)
+        pl_first_date = self._d(10)
+        # report_date = self._d(12)
+        report_date=self._d(22)
 
         r = Report(master_user=self.m, pricing_policy=self.pp, report_date=pl_first_date)
         b = ReportBuilder(instance=r)
         b.build()
-        self._dump(b, 'test_pl_date_interval_1: on pl_first_date', show_trns=show_trns)
+        self._dump(b, 'test_pl_date_interval_1: pl_first_date', show_trns=show_trns)
 
         r = Report(master_user=self.m, pricing_policy=self.pp, report_date=report_date)
         b = ReportBuilder(instance=r)
         b.build()
-        self._dump(b, 'test_pl_date_interval_1: on report_date', show_trns=show_trns)
+        self._dump(b, 'test_pl_date_interval_1: report_date', show_trns=show_trns)
 
         r = Report(master_user=self.m, pricing_policy=self.pp, pl_first_date=pl_first_date, report_date=report_date)
         b = ReportBuilder(instance=r)
         b.build()
-        self._dump(b, 'test_pl_date_interval_1', show_trns=show_trns)
+        self._dump(b, 'test_pl_date_interval_1: pl_first_date abd report_date', show_trns=show_trns)
