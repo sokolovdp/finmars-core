@@ -213,6 +213,8 @@ def _format_date(date, format=None):
 def _parse_date(date_string, format=None):
     if not date_string:
         return None
+    if isinstance(date_string, datetime.date):
+        return date_string
     date_string = str(date_string)
     if format is None:
         format = '%Y-%m-%d'
@@ -352,6 +354,52 @@ def _get_instrument_accrued_price(evaluator, instrument, date):
 
 
 _get_instrument_accrued_price.evaluator = True
+
+
+def _simple_range(val, ranges, default=None):
+    for start, end, text in ranges:
+        if start is None:
+            start = float('-inf')
+        else:
+            start = float(start)
+        if end is None:
+            end = float('inf')
+        else:
+            end = float(end)
+        if start <= val < end:
+            return text
+    return default
+
+
+def _date_range(val, ranges, default=None):
+    val = _parse_date(val)
+    _l.info('_date_range: val=%s', val)
+    for start, end, step, text in ranges:
+        if start is None:
+            start = datetime.date.min
+        else:
+            start = _parse_date(start)
+        if end is None:
+            end = datetime.date.max
+        else:
+            end = _parse_date(end)
+        if start <= val < end:
+            if not isinstance(step, (datetime.timedelta, relativedelta.relativedelta,)):
+                step = _timedelta(days=step)
+            _l.info('start=%s, end=%s, step=%s', start, end, step)
+            d = start
+            i = 0
+            while d < end:
+                lstart = d
+                lend = d + step
+                _l.info('  i=%s, lstart=%s, lend=%s', i, lstart, lend)
+                if lstart <= val < lend:
+                    return text
+                d = lend
+                i += 1
+                if i > 1000:
+                    return default
+    return default
 
 
 def _find_name(*args):
@@ -528,6 +576,9 @@ FUNCTIONS = [
     SimpleEval2Def('get_instrument_accrued_price', _get_instrument_accrued_price),
 
     SimpleEval2Def('find_name', _find_name),
+
+    SimpleEval2Def('simple_range', _simple_range),
+    SimpleEval2Def('date_range', _date_range),
 ]
 
 empty = object()
@@ -1581,11 +1632,13 @@ accrual_NL_365_NO_EOM(date(2000, 1, 1), date(2000, 1, 25))
         _l.info(safe_eval('account.attributes', names=names, context=context))
         _l.info(safe_eval('account.attributes.str1.value', names=names, context=context))
         _l.info(safe_eval('account.attributes["SomeClassifier"].value', names=names, context=context))
+        _l.info(safe_eval('account.attributes["SomeClassifier"].value.parent.parent.parent.name', names=names,
+                          context=context))
 
         pass
 
 
-    model_access_test()
+    # model_access_test()
     pass
 
 
@@ -1615,4 +1668,22 @@ accrual_NL_365_NO_EOM(date(2000, 1, 1), date(2000, 1, 25))
 
 
     # accrued_test()
+    pass
+
+
+    def range_test():
+        _l.info('1: %s', safe_eval('simple_range(0, [[1,10,"o1"],[10,20,"o2"]], "o3")'))
+        _l.info('2: %s', safe_eval('simple_range(5, [[1,10,"o1"],[10,20,"o2"]], "o3")'))
+        _l.info('3: %s', safe_eval('simple_range(15, [[1,10,"o1"],[10,20,"o2"]], "o3")'))
+        _l.info('4: %s', safe_eval('simple_range(25, [[1,10,"o1"],[10,20,"o2"]], "o3")'))
+
+        _l.info('10: %s', safe_eval('simple_range(0, [[None,10,"o1"],[10,20,"o2"]], "o3")'))
+        _l.info('11: %s', safe_eval('simple_range(5, [[None,10,"o1"],[10,20,"o2"]], "o3")'))
+        _l.info('12: %s', safe_eval('simple_range(15, [[None,10,"o1"],[10,20,"o2"]], "o3")'))
+        _l.info('13: %s', safe_eval('simple_range(25, [[None,10,"o1"],[10,None,"o2"]], "o3")'))
+
+        _l.info('100: %s', safe_eval('date_range("2001-11-21", [["2000-01-01","2001-01-01",10,"o1"],["2001-01-01","2002-01-01",timedelta(months=1, day=31),"o2"]], "o3")'))
+
+
+    range_test()
     pass
