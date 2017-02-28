@@ -901,9 +901,33 @@ def value_prepare(orig):
             if k in ['user_object_permissions', 'group_object_permissions', 'object_permissions',
                      'granted_permissions']:
                 continue
-            if k.endswith('_object'):
+
+            elif k == 'attributes':
+                from poms.obj_attrs.models import GenericAttributeType
+
+                oattrs = _value(v)
+                nattrs = OrderedDict()
+                for attr in oattrs:
+                    attr_t = attr['attribute_type']
+                    attr_n = attr_t['user_code']
+                    val_t = attr_t['value_type']
+                    if val_t == GenericAttributeType.CLASSIFIER:
+                        attr['value'] = attr['classifier']
+                    elif val_t == GenericAttributeType.NUMBER:
+                        attr['value'] = attr['value_float']
+                    elif val_t == GenericAttributeType.DATE:
+                        attr['value'] = attr['value_date']
+                    elif val_t == GenericAttributeType.STRING:
+                        attr['value'] = attr['value_string']
+                    else:
+                        attr['value'] = None
+                    nattrs[attr_n] = attr
+                ret[k] = nattrs
+
+            elif k.endswith('_object'):
                 k = k[:-7]
                 ret[k] = _value(v)
+
             else:
                 if k not in ret:
                     ret[k] = _value(v)
@@ -937,6 +961,7 @@ def get_model_data(val, serializer_class, many=False, context=None, hide_fields=
                 serializer.fields.pop(f)
         data = serializer.data
         data = value_prepare(data)
+        data['object_class'] = str(val.__class__.__name__)
         # import json
         # print(json.dumps(data, indent=2))
         return data
@@ -1544,13 +1569,18 @@ accrual_NL_365_NO_EOM(date(2000, 1, 1), date(2000, 1, 25))
 
         _l.info('---------')
         # _l.info(safe_eval('instrument', names=names, context=context))
-        # _l.info(safe_eval('instrument1', names=names, context=context))
+        # _l.info(safe_eval('instrument1.attributes', names=names, context=context))
         # _l.info(safe_eval('instrument1.price_multiplier', names=names, context=context))
         # _l.info(safe_eval('instrument1.price_multiplier * instrument1.price_multiplier', names=names, context=context))
         # _l.info(safe_eval('instrument1["price_multiplier"]', names=names, context=context))
         # _l.info(safe_eval('return instruments', names=names, context=context))
         # _l.info(safe_eval('instruments[0].price_multiplier', names=names, context=context))
-        _l.info(safe_eval('transactions[0].instrument.user_code', names=names, context=context))
+        # _l.info(safe_eval('transactions[0].instrument.user_code', names=names, context=context))
+
+        _l.info(safe_eval('account', names=names, context=context))
+        _l.info(safe_eval('account.attributes', names=names, context=context))
+        _l.info(safe_eval('account.attributes.str1.value', names=names, context=context))
+        _l.info(safe_eval('account.attributes["SomeClassifier"].value', names=names, context=context))
 
         pass
 
@@ -1565,7 +1595,7 @@ accrual_NL_365_NO_EOM(date(2000, 1, 1), date(2000, 1, 25))
         _l.info(safe_eval('now()', now=lambda: now))
 
 
-    now_test()
+    # now_test()
     pass
 
 
