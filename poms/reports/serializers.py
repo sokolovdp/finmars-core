@@ -730,6 +730,8 @@ class TransactionReportItemSerializer(serializers.Serializer):
     notes = serializers.ReadOnlyField()
     attributes = ReportGenericAttributeSerializer(many=True, read_only=True)
 
+    custom_fields = ReportItemCustomFieldSerializer(many=True, read_only=True)
+
     def __init__(self, *args, **kwargs):
         kwargs.setdefault('read_only', True)
 
@@ -745,6 +747,8 @@ class TransactionReportSerializer(serializers.Serializer):
 
     begin_date = serializers.DateField(required=False, allow_null=True)
     end_date = serializers.DateField(required=False, allow_null=True)
+
+    custom_fields = CustomFieldField(many=True, allow_empty=True, allow_null=True, required=False)
 
     items = TransactionReportItemSerializer(many=True, read_only=True)
     complex_transactions = ReportComplexTransactionSerializer(many=True, read_only=True)
@@ -771,9 +775,10 @@ class TransactionReportSerializer(serializers.Serializer):
                                                                         show_classifiers=True)
 
     def __init__(self, *args, **kwargs):
-        # kwargs.setdefault('read_only', True)
-
         super(TransactionReportSerializer, self).__init__(*args, **kwargs)
+
+        self.fields['custom_fields_object'] = CustomFieldViewSerializer(source='custom_fields', read_only=True,
+                                                                        many=True)
 
     def create(self, validated_data):
         return TransactionReport(**validated_data)

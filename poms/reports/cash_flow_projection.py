@@ -7,8 +7,10 @@ from itertools import groupby
 
 from django.db import transaction
 from django.db.models import Q
+from django.utils.translation import ugettext
 
 from poms.accounts.models import Account, AccountType
+from poms.common import formula
 from poms.common.utils import isclose
 from poms.counterparties.models import Counterparty, ResponsibleGroup, CounterpartyGroup
 from poms.counterparties.models import Responsible
@@ -59,6 +61,7 @@ def _val(obj, val, attr, default=None):
 
 class TransactionReportItem:
     def __init__(self,
+                 report,
                  trn=None,
                  id=empty,
                  complex_transaction=empty,
@@ -102,6 +105,8 @@ class TransactionReportItem:
                  notes=empty,
 
                  attributes=empty):
+        self.report = report
+
         self.id = _val(trn, id, 'id')
         self.complex_transaction = _val(trn, complex_transaction, 'complex_transaction')
         self.complex_transaction_order = _val(trn, complex_transaction_order, 'complex_transaction_order')
@@ -156,13 +161,35 @@ class TransactionReportItem:
             # self.attributes = attributes if attributes is not empty else \
             #     list(getattr(trn, 'attributes', None).all())
 
+        self.custom_fields = []
+
     def __str__(self):
         return 'TransactionReportItem:%s' % self.id
+
+    def eval_custom_fields(self):
+        # from poms.reports.serializers import ReportItemSerializer
+        res = []
+        for cf in self.report.custom_fields:
+            if cf.expr and self.report.member:
+                try:
+                    names = {
+                        'item': self
+                    }
+                    value = formula.safe_eval(cf.expr, names=names, context=self.report.context)
+                except formula.InvalidExpression:
+                    value = ugettext('Invalid expression')
+            else:
+                value = None
+            res.append({
+                'custom_field': cf,
+                'value': value
+            })
+        self.custom_fields = res
 
 
 class TransactionReport:
     def __init__(self, id=None, task_id=None, task_status=None, master_user=None, member=None,
-                 begin_date=None, end_date=None, items=None):
+                 begin_date=None, end_date=None, custom_fields=None, items=None):
         self.has_errors = False
         self.id = id
         self.task_id = task_id
@@ -171,6 +198,13 @@ class TransactionReport:
         self.member = member
         self.begin_date = begin_date
         self.end_date = end_date
+        self.custom_fields = custom_fields or []
+
+        self.context = {
+            'master_user': self.master_user,
+            'member': self.member,
+        }
+
         self.items = items
 
         self.complex_transactions = []
@@ -197,6 +231,10 @@ class TransactionReport:
 
     def __str__(self):
         return 'TransactionReport:%s' % self.id
+
+    def close(self):
+        for item in self.items:
+            item.eval_custom_fields()
 
 
 class TransactionReportBuilder:
@@ -622,10 +660,11 @@ class TransactionReportBuilder:
 
             self._load()
             self._set_trns_refs(self._transactions)
-            self._items = [TransactionReportItem(trn=t) for t in self._transactions]
+            self._items = [TransactionReportItem(self.instance, trn=t) for t in self._transactions]
             self._refresh_from_db()
             self._set_items_refs(self._items)
             self._update_instance()
+            self.instance.close()
 
             # if settings.DEBUG:
             #     _l.debug('> pickle')
@@ -732,8 +771,8 @@ class CashFlowProjectionReportItem(TransactionReportItem):
         (BALANCE, 'Balance'),
     )
 
-    def __init__(self, type=DEFAULT, trn=None, cash_consideration_before=0.0, cash_consideration_after=0.0, **kwargs):
-        super(CashFlowProjectionReportItem, self).__init__(trn, **kwargs)
+    def __init__(self, report, type=DEFAULT, trn=None, cash_consideration_before=0.0, cash_consideration_after=0.0, **kwargs):
+        super(CashFlowProjectionReportItem, self).__init__(report, trn, **kwargs)
         self.type = type
         # self.position_size_with_sign_before = position_size_with_sign_before
         # self.position_size_with_sign_after = position_size_with_sign_after
@@ -809,6 +848,7 @@ class CashFlowProjectionReportBuilder(TransactionReportBuilder):
                 )
                 ctrn._fake_transactions = []
                 item = CashFlowProjectionReportItem(
+                    self.instance,
                     type=itype,
                     # id=self._fake_id_gen(),
                     complex_transaction=ctrn,
@@ -851,7 +891,7 @@ class CashFlowProjectionReportBuilder(TransactionReportBuilder):
                     item.accounting_date = datetime.date.max
                     item.cash_date = datetime.date.max
             else:
-                item = CashFlowProjectionReportItem(type=itype, trn=trn)
+                item = CashFlowProjectionReportItem(self.instance, type=itype, trn=trn)
             cache[key] = item
         return item
 
@@ -872,6 +912,7 @@ class CashFlowProjectionReportBuilder(TransactionReportBuilder):
             self._refresh_from_db()
             self._set_items_refs(self._items)
             self._update_instance()
+            self.instance.close()
             transaction.set_rollback(True)
         _l.debug('< build')
         return self.instance
@@ -974,7 +1015,7 @@ class CashFlowProjectionReportBuilder(TransactionReportBuilder):
                 for t in self._transactions_by_date[now]:
                     _l.debug('\t\t\ttrn=%s', t.id)
                     key = self._trn_key(t)
-                    item = CashFlowProjectionReportItem(trn=t)
+                    item = CashFlowProjectionReportItem(self.instance, trn=t)
                     self._items.append(item)
 
                     ritem = None
