@@ -126,7 +126,10 @@ class Bookmark(BaseUIModel, MPTTModel):
     def __str__(self):
         return self.name
 
-# history.register(TemplateListLayout)
-# history.register(TemplateEditLayout)
-# history.register(ListLayout)
-# history.register(EditLayout)
+
+class Dashboard(models.Model):
+    member = models.ForeignKey(Member, related_name='dashboards', verbose_name=ugettext_lazy('member'))
+
+    class Meta:
+        verbose_name = ugettext_lazy('dashboard')
+        verbose_name_plural = ugettext_lazy('dashboard')

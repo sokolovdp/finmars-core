@@ -16,6 +16,7 @@ class LayoutContentTypeFilter(BaseFilterBackend):
         from poms.portfolios.models import Portfolio
         from poms.transactions.models import TransactionTypeGroup, TransactionType, Transaction, ComplexTransaction
         from poms.tags.models import Tag
+        from poms.ui.models import Dashboard
 
         models = [AccountType, Account, Currency, CurrencyHistory, InstrumentType, Instrument, PriceHistory,
                   PricingPolicy, CounterpartyGroup, Counterparty, Responsible, ResponsibleGroup, Portfolio,
@@ -24,7 +25,7 @@ class LayoutContentTypeFilter(BaseFilterBackend):
                   Strategy2Group, Strategy2Subgroup, Strategy2,
                   Strategy3Group, Strategy3Subgroup, Strategy3,
                   BalanceReport, PLReport, PerformanceReport, CashFlowReport, TransactionReport,
-                  InstrumentAudit, TransactionAudit]
+                  InstrumentAudit, TransactionAudit, Dashboard]
         ctypes = [ContentType.objects.get_for_model(model).pk for model in models]
         return queryset.filter(pk__in=ctypes).order_by('model')
 
