@@ -343,6 +343,14 @@ class ReportItemCustomFieldSerializer(serializers.Serializer):
 
         self.fields['custom_field_object'] = CustomFieldViewSerializer(source='custom_field', read_only=True)
 
+    @cached_property
+    def _readable_fields(self):
+        custom_fields_hide_objects = self.context.get('custom_fields_hide_objects', False)
+        return [
+            field for field in self.fields.values()
+            if not field.write_only and (
+                not custom_fields_hide_objects or field.field_name not in ('custom_field_object',))
+            ]
 
 class ReportItemSerializer(serializers.Serializer):
     id = serializers.SerializerMethodField()
