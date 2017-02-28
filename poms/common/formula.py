@@ -356,7 +356,7 @@ def _get_instrument_accrued_price(evaluator, instrument, date):
 _get_instrument_accrued_price.evaluator = True
 
 
-def _simple_range(val, ranges, default=None):
+def _simple_group(val, ranges, default=None):
     for start, end, text in ranges:
         if start is None:
             start = float('-inf')
@@ -374,9 +374,9 @@ def _simple_range(val, ranges, default=None):
     return default
 
 
-def _date_range(evaluator, val, ranges, default=None):
+def _date_group(evaluator, val, ranges, default=None):
     val = _parse_date(val)
-    # _l.info('_date_range: val=%s', val)
+    # _l.info('_date_group: val=%s', val)
     for start, end, step, fmt in ranges:
         if start is None:
             start = datetime.date.min
@@ -394,10 +394,9 @@ def _date_range(evaluator, val, ranges, default=None):
                 step = _timedelta(days=step)
             # _l.info('start=%s, end=%s, step=%s', start, end, step)
 
-            d = start
-            while d < end:
-                lstart = d
-                lend = d + step
+            lstart = start
+            while lstart < end:
+                lend = lstart + step
                 # _l.info('  lstart=%s, lend=%s', lstart, lend)
                 if lstart <= val < lend:
                     if isinstance(fmt, (list, tuple)):
@@ -413,13 +412,13 @@ def _date_range(evaluator, val, ranges, default=None):
                         return ''.join([s1, sstart, s3, s4, send, s6])
                     else:
                         return str(fmt)
-                d = lend
+                lstart = lend
 
                 evaluator.check_time()
 
     return default
 
-_date_range.evaluator = True
+_date_group.evaluator = True
 
 def _find_name(*args):
     for s in args:
@@ -596,8 +595,8 @@ FUNCTIONS = [
 
     SimpleEval2Def('find_name', _find_name),
 
-    SimpleEval2Def('simple_range', _simple_range),
-    SimpleEval2Def('date_range', _date_range),
+    SimpleEval2Def('simple_group', _simple_group),
+    SimpleEval2Def('date_group', _date_group),
 ]
 
 empty = object()
@@ -1698,21 +1697,29 @@ accrual_NL_365_NO_EOM(date(2000, 1, 1), date(2000, 1, 25))
 
 
     def range_test():
-        _l.info('1: %s', safe_eval('simple_range(0, [[1,10,"o1"],[10,20,"o2"]], "o3")'))
-        _l.info('2: %s', safe_eval('simple_range(5, [[1,10,"o1"],[10,20,"o2"]], "o3")'))
-        _l.info('3: %s', safe_eval('simple_range(15, [[1,10,"o1"],[10,20,"o2"]], "o3")'))
-        _l.info('4: %s', safe_eval('simple_range(25, [[1,10,"o1"],[10,20,"o2"]], "o3")'))
+        _l.info('1: %s', safe_eval('simple_group(0, [[1,10,"o1"],[10,20,"o2"]], "o3")'))
+        _l.info('2: %s', safe_eval('simple_group(5, [[1,10,"o1"],[10,20,"o2"]], "o3")'))
+        _l.info('3: %s', safe_eval('simple_group(15, [[1,10,"o1"],[10,20,"o2"]], "o3")'))
+        _l.info('4: %s', safe_eval('simple_group(25, [[1,10,"o1"],[10,20,"o2"]], "o3")'))
 
-        _l.info('10: %s', safe_eval('simple_range(0, [[None,10,"o1"],[10,20,"o2"]], "o3")'))
-        _l.info('11: %s', safe_eval('simple_range(5, [[None,10,"o1"],[10,20,"o2"]], "o3")'))
-        _l.info('12: %s', safe_eval('simple_range(15, [[None,10,"o1"],[10,20,"o2"]], "o3")'))
-        _l.info('13: %s', safe_eval('simple_range(25, [[None,10,"o1"],[10,None,"o2"]], "o3")'))
+        _l.info('10: %s', safe_eval('simple_group(0, [[None,10,"o1"],[10,20,"o2"]], "o3")'))
+        _l.info('11: %s', safe_eval('simple_group(5, [[None,10,"o1"],[10,20,"o2"]], "o3")'))
+        _l.info('12: %s', safe_eval('simple_group(15, [[None,10,"o1"],[10,20,"o2"]], "o3")'))
+        _l.info('13: %s', safe_eval('simple_group(25, [[None,10,"o1"],[10,None,"o2"]], "o3")'))
 
-        _l.info('100: %s', safe_eval('date_range("2000-11-21", [["2000-01-01","2001-01-01",10,"o1"],["2001-01-01","2002-01-01",timedelta(months=1, day=31),"o2"]], "o3")'))
-        _l.info('101: %s', safe_eval('date_range("2002-11-21", [["2000-01-01","2001-01-01",10,"o1"],["2001-01-01","2002-01-01",timedelta(months=1, day=31),"o2"]], "o3")'))
+        _l.info('100: %s', safe_eval('date_group("2000-11-21", ['
+                                     '["2000-01-01","2001-01-01",10,"o1"],'
+                                     '["2001-01-01","2002-01-01",timedelta(months=1, day=31),"o2"]'
+                                     '], "o3")'))
+        _l.info('101: %s', safe_eval('date_group("2002-11-21", ['
+                                     '["2000-01-01","2001-01-01",10,"o1"],'
+                                     '["2001-01-01","2002-01-01",timedelta(months=1, day=31),"o2"]'
+                                     '], "o3")'))
 
-
-        _l.info('110: %s', safe_eval('date_range("2000-11-21", [["2000-01-01","2001-01-01",10, ["<","%Y-%m-%d",">","<","%Y-%m-%d",">"]],["2000-01-01","2002-01-01",timedelta(months=1, day=31),"o2"]], "o3")'))
+        _l.info('110: %s', safe_eval('date_group("2000-11-21", ['
+                                     '["2000-01-01","2001-01-01",10, ["<","%Y-%m-%d",">","<","%Y-%m-%d",">"]],'
+                                     '["2000-01-01","2002-01-01",timedelta(months=1, day=31),"o2"]'
+                                     '], "o3")'))
 
         # _l.info('102: %s', safe_eval('date_range("2000-11-21", [[None,"2001-01-01",30,"o1"],["2001-01-01","2002-01-01",timedelta(months=1, day=31),"o2"]], "o3")'))
 
