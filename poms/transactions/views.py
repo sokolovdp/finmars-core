@@ -780,7 +780,12 @@ class TransactionViewSet(AbstractModelViewSet):
     def perform_update(self, serializer):
         if serializer.is_locked:
             raise PermissionDenied()
-        return super(TransactionViewSet, self).perform_update(serializer)
+        super(TransactionViewSet, self).perform_update(serializer)
+        serializer.instance.calc_cash_by_formulas()
+
+    def perform_destroy(self, instance):
+        super(TransactionViewSet, self).perform_destroy(instance)
+        instance.calc_cash_by_formulas()
 
 
 class ComplexTransactionAttributeTypeViewSet(GenericAttributeTypeViewSet):

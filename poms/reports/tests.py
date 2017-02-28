@@ -7,10 +7,11 @@ from django.utils.functional import cached_property
 
 from poms.accounts.models import AccountType, Account
 from poms.currencies.models import Currency, CurrencyHistory
-from poms.instruments.models import Instrument, PriceHistory, PricingPolicy, CostMethod, InstrumentType, InstrumentClass
+from poms.instruments.models import Instrument, PriceHistory, PricingPolicy, CostMethod, InstrumentType, \
+    InstrumentClass, \
+    AccrualCalculationSchedule, AccrualCalculationModel, Periodicity
 from poms.portfolios.models import Portfolio
 from poms.reports.builders import Report, ReportBuilder, VirtualTransaction, ReportItem
-from poms.reports.utils import calc_cash_for_contract_for_difference
 from poms.strategies.models import Strategy1Group, Strategy1Subgroup, Strategy1
 from poms.transactions.models import Transaction, TransactionClass
 from poms.users.models import MasterUser, Member
@@ -20,7 +21,7 @@ _l = logging.getLogger('poms.reports')
 
 class ReportTestCase(TestCase):
     def setUp(self):
-        print('*' * 100)
+        _l.debug('*' * 100)
 
         # if pandas:
         #     pandas.set_option('display.width', 10000)
@@ -130,6 +131,9 @@ class ReportTestCase(TestCase):
                     s = Strategy1.objects.create(master_user=self.m, subgroup=sg, name='%s-%s-%s' % (g_i, sg_i, s_i))
                     setattr(self, 's1_%s_%s_%s' % (g_i, sg_i, s_i), s)
 
+                    # from django.conf import settings
+                    # settings.DEBUG = True
+
     def _d(self, days=None):
         if days is None or days == 0:
             return self.report_date
@@ -236,26 +240,23 @@ class ReportTestCase(TestCase):
         return CostMethod.objects.get(pk=CostMethod.FIFO)
 
     def _print_transactions(self, transactions):
-        print('-' * 100)
-        print('Transactions: ')
+        _l.debug('-' * 100)
+        _l.debug('Transactions: ')
         VirtualTransaction.dumps(transactions)
 
     def _print_items(self, name, builder, items):
-        print('%s:' % name)
+        _l.debug('%s:', name)
         ReportItem.dumps(items)
 
-    def _dump(self, builder, name, print_transactions=None, print_items=None):
-        print('Report: %s' % name)
+    def _dump(self, builder, name, show_trns=True, show_items=True):
+        if show_trns or show_items:
+            _l.debug('Report: %s', name)
 
-        if print_transactions is None:
-            print_transactions = self._print_transactions
-        print_transactions(builder.instance.transactions)
+            if show_trns:
+                self._print_transactions(builder.instance.transactions)
 
-        if print_items is None:
-            print_items = self._print_items
-        print_items('Items', builder, builder.instance.items)
-
-        pass
+            if show_items:
+                self._print_items('Items', builder, builder.instance.items)
 
     def _test_avco_prtfl_0(self):
         self._t(t_class=self._buy, instr=self.bond0, position=5,
@@ -565,7 +566,7 @@ class ReportTestCase(TestCase):
     #     self._ccy_hist(self.cad, self._d(104), 0.9)
     #     self._ccy_hist(self.rub, self._d(104), 1.0 / 65.0)
     #     # for ch in CurrencyHistory.objects.order_by('currency__user_code', '-date').filter(date__gte=self._d(100)):
-    #     #     print(ch.currency.user_code, ch.date, ch.fx_rate)
+    #     #     _l.debug(ch.currency.user_code, ch.date, ch.fx_rate)
     #
     #     self._t(t_class=self._buy, instr=instr, position=5,
     #             stl_ccy=self.gbp, principal=-20.0, carry=-5.0,
@@ -772,6 +773,8 @@ class ReportTestCase(TestCase):
         self._dump(b, 'test_mismatch_0')
 
     def _test_approach_alloc_0(self):
+        # settings.DEBUG = True
+
         self.bond0.user_code = 'I1'
         self.bond0.price_multiplier = 5.0
         self.bond0.accrued_multiplier = 0.0
@@ -797,7 +800,7 @@ class ReportTestCase(TestCase):
                 stl_ccy=self.usd, principal=20, carry=0, overheads=0,
                 alloc_bl=self.bond3, alloc_pl=self.bond3)
 
-        r = Report(master_user=self.m, pricing_policy=self.pp, report_date=self._d(0),
+        r = Report(master_user=self.m, pricing_policy=self.pp, report_date=self._d(10),
                    approach_multiplier=1.0)
         b = ReportBuilder(instance=r)
         b.build()
@@ -879,7 +882,7 @@ class ReportTestCase(TestCase):
         b.build()
         self._dump(b, 'test_approach_str1_0: STRATEGY_INTERDEPENDENT')
 
-    def test_instr_contract_for_difference(self):
+    def _test_instr_contract_for_difference(self):
         tinstr = InstrumentType.objects.create(master_user=self.m,
                                                instrument_class_id=InstrumentClass.CONTRACT_FOR_DIFFERENCE, name='cfd1')
         instr = Instrument.objects.create(master_user=self.m, name="cfd, USD/USD", instrument_type=tinstr,
@@ -897,22 +900,111 @@ class ReportTestCase(TestCase):
         t4 = self._t(t_class=self._sell, instr=instr, position=-3, acc_date_days=5, cash_date_days=5,
                      stl_ccy=self.usd, cash=0, principal=3825000, carry=9000, overheads=-100)
 
+        from poms.transactions.utils import calc_cash_for_contract_for_difference
         calc_cash_for_contract_for_difference(transaction=None,
                                               instrument=instr,
                                               portfolio=self.m.portfolio,
                                               account=self.m.account,
-                                              member=self.member,
+                                              member=None,
                                               is_calculate_for_newer=False,
                                               is_calculate_for_all=True,
                                               save=True)
 
-    def test_xnpv_xirr(self):
-        from poms.common.utils import xnpv, xirr
+    def _test_xnpv_xirr_duration(self):
+        from poms.common.formula_accruals import f_xnpv, f_xirr, f_duration
         from datetime import date
-        dates = [date(2008, 1, 1), date(2008, 3, 1), date(2008, 10, 30), date(2009, 2, 15), date(2009, 4, 1), ]
-        values = [-10000, 2750, 4250, 3250, 2750, ]
-        # from MS office
-        #  xnpv(0.09, ...) = $2,086.65
-        #  xiir = 0.373362535
-        _l.debug('xnpv.1: %s', xnpv(0.09, values, dates))
-        _l.debug('xirr.1: %s', xirr(values, dates))
+
+        # dates = [date(2008, 1, 1), date(2008, 3, 1), date(2008, 10, 30), date(2009, 2, 15), date(2009, 4, 1), ]
+        # values = [-10000, 2750, 4250, 3250, 2750, ]
+
+        # dates = [date(2016, 2, 16), date(2016, 3, 10), date(2016, 9, 1), date(2017, 1, 17), ]
+        # values = [-90, 5, 5, 105, ]
+
+        dates = [date(2016, 2, 16), date(2016, 3, 10), date(2016, 9, 1), date(2017, 1, 17), ]
+        values = [-90, 5, 5, 105, ]
+        data = [(d, v) for d, v in zip(dates, values)]
+
+        # xnpv    : 16.7366702148651
+        # xirr    : 0.3291520343150294
+        # duration: 0.6438341602180792
+        _l.debug('>')
+        _l.debug('xnpv.1: %s', f_xnpv(data, 0.09))
+        _l.debug('xirr.1: %s', f_xirr(data))
+        # _l.debug('xirr.2: %s', f_xirr(data, method='newton'))
+        _l.debug('duration.1: %s', f_duration(data))
+
+        import timeit
+        for i in range(100, 1000, 100):
+            _l.debug('timeit.xirr.1.skip: %s -> %s', i, timeit.Timer(lambda: f_xirr(data)).timeit(i))
+
+        ti1 = Instrument.objects.create(master_user=self.m, name="a", instrument_type=self.m.instrument_type,
+                                        pricing_currency=self.usd, price_multiplier=1.0,
+                                        accrued_currency=self.usd, accrued_multiplier=1.0,
+                                        maturity_date=date(2017, 1, 1), maturity_price=100)
+        AccrualCalculationSchedule.objects.create(instrument=ti1,
+                                                  accrual_start_date=date(2016, 1, 1),
+                                                  first_payment_date=date(2016, 2, 1),
+                                                  accrual_size=5,
+                                                  accrual_calculation_model_id=AccrualCalculationModel.ACT_365,
+                                                  periodicity_id=Periodicity.MONTHLY,
+                                                  periodicity_n=1)
+        _l.debug('get_future_accrual_payments.1: %s', ti1.get_future_accrual_payments())
+        _l.debug('get_future_accrual_payments.2: %s', ti1.get_future_accrual_payments(begin_date=date(2016, 2, 27)))
+        _l.debug('get_future_accrual_payments.2: %s', ti1.get_future_accrual_payments(begin_date=date(2016, 3, 1)))
+        data = [(date(2016, 3, 14), 83)]
+        _l.debug('get_future_accrual_payments.2: %s',
+                 ti1.get_future_accrual_payments(data=data, begin_date=date(2016, 3, 15)))
+        _l.debug('get_future_accrual_payments.2: %s', ti1.get_future_accrual_payments(data=data))
+
+    def _test_xnpv_xirr_duration_perf(self):
+        from poms.common.formula_accruals import f_xirr
+        from datetime import date
+
+        dates = [date(2016, 2, 16), date(2016, 3, 10), date(2016, 9, 1), date(2017, 1, 17), ]
+        values = [-90, 5, 5, 105, ]
+        data = [(d, v) for d, v in zip(dates, values)]
+
+        import timeit
+
+        _l.debug('-' * 79)
+        _l.debug('xirr:')
+        # for method in ['newton', 'brentq']:
+        #     _l.debug('  method: %s', method)
+        #     for i in range(1000, 30000, 1000):
+        #         _l.debug('    %s -> %s', i, timeit.Timer(lambda: f_xirr(data, method=method)).timeit(i))
+        for i in range(1000, 30000, 1000):
+            _l.debug('    %s -> %s', i, timeit.Timer(lambda: f_xirr(data)).timeit(i))
+
+    def test_pl_date_interval_1(self):
+        show_trns = False
+
+        self._t(t_class=self._buy, instr=self.bond0, position=100,
+                stl_ccy=self.usd, principal=-180., carry=-5., overheads=-15.,
+                acc_date_days=1, cash_date_days=1)
+
+        self._t(t_class=self._sell, instr=self.bond0, position=-50,
+                stl_ccy=self.usd, principal=90., carry=2.5, overheads=-15.,
+                acc_date_days=11, cash_date_days=11)
+
+        self._t(t_class=self._sell, instr=self.bond0, position=-50,
+                stl_ccy=self.usd, principal=90., carry=2.5, overheads=-15.,
+                acc_date_days=21, cash_date_days=21)
+
+        pl_first_date = self._d(10)
+        # report_date = self._d(12)
+        report_date=self._d(22)
+
+        r = Report(master_user=self.m, pricing_policy=self.pp, report_date=pl_first_date)
+        b = ReportBuilder(instance=r)
+        b.build()
+        self._dump(b, 'test_pl_date_interval_1: pl_first_date', show_trns=show_trns)
+
+        r = Report(master_user=self.m, pricing_policy=self.pp, report_date=report_date)
+        b = ReportBuilder(instance=r)
+        b.build()
+        self._dump(b, 'test_pl_date_interval_1: report_date', show_trns=show_trns)
+
+        r = Report(master_user=self.m, pricing_policy=self.pp, pl_first_date=pl_first_date, report_date=report_date)
+        b = ReportBuilder(instance=r)
+        b.build()
+        self._dump(b, 'test_pl_date_interval_1: pl_first_date abd report_date', show_trns=show_trns)

@@ -1,6 +1,9 @@
 from __future__ import unicode_literals
 
+import json
+
 from django.contrib.contenttypes.models import ContentType
+from django.core.serializers.json import DjangoJSONEncoder
 from django.db import models
 from django.utils.translation import ugettext_lazy
 
@@ -12,6 +15,7 @@ class CustomField(models.Model):
     master_user = models.ForeignKey(MasterUser, related_name='custom_fields', verbose_name=ugettext_lazy('master user'))
     name = models.CharField(max_length=255, verbose_name=ugettext_lazy('name'))
     expr = models.CharField(max_length=255, verbose_name=ugettext_lazy('expr'))
+    layout_json = models.TextField(null=True, blank=True, verbose_name=ugettext_lazy('layout json'))
 
     class Meta:
         verbose_name = ugettext_lazy('custom field')
@@ -22,6 +26,17 @@ class CustomField(models.Model):
 
     def __str__(self):
         return self.name
+
+    @property
+    def layout(self):
+        try:
+            return json.loads(self.layout_json) if self.layout_json else None
+        except (ValueError, TypeError):
+            return None
+
+    @layout.setter
+    def layout(self, data):
+        self.layout_json = json.dumps(data, cls=DjangoJSONEncoder, sort_keys=True) if data else None
 
 
 class BalanceReport(models.Model):

@@ -16,6 +16,7 @@ from django.utils.translation import ugettext, ugettext_lazy
 
 from poms.accounts.models import Account, AccountType
 from poms.common import formula
+from poms.common.formula_accruals import f_xirr, f_duration
 from poms.common.utils import date_now, isclose, safe_div
 from poms.currencies.models import Currency
 from poms.instruments.models import Instrument, InstrumentType, CostMethod, InstrumentClass
@@ -34,6 +35,7 @@ _l = logging.getLogger('poms.reports')
 
 
 class _Base:
+    is_cloned = False
     report = None
     pricing_provider = None
     fx_rate_provider = None
@@ -46,7 +48,9 @@ class _Base:
         self.fx_rate_provider = fx_rate_provider
 
     def clone(self):
-        return copy.copy(self)
+        ret = copy.copy(self)
+        ret.is_cloned = True
+        return ret
 
     def dump_values(self, columns=None):
         if columns is None:
@@ -81,24 +85,24 @@ class VirtualTransaction(_Base):
     avco_closed_by = None
     fifo_multiplier = 0.0
     fifo_closed_by = None
-    multiplier = 1.0
+    multiplier = 0.0
     closed_by = None
 
     # Position related
     instr = None
     trn_ccy = None
-    pos_size = None
+    pos_size = 0.0
 
     # Cash related
     stl_ccy = None
-    cash = None
+    cash = 0.0
 
     # P&L related
-    principal = None
-    carry = None
-    overheads = None
+    principal = 0.0
+    carry = 0.0
+    overheads = 0.0
 
-    ref_fx = None
+    ref_fx = 0.0
 
     # accounting dates
     trn_date = None
@@ -127,6 +131,8 @@ class VirtualTransaction(_Base):
     # allocations
     alloc_bl = None
     alloc_pl = None
+
+    trade_price = 0.0
 
     # total_real_res = 0.0
     # total_unreal_res = 0.0
@@ -176,6 +182,15 @@ class VirtualTransaction(_Base):
     instr_principal_res = 0.0
     instr_accrued = 0.0
     instr_accrued_res = 0.0
+
+    remaining_pos_size = 0.0
+    remaining_pos_size_percent = 0.0  # calculated in second pass
+    ytm = 0.0
+    time_invested_days = 0.0
+    time_invested = 0.0
+    weighted_ytm = 0.0  # calculated in second pass
+    weighted_time_invested_days = 0.0  # calculated in second pass
+    weighted_time_invested = 0.0  # calculated in second pass
 
     # Cash related ----------------------------------------------------
 
@@ -242,17 +257,19 @@ class VirtualTransaction(_Base):
     dump_columns = [
         'pk',
         # 'lid',
-        # 'is_hidden',
+        'is_cloned',
+        'is_hidden',
         # 'is_mismatch',
         'trn_cls',
         # 'case',
         # 'avco_multiplier',
         # 'avco_closed_by',
-        'fifo_multiplier',
-        'fifo_closed_by',
+        # 'fifo_multiplier',
+        # 'fifo_closed_by',
         # 'multiplier',
         # 'closed_by',
-        'acc_date',
+        'trn_date',
+        # 'acc_date',
         # 'cash_date',
         'instr',
         # 'trn_ccy',
@@ -388,6 +405,8 @@ class VirtualTransaction(_Base):
 
         self.alloc_bl = overrides.get('allocation_balance', trn.allocation_balance)
         self.alloc_pl = overrides.get('allocation_pl', trn.allocation_pl)
+
+        self.trade_price = overrides.get('trade_price', trn.trade_price)
 
         self.notes = overrides.get('notes', trn.notes)
 
@@ -547,6 +566,31 @@ class VirtualTransaction(_Base):
         else:
             self.mismatch = self.cash - self.total
 
+    def calc_pass2(self, balance_pos_size):
+        # called after "balance"
+        if not self.is_cloned and self.trn_cls.id in [TransactionClass.BUY, TransactionClass.SELL] and self.instr:
+            self.remaining_pos_size = self.pos_size * (1 - self.multiplier)
+            self.remaining_pos_size_percent = safe_div(self.remaining_pos_size, balance_pos_size)
+
+            future_accrual_payments = self.instr.get_future_accrual_payments(
+                d0=self.acc_date,
+                v0=self.trade_price,
+                principal_ccy_fx=self.instr_pricing_ccy_cur_fx,
+                accrual_ccy_fx=self.instr_accrued_ccy_cur_fx
+            )
+            self.ytm = f_xirr(future_accrual_payments)
+
+            # data = [(self.report.report_date, self.market_value_res)]
+            # data = self.instr.get_future_accrual_payments(data)
+            # self.ytm = f_xirr(data)
+
+            self.time_invested_days = (self.report.report_date - self.acc_date).days
+            self.time_invested = self.time_invested_days / 365.0
+
+            self.weighted_ytm = self.ytm * self.remaining_pos_size_percent
+            self.weighted_time_invested_days = self.time_invested * self.remaining_pos_size_percent
+            self.weighted_time_invested = self.time_invested * self.remaining_pos_size_percent
+
     @staticmethod
     def approach_clone(cur, closed, mul_delta):
 
@@ -603,8 +647,11 @@ class VirtualTransaction(_Base):
 
             t.mismatch = 0.0
             t.avco_multiplier = 0.0
+            t.avco_closed_by = []
             t.fifo_multiplier = 0.0
+            t.fifo_closed_by = []
             t.multiplier = 1.0
+            t.closed_by = []
             t.cash = 0.0
             t.cash_res = 0.0
 
@@ -873,37 +920,6 @@ class VirtualTransaction(_Base):
         return False
 
 
-# additional fields
-#
-# Pricing currency => Instrument Pricing Ccy for instrumen;= System CCY (by default USD, but may be changed) for Currency
-# Current Price, pricing ccy => Pricing CCY for enitiy = Currency (not instrument) is System Currency (by default USD, but may be changed)
-# Current Accrued, accrued ccy =>
-# Pricing Ccy FX rate => FX of Pricing CCY vs Reporting CCY
-# Accrued currency FX rate => Accrued currency FX rate
-# Current Payment Size, accrued ccy => from Accruals Schedule - coupon size used to calculate Annual Coupon and Coupon Yield
-# Current Payment Frequency => Current Payment Frequency
-# Current Payment Periodicity N => from Accruals  Schedule.
-#
-# YTM =>
-# Modified Duration =>
-#
-# Last Notes => Front Office Notes - last Note from Basic Transaction Buy/Sell
-# Gross Cost Price, pricing ccy => doesn't include overheads
-# Net Cost Price, pricing ccy => includes overheads
-# YTM at Cost =>
-# Time Invested =>
-# Amount invested, rep ccy => principal + carry (no overheads)
-# Amount invested, pricing ccy =>
-#
-# Mkt Value, pricing ccy =>
-# Exposure, pricing ccy =>
-
-# Position Return, rep ccy => pos return / time invested
-# Position Return, pricing ccy =>
-# Daily Price Change, % =>  (Current Price - Fross Cost Price) / Gross Cost Price, if Time Invested = 1 day
-# MTD Price Change, %
-
-
 class ReportItem(_Base):
     TYPE_UNKNOWN = 0
     TYPE_INSTRUMENT = 1
@@ -977,29 +993,30 @@ class ReportItem(_Base):
     exposure_res = 0.0
     exposure_loc = 0.0
 
-    instr_accrual = None  # Current Payment Size, Current Payment Frequency, Current Payment Periodicity N
+    instr_accrual = None
     instr_accrual_accrued_price = 0.0
 
     # ----------------------------------------------------
 
-    pos_size = 0.0
-    market_value_res = 0.0
-    market_value_loc = 0.0
-    cost_res = 0.0
-    ytm = 0.0
-    modified_duration = 0.0
-    ytm_at_cost = 0.0
-    time_invested = 0.0
-    gross_cost_res = 0.0
-    gross_cost_loc = 0.0
-    net_cost_res = 0.0
-    net_cost_loc = 0.0
-    amount_invested_res = 0.0
-    amount_invested_loc = 0.0
-    pos_return_res = 0.0
-    pos_return_loc = 0.0
-    daily_price_change = 0.0
-    mtd_price_change = 0.0
+    pos_size = 0.0  # +
+    market_value_res = 0.0  # +
+    market_value_loc = 0.0  # +
+    cost_res = 0.0  # +
+    ytm = 0.0  # ?
+    modified_duration = 0.0  # ?
+    ytm_at_cost = 0.0  #
+    time_invested_days = 0.0  # +
+    time_invested = 0.0  # +
+    gross_cost_res = 0.0  # +
+    gross_cost_loc = 0.0  # +
+    net_cost_res = 0.0  # +
+    net_cost_loc = 0.0  # +
+    amount_invested_res = 0.0  # +
+    amount_invested_loc = 0.0  # +
+    pos_return_res = 0.0  # -
+    pos_return_loc = 0.0  # +
+    daily_price_change = 0.0  # +
+    mtd_price_change = 0.0  # +
 
     # P&L ----------------------------------------------------
 
@@ -1060,8 +1077,8 @@ class ReportItem(_Base):
     dump_columns = [
         'type_code',
         'user_code',
-        'short_name',
-        'name',
+        # 'short_name',
+        # 'name',
         # 'trn',
         # 'prtfl',
         # 'acc',
@@ -1078,7 +1095,7 @@ class ReportItem(_Base):
         # 'mismatch_prtfl',
         # 'mismatch_acc',
         # 'mismatch_ccy',
-        'mismatch',
+        # 'mismatch',
 
         'pos_size',
         'market_value_res',
@@ -1088,58 +1105,58 @@ class ReportItem(_Base):
         # 'instr_accrued_res',
 
         # full ----------------------------------------------------
-        # 'principal_res',
-        # 'carry_res',
-        # 'overheads_res',
+        'principal_res',
+        'carry_res',
+        'overheads_res',
         'total_res',
 
         # full / closed ----------------------------------------------------
         # 'principal_closed_res',
         # 'carry_closed_res',
         # 'overheads_closed_res',
-        'total_closed_res',
+        # 'total_closed_res',
 
         # full / opened ----------------------------------------------------
         # 'principal_opened_res',
         # 'carry_opened_res',
         # 'overheads_opened_res',
-        'total_opened_res',
+        # 'total_opened_res',
 
         # fx ----------------------------------------------------
         # 'principal_fx_res',
         # 'carry_fx_res',
         # 'overheads_fx_res',
-        'total_fx_res',
+        # 'total_fx_res',
 
         # fx / closed ----------------------------------------------------
         # 'principal_fx_closed_res',
         # 'carry_fx_closed_res',
         # 'overheads_fx_closed_res',
-        'total_fx_closed_res',
+        # 'total_fx_closed_res',
 
         # fx / opened ----------------------------------------------------
         # 'principal_fx_opened_res',
         # 'carry_fx_opened_res',
         # 'overheads_fx_opened_res',
-        'total_fx_opened_res',
+        # 'total_fx_opened_res',
 
         # fixed ----------------------------------------------------
         # 'principal_fixed_res',
         # 'carry_fixed_res',
         # 'overheads_fixed_res',
-        'total_fixed_res',
+        # 'total_fixed_res',
 
         # fixed / closed ----------------------------------------------------
         # 'principal_fixed_closed_res',
         # 'carry_fixed_closed_res',
         # 'overheads_fixed_closed_res',
-        'total_fixed_closed_res',
+        # 'total_fixed_closed_res',
 
         # fixed / opened ----------------------------------------------------
         # 'principal_fixed_opened_res',
         # 'carry_fixed_opened_res',
         # 'overheads_fixed_opened_res',
-        'total_fixed_opened_res',
+        # 'total_fixed_opened_res',
     ]
 
     def __init__(self, report, pricing_provider, fx_rate_provider, type):
@@ -1228,6 +1245,15 @@ class ReportItem(_Base):
 
             if trn.trn_cls.id in [TransactionClass.BUY, TransactionClass.SELL]:
                 item.last_notes = trn.notes
+
+                # cost_mul = (1.0 - trn.multiplier) / trn.pos_size / trn.instr.price_multiplier
+                cost_mul = safe_div(1.0 - trn.multiplier, trn.pos_size * trn.instr.price_multiplier)
+                item.gross_cost_res = trn.principal_res * cost_mul
+                item.net_cost_res = (trn.principal_res + trn.overheads_res) * cost_mul
+
+                # remaining_pos_size = abs(trn.pos_size * (1.0 - trn.multiplier))
+                # remaining_pos_percent = safe_div(remaining_pos_size, trn.pos)
+                # item.time_invested = (report.report_date - trn.acc_date).days
 
         elif item.type == ReportItem.TYPE_CURRENCY:
             item.acc = acc or trn.acc_cash
@@ -1415,6 +1441,9 @@ class ReportItem(_Base):
             if o.last_notes is not None:
                 self.last_notes = o.last_notes
 
+            self.gross_cost_res += o.gross_cost_res
+            self.net_cost_res += o.net_cost_res
+
         # elif self.type == ReportItem.TYPE_SUMMARY or self.type == ReportItem.TYPE_INVESTED_SUMMARY:
         elif self.type == ReportItem.TYPE_SUMMARY:
             self.market_value_res += o.market_value_res
@@ -1484,6 +1513,19 @@ class ReportItem(_Base):
 
             self.amount_invested_res = self.principal_res + self.carry_res
 
+            if self.instr:
+                # YTM/Duration - берем price из price history на дату репорта.
+                # Для записка итеративного алгоритма, для x0 из accrued schedule
+                # берем на текущую дату - (accrued_size * accrued_multiplier)/(price * price_multiplier).
+                future_accrual_payments = self.instr.get_future_accrual_payments(
+                    d0=self.report.report_date,
+                    v0=self.instr_price_cur_principal_price,
+                    principal_ccy_fx=self.instr_pricing_ccy_cur_fx,
+                    accrual_ccy_fx=self.instr_accrued_ccy_cur_fx
+                )
+                self.ytm = f_xirr(future_accrual_payments)
+                self.modified_duration = f_duration(future_accrual_payments, ytm=self.ytm)
+
         elif self.type == ReportItem.TYPE_MISMATCH:
             # self.market_value_res = self.pos_size * self.ccy_cur_fx
             #
@@ -1502,7 +1544,10 @@ class ReportItem(_Base):
 
         self.market_value_loc = safe_div(self.market_value_res, self.pricing_ccy_cur_fx)
         self.exposure_loc = safe_div(self.exposure_res, self.pricing_ccy_cur_fx)
+        self.gross_cost_loc = safe_div(self.gross_cost_res, self.pricing_ccy_cur_fx)
+        self.net_cost_loc = safe_div(self.net_cost_res, self.pricing_ccy_cur_fx)
         self.amount_invested_loc = safe_div(self.amount_invested_res, self.pricing_ccy_cur_fx)
+        self.pos_return_loc = safe_div(self.pos_return_res, self.pricing_ccy_cur_fx)
 
         # is_empty
 
@@ -1515,34 +1560,86 @@ class ReportItem(_Base):
                             isclose(self.total_closed_res, 0.0) and \
                             isclose(self.total_opened_res, 0.0)
 
-    # ----------------------------------------------------
-    # @staticmethod
-    # def group_key(report, item):
-    #     return (
-    #         item.type,
-    #         getattr(item.prtfl, 'id', None),
-    #         getattr(item.acc, 'id', None),
-    #         getattr(item.str1, 'id', None),
-    #         getattr(item.str2, 'id', None),
-    #         getattr(item.str3, 'id', None),
-    #         getattr(item.alloc_bl, 'id', None),
-    #         getattr(item.alloc_pl, 'id', None),
-    #         getattr(item.instr, 'id', None),
-    #         getattr(item.ccy, 'id', None),
-    #         getattr(item.detail_trn, 'id', None),
-    #     )
-    #
-    # @staticmethod
-    # def mismatch_group_key(report, item):
-    #     return (
-    #         item.type,
-    #         getattr(item.prtfl, 'id', None),
-    #         getattr(item.acc, 'id', None),
-    #         getattr(item.instr, 'id', None),
-    #         getattr(item.mismatch_prtfl, 'id', None),
-    #         getattr(item.mismatch_acc, 'id', None),
-    #         getattr(item.mismatch_ccy, 'id', None),
-    #     )
+    def add_pass2(self, trn):
+        if trn.is_cloned and self.type == ReportItem.TYPE_INSTRUMENT:
+            self.ytm_at_cost += trn.weighted_ytm
+            self.time_invested_days += trn.weighted_time_invested_days
+            # self.time_invested += trn.weighted_time_invested
+
+    def close_pass2(self):
+        if self.type == ReportItem.TYPE_INSTRUMENT:
+            self.time_invested = self.time_invested_days / 365.0
+
+            if self.time_invested_days < 1.0 or isclose(self.time_invested_days, 1.0):
+                # T - report date
+                #  = (Current Price - Gross Cost Price) / Gross Cost Price, if Time Invested in days= 1 day
+                # self.pricing()
+                self.daily_price_change = safe_div(self.instr_price_cur.principal_price - self.gross_cost_loc,
+                                                   self.gross_cost_loc)
+            else:
+                #  = (Current Price at T -  Price from Price History at T-1) / (Price from Price History at T-1) , if Time Invested > 1 day
+                price_yest = self.pricing_provider[self.instr, self.report.report_date - timedelta(days=1)]
+                self.daily_price_change = safe_div(self.instr_price_cur.principal_price - price_yest.principal_price,
+                                                   price_yest.principal_price)
+
+            if self.time_invested_days <= self.report.report_date.day or isclose(self.time_invested_days,
+                                                                                 self.report.report_date.day):
+                # T - report date
+                #  = (Current Price - Gross Cost Price) / Gross Cost Price, if Time Invested in days <= Day(Report Date)
+                self.mtd_price_change = safe_div(self.instr_price_cur.principal_price - self.gross_cost_loc,
+                                                 self.gross_cost_loc)
+            else:
+                #  = (Current Price -  Price from Price History at end_of_previous_month (Report Date)) / (Price from Price History at end_of_previous_month (Report Date)) , if Time Invested > Day(Report Date)
+                price_eom = self.pricing_provider[
+                    self.instr, self.report.report_date - timedelta(days=self.report.report_date.day)]
+                self.mtd_price_change = safe_div(self.instr_price_cur.principal_price - price_eom.principal_price,
+                                                 price_eom.principal_price)
+
+    def pl_sub_item(self, o):
+        self.principal_res -= o.principal_res
+        self.carry_res -= o.carry_res
+        self.overheads_res -= o.overheads_res
+        self.total_res -= o.total_res
+
+        self.principal_closed_res -= o.principal_closed_res
+        self.carry_closed_res -= o.carry_closed_res
+        self.overheads_closed_res -= o.overheads_closed_res
+        self.total_closed_res -= o.total_closed_res
+
+        self.principal_opened_res -= o.principal_opened_res
+        self.carry_opened_res -= o.carry_opened_res
+        self.overheads_opened_res -= o.overheads_opened_res
+        self.total_opened_res -= o.total_opened_res
+
+        self.principal_fx_res -= o.principal_fx_res
+        self.carry_fx_res -= o.carry_fx_res
+        self.overheads_fx_res -= o.overheads_fx_res
+        self.total_fx_res -= o.total_fx_res
+
+        self.principal_fx_closed_res -= o.principal_fx_closed_res
+        self.carry_fx_closed_res -= o.carry_fx_closed_res
+        self.overheads_fx_closed_res -= o.overheads_fx_closed_res
+        self.total_fx_closed_res -= o.total_fx_closed_res
+
+        self.principal_fx_opened_res -= o.principal_fx_opened_res
+        self.carry_fx_opened_res -= o.carry_fx_opened_res
+        self.overheads_fx_opened_res -= o.overheads_fx_opened_res
+        self.total_fx_opened_res -= o.total_fx_opened_res
+
+        self.principal_fixed_res -= o.principal_fixed_res
+        self.carry_fixed_res -= o.carry_fixed_res
+        self.overheads_fixed_res -= o.overheads_fixed_res
+        self.total_fixed_res -= o.total_fixed_res
+
+        self.principal_fixed_closed_res -= o.principal_fixed_closed_res
+        self.carry_fixed_closed_res -= o.carry_fixed_closed_res
+        self.overheads_fixed_closed_res -= o.overheads_fixed_closed_res
+        self.total_fixed_closed_res -= o.total_fixed_closed_res
+
+        self.principal_fixed_opened_res -= o.principal_fixed_opened_res
+        self.carry_fixed_opened_res -= o.carry_fixed_opened_res
+        self.overheads_fixed_opened_res -= o.overheads_fixed_opened_res
+        self.total_fixed_opened_res -= o.total_fixed_opened_res
 
     # ----------------------------------------------------
     @property
@@ -1708,26 +1805,6 @@ class ReportItem(_Base):
 
         return '<ERROR>'
 
-    # @property
-    # def detail(self):
-    #     from poms.reports.serializers import ReportItemSerializer
-    #     my_data = formula.get_model_data(self, ReportItemSerializer, context=self.context)
-    #
-    #     try:
-    #         return formula.safe_eval('item.instr', names={'item': self})
-    #     except formula.InvalidExpression:
-    #         return 'OLALALALALALA'
-    #
-    #     if self.detail_trn:
-    #         expr = self.acc.type.transaction_details_expr
-    #         if expr:
-    #             try:
-    #                 value = formula.safe_eval(expr, names={'item': self})
-    #             except formula.InvalidExpression:
-    #                 value = ugettext('Invalid expression')
-    #             return value
-    #     return None
-
     @property
     def trn_cls(self):
         return getattr(self.trn, 'trn_cls', None)
@@ -1776,6 +1853,7 @@ class Report(object):
                  member=None,
                  task_id=None,
                  task_status=None,
+                 pl_first_date=None,
                  report_date=None,
                  report_currency=None,
                  pricing_policy=None,
@@ -1808,6 +1886,7 @@ class Report(object):
             'member': self.member,
         }
         self.pricing_policy = pricing_policy
+        self.pl_first_date = pl_first_date
         self.report_date = report_date or (date_now() - timedelta(days=1))
         self.report_currency = report_currency or master_user.system_currency
         self.cost_method = cost_method or CostMethod.objects.get(pk=CostMethod.AVCO)
@@ -1858,16 +1937,14 @@ class Report(object):
 
 
 class ReportBuilder(object):
-    def __init__(self, instance=None, queryset=None, transactions=None):
+    def __init__(self, instance=None, queryset=None, transactions=None, pricing_provider=None, fx_rate_provider=None):
         self.instance = instance
         self._queryset = queryset
         self._transactions = transactions
+        self._pricing_provider = pricing_provider
+        self._fx_rate_provider = fx_rate_provider
 
         self._items = []
-
-    # @property
-    # def _system_currency(self):
-    #     return self.instance.master_user.system_currency
 
     @cached_property
     def _trn_cls_sell(self):
@@ -1895,7 +1972,9 @@ class ReportBuilder(object):
             'transaction_class',
             'instrument',
             'instrument__instrument_type',
-            # 'instrument__instrument_type__instrument_class',
+            'instrument__instrument_type__instrument_class',
+            'instrument__pricing_currency',
+            'instrument__accrued_currency',
             'instrument__accrual_calculation_schedules',
             'instrument__accrual_calculation_schedules__accrual_calculation_model',
             'instrument__accrual_calculation_schedules__periodicity',
@@ -1939,53 +2018,52 @@ class ReportBuilder(object):
             'allocation_pl',
             # 'allocation_pl__instrument_type',
             # 'allocation_pl__instrument_type__instrument_class',
-        ).prefetch_related(
-            #     get_attributes_prefetch_by_path('portfolio__attributes'),
-            #     get_attributes_prefetch_by_path('instrument__attributes'),
-            #     get_attributes_prefetch_by_path('account_cash__attributes'),
-            #     get_attributes_prefetch_by_path('account_position__attributes'),
-            #     get_attributes_prefetch_by_path('account_interim__attributes'),
-            #     get_attributes_prefetch_by_path('transaction_currency__attributes'),
-            #     get_attributes_prefetch_by_path('settlement_currency__attributes'),
-            #     *get_permissions_prefetch_lookups(
-            #         ('portfolio', Portfolio),
-            #         ('instrument', Instrument),
-            #         ('instrument__instrument_type', InstrumentType),
-            #         ('account_cash', Account),
-            #         ('account_cash__type', AccountType),
-            #         ('account_position', Account),
-            #         ('account_position__type', AccountType),
-            #         ('account_interim', Account),
-            #         ('account_interim__type', AccountType),
-            #         ('strategy1_position', Strategy1),
-            #         ('strategy1_position__subgroup', Strategy1Subgroup),
-            #         ('strategy1_position__subgroup__group', Strategy1Group),
-            #         ('strategy1_cash', Strategy1),
-            #         ('strategy1_cash__subgroup', Strategy1Subgroup),
-            #         ('strategy1_cash__subgroup__group', Strategy1Group),
-            #         ('strategy2_position', Strategy2),
-            #         ('strategy2_position__subgroup', Strategy2Subgroup),
-            #         ('strategy2_position__subgroup__group', Strategy2Group),
-            #         ('strategy2_cash', Strategy2),
-            #         ('strategy2_cash__subgroup', Strategy2Subgroup),
-            #         ('strategy2_cash__subgroup__group', Strategy2Group),
-            #         ('strategy3_position', Strategy3),
-            #         ('strategy3_position__subgroup', Strategy3Subgroup),
-            #         ('strategy3_position__subgroup__group', Strategy3Group),
-            #         ('strategy3_cash', Strategy3),
-            #         ('strategy3_cash__subgroup', Strategy3Subgroup),
-            #         ('strategy3_cash__subgroup__group', Strategy3Group),
-            #         ('responsible', Responsible),
-            #         ('responsible__group', ResponsibleGroup),
-            #         ('counterparty', Counterparty),
-            #         ('counterparty__group', CounterpartyGroup),
-            #         ('linked_instrument', Instrument),
-            #         ('linked_instrument__instrument_type', InstrumentType),
-            #         ('allocation_balance', Instrument),
-            #         ('allocation_balance__instrument_type', InstrumentType),
-            #         ('allocation_pl', Instrument),
-            #         ('allocation_pl__instrument_type', InstrumentType),
-            #     )
+            # get_attributes_prefetch_by_path('portfolio__attributes'),
+            # get_attributes_prefetch_by_path('instrument__attributes'),
+            # get_attributes_prefetch_by_path('account_cash__attributes'),
+            # get_attributes_prefetch_by_path('account_position__attributes'),
+            # get_attributes_prefetch_by_path('account_interim__attributes'),
+            # get_attributes_prefetch_by_path('transaction_currency__attributes'),
+            # get_attributes_prefetch_by_path('settlement_currency__attributes'),
+            # *get_permissions_prefetch_lookups(
+            #     ('portfolio', Portfolio),
+            #     ('instrument', Instrument),
+            #     ('instrument__instrument_type', InstrumentType),
+            #     ('account_cash', Account),
+            #     ('account_cash__type', AccountType),
+            #     ('account_position', Account),
+            #     ('account_position__type', AccountType),
+            #     ('account_interim', Account),
+            #     ('account_interim__type', AccountType),
+            #     ('strategy1_position', Strategy1),
+            #     ('strategy1_position__subgroup', Strategy1Subgroup),
+            #     ('strategy1_position__subgroup__group', Strategy1Group),
+            #     ('strategy1_cash', Strategy1),
+            #     ('strategy1_cash__subgroup', Strategy1Subgroup),
+            #     ('strategy1_cash__subgroup__group', Strategy1Group),
+            #     ('strategy2_position', Strategy2),
+            #     ('strategy2_position__subgroup', Strategy2Subgroup),
+            #     ('strategy2_position__subgroup__group', Strategy2Group),
+            #     ('strategy2_cash', Strategy2),
+            #     ('strategy2_cash__subgroup', Strategy2Subgroup),
+            #     ('strategy2_cash__subgroup__group', Strategy2Group),
+            #     ('strategy3_position', Strategy3),
+            #     ('strategy3_position__subgroup', Strategy3Subgroup),
+            #     ('strategy3_position__subgroup__group', Strategy3Group),
+            #     ('strategy3_cash', Strategy3),
+            #     ('strategy3_cash__subgroup', Strategy3Subgroup),
+            #     ('strategy3_cash__subgroup__group', Strategy3Group),
+            #     ('responsible', Responsible),
+            #     ('responsible__group', ResponsibleGroup),
+            #     ('counterparty', Counterparty),
+            #     ('counterparty__group', CounterpartyGroup),
+            #     ('linked_instrument', Instrument),
+            #     ('linked_instrument__instrument_type', InstrumentType),
+            #     ('allocation_balance', Instrument),
+            #     ('allocation_balance__instrument_type', InstrumentType),
+            #     ('allocation_pl', Instrument),
+            #     ('allocation_pl__instrument_type', InstrumentType),
+            # )
         )
 
         a_filters = [
@@ -1996,54 +2074,34 @@ class ReportBuilder(object):
         kw_filters = {
             'master_user': self.instance.master_user,
             'is_deleted': False,
-            '%s__lte' % self.instance.date_field: self.instance.report_date
+            '%s__lt' % self.instance.date_field: self.instance.report_date
         }
 
         if self.instance.instruments:
             kw_filters['instrument__in'] = self.instance.instruments
 
         if self.instance.portfolios:
-            # queryset = queryset.filter(portfolio__in=self.instance.portfolios)
             kw_filters['portfolio__in'] = self.instance.portfolios
 
         if self.instance.accounts:
-            # queryset = queryset.filter(account_position__in=self.instance.accounts)
-            # queryset = queryset.filter(account_cash__in=self.instance.accounts)
-            # queryset = queryset.filter(account_interim__in=self.instance.accounts)
             kw_filters['account_position__in'] = self.instance.accounts
             kw_filters['account_cash__in'] = self.instance.accounts
             kw_filters['account_interim__in'] = self.instance.accounts
 
         if self.instance.strategies1:
-            # queryset = queryset.filter(strategy1_position__in=self.instance.strategies1)
-            # queryset = queryset.filter(strategy1_cash__in=self.instance.strategies1)
             kw_filters['strategy1_position__in'] = self.instance.strategies1
             kw_filters['strategy1_cash__in'] = self.instance.strategies1
 
         if self.instance.strategies2:
-            # queryset = queryset.filter(strategy2_position__in=self.instance.strategies2)
-            # queryset = queryset.filter(strategy2_cash__in=self.instance.strategies2)
             kw_filters['strategy2_position__in'] = self.instance.strategies2
             kw_filters['strategy2_cash__in'] = self.instance.strategies2
 
         if self.instance.strategies3:
-            # queryset = queryset.filter(strategy3_position__in=self.instance.strategies3)
-            # queryset = queryset.filter(strategy3_cash__in=self.instance.strategies3)
             kw_filters['strategy3_position__in'] = self.instance.strategies3
             kw_filters['strategy3_cash__in'] = self.instance.strategies3
 
         if self.instance.transaction_classes:
-            # queryset = queryset.filter(transaction_class__in=self.instance.transaction_classes)
             kw_filters['transaction_class__in'] = self.instance.transaction_classes
-
-        # queryset = queryset.filter(
-        #     master_user=self.instance.master_user,
-        #     is_deleted=False,
-        #     **{'%s__lte' % self.instance.date_field: self.instance.report_date}
-        # ).filter(
-        #     Q(complex_transaction__isnull=True) | Q(complex_transaction__status=ComplexTransaction.PRODUCTION,
-        #                                             complex_transaction__is_deleted=False)
-        # )
 
         queryset = queryset.filter(*a_filters, **kw_filters)
 
@@ -2074,25 +2132,29 @@ class ReportBuilder(object):
 
         return sorted(transactions, key=_trn_key)
 
-    @cached_property
+    @property
     def pricing_provider(self):
-        if self.instance.pricing_policy is None:
-            return FakeInstrumentPricingProvider(self.instance.master_user, None, self.instance.report_date)
-        else:
-            p = InstrumentPricingProvider(self.instance.master_user, self.instance.pricing_policy,
-                                          self.instance.report_date)
-            p.fill_using_transactions(self._trn_qs(), lazy=False)
-            return p
+        if self._pricing_provider is None:
+            if self.instance.pricing_policy is None:
+                p = FakeInstrumentPricingProvider(self.instance.master_user, None, self.instance.report_date)
+            else:
+                p = InstrumentPricingProvider(self.instance.master_user, self.instance.pricing_policy,
+                                              self.instance.report_date)
+                p.fill_using_transactions(self._trn_qs(), lazy=False)
+            self._pricing_provider = p
+        return self._pricing_provider
 
-    @cached_property
+    @property
     def fx_rate_provider(self):
-        if self.instance.pricing_policy is None:
-            return FakeCurrencyFxRateProvider(self.instance.master_user, None, self.instance.report_date)
-        else:
-            p = CurrencyFxRateProvider(self.instance.master_user, self.instance.pricing_policy,
-                                       self.instance.report_date)
-            p.fill_using_transactions(self._trn_qs(), currencies=[self.instance.report_currency], lazy=False)
-            return p
+        if self._fx_rate_provider is None:
+            if self.instance.pricing_policy is None:
+                p = FakeCurrencyFxRateProvider(self.instance.master_user, None, self.instance.report_date)
+            else:
+                p = CurrencyFxRateProvider(self.instance.master_user, self.instance.pricing_policy,
+                                           self.instance.report_date)
+                p.fill_using_transactions(self._trn_qs(), currencies=[self.instance.report_currency], lazy=False)
+            self._fx_rate_provider = p
+        return self._fx_rate_provider
 
     def get_transactions(self):
         if self._transactions is not None:
@@ -2178,161 +2240,9 @@ class ReportBuilder(object):
 
         return res
 
-    # def _calc_multipliers(self, src):
-    #     rolling_positions = Counter()
-    #     items = defaultdict(list)
-    #
-    #     res = []
-    #
-    #     def _set_mul(t0, multiplier):
-    #         delta = multiplier - t0.multiplier
-    #         t0.multiplier = multiplier
-    #         return delta
-    #
-    #     def _close_by(closed, cur, delta):
-    #         closed.closed_by.append((cur, delta))
-    #
-    #     for t in src:
-    #         res.append(t)
-    #
-    #         if t.trn_cls.id not in [TransactionClass.BUY, TransactionClass.SELL]:
-    #             continue
-    #
-    #         t_key = (
-    #             getattr(t.prtfl, 'id', None) if self.instance.portfolio_mode == Report.MODE_INDEPENDENT else None,
-    #             getattr(t.acc_pos, 'id', None) if self.instance.account_mode == Report.MODE_INDEPENDENT else None,
-    #             getattr(t.str1_pos, 'id', None) if self.instance.strategy1_mode == Report.MODE_INDEPENDENT else None,
-    #             getattr(t.str2_pos, 'id', None) if self.instance.strategy2_mode == Report.MODE_INDEPENDENT else None,
-    #             getattr(t.str3_pos, 'id', None) if self.instance.strategy3_mode == Report.MODE_INDEPENDENT else None,
-    #             getattr(t.instr, 'id', None),
-    #         )
-    #
-    #         t.multiplier = 0.0
-    #         t.closed_by = []
-    #         rolling_position = rolling_positions[t_key]
-    #
-    #         if isclose(rolling_position, 0.0):
-    #             k = -1
-    #         else:
-    #             k = - t.pos_size / rolling_position
-    #
-    #         if self.instance.cost_method.id == CostMethod.AVCO:
-    #
-    #             if k > 1.0:
-    #                 if t_key in items:
-    #                     for t0 in items[t_key]:
-    #                         delta = _set_mul(t0, 1.0)
-    #                         _close_by(t0, t, delta)
-    #                     del items[t_key]
-    #                 items[t_key].append(t)
-    #                 _set_mul(t, 1.0 / k)
-    #                 rolling_position = t.pos_size * (1.0 - t.multiplier)
-    #
-    #             elif isclose(k, 1.0):
-    #                 if t_key in items:
-    #                     for t0 in items[t_key]:
-    #                         delta = _set_mul(t0, 1.0)
-    #                         _close_by(t0, t, delta)
-    #                     del items[t_key]
-    #                 _set_mul(t, 1.0)
-    #                 rolling_position = 0.0
-    #
-    #             elif k > 0.0:
-    #                 if t_key in items:
-    #                     for t0 in items[t_key]:
-    #                         delta = _set_mul(t0, t0.multiplier + k * (1.0 - t0.multiplier))
-    #                         _close_by(t0, t, delta)
-    #                 _set_mul(t, 1.0)
-    #                 rolling_position += t.pos_size
-    #
-    #             else:
-    #                 items[t_key].append(t)
-    #                 rolling_position += t.pos_size
-    #
-    #         elif self.instance.cost_method.id == CostMethod.FIFO:
-    #
-    #             if k > 1.0:
-    #                 if t_key in items:
-    #                     for t0 in items[t_key]:
-    #                         delta = _set_mul(t0, 1.0)
-    #                         _close_by(t0, t, delta)
-    #                     items[t_key].clear()
-    #                 items[t_key].append(t)
-    #                 _set_mul(t, 1.0 / k)
-    #                 rolling_position = t.pos_size * (1.0 - t.multiplier)
-    #
-    #             elif isclose(k, 1.0):
-    #                 if t_key in items:
-    #                     for t0 in items[t_key]:
-    #                         delta = _set_mul(t0, 1.0)
-    #                         _close_by(t0, t, delta)
-    #                     del items[t_key]
-    #                 _set_mul(t, 1.0)
-    #                 rolling_position = 0.0
-    #
-    #             elif k > 0.0:
-    #                 position = t.pos_size
-    #                 if t_key in items:
-    #                     t_items = items[t_key]
-    #                     for t0 in t_items:
-    #                         remaining = t0.pos_size * (1.0 - t0.multiplier)
-    #                         k0 = - position / remaining
-    #                         if k0 > 1.0:
-    #                             delta = _set_mul(t0, 1.0)
-    #                             _close_by(t0, t, delta)
-    #                             position += remaining
-    #                         elif isclose(k0, 1.0):
-    #                             delta = _set_mul(t0, 1.0)
-    #                             _close_by(t0, t, delta)
-    #                             position += remaining
-    #                         elif k0 > 0.0:
-    #                             position += remaining * k0
-    #                             delta = _set_mul(t0, t0.multiplier + k0 * (1.0 - t0.multiplier))
-    #                             _close_by(t0, t, delta)
-    #                         # else:
-    #                         #     break
-    #                         if isclose(position, 0.0):
-    #                             break
-    #                     t_items = [t0 for t0 in t_items if not isclose(t0.multiplier, 1.0)]
-    #                     if t_items:
-    #                         items[t_key] = t_items
-    #                     else:
-    #                         del items[t_key]
-    #
-    #                 _set_mul(t, abs((t.pos_size - position) / t.pos_size))
-    #                 rolling_position += t.pos_size * t.multiplier
-    #
-    #             else:
-    #                 items[t_key].append(t)
-    #                 rolling_position += t.pos_size
-    #
-    #         rolling_positions[t_key] = rolling_position
-    #
-    #     return res
-
     def calc_multipliers(self, transactions):
-        # # TO DO: check. approach_clone
-        # if self.instance.cost_method.id == CostMethod.AVCO:
-        #     self._calc_avco_multipliers(src)
-        # elif self.instance.cost_method.id == CostMethod.FIFO:
-        #     self._calc_fifo_multipliers(src)
         self.calc_avco_multipliers(transactions)
         self.calc_fifo_multipliers(transactions)
-
-        # res = []
-        # if self.instance.cost_method.id == CostMethod.AVCO:
-        #     for t in src:
-        #         # res.append(t)
-        #         t.multiplier = t.avco_multiplier
-        # elif self.instance.cost_method.id == CostMethod.FIFO:
-        #     for t in src:
-        #         # res.append(t)
-        #         t.multiplier = t.fifo_multiplier
-        # else:
-        #     for t in src:
-        #         # res.append(t)
-        #         t.multiplier = 0.0
-        #         # return src
 
         for t in transactions:
             # res.append(t)
@@ -2586,7 +2496,7 @@ class ReportBuilder(object):
             else:
                 raise RuntimeError('Invalid transaction class: %s' % trn.trn_cls.id)
 
-        def _group_key(item):
+        def _item_key(item):
             return (
                 item.type,
                 getattr(item.prtfl, 'id', -1),
@@ -2602,12 +2512,43 @@ class ReportBuilder(object):
                 getattr(item.detail_trn, 'id', -1),
             )
 
-        _items = sorted(self._items, key=_group_key)
+        def _pass2_item_key(trn=None, item=None):
+            if trn:
+                return (
+                    getattr(trn.prtfl, 'id', -1),
+                    getattr(trn.acc_pos, 'id', -1),
+                    getattr(trn.str1_pos, 'id', -1),
+                    getattr(trn.str2_pos, 'id', -1),
+                    getattr(trn.str3_pos, 'id', -1),
+                    getattr(trn.alloc_bl, 'id', -1),
+                    getattr(trn.alloc_pl, 'id', -1),
+                    getattr(trn.instr, 'id', -1),
+                    # getattr(trn.ccy, 'id', -1),
+                    # getattr(trn.trn_ccy, 'id', -1),
+                )
+            elif item:
+                return (
+                    getattr(item.prtfl, 'id', -1),
+                    getattr(item.acc, 'id', -1),
+                    getattr(item.str1, 'id', -1),
+                    getattr(item.str2, 'id', -1),
+                    getattr(item.str3, 'id', -1),
+                    getattr(item.alloc_bl, 'id', -1),
+                    getattr(item.alloc_pl, 'id', -1),
+                    getattr(item.instr, 'id', -1),
+                    # getattr(item.ccy, 'id', -1),
+                    # getattr(item.trn_ccy, 'id', -1),
+                )
+            else:
+                raise RuntimeError('code bug')
+
+        _items = sorted(self._items, key=_item_key)
 
         # aggregate items
 
         res_items = []
-        for k, g in groupby(_items, key=_group_key):
+        res_items_for_instr = {}
+        for k, g in groupby(_items, key=_item_key):
             res_item = None
 
             for item in g:
@@ -2621,6 +2562,24 @@ class ReportBuilder(object):
                 res_item.pricing()
                 res_item.close()
                 res_items.append(res_item)
+
+                if res_item.type == ReportItem.TYPE_INSTRUMENT and res_item.instr:
+                    pass2_item_key = _pass2_item_key(item=res_item)
+                    res_items_for_instr[pass2_item_key] = res_item
+
+        # pass 2 - some values can calculate only after "balance"
+        for trn in transactions:
+            if not trn.is_cloned and trn.trn_cls.id in [TransactionClass.BUY, TransactionClass.SELL]:
+                pass2_item_key = _pass2_item_key(trn=trn)
+                item = res_items_for_instr.get(pass2_item_key, None)
+                if item:
+                    trn.calc_pass2(balance_pos_size=item.pos_size)
+                    item.add_pass2(trn)
+                else:
+                    raise RuntimeError('Oh error')
+
+        for item in res_items:
+            item.close_pass2()
 
         # ReportItem.dumps(_items)
 
@@ -2667,6 +2626,9 @@ class ReportBuilder(object):
         # self.instance.items = res_items + mismatch_items + [summary, ] + invested_items + [invested_summary, ]
         self.instance.items = res_items + mismatch_items + summaries
 
+        if self.instance.pl_first_date and self.instance.pl_first_date != date.min:
+            self._build_on_pl_first_date()
+
         if full:
             self._refresh_with_perms()
 
@@ -2681,6 +2643,91 @@ class ReportBuilder(object):
         # _l.debug('3' * 100)
 
         return self.instance
+
+    def _build_on_pl_first_date(self):
+        report_on_pl_first_date = Report(
+            master_user=self.instance.master_user,
+            member=self.instance.member,
+            pl_first_date=None,
+            report_date=self.instance.pl_first_date,
+            report_currency=self.instance.report_currency,
+            pricing_policy=self.instance.pricing_policy,
+            cost_method=self.instance.cost_method,
+            portfolio_mode=self.instance.portfolio_mode,
+            account_mode=self.instance.account_mode,
+            strategy1_mode=self.instance.strategy1_mode,
+            strategy2_mode=self.instance.strategy2_mode,
+            strategy3_mode=self.instance.strategy3_mode,
+            show_transaction_details=self.instance.show_transaction_details,
+            approach_multiplier=self.instance.approach_multiplier,
+            instruments=self.instance.instruments,
+            portfolios=self.instance.portfolios,
+            accounts=self.instance.accounts,
+            strategies1=self.instance.strategies1,
+            strategies2=self.instance.strategies2,
+            strategies3=self.instance.strategies3,
+            transaction_classes=self.instance.transaction_classes,
+            date_field=self.instance.date_field,
+            custom_fields=self.instance.custom_fields,
+        )
+
+        builder = self.__class__(report_on_pl_first_date)
+        builder.build(full=False)
+
+        if not report_on_pl_first_date.items:
+            return
+
+        def _item_key(item):
+            return (
+                item.type,
+                getattr(item.prtfl, 'id', -1),
+                getattr(item.acc, 'id', -1),
+                getattr(item.str1, 'id', -1),
+                getattr(item.str2, 'id', -1),
+                getattr(item.str3, 'id', -1),
+                getattr(item.alloc_bl, 'id', -1),
+                getattr(item.alloc_pl, 'id', -1),
+                getattr(item.instr, 'id', -1),
+                getattr(item.ccy, 'id', -1),
+                getattr(item.trn_ccy, 'id', -1),
+                getattr(item.detail_trn, 'id', -1),
+            )
+
+        items_on_rep_date = {_item_key(i): i for i in self.instance.items}
+        # items_on_pl_start_date = {_item_key(i): i for i in report_on_pl_first_date.items}
+
+        for item_plsd in report_on_pl_first_date.items:
+            key = _item_key(item_plsd)
+            item_rpd = items_on_rep_date.get(key, None)
+
+            if item_rpd:
+                item_rpd.pl_sub_item(item_plsd)
+
+            else:
+                item_rpd = ReportItem(self.instance, self.pricing_provider, self.fx_rate_provider, item_plsd.type)
+
+                item_rpd.instr = item_plsd.instr
+                item_rpd.ccy = item_plsd.ccy
+                item_rpd.trn_ccy = item_plsd.trn_ccy
+                item_rpd.prtfl = item_plsd.prtfl
+                item_rpd.instr = item_plsd.instr
+                item_rpd.acc = item_plsd.acc
+                item_rpd.str1 = item_plsd.str1
+                item_rpd.str2 = item_plsd.str2
+                item_rpd.str3 = item_plsd.str3
+                item_rpd.pricing_ccy = item_plsd.pricing_ccy
+                item_rpd.trn = item_plsd.trn
+                item_rpd.alloc_bl = item_plsd.alloc_bl
+                item_rpd.alloc_pl = item_plsd.alloc_pl
+                item_rpd.mismatch_prtfl = item_plsd.mismatch_prtfl
+                item_rpd.mismatch_acc = item_plsd.mismatch_acc
+
+                item_rpd.pricing()
+                item_rpd.pl_sub_item(item_plsd)
+
+                self.instance.items.append(item_rpd)
+
+        return report_on_pl_first_date
 
     def _add_instr(self, trn):
         if trn.case == 0:

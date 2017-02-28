@@ -13,8 +13,9 @@ from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext, ugettext_lazy
 from mptt.models import MPTTModel
 
+from poms.common.formula_accruals import f_xirr
 from poms.common.models import NamedModel, AbstractClassModel, FakeDeletableModel
-from poms.common.utils import date_now, isclose
+from poms.common.utils import date_now, isclose, safe_div
 from poms.obj_attrs.models import GenericAttribute
 from poms.obj_perms.models import GenericObjectPermission
 from poms.tags.models import TagLink
@@ -182,35 +183,32 @@ class Periodicity(AbstractClassModel):
         verbose_name = ugettext_lazy('periodicity')
         verbose_name_plural = ugettext_lazy('periodicities')
 
-    def to_timedelta(self, delta=1, same_date=None):
-        if delta is None:
-            delta = 1
-
+    def to_timedelta(self, n=1, i=1, same_date=None):
         if self.id == Periodicity.N_DAY:
-            return relativedelta.relativedelta(days=delta)
+            return relativedelta.relativedelta(days=n * i)
         elif self.id == Periodicity.N_WEEK_EOBW:
             # return relativedelta.relativedelta(days=7 * delta, weekday=relativedelta.FR)
-            return relativedelta.relativedelta(weeks=delta, weekday=relativedelta.FR)
+            return relativedelta.relativedelta(weeks=n * i, weekday=relativedelta.FR)
         elif self.id == Periodicity.N_MONTH_EOM:
-            return relativedelta.relativedelta(months=delta, day=31)
+            return relativedelta.relativedelta(months=n * i, day=31)
         elif self.id == Periodicity.N_MONTH_SAME_DAY:
-            return relativedelta.relativedelta(months=delta, day=same_date.day)
+            return relativedelta.relativedelta(months=n * i, day=same_date.day)
         elif self.id == Periodicity.N_YEAR_EOY:
-            return relativedelta.relativedelta(years=delta, month=12, day=31)
+            return relativedelta.relativedelta(years=n * i, month=12, day=31)
         elif self.id == Periodicity.N_YEAR_SAME_DAY:
-            return relativedelta.relativedelta(years=delta, month=same_date.month, day=same_date.day)
+            return relativedelta.relativedelta(years=n * i, month=same_date.month, day=same_date.day)
         elif self.id == Periodicity.WEEKLY:
-            return relativedelta.relativedelta(weeks=1 * delta)
+            return relativedelta.relativedelta(weeks=1 * i)
         elif self.id == Periodicity.MONTHLY:
-            return relativedelta.relativedelta(months=1 * delta)
+            return relativedelta.relativedelta(months=1 * i)
         elif self.id == Periodicity.BIMONTHLY:
-            return relativedelta.relativedelta(months=2 * delta)
+            return relativedelta.relativedelta(months=2 * i)
         elif self.id == Periodicity.QUARTERLY:
-            return relativedelta.relativedelta(months=3 * delta)
+            return relativedelta.relativedelta(months=3 * i)
         elif self.id == Periodicity.SEMI_ANNUALLY:
-            return relativedelta.relativedelta(months=6 * delta)
+            return relativedelta.relativedelta(months=6 * i)
         elif self.id == Periodicity.ANNUALLY:
-            return relativedelta.relativedelta(years=1 * delta)
+            return relativedelta.relativedelta(years=1 * i)
         return None
 
     def to_freq(self):
@@ -605,6 +603,89 @@ class Instrument(NamedModel, FakeDeletableModel):
                                        dt3=accrual.first_payment_date)
         return accrual.accrual_size * factor
 
+    def get_future_accrual_payments(self, data=None, d0=None, v0=None, begin_date=None, accruals=None,
+                                    principal_ccy_fx=1.0, accrual_ccy_fx=1.0):
+        # accrual_start_date
+        # accrual_end_date -> fake
+        # first_payment_date
+        # accrual_size
+        # accrual_calculation_model -> AccrualCalculationModel
+        # periodicity -> Periodicity
+        # periodicity_n
+        if accruals is None:
+            # accruals = list(self.accrual_calculation_schedules.select_related(
+            #     'accrual_calculation_model', 'periodicity',
+            # ).order_by('accrual_start_date').all())
+            # accruals = list(self.accrual_calculation_schedules.all())
+            # accruals = sorted(accruals, key=lambda x: x.accrual_start_date)
+            try:
+                accruals = self._get_future_accrual_payments_accruals
+            except AttributeError:
+                accruals = list(self.accrual_calculation_schedules.all())
+                accruals = sorted(accruals, key=lambda x: x.accrual_start_date)
+                self._get_future_accrual_payments_accruals = accruals
+
+        if data is None:
+            data = []
+
+        if d0 is not None and v0 is not None:
+            data.append((d0, v0))
+
+        if begin_date is None:
+            if data:
+                d0, v0 = data[-1]
+                begin_date = d0
+            else:
+                begin_date = date.min
+
+        a = None
+        for next_a in accruals:
+            if a is not None:
+                a.accrual_end_date = next_a.accrual_start_date
+            a = next_a
+        if a:
+            a.accrual_end_date = self.maturity_date
+
+        a_to_p_mul = None  # lazy
+
+        for a in accruals:
+            if a.accrual_end_date <= begin_date:
+                continue
+            for i in range(0, settings.INSTRUMENT_EVENTS_REGULAR_MAX_INTERVALS):
+                d = a.first_payment_date + a.periodicity.to_timedelta(n=a.periodicity_n, i=i,
+                                                                      same_date=a.accrual_start_date)
+                if d > a.accrual_end_date:
+                    break
+                if d <= begin_date:
+                    continue
+
+                if a_to_p_mul is None:
+                    a_to_p_mul = safe_div(self.accrued_multiplier, self.price_multiplier)
+                    if not isclose(principal_ccy_fx, accrual_ccy_fx):
+                        a_to_p_mul *= safe_div(accrual_ccy_fx, principal_ccy_fx)
+
+                data.append((d, a.accrual_size * a_to_p_mul))
+
+        if self.maturity_date >= begin_date:
+            if data:
+                last_d, last_p = data[-1]
+                if last_d == self.maturity_date:
+                    data[-1] = (last_d, last_p + self.maturity_price)
+                else:
+                    data.append((self.maturity_date, self.maturity_price))
+            else:
+                data.append((self.maturity_date, self.maturity_price))
+
+        return data
+
+    def xirr(self, d0, v0):
+        data = [(d0, v0)]
+        data = self.get_future_accrual_payments(data)
+        return data, f_xirr(data)
+
+    def duration(self, data, ytm):
+        return f_duration(data, self.ytm)
+
 
 @python_2_unicode_compatible
 class ManualPricingFormula(models.Model):
@@ -654,6 +735,7 @@ class AccrualCalculationSchedule(models.Model):
     instrument = models.ForeignKey(Instrument, related_name='accrual_calculation_schedules',
                                    verbose_name=ugettext_lazy('instrument'))
     accrual_start_date = models.DateField(default=date_now, verbose_name=ugettext_lazy('accrual start date'))
+    accrual_end_date = None
     first_payment_date = models.DateField(default=date_now, verbose_name=ugettext_lazy('first payment date'))
     # TODO: is %
     accrual_size = models.FloatField(default=0.0, verbose_name=ugettext_lazy('accrual size'))
@@ -748,8 +830,8 @@ class EventSchedule(models.Model):
 
         elif self.event_class_id == EventClass.REGULAR:
             for i in range(0, settings.INSTRUMENT_EVENTS_REGULAR_MAX_INTERVALS):
-                effective_date = self.effective_date + self.periodicity.to_timedelta(
-                    i, same_date=self.effective_date)
+                effective_date = self.effective_date + self.periodicity.to_timedelta(n=self.periodicity_n, i=i,
+                                                                                     same_date=self.effective_date)
                 notification_date = effective_date - notification_date_correction
                 # _l.debug('i=%s, book_date=%s, notify_date=%s', i, effective_date, notification_date)
 

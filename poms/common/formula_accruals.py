@@ -1,16 +1,20 @@
 from __future__ import unicode_literals, division
 
 import calendar
+import logging
 from datetime import date, timedelta
 
 from dateutil import relativedelta, rrule
+from scipy.optimize import newton
+
+_l = logging.getLogger('poms.common')
 
 
 def coupon_accrual_factor(
         accrual_calculation_schedule=None,
         accrual_calculation_model=None, periodicity=None, periodicity_n=None,
         dt1=None, dt2=None, dt3=None, maturity_date=None):
-    from poms.instruments.models import AccrualCalculationModel, Periodicity
+    from poms.instruments.models import AccrualCalculationModel
 
     # day_convention_code - accrual_calculation_model
     # freq
@@ -377,8 +381,118 @@ def weekday(dt1, dt2, byweekday):
     return count
 
 
-if __name__ == "__main__":
+def f_xnpv(data, rate):
+    '''Equivalent of Excel's XNPV function.
+    https://support.office.com/en-us/article/XNPV-function-1b42bbf6-370f-4532-a0eb-d67c16b664b7
 
+    >>> from datetime import date
+    >>> dates = [date(2016, 2, 16), date(2016, 3, 10), date(2016, 9, 1), date(2017, 1, 17), ]
+    >>> values = [-90, 5, 5, 105, ]
+    >>> data = [(d, v) for d, v in zip(dates, values)]
+    >>> f_xnpv(0.09, data)
+    16.7366702148651
+    '''
+    # _l.debug('xnpv > rate=%s', rate)
+    if not data:
+        return 0.0
+
+    if rate <= -1.0:
+        return float('inf')
+    d0, v0 = data[0]  # or min(dates)
+
+    # for di, vi in data:
+    #     _l.debug('f_xnpv: di=%s, vi=%s 1rate=%s, days=%s, exp=%s',
+    #              di, vi, (1.0 + rate), (di - d0).days, ((di - d0).days / 365.0) )
+    #     try:
+    #         _l.debug('    res=%s', vi / ((1.0 + rate) ** ((di - d0).days / 365.0)))
+    #     except Exception as e:
+    #         _l.debug('    res=%s', repr(e))
+
+    try:
+        return sum(
+            vi / ((1.0 + rate) ** ((di - d0).days / 365.0))
+            for di, vi in data
+        )
+    except (OverflowError, ZeroDivisionError):
+        return 0.0
+
+
+def f_xirr(data, x0=0.0, tol=0.0001, maxiter=None):
+    '''Equivalent of Excel's XIRR function.
+    https://support.office.com/en-us/article/XIRR-function-de1242ec-6477-445b-b11b-a303ad9adc9d
+
+    >>> from datetime import date
+    >>> dates = [date(2016, 2, 16), date(2016, 3, 10), date(2016, 9, 1), date(2017, 1, 17), ]
+    >>> values = [-90, 5, 5, 105, ]
+    >>> data = [(d, v) for d, v in zip(dates, values)]
+    >>> f_xirr(values, dates)
+    0.3291520343150294
+    '''
+    # _l.debug('f_xirr: data=%s', data)
+
+    # return newton(lambda r: xnpv(r, values, dates), 0.0), \
+    #        brentq(lambda r: xnpv(r, values, dates), -1.0, 1e10)
+    # return newton(lambda r: xnpv(r, values, dates), 0.0)
+    # return brentq(lambda r: xnpv(r, values, dates), -1.0, 1e10)
+
+    if not data:
+        return 0.0
+
+    try:
+        kw = {}
+        if tol is not None:
+            kw['tol'] = tol
+        if maxiter is not None:
+            kw['maxiter'] = maxiter
+        return newton(func=lambda r: f_xnpv(data, r), x0=x0, **kw)
+    except RuntimeError:  # Failed to converge?
+        # _l.debug('newton error', exc_info=True)
+        return 0.0
+
+
+def f_duration(data, ytm=None):
+    '''Equivalent of Excel's XIRR function.
+    https://support.office.com/en-us/article/XIRR-function-de1242ec-6477-445b-b11b-a303ad9adc9d
+
+    >>> from datetime import date
+    >>> dates = [date(2016, 2, 16), date(2016, 3, 10), date(2016, 9, 1), date(2017, 1, 17), ]
+    >>> values = [-90, 5, 5, 105, ]
+    >>> data = [(d, v) for d, v in zip(dates, values)]
+    >>> f_xirr(data)
+    0.6438341602180792
+    '''
+    # _l.debug('duration >')
+
+    if not data:
+        return 0.0
+
+    if ytm is None:
+        ytm = f_xirr(data)
+    d0, v0 = data[0]
+    v0 = -v0
+
+    # if _l.isEnabledFor(logging.DEBUG):
+    #     discounted_cf = [(vi / ((1 + ytm) ** ((di - d0).days / 365.0)))
+    #                      for i, (vi, di) in enumerate(zip(values, dates))
+    #                      if i != 0]
+    #     dur1 = [((di - d0).days / 365.0) * (vi / ((1 + ytm) ** ((di - d0).days / 365.0)))
+    #             for i, (vi, di) in enumerate(zip(values, dates))
+    #             if i != 0]
+    #     _l.debug('values: %s', values)
+    #     _l.debug('dates: %s', dates)
+    #     _l.debug('discounted_cf: %s', discounted_cf)
+    #     _l.debug('dur1: %s', dur1)
+
+    try:
+        return sum(
+            ((di - d0).days / 365.0) * (vi / ((1.0 + ytm) ** ((di - d0).days / 365.0)))
+            for di, vi in data
+        ) / v0 / (1 + ytm)
+    except (OverflowError, ZeroDivisionError):
+        return 0.0
+
+
+if __name__ == "__main__":
     # noinspection PyUnresolvedReferences
     import env_ai
     import django
@@ -406,9 +520,9 @@ if __name__ == "__main__":
     print('-' * 10)
     for periodicity in Periodicity.objects.all():
         d = d0
-        td0 = periodicity.to_timedelta(delta=0, same_date=d)
-        td1 = periodicity.to_timedelta(delta=1, same_date=d)
-        td2 = periodicity.to_timedelta(delta=2, same_date=d)
+        td0 = periodicity.to_timedelta(n=0, i=1, same_date=d)
+        td1 = periodicity.to_timedelta(n=1, i=1, same_date=d)
+        td2 = periodicity.to_timedelta(n=2, i=1, same_date=d)
         print(0, periodicity.id, periodicity.system_code, td0, td1, td2)
         print('\t', d + td0, d + td1, d + td2)
 

@@ -1,6 +1,7 @@
 import logging
 
 from celery import shared_task
+from django.db import transaction
 from django.utils import translation, timezone
 
 from poms.reports.builders import ReportBuilder
@@ -23,10 +24,14 @@ class FakeRequest:
 @shared_task(name='reports.build_report', expires=30)
 def build_report(instance):
     _l.debug('build_report: %s', instance)
-    builder = ReportBuilder(instance=instance)
-    instance = builder.build()
-    _l.debug('finished')
-    return instance
+    with transaction.atomic():
+        try:
+            builder = ReportBuilder(instance=instance)
+            instance = builder.build()
+            return instance
+        finally:
+            transaction.set_rollback(True)
+            _l.debug('finished')
 
 
 def _json_cb(data, master_user, member, serializer_class):
@@ -61,10 +66,14 @@ def _json_cb(data, master_user, member, serializer_class):
 @shared_task(name='reports.transaction_report', expires=30)
 def transaction_report(instance):
     _l.debug('transaction_report: >')
-    builder = TransactionReportBuilder(instance)
-    builder.build()
-    _l.debug('transaction_report: <')
-    return builder.instance
+    with transaction.atomic():
+        try:
+            builder = TransactionReportBuilder(instance)
+            builder.build()
+            return builder.instance
+        finally:
+            transaction.set_rollback(True)
+            _l.debug('transaction_report: <')
 
 
 @shared_task(name='reports.transaction_report_json', expires=30)
@@ -81,7 +90,11 @@ def transaction_report_json(data, master_user, member):
 @shared_task(name='reports.cash_flow_projection_report', expires=30)
 def cash_flow_projection_report(instance):
     _l.debug('cash_flow_projection_report: >')
-    builder = CashFlowProjectionReportBuilder(instance)
-    builder.build()
-    _l.debug('cash_flow_projection_report: <')
-    return builder.instance
+    with transaction.atomic():
+        try:
+            builder = CashFlowProjectionReportBuilder(instance)
+            builder.build()
+            return builder.instance
+        finally:
+            transaction.set_rollback(True)
+            _l.debug('cash_flow_projection_report: <')

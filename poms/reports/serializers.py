@@ -7,6 +7,7 @@ from django.conf import settings
 from django.utils.functional import cached_property
 from django.utils.translation import ugettext_lazy, ugettext
 from rest_framework import serializers
+from rest_framework.exceptions import ValidationError
 
 from poms.accounts.fields import AccountField
 from poms.accounts.serializers import AccountSerializer, AccountViewSerializer
@@ -40,11 +41,12 @@ from poms.users.fields import MasterUserField, HiddenMemberField
 class CustomFieldSerializer(serializers.ModelSerializer):
     master_user = MasterUserField()
     expr = ExpressionField(required=False, allow_blank=True, default='""')
+    layout = serializers.JSONField(required=False, allow_null=True)
 
     class Meta:
         model = CustomField
         fields = [
-            'id', 'master_user', 'name', 'expr'
+            'id', 'master_user', 'name', 'expr', 'layout'
         ]
 
 
@@ -395,8 +397,10 @@ class ReportItemSerializer(serializers.Serializer):
     instrument_accrued_price = serializers.FloatField(source='instr_price_cur_accrued_price', read_only=True)
 
     report_currency_fx_rate = serializers.FloatField(source='report_ccy_cur_fx', read_only=True)
-    instrument_price_history_principal_price = serializers.FloatField(source='instr_price_cur_principal_price', read_only=True)
-    instrument_price_history_accrued_price = serializers.FloatField(source='instr_price_cur_accrued_price', read_only=True)
+    instrument_price_history_principal_price = serializers.FloatField(source='instr_price_cur_principal_price',
+                                                                      read_only=True)
+    instrument_price_history_accrued_price = serializers.FloatField(source='instr_price_cur_accrued_price',
+                                                                    read_only=True)
     instrument_pricing_currency_fx_rate = serializers.FloatField(source='instr_pricing_ccy_cur_fx', read_only=True)
     instrument_accrued_currency_fx_rate = serializers.FloatField(source='instr_accrued_ccy_cur_fx', read_only=True)
     currency_fx_rate = serializers.FloatField(source='ccy_cur_fx', read_only=True)
@@ -409,9 +413,9 @@ class ReportItemSerializer(serializers.Serializer):
     market_value_loc = serializers.FloatField(read_only=True)
     cost = serializers.FloatField(source='cost_res', read_only=True)
     ytm = serializers.FloatField(read_only=True)
-    modified_duration = serializers.FloatField( read_only=True)
+    modified_duration = serializers.FloatField(read_only=True)
     ytm_at_cost = serializers.FloatField(read_only=True)
-    time_invested = serializers.FloatField( read_only=True)
+    time_invested = serializers.FloatField(read_only=True)
     gross_cost_price = serializers.FloatField(source='gross_cost_res', read_only=True)
     gross_cost_price_loc = serializers.FloatField(source='gross_cost_loc', read_only=True)
     net_cost_price = serializers.FloatField(source='net_cost_res', read_only=True)
@@ -596,7 +600,10 @@ class ReportSerializer(serializers.Serializer):
     master_user = MasterUserField()
     member = HiddenMemberField()
     pricing_policy = PricingPolicyField()
-    report_date = serializers.DateField(required=False, allow_null=True, default=date_now)
+    pl_first_date = serializers.DateField(required=False, allow_null=True,
+                                          help_text=ugettext_lazy('First date for pl report'))
+    report_date = serializers.DateField(required=False, allow_null=True, default=date_now,
+                                        help_text=ugettext_lazy('Report date or second date for pl report'))
     report_currency = CurrencyField(required=False, allow_null=True, default=SystemCurrencyDefault())
     cost_method = serializers.PrimaryKeyRelatedField(queryset=CostMethod.objects, allow_null=True, allow_empty=True)
 
@@ -658,6 +665,14 @@ class ReportSerializer(serializers.Serializer):
             else:
                 attrs['report_date'] = date_now() - timedelta(days=1)
 
+        pl_first_date = attrs.get('pl_first_date', None)
+        if pl_first_date and pl_first_date >= attrs['report_date']:
+            raise ValidationError(ugettext('"pl_first_date" must be lesser than "report_date"'))
+
+        if not attrs.get('pl_first_date', None):
+            if settings.DEBUG:
+                attrs['pl_first_date'] = date(2017, 2, 10)
+
         if not attrs.get('report_currency', None):
             attrs['report_currency'] = attrs['master_user'].system_currency
 
@@ -675,9 +690,8 @@ class ReportSerializer(serializers.Serializer):
 
 class TransactionReportItemSerializer(serializers.Serializer):
     id = serializers.ReadOnlyField()
-
-    complex_transaction = ReportComplexTransactionSerializer(read_only=True)
-
+    # complex_transaction = ReportComplexTransactionSerializer(read_only=True)
+    complex_transaction = serializers.PrimaryKeyRelatedField(read_only=True)
     transaction_code = serializers.ReadOnlyField()
     transaction_class = serializers.PrimaryKeyRelatedField(read_only=True)
     instrument = serializers.PrimaryKeyRelatedField(read_only=True)
@@ -701,12 +715,19 @@ class TransactionReportItemSerializer(serializers.Serializer):
     strategy2_cash = serializers.PrimaryKeyRelatedField(read_only=True)
     strategy3_position = serializers.PrimaryKeyRelatedField(read_only=True)
     strategy3_cash = serializers.PrimaryKeyRelatedField(read_only=True)
-    reference_fx_rate = serializers.ReadOnlyField()
     responsible = serializers.PrimaryKeyRelatedField(read_only=True)
     counterparty = serializers.PrimaryKeyRelatedField(read_only=True)
     linked_instrument = serializers.PrimaryKeyRelatedField(read_only=True)
     allocation_balance = serializers.PrimaryKeyRelatedField(read_only=True)
     allocation_pl = serializers.PrimaryKeyRelatedField(read_only=True)
+    reference_fx_rate = serializers.ReadOnlyField()
+    factor = serializers.ReadOnlyField()
+    trade_price = serializers.ReadOnlyField()
+    position_amount = serializers.ReadOnlyField()
+    principal_amount = serializers.ReadOnlyField()
+    carry_amount = serializers.ReadOnlyField()
+    overheads = serializers.ReadOnlyField()
+    notes = serializers.ReadOnlyField()
     attributes = ReportGenericAttributeSerializer(many=True, read_only=True)
 
     def __init__(self, *args, **kwargs):
@@ -726,6 +747,7 @@ class TransactionReportSerializer(serializers.Serializer):
     end_date = serializers.DateField(required=False, allow_null=True)
 
     items = TransactionReportItemSerializer(many=True, read_only=True)
+    complex_transactions = ReportComplexTransactionSerializer(many=True, read_only=True)
     transaction_types = TransactionTypeViewSerializer(many=True, read_only=True)
     instruments = ReportInstrumentSerializer(many=True, read_only=True)
     currencies = ReportCurrencySerializer(many=True, read_only=True)
@@ -749,7 +771,7 @@ class TransactionReportSerializer(serializers.Serializer):
                                                                         show_classifiers=True)
 
     def __init__(self, *args, **kwargs):
-        kwargs.setdefault('read_only', True)
+        # kwargs.setdefault('read_only', True)
 
         super(TransactionReportSerializer, self).__init__(*args, **kwargs)
 
@@ -780,7 +802,7 @@ class CashFlowProjectionReportSerializer(TransactionReportSerializer):
     items = CashFlowProjectionReportItemSerializer(many=True, read_only=True)
 
     def __init__(self, *args, **kwargs):
-        kwargs.setdefault('read_only', True)
+        # kwargs.setdefault('read_only', True)
 
         super(CashFlowProjectionReportSerializer, self).__init__(*args, **kwargs)
 
