@@ -13,9 +13,9 @@ from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext, ugettext_lazy
 from mptt.models import MPTTModel
 
-from poms.common.formula_accruals import f_xirr
+from poms.common.formula_accruals import f_xirr, f_duration
 from poms.common.models import NamedModel, AbstractClassModel, FakeDeletableModel
-from poms.common.utils import date_now, isclose, safe_div
+from poms.common.utils import date_now, isclose
 from poms.obj_attrs.models import GenericAttribute
 from poms.obj_perms.models import GenericObjectPermission
 from poms.tags.models import TagLink
@@ -660,9 +660,16 @@ class Instrument(NamedModel, FakeDeletableModel):
                     continue
 
                 if a_to_p_mul is None:
-                    a_to_p_mul = safe_div(self.accrued_multiplier, self.price_multiplier)
+                    try:
+                        a_to_p_mul = self.accrued_multiplier /  self.price_multiplier
+                    except ArithmeticError:
+                        a_to_p_mul = 0.0
                     if not isclose(principal_ccy_fx, accrual_ccy_fx):
-                        a_to_p_mul *= safe_div(accrual_ccy_fx, principal_ccy_fx)
+                        try:
+                            v = accrual_ccy_fx / principal_ccy_fx
+                        except ArithmeticError:
+                            v = 0
+                        a_to_p_mul *= v
 
                 data.append((d, a.accrual_size * a_to_p_mul))
 
@@ -683,8 +690,8 @@ class Instrument(NamedModel, FakeDeletableModel):
         data = self.get_future_accrual_payments(data)
         return data, f_xirr(data)
 
-    def duration(self, data, ytm):
-        return f_duration(data, self.ytm)
+    # def duration(self, data, ytm):
+    #     return f_duration(data, self.ytm)
 
 
 @python_2_unicode_compatible
