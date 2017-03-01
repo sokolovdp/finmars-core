@@ -1547,10 +1547,15 @@ class ReportItem(_Base):
             self.principal_fixed_opened_res += self.instr_principal_res
             self.carry_fixed_opened_res += self.instr_accrued_res
 
-            self.pos_return_res = (self.principal_opened_res + self.carry_opened_res) / \
-                                  self.principal_invested_res / self.instr_pricing_ccy_cur_fx
-            self.net_pos_return_res = (self.principal_opened_res + self.carry_opened_res + self.overheads_opened_res) / \
-                                      self.principal_invested_res
+            try:
+                self.pos_return_res = (self.principal_opened_res + self.carry_opened_res) / \
+                                      self.principal_invested_res / self.instr_pricing_ccy_cur_fx
+            except ArithmeticError:
+                self.pos_return_res = 0
+            try:
+                self.net_pos_return_res = (self.principal_opened_res + self.carry_opened_res + self.overheads_opened_res) / self.principal_invested_res
+            except ArithmeticError:
+                self.net_pos_return_res = 0.0
 
             if self.instr:
                 # YTM/Duration - берем price из price history на дату репорта.
