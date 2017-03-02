@@ -374,15 +374,20 @@ def download_pricing_async(self, task_id):
     instruments_always = set()
     instruments_if_open = set()
     instruments_opened = set()
+    currencies_always = set()
+    currencies_if_open = set()
+    currencies_opened = set()
+
     for i in instruments:
         if i.daily_pricing_model_id in [DailyPricingModel.FORMULA_IF_OPEN, DailyPricingModel.PROVIDER_IF_OPEN]:
             instruments_if_open.add(i.id)
         elif i.daily_pricing_model_id in [DailyPricingModel.FORMULA_ALWAYS, DailyPricingModel.PROVIDER_ALWAYS]:
             instruments_always.add(i.id)
+            if i.pricing_currency_id:
+                currencies_always.add(i.pricing_currency_id)
+            if i.instr.accrued_currency_id:
+                currencies_always.add(i.accrued_currency_id)
 
-    currencies_always = set()
-    currencies_if_open = set()
-    currencies_opened = set()
     for i in currencies:
         if i.daily_pricing_model_id in [DailyPricingModel.FORMULA_IF_OPEN, DailyPricingModel.PROVIDER_IF_OPEN]:
             currencies_if_open.add(i.id)
@@ -412,7 +417,6 @@ def download_pricing_async(self, task_id):
                         currencies_opened.add(i.instr.accrued_currency_id)
                 if i.trn_ccy:
                     currencies_opened.add(i.trn_ccy.id)
-
             elif i.type == ReportItem.TYPE_CURRENCY and not isclose(i.pos_size, 0.0):
                 if i.ccy:
                     currencies_opened.add(i.ccy.id)
