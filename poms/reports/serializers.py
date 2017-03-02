@@ -447,11 +447,21 @@ class ReportItemSerializer(serializers.Serializer):
     overheads = serializers.FloatField(source='overheads_res', read_only=True)
     total = serializers.FloatField(source='total_res', read_only=True)
 
+    principal_loc = serializers.FloatField(read_only=True)
+    carry_loc = serializers.FloatField(read_only=True)
+    overheads_loc = serializers.FloatField(read_only=True)
+    total_loc = serializers.FloatField(read_only=True)
+
     # full / closed ----------------------------------------------------
     principal_closed = serializers.FloatField(source='principal_closed_res', read_only=True)
     carry_closed = serializers.FloatField(source='carry_closed_res', read_only=True)
     overheads_closed = serializers.FloatField(source='overheads_closed_res', read_only=True)
     total_closed = serializers.FloatField(source='total_closed_res', read_only=True)
+
+    principal_closed_loc = serializers.FloatField(read_only=True)
+    carry_closed_loc = serializers.FloatField(read_only=True)
+    overheads_closed_loc = serializers.FloatField(read_only=True)
+    total_closed_loc = serializers.FloatField(read_only=True)
 
     # full / opened ----------------------------------------------------
     principal_opened = serializers.FloatField(source='principal_opened_res', read_only=True)
@@ -459,11 +469,21 @@ class ReportItemSerializer(serializers.Serializer):
     overheads_opened = serializers.FloatField(source='overheads_opened_res', read_only=True)
     total_opened = serializers.FloatField(source='total_opened_res', read_only=True)
 
+    principal_opened_loc = serializers.FloatField(read_only=True)
+    carry_opened_loc = serializers.FloatField(read_only=True)
+    overheads_opened_loc = serializers.FloatField(read_only=True)
+    total_opened_loc = serializers.FloatField(read_only=True)
+
     # fx ----------------------------------------------------
     principal_fx = serializers.FloatField(source='principal_fx_res', read_only=True)
     carry_fx = serializers.FloatField(source='carry_fx_res', read_only=True)
     overheads_fx = serializers.FloatField(source='overheads_fx_res', read_only=True)
     total_fx = serializers.FloatField(source='total_fx_res', read_only=True)
+
+    principal_fx_loc = serializers.FloatField(read_only=True)
+    carry_fx_loc = serializers.FloatField(read_only=True)
+    overheads_fx_loc = serializers.FloatField(read_only=True)
+    total_fx_loc = serializers.FloatField(read_only=True)
 
     # fx / closed ----------------------------------------------------
     principal_fx_closed = serializers.FloatField(source='principal_fx_closed_res', read_only=True)
@@ -471,11 +491,21 @@ class ReportItemSerializer(serializers.Serializer):
     overheads_fx_closed = serializers.FloatField(source='overheads_fx_closed_res', read_only=True)
     total_fx_closed = serializers.FloatField(source='total_fx_closed_res', read_only=True)
 
+    principal_fx_closed_loc = serializers.FloatField(read_only=True)
+    carry_fx_closed_loc = serializers.FloatField(read_only=True)
+    overheads_fx_closed_loc = serializers.FloatField(read_only=True)
+    total_fx_closed_loc = serializers.FloatField(read_only=True)
+
     # fx / opened ----------------------------------------------------
     principal_fx_opened = serializers.FloatField(source='principal_fx_opened_res', read_only=True)
     carry_fx_opened = serializers.FloatField(source='carry_fx_opened_res', read_only=True)
     overheads_fx_opened = serializers.FloatField(source='overheads_fx_opened_res', read_only=True)
     total_fx_opened = serializers.FloatField(source='total_fx_opened_res', read_only=True)
+
+    principal_fx_opened_loc = serializers.FloatField(read_only=True)
+    carry_fx_opened_loc = serializers.FloatField(read_only=True)
+    overheads_fx_opened_loc = serializers.FloatField(read_only=True)
+    total_fx_opened_loc = serializers.FloatField(read_only=True)
 
     # fixed ----------------------------------------------------
     principal_fixed = serializers.FloatField(source='principal_fixed_res', read_only=True)
@@ -483,17 +513,32 @@ class ReportItemSerializer(serializers.Serializer):
     overheads_fixed = serializers.FloatField(source='overheads_fixed_res', read_only=True)
     total_fixed = serializers.FloatField(source='total_fixed_res', read_only=True)
 
+    principal_fixed_loc = serializers.FloatField(read_only=True)
+    carry_fixed_loc = serializers.FloatField(read_only=True)
+    overheads_fixed_loc = serializers.FloatField(read_only=True)
+    total_fixed_loc = serializers.FloatField(read_only=True)
+
     # fixed / closed ----------------------------------------------------
     principal_fixed_closed = serializers.FloatField(source='principal_fixed_closed_res', read_only=True)
     carry_fixed_closed = serializers.FloatField(source='carry_fixed_closed_res', read_only=True)
     overheads_fixed_closed = serializers.FloatField(source='overheads_fixed_closed_res', read_only=True)
     total_fixed_closed = serializers.FloatField(source='total_fixed_closed_res', read_only=True)
 
+    principal_fixed_closed_loc = serializers.FloatField(read_only=True)
+    carry_fixed_closed_loc = serializers.FloatField(read_only=True)
+    overheads_fixed_closed_loc = serializers.FloatField(read_only=True)
+    total_fixed_closed_loc = serializers.FloatField(read_only=True)
+
     # fixed / opened ----------------------------------------------------
     principal_fixed_opened = serializers.FloatField(source='principal_fixed_opened_res', read_only=True)
     carry_fixed_opened = serializers.FloatField(source='carry_fixed_opened_res', read_only=True)
     overheads_fixed_opened = serializers.FloatField(source='overheads_fixed_opened_res', read_only=True)
     total_fixed_opened = serializers.FloatField(source='total_fixed_opened_res', read_only=True)
+
+    principal_fixed_opened_loc = serializers.FloatField(read_only=True)
+    carry_fixed_opened_loc = serializers.FloatField(read_only=True)
+    overheads_fixed_opened_loc = serializers.FloatField(read_only=True)
+    total_fixed_opened_loc = serializers.FloatField(read_only=True)
 
     # objects and data ----------------------------------------------------
 

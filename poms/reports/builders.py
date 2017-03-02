@@ -1065,11 +1065,21 @@ class ReportItem(_Base):
     overheads_res = 0.0
     total_res = 0.0
 
+    principal_loc = 0.0
+    carry_loc = 0.0
+    overheads_loc = 0.0
+    total_loc = 0.0
+
     # full / closed ----------------------------------------------------
     principal_closed_res = 0.0
     carry_closed_res = 0.0
     overheads_closed_res = 0.0
     total_closed_res = 0.0
+
+    principal_closed_loc = 0.0
+    carry_closed_loc = 0.0
+    overheads_closed_loc = 0.0
+    total_closed_loc = 0.0
 
     # full / opened ----------------------------------------------------
     principal_opened_res = 0.0
@@ -1077,11 +1087,21 @@ class ReportItem(_Base):
     overheads_opened_res = 0.0
     total_opened_res = 0.0
 
+    principal_opened_loc = 0.0
+    carry_opened_loc = 0.0
+    overheads_opened_loc = 0.0
+    total_opened_loc = 0.0
+
     # fx ----------------------------------------------------
     principal_fx_res = 0.0
     carry_fx_res = 0.0
     overheads_fx_res = 0.0
     total_fx_res = 0.0
+
+    principal_fx_loc = 0.0
+    carry_fx_loc = 0.0
+    overheads_fx_loc = 0.0
+    total_fx_loc = 0.0
 
     # fx / closed ----------------------------------------------------
     principal_fx_closed_res = 0.0
@@ -1089,11 +1109,21 @@ class ReportItem(_Base):
     overheads_fx_closed_res = 0.0
     total_fx_closed_res = 0.0
 
+    principal_fx_closed_loc = 0.0
+    carry_fx_closed_loc = 0.0
+    overheads_fx_closed_loc = 0.0
+    total_fx_closed_loc = 0.0
+
     # fx / opened ----------------------------------------------------
     principal_fx_opened_res = 0.0
     carry_fx_opened_res = 0.0
     overheads_fx_opened_res = 0.0
     total_fx_opened_res = 0.0
+
+    principal_fx_opened_loc = 0.0
+    carry_fx_opened_loc = 0.0
+    overheads_fx_opened_loc = 0.0
+    total_fx_opened_loc = 0.0
 
     # fixed ----------------------------------------------------
     principal_fixed_res = 0.0
@@ -1101,17 +1131,32 @@ class ReportItem(_Base):
     overheads_fixed_res = 0.0
     total_fixed_res = 0.0
 
+    principal_fixed_loc = 0.0
+    carry_fixed_loc = 0.0
+    overheads_fixed_loc = 0.0
+    total_fixed_loc = 0.0
+
     # fixed / closed ----------------------------------------------------
     principal_fixed_closed_res = 0.0
     carry_fixed_closed_res = 0.0
     overheads_fixed_closed_res = 0.0
     total_fixed_closed_res = 0.0
 
+    principal_fixed_closed_loc = 0.0
+    carry_fixed_closed_loc = 0.0
+    overheads_fixed_closed_loc = 0.0
+    total_fixed_closed_loc = 0.0
+
     # fixed / opened ----------------------------------------------------
     principal_fixed_opened_res = 0.0
     carry_fixed_opened_res = 0.0
     overheads_fixed_opened_res = 0.0
     total_fixed_opened_res = 0.0
+
+    principal_fixed_opened_loc = 0.0
+    carry_fixed_opened_loc = 0.0
+    overheads_fixed_opened_loc = 0.0
+    total_fixed_opened_loc = 0.0
 
     dump_columns = [
         'type_code',
@@ -1553,7 +1598,8 @@ class ReportItem(_Base):
             except ArithmeticError:
                 self.pos_return_res = 0
             try:
-                self.net_pos_return_res = (self.principal_opened_res + self.carry_opened_res + self.overheads_opened_res) / self.principal_invested_res
+                self.net_pos_return_res = (
+                                          self.principal_opened_res + self.carry_opened_res + self.overheads_opened_res) / self.principal_invested_res
             except ArithmeticError:
                 self.net_pos_return_res = 0.0
 
@@ -1586,40 +1632,70 @@ class ReportItem(_Base):
         self.total_fixed_closed_res = self.principal_fixed_closed_res + self.carry_fixed_closed_res + self.overheads_fixed_closed_res
         self.total_fixed_opened_res = self.principal_fixed_opened_res + self.carry_fixed_opened_res + self.overheads_fixed_opened_res
 
-        try:
-            self.market_value_loc = self.market_value_res / self.pricing_ccy_cur_fx
-        except ArithmeticError:
-            self.market_value_loc = 0.0
-        try:
-            self.exposure_loc = self.exposure_res / self.pricing_ccy_cur_fx
-        except ArithmeticError:
-            self.exposure_loc = 0.0
-        try:
-            self.gross_cost_loc = self.gross_cost_res / self.pricing_ccy_cur_fx
-        except ArithmeticError:
-            self.gross_cost_loc = 0.0
-        try:
-            self.net_cost_loc = self.net_cost_res / self.pricing_ccy_cur_fx
-        except ArithmeticError:
-            self.net_cost_loc = 0.0
-        try:
-            self.principal_invested_loc = self.principal_invested_res / self.pricing_ccy_cur_fx
-        except ArithmeticError:
-            self.principal_invested_loc = 0.0
-        try:
-            self.amount_invested_loc = self.amount_invested_res / self.pricing_ccy_cur_fx
-        except ArithmeticError:
-            self.amount_invested_loc = 0.0
-        try:
-            self.pos_return_loc = self.pos_return_res / self.pricing_ccy_cur_fx
-        except ArithmeticError:
-            self.pos_return_loc = 0.0
-        try:
-            self.net_pos_return_loc = self.net_pos_return_res / self.pricing_ccy_cur_fx
-        except ArithmeticError:
-            self.net_pos_return_loc = 0.0
+        # values in pricing ccy ---
 
-        # is_empty
+        try:
+            res_to_loc_fx = 1.0 / self.pricing_ccy_cur_fx
+        except ArithmeticError:
+            res_to_loc_fx = 0.0
+
+        self.market_value_loc = self.market_value_res * res_to_loc_fx
+        self.exposure_loc = self.exposure_res * res_to_loc_fx
+        self.gross_cost_loc = self.gross_cost_res * res_to_loc_fx
+        self.net_cost_loc = self.net_cost_res * res_to_loc_fx
+        self.principal_invested_loc = self.principal_invested_res * res_to_loc_fx
+        self.amount_invested_loc = self.amount_invested_res * res_to_loc_fx
+        self.pos_return_loc = self.pos_return_res * res_to_loc_fx
+        self.net_pos_return_loc = self.net_pos_return_res * res_to_loc_fx
+
+        # p & l
+
+        self.principal_loc = self.principal_res * res_to_loc_fx
+        self.carry_loc = self.carry_res * res_to_loc_fx
+        self.overheads_loc = self.overheads_res * res_to_loc_fx
+        self.total_loc = self.total_res * res_to_loc_fx
+
+        self.principal_closed_loc = self.principal_closed_res * res_to_loc_fx
+        self.carry_closed_loc = self.carry_closed_res * res_to_loc_fx
+        self.overheads_closed_loc = self.overheads_closed_res * res_to_loc_fx
+        self.total_closed_loc = self.total_closed_res * res_to_loc_fx
+
+        self.principal_opened_loc = self.principal_opened_res * res_to_loc_fx
+        self.carry_opened_loc = self.carry_opened_res * res_to_loc_fx
+        self.overheads_opened_loc = self.overheads_opened_res * res_to_loc_fx
+        self.total_opened_loc = self.total_opened_res * res_to_loc_fx
+
+        self.principal_fx_loc = self.principal_fx_res * res_to_loc_fx
+        self.carry_fx_loc = self.carry_fx_res * res_to_loc_fx
+        self.overheads_fx_loc = self.overheads_fx_res * res_to_loc_fx
+        self.total_fx_loc = self.total_fx_res * res_to_loc_fx
+
+        self.principal_fx_closed_loc = self.principal_fx_closed_res * res_to_loc_fx
+        self.carry_fx_closed_loc = self.carry_fx_closed_res * res_to_loc_fx
+        self.overheads_fx_closed_loc = self.overheads_fx_closed_res * res_to_loc_fx
+        self.total_fx_closed_loc = self.total_fx_closed_res * res_to_loc_fx
+
+        self.principal_fx_opened_loc = self.principal_fx_opened_res * res_to_loc_fx
+        self.carry_fx_opened_loc = self.carry_fx_opened_res * res_to_loc_fx
+        self.overheads_fx_opened_loc = self.overheads_fx_opened_res * res_to_loc_fx
+        self.total_fx_opened_loc = self.total_fx_opened_res * res_to_loc_fx
+
+        self.principal_fixed_loc = self.principal_fixed_res * res_to_loc_fx
+        self.carry_fixed_loc = self.carry_fixed_res * res_to_loc_fx
+        self.overheads_fixed_loc = self.overheads_fixed_res * res_to_loc_fx
+        self.total_fixed_loc = self.total_fixed_res * res_to_loc_fx
+
+        self.principal_fixed_closed_loc = self.principal_fixed_closed_res * res_to_loc_fx
+        self.carry_fixed_closed_loc = self.carry_fixed_closed_res * res_to_loc_fx
+        self.overheads_fixed_closed_loc = self.overheads_fixed_closed_res * res_to_loc_fx
+        self.total_fixed_closed_loc = self.total_fixed_closed_res * res_to_loc_fx
+
+        self.principal_fixed_opened_loc = self.principal_fixed_opened_res * res_to_loc_fx
+        self.carry_fixed_opened_loc = self.carry_fixed_opened_res * res_to_loc_fx
+        self.overheads_fixed_opened_loc = self.overheads_fixed_opened_res * res_to_loc_fx
+        self.total_fixed_opened_loc = self.total_fixed_opened_res * res_to_loc_fx
+
+        # ----
 
         if self.type == ReportItem.TYPE_CURRENCY:
             self.is_empty = isclose(self.pos_size, 0.0)
