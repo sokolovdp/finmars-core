@@ -13,6 +13,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.core.mail import send_mail as django_send_mail, send_mass_mail as django_send_mass_mail, \
     mail_admins as django_mail_admins, mail_managers as django_mail_managers
 from django.db import transaction
+from django.db.models import Q
 from django.utils import timezone
 
 from poms.audit.models import AuthLogEntry
@@ -396,15 +397,27 @@ def download_pricing_async(self, task_id):
              balance_date, sorted(instruments_if_open), sorted(currencies_if_open))
 
     if balance_date and (instruments_if_open or currencies_if_open):
-        report = Report(master_user=task.master_user, report_date=balance_date)
-        _l.debug('calculate position report: %s', report)
+        owner_or_admin = task.master_user.members.filter(Q(is_owner=True) | Q(is_admin=True)).first()
+        report = Report(master_user=task.master_user, member=owner_or_admin, report_date=balance_date)
+        _l.info('calculate position report: %s', report)
         builder = ReportBuilder(instance=report)
         builder.build()
         for i in report.items:
-            if i.type == ReportItem.TYPE_INSTRUMENT and not isclose(i.position_size, 0.0):
-                instruments_opened.add(i.instrument.id)
-            elif i.type == ReportItem.TYPE_CURRENCY and not isclose(i.position_size, 0.0):
-                currencies_opened.add(i.currency.id)
+            if i.type == ReportItem.TYPE_INSTRUMENT and not isclose(i.pos_size, 0.0):
+                if i.instr:
+                    instruments_opened.add(i.instr.id)
+                    if i.instr.pricing_currency_id:
+                        currencies_opened.add(i.instr.pricing_currency_id)
+                    if i.instr.accrued_currency_id:
+                        currencies_opened.add(i.instr.accrued_currency_id)
+                if i.trn_ccy:
+                    currencies_opened.add(i.trn_ccy.id)
+
+            elif i.type == ReportItem.TYPE_CURRENCY and not isclose(i.pos_size, 0.0):
+                if i.ccy:
+                    currencies_opened.add(i.ccy.id)
+                if i.trn_ccy:
+                    currencies_opened.add(i.trn_ccy.id)
         _l.debug('opened: instruments=%s, currencies=%s', sorted(instruments_opened), sorted(currencies_opened))
 
     instruments = instruments.filter(pk__in=(instruments_always | instruments_opened))
@@ -834,7 +847,7 @@ def download_pricing(master_user=None, member=None, date_from=None, date_to=None
 
 @shared_task(name='integrations.download_pricing_auto', bind=True, ignore_result=True)
 def download_pricing_auto(self, master_user_id):
-    _l.info('download_pricing_auto: master_user=%s', master_user_id)
+    _l.debug('download_pricing_auto: master_user=%s', master_user_id)
     try:
         master_user = MasterUser.objects.get(pk=master_user_id)
         sched = master_user.pricing_automated_schedule

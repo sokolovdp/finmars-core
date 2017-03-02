@@ -877,6 +877,25 @@ class FakeBloombergDataProvider(BloombergDataProvider):
     def _make_key(key):
         return 'bloomberg.fake.%s' % key
 
+    def _bbg_instr(self, code):
+        allparts = code.split()
+        parts = [p for p in allparts if not p.startswith('@')]
+        overrides = [o[1:] for o in allparts if o.startswith('@')]
+        if not parts:
+            raise BloombergException('Invalid code')
+        id0 = parts[0]
+        try:
+            yellowkey = parts[1]
+        except IndexError:
+            yellowkey = None
+
+        ret = {"id": id0}
+        if yellowkey:
+            ret['yellowkey'] = yellowkey
+        if overrides:
+            ret['overrides'] = [{'field': 'PRICING_SOURCE', 'value': o} for o in overrides]
+        return ret
+
     def get_fields(self):
         return 'fake'
 

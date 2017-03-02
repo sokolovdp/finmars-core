@@ -203,7 +203,7 @@ def _format_date(date, format=None):
     if not isinstance(date, datetime.date):
         date = _parse_date(str(date))
     # _check_date(date)
-    if format is None:
+    if not format:
         format = '%Y-%m-%d'
     else:
         format = str(format)
@@ -216,7 +216,7 @@ def _parse_date(date_string, format=None):
     if isinstance(date_string, datetime.date):
         return date_string
     date_string = str(date_string)
-    if format is None:
+    if not format:
         format = '%Y-%m-%d'
     else:
         format = str(format)
@@ -226,7 +226,7 @@ def _parse_date(date_string, format=None):
 def _format_date2(date, format=None, locale=None):
     if not isinstance(date, datetime.date):
         date = _parse_date2(str(date))
-    if format is None:
+    if not format:
         format = 'yyyy-MM-dd'
     else:
         format = str(format)
@@ -245,7 +245,7 @@ def _parse_date2(date_string, format=None, locale=None):
     if isinstance(date_string, datetime.date):
         return date_string
     date_string = str(date_string)
-    if format is None:
+    if not format:
         format = 'yyyy-MM-dd'
     else:
         format = str(format)
@@ -417,12 +417,12 @@ def _date_group(evaluator, val, ranges, default=None):
     def _make_name(begin, end, fmt):
         if isinstance(fmt, (list, tuple)):
             ifmt = iter(fmt)
-            s1 = str(next(ifmt, ''))
-            begin_fmt = str(next(ifmt, ''))
-            s3 = str(next(ifmt, ''))
-            s4 = str(next(ifmt, ''))
-            end_fmt = str(next(ifmt, ''))
-            s6 = str(next(ifmt, ''))
+            s1 = str(next(ifmt, '') or '')
+            begin_fmt = str(next(ifmt, '') or '')
+            s3 = str(next(ifmt, '') or '')
+            s4 = str(next(ifmt, '') or '')
+            end_fmt = str(next(ifmt, '') or '')
+            s6 = str(next(ifmt, '') or '')
             sbegin = _format_date(begin, begin_fmt) if begin_fmt else ''
             send = _format_date(end, end_fmt) if end_fmt else ''
             return ''.join([s1, sbegin, s3, s4, send, s6])
@@ -1123,7 +1123,9 @@ def _get_supported_models_serializer_class():
     from poms.transactions.models import Transaction
     from poms.transactions.serializers import TransactionTextRenderSerializer
     from poms.reports.builders import ReportItem
-    from poms.reports.serializers import ReportItemDetailRendererSerializer
+    from poms.reports.serializers import ReportItemDetailRendererSerializer, TransactionReportItemSerializer, \
+        CashFlowProjectionReportItemSerializer
+    from poms.reports.cash_flow_projection import TransactionReportItem, CashFlowProjectionReportItem
     return {
         Account: AccountSerializer,
         Counterparty: CounterpartySerializer,
@@ -1139,6 +1141,8 @@ def _get_supported_models_serializer_class():
         PriceDownloadScheme: PriceDownloadSchemeSerializer,
         Transaction: TransactionTextRenderSerializer,
         ReportItem: ReportItemDetailRendererSerializer,
+        TransactionReportItem: TransactionReportItemSerializer,
+        CashFlowProjectionReportItem: CashFlowProjectionReportItemSerializer,
     }
 
 
@@ -1761,7 +1765,7 @@ accrual_NL_365_NO_EOM(date(2000, 1, 1), date(2000, 1, 25))
         _l.info('3: %s', safe_eval('simple_group(15, [[1,10,"o1"],[10,20,"o2"]], "o3")'))
         _l.info('4: %s', safe_eval('simple_group(25, [[1,10,"o1"],[10,20,"o2"]], "o3")'))
         _l.info('5: %s', safe_eval('simple_group(4, [["-inf",10,"o1"],[10,20,"o2"]], default="Olala")'))
-        _l.info('5: %s', safe_eval('simple_group(4, [["begin","end","name"],...], default="Olala")'))
+        # _l.info('5: %s', safe_eval('simple_group(4, [["begin","end","name"],...], default="Olala")'))
 
         _l.info('10: %s', safe_eval('simple_group(0, [[None,10,"o1"],[10,20,"o2"]], "o3")'))
         _l.info('11: %s', safe_eval('simple_group(5, [[None,10,"o1"],[10,20,"o2"]], "o3")'))
@@ -1796,6 +1800,7 @@ accrual_NL_365_NO_EOM(date(2000, 1, 1), date(2000, 1, 25))
         # _l.info('102: %s', safe_eval('date_range("2000-11-21", [[None,"2001-01-01",30,"o1"],["2001-01-01","2002-01-01",timedelta(months=1, day=31),"o2"]], "o3")'))
 
         # _l.info('1: %s', safe_eval('format_date2("2001-12-12", "yyyy/MM/dd")'))
+
 
 
     group_test()

@@ -17,7 +17,7 @@ from django.utils.translation import ugettext, ugettext_lazy
 from poms.accounts.models import Account, AccountType
 from poms.common import formula
 from poms.common.formula_accruals import f_xirr, f_duration
-from poms.common.utils import date_now, isclose, safe_div
+from poms.common.utils import date_now, isclose
 from poms.currencies.models import Currency
 from poms.instruments.models import Instrument, InstrumentType, CostMethod, InstrumentClass
 from poms.obj_attrs.utils import get_attributes_prefetch
@@ -182,6 +182,11 @@ class VirtualTransaction(_Base):
     instr_principal_res = 0.0
     instr_accrued = 0.0
     instr_accrued_res = 0.0
+
+    gross_cost_res = 0.0
+    net_cost_res = 0.0
+    principal_invested_res = 0.0
+    amount_invested_res = 0.0
 
     remaining_pos_size = 0.0
     remaining_pos_size_percent = 0.0  # calculated in second pass
@@ -436,17 +441,17 @@ class VirtualTransaction(_Base):
 
         try:
             report_ccy_cur_fx = 1.0 / self.report_ccy_cur_fx
-        except ZeroDivisionError:
+        except ArithmeticError:
             report_ccy_cur_fx = 0.0
 
         try:
             report_ccy_cash_hist_fx = 1.0 / self.report_ccy_cash_hist_fx
-        except ZeroDivisionError:
+        except ArithmeticError:
             report_ccy_cash_hist_fx = 0.0
 
         try:
             report_ccy_acc_hist_fx = 1.0 / self.report_ccy_acc_hist_fx
-        except ZeroDivisionError:
+        except ArithmeticError:
             report_ccy_acc_hist_fx = 0.0
 
         # instr ----------------------------------------------------
@@ -552,6 +557,33 @@ class VirtualTransaction(_Base):
             self.overheads_fixed_opened_res = self.overheads_fixed_res * (1.0 - self.multiplier)
             self.total_fixed_opened_res = self.total_fixed_res * (1.0 - self.multiplier)
 
+            # ----------------------------------------------------
+            if not self.is_cloned and not isclose(self.pos_size, 0.0):
+                try:
+                    self.gross_cost_res = self.principal_res * self.ref_fx * \
+                                          (self.trn_ccy_cur_fx / self.instr_pricing_ccy_cur_fx) * \
+                                          (1.0 - self.multiplier) / self.pos_size / self.instr.price_multiplier
+                except ArithmeticError:
+                    self.gross_cost_res = 0.0
+                try:
+                    self.net_cost_res = (self.principal_res + self.overheads_res) * self.ref_fx * \
+                                        (self.trn_ccy_cur_fx / self.instr_pricing_ccy_cur_fx) * \
+                                        (1.0 - self.multiplier) / self.pos_size / self.instr.price_multiplier
+                except ArithmeticError:
+                    self.net_cost_res = 0.0
+                try:
+                    self.principal_invested_res = self.principal_res * self.ref_fx * \
+                                                  (self.trn_ccy_cur_fx / self.instr_pricing_ccy_cur_fx) * \
+                                                  (1.0 - self.multiplier)
+                except ArithmeticError:
+                    self.principal_invested_res = 0.0
+                try:
+                    self.amount_invested_res = self.total_res * self.ref_fx * \
+                                               (self.trn_ccy_cur_fx / self.instr_pricing_ccy_cur_fx) * \
+                                               (1.0 - self.multiplier)
+                except ArithmeticError:
+                    self.amount_invested_res = 0.0
+
         elif self.trn_cls.id in [TransactionClass.CASH_INFLOW, TransactionClass.CASH_OUTFLOW]:
             self.pl_fx_mul = self.stl_ccy_cur_fx - self.ref_fx * self.trn_ccy_acc_hist_fx
             self.pl_fixed_mul = self.ref_fx * self.trn_ccy_acc_hist_fx
@@ -570,7 +602,10 @@ class VirtualTransaction(_Base):
         # called after "balance"
         if not self.is_cloned and self.trn_cls.id in [TransactionClass.BUY, TransactionClass.SELL] and self.instr:
             self.remaining_pos_size = self.pos_size * (1 - self.multiplier)
-            self.remaining_pos_size_percent = safe_div(self.remaining_pos_size, balance_pos_size)
+            try:
+                self.remaining_pos_size_percent = self.remaining_pos_size / balance_pos_size
+            except ArithmeticError:
+                self.remaining_pos_size_percent = 0.0
 
             future_accrual_payments = self.instr.get_future_accrual_payments(
                 d0=self.acc_date,
@@ -672,11 +707,11 @@ class VirtualTransaction(_Base):
 
         try:
             abm = closed.report.approach_begin_multiplier * abs(pos_size / closed.pos_size)
-        except ZeroDivisionError:
+        except ArithmeticError:
             abm = 0.0
         try:
             aem = closed.report.approach_end_multiplier * abs(pos_size / cur.pos_size)
-        except ZeroDivisionError:
+        except ArithmeticError:
             aem = 0.0
 
         # abm = closed.report.approach_begin_multiplier * closed1.multiplier
@@ -906,7 +941,7 @@ class VirtualTransaction(_Base):
         t2.principal = self.principal
         try:
             t2.ref_fx = abs(self.pos_size / self.principal)
-        except ZeroDivisionError:
+        except ArithmeticError:
             t2.ref_fx = 0.0
         t2.pricing()
         t2.calc()
@@ -998,25 +1033,29 @@ class ReportItem(_Base):
 
     # ----------------------------------------------------
 
-    pos_size = 0.0  # +
-    market_value_res = 0.0  # +
-    market_value_loc = 0.0  # +
-    cost_res = 0.0  # +
-    ytm = 0.0  # ?
-    modified_duration = 0.0  # ?
-    ytm_at_cost = 0.0  #
-    time_invested_days = 0.0  # +
-    time_invested = 0.0  # +
-    gross_cost_res = 0.0  # +
-    gross_cost_loc = 0.0  # +
-    net_cost_res = 0.0  # +
-    net_cost_loc = 0.0  # +
-    amount_invested_res = 0.0  # +
-    amount_invested_loc = 0.0  # +
-    pos_return_res = 0.0  # -
-    pos_return_loc = 0.0  # +
-    daily_price_change = 0.0  # +
-    mtd_price_change = 0.0  # +
+    pos_size = 0.0
+    market_value_res = 0.0
+    market_value_loc = 0.0
+    cost_res = 0.0
+    ytm = 0.0
+    modified_duration = 0.0
+    ytm_at_cost = 0.0
+    time_invested_days = 0.0
+    time_invested = 0.0
+    gross_cost_res = 0.0
+    gross_cost_loc = 0.0
+    net_cost_res = 0.0
+    net_cost_loc = 0.0
+    principal_invested_res = 0.0
+    principal_invested_loc = 0.0
+    amount_invested_res = 0.0
+    amount_invested_loc = 0.0
+    pos_return_res = 0.0
+    pos_return_loc = 0.0
+    net_pos_return_res = 0.0
+    net_pos_return_loc = 0.0
+    daily_price_change = 0.0
+    mtd_price_change = 0.0
 
     # P&L ----------------------------------------------------
 
@@ -1026,11 +1065,21 @@ class ReportItem(_Base):
     overheads_res = 0.0
     total_res = 0.0
 
+    principal_loc = 0.0
+    carry_loc = 0.0
+    overheads_loc = 0.0
+    total_loc = 0.0
+
     # full / closed ----------------------------------------------------
     principal_closed_res = 0.0
     carry_closed_res = 0.0
     overheads_closed_res = 0.0
     total_closed_res = 0.0
+
+    principal_closed_loc = 0.0
+    carry_closed_loc = 0.0
+    overheads_closed_loc = 0.0
+    total_closed_loc = 0.0
 
     # full / opened ----------------------------------------------------
     principal_opened_res = 0.0
@@ -1038,11 +1087,21 @@ class ReportItem(_Base):
     overheads_opened_res = 0.0
     total_opened_res = 0.0
 
+    principal_opened_loc = 0.0
+    carry_opened_loc = 0.0
+    overheads_opened_loc = 0.0
+    total_opened_loc = 0.0
+
     # fx ----------------------------------------------------
     principal_fx_res = 0.0
     carry_fx_res = 0.0
     overheads_fx_res = 0.0
     total_fx_res = 0.0
+
+    principal_fx_loc = 0.0
+    carry_fx_loc = 0.0
+    overheads_fx_loc = 0.0
+    total_fx_loc = 0.0
 
     # fx / closed ----------------------------------------------------
     principal_fx_closed_res = 0.0
@@ -1050,11 +1109,21 @@ class ReportItem(_Base):
     overheads_fx_closed_res = 0.0
     total_fx_closed_res = 0.0
 
+    principal_fx_closed_loc = 0.0
+    carry_fx_closed_loc = 0.0
+    overheads_fx_closed_loc = 0.0
+    total_fx_closed_loc = 0.0
+
     # fx / opened ----------------------------------------------------
     principal_fx_opened_res = 0.0
     carry_fx_opened_res = 0.0
     overheads_fx_opened_res = 0.0
     total_fx_opened_res = 0.0
+
+    principal_fx_opened_loc = 0.0
+    carry_fx_opened_loc = 0.0
+    overheads_fx_opened_loc = 0.0
+    total_fx_opened_loc = 0.0
 
     # fixed ----------------------------------------------------
     principal_fixed_res = 0.0
@@ -1062,17 +1131,32 @@ class ReportItem(_Base):
     overheads_fixed_res = 0.0
     total_fixed_res = 0.0
 
+    principal_fixed_loc = 0.0
+    carry_fixed_loc = 0.0
+    overheads_fixed_loc = 0.0
+    total_fixed_loc = 0.0
+
     # fixed / closed ----------------------------------------------------
     principal_fixed_closed_res = 0.0
     carry_fixed_closed_res = 0.0
     overheads_fixed_closed_res = 0.0
     total_fixed_closed_res = 0.0
 
+    principal_fixed_closed_loc = 0.0
+    carry_fixed_closed_loc = 0.0
+    overheads_fixed_closed_loc = 0.0
+    total_fixed_closed_loc = 0.0
+
     # fixed / opened ----------------------------------------------------
     principal_fixed_opened_res = 0.0
     carry_fixed_opened_res = 0.0
     overheads_fixed_opened_res = 0.0
     total_fixed_opened_res = 0.0
+
+    principal_fixed_opened_loc = 0.0
+    carry_fixed_opened_loc = 0.0
+    overheads_fixed_opened_loc = 0.0
+    total_fixed_opened_loc = 0.0
 
     dump_columns = [
         'type_code',
@@ -1243,17 +1327,13 @@ class ReportItem(_Base):
 
             item.pricing_ccy = trn.instr.pricing_currency
 
+            item.gross_cost_res = trn.gross_cost_res
+            item.net_cost_res = trn.net_cost_res
+            item.principal_invested_res = trn.principal_invested_res
+            item.amount_invested_res = trn.amount_invested_res
+
             if trn.trn_cls.id in [TransactionClass.BUY, TransactionClass.SELL]:
                 item.last_notes = trn.notes
-
-                # cost_mul = (1.0 - trn.multiplier) / trn.pos_size / trn.instr.price_multiplier
-                cost_mul = safe_div(1.0 - trn.multiplier, trn.pos_size * trn.instr.price_multiplier)
-                item.gross_cost_res = trn.principal_res * cost_mul
-                item.net_cost_res = (trn.principal_res + trn.overheads_res) * cost_mul
-
-                # remaining_pos_size = abs(trn.pos_size * (1.0 - trn.multiplier))
-                # remaining_pos_percent = safe_div(remaining_pos_size, trn.pos)
-                # item.time_invested = (report.report_date - trn.acc_date).days
 
         elif item.type == ReportItem.TYPE_CURRENCY:
             item.acc = acc or trn.acc_cash
@@ -1346,11 +1426,10 @@ class ReportItem(_Base):
         self.report_ccy_cur = self.fx_rate_provider[self.report.report_currency]
         self.report_ccy_cur_fx = self.report_ccy_cur.fx_rate
 
-        # try:
-        #     report_ccy_cur_fx = 1.0 / self.report_ccy_cur_fx
-        # except ZeroDivisionError:
-        #     report_ccy_cur_fx = 0.0
-        report_ccy_cur_fx = safe_div(1.0, self.report_ccy_cur_fx)
+        try:
+            report_ccy_cur_fx = 1.0 / self.report_ccy_cur_fx
+        except ArithmeticError:
+            report_ccy_cur_fx = 0.0
 
         if self.instr:
             self.instr_price_cur = self.pricing_provider[self.instr]
@@ -1438,11 +1517,13 @@ class ReportItem(_Base):
             # self.total_unreal_res += o.market_value_res + o.cost_res
             # self.total_unreal_res += (o.instr_principal_res + o.instr_accrued_res) + o.cost_res
 
-            if o.last_notes is not None:
-                self.last_notes = o.last_notes
-
             self.gross_cost_res += o.gross_cost_res
             self.net_cost_res += o.net_cost_res
+            self.principal_invested_res += o.principal_invested_res
+            self.amount_invested_res += o.amount_invested_res
+
+            if o.last_notes is not None:
+                self.last_notes = o.last_notes
 
         # elif self.type == ReportItem.TYPE_SUMMARY or self.type == ReportItem.TYPE_INVESTED_SUMMARY:
         elif self.type == ReportItem.TYPE_SUMMARY:
@@ -1511,7 +1592,16 @@ class ReportItem(_Base):
             self.principal_fixed_opened_res += self.instr_principal_res
             self.carry_fixed_opened_res += self.instr_accrued_res
 
-            self.amount_invested_res = self.principal_res + self.carry_res
+            try:
+                self.pos_return_res = (self.principal_opened_res + self.carry_opened_res) / \
+                                      self.principal_invested_res / self.instr_pricing_ccy_cur_fx
+            except ArithmeticError:
+                self.pos_return_res = 0
+            try:
+                self.net_pos_return_res = (
+                                          self.principal_opened_res + self.carry_opened_res + self.overheads_opened_res) / self.principal_invested_res
+            except ArithmeticError:
+                self.net_pos_return_res = 0.0
 
             if self.instr:
                 # YTM/Duration - берем price из price history на дату репорта.
@@ -1542,14 +1632,70 @@ class ReportItem(_Base):
         self.total_fixed_closed_res = self.principal_fixed_closed_res + self.carry_fixed_closed_res + self.overheads_fixed_closed_res
         self.total_fixed_opened_res = self.principal_fixed_opened_res + self.carry_fixed_opened_res + self.overheads_fixed_opened_res
 
-        self.market_value_loc = safe_div(self.market_value_res, self.pricing_ccy_cur_fx)
-        self.exposure_loc = safe_div(self.exposure_res, self.pricing_ccy_cur_fx)
-        self.gross_cost_loc = safe_div(self.gross_cost_res, self.pricing_ccy_cur_fx)
-        self.net_cost_loc = safe_div(self.net_cost_res, self.pricing_ccy_cur_fx)
-        self.amount_invested_loc = safe_div(self.amount_invested_res, self.pricing_ccy_cur_fx)
-        self.pos_return_loc = safe_div(self.pos_return_res, self.pricing_ccy_cur_fx)
+        # values in pricing ccy ---
 
-        # is_empty
+        try:
+            res_to_loc_fx = 1.0 / self.pricing_ccy_cur_fx
+        except ArithmeticError:
+            res_to_loc_fx = 0.0
+
+        self.market_value_loc = self.market_value_res * res_to_loc_fx
+        self.exposure_loc = self.exposure_res * res_to_loc_fx
+        self.gross_cost_loc = self.gross_cost_res * res_to_loc_fx
+        self.net_cost_loc = self.net_cost_res * res_to_loc_fx
+        self.principal_invested_loc = self.principal_invested_res * res_to_loc_fx
+        self.amount_invested_loc = self.amount_invested_res * res_to_loc_fx
+        self.pos_return_loc = self.pos_return_res * res_to_loc_fx
+        self.net_pos_return_loc = self.net_pos_return_res * res_to_loc_fx
+
+        # p & l
+
+        self.principal_loc = self.principal_res * res_to_loc_fx
+        self.carry_loc = self.carry_res * res_to_loc_fx
+        self.overheads_loc = self.overheads_res * res_to_loc_fx
+        self.total_loc = self.total_res * res_to_loc_fx
+
+        self.principal_closed_loc = self.principal_closed_res * res_to_loc_fx
+        self.carry_closed_loc = self.carry_closed_res * res_to_loc_fx
+        self.overheads_closed_loc = self.overheads_closed_res * res_to_loc_fx
+        self.total_closed_loc = self.total_closed_res * res_to_loc_fx
+
+        self.principal_opened_loc = self.principal_opened_res * res_to_loc_fx
+        self.carry_opened_loc = self.carry_opened_res * res_to_loc_fx
+        self.overheads_opened_loc = self.overheads_opened_res * res_to_loc_fx
+        self.total_opened_loc = self.total_opened_res * res_to_loc_fx
+
+        self.principal_fx_loc = self.principal_fx_res * res_to_loc_fx
+        self.carry_fx_loc = self.carry_fx_res * res_to_loc_fx
+        self.overheads_fx_loc = self.overheads_fx_res * res_to_loc_fx
+        self.total_fx_loc = self.total_fx_res * res_to_loc_fx
+
+        self.principal_fx_closed_loc = self.principal_fx_closed_res * res_to_loc_fx
+        self.carry_fx_closed_loc = self.carry_fx_closed_res * res_to_loc_fx
+        self.overheads_fx_closed_loc = self.overheads_fx_closed_res * res_to_loc_fx
+        self.total_fx_closed_loc = self.total_fx_closed_res * res_to_loc_fx
+
+        self.principal_fx_opened_loc = self.principal_fx_opened_res * res_to_loc_fx
+        self.carry_fx_opened_loc = self.carry_fx_opened_res * res_to_loc_fx
+        self.overheads_fx_opened_loc = self.overheads_fx_opened_res * res_to_loc_fx
+        self.total_fx_opened_loc = self.total_fx_opened_res * res_to_loc_fx
+
+        self.principal_fixed_loc = self.principal_fixed_res * res_to_loc_fx
+        self.carry_fixed_loc = self.carry_fixed_res * res_to_loc_fx
+        self.overheads_fixed_loc = self.overheads_fixed_res * res_to_loc_fx
+        self.total_fixed_loc = self.total_fixed_res * res_to_loc_fx
+
+        self.principal_fixed_closed_loc = self.principal_fixed_closed_res * res_to_loc_fx
+        self.carry_fixed_closed_loc = self.carry_fixed_closed_res * res_to_loc_fx
+        self.overheads_fixed_closed_loc = self.overheads_fixed_closed_res * res_to_loc_fx
+        self.total_fixed_closed_loc = self.total_fixed_closed_res * res_to_loc_fx
+
+        self.principal_fixed_opened_loc = self.principal_fixed_opened_res * res_to_loc_fx
+        self.carry_fixed_opened_loc = self.carry_fixed_opened_res * res_to_loc_fx
+        self.overheads_fixed_opened_loc = self.overheads_fixed_opened_res * res_to_loc_fx
+        self.total_fixed_opened_loc = self.total_fixed_opened_res * res_to_loc_fx
+
+        # ----
 
         if self.type == ReportItem.TYPE_CURRENCY:
             self.is_empty = isclose(self.pos_size, 0.0)
@@ -1574,26 +1720,38 @@ class ReportItem(_Base):
                 # T - report date
                 #  = (Current Price - Gross Cost Price) / Gross Cost Price, if Time Invested in days= 1 day
                 # self.pricing()
-                self.daily_price_change = safe_div(self.instr_price_cur.principal_price - self.gross_cost_loc,
-                                                   self.gross_cost_loc)
+                try:
+                    self.daily_price_change = (
+                                                  self.instr_price_cur.principal_price - self.gross_cost_loc) / self.gross_cost_loc
+                except ArithmeticError:
+                    self.daily_price_change = 0.0
             else:
                 #  = (Current Price at T -  Price from Price History at T-1) / (Price from Price History at T-1) , if Time Invested > 1 day
                 price_yest = self.pricing_provider[self.instr, self.report.report_date - timedelta(days=1)]
-                self.daily_price_change = safe_div(self.instr_price_cur.principal_price - price_yest.principal_price,
-                                                   price_yest.principal_price)
+                try:
+                    self.daily_price_change = (
+                                                  self.instr_price_cur.principal_price - price_yest.principal_price) / price_yest.principal_price
+                except ArithmeticError:
+                    self.daily_price_change = 0.0
 
             if self.time_invested_days <= self.report.report_date.day or isclose(self.time_invested_days,
                                                                                  self.report.report_date.day):
                 # T - report date
                 #  = (Current Price - Gross Cost Price) / Gross Cost Price, if Time Invested in days <= Day(Report Date)
-                self.mtd_price_change = safe_div(self.instr_price_cur.principal_price - self.gross_cost_loc,
-                                                 self.gross_cost_loc)
+                try:
+                    self.mtd_price_change = (
+                                                self.instr_price_cur.principal_price - self.gross_cost_loc) / self.gross_cost_loc
+                except ArithmeticError:
+                    self.mtd_price_change = 0.0
             else:
                 #  = (Current Price -  Price from Price History at end_of_previous_month (Report Date)) / (Price from Price History at end_of_previous_month (Report Date)) , if Time Invested > Day(Report Date)
                 price_eom = self.pricing_provider[
                     self.instr, self.report.report_date - timedelta(days=self.report.report_date.day)]
-                self.mtd_price_change = safe_div(self.instr_price_cur.principal_price - price_eom.principal_price,
-                                                 price_eom.principal_price)
+                try:
+                    self.mtd_price_change = (
+                                                self.instr_price_cur.principal_price - price_eom.principal_price) / price_eom.principal_price
+                except ArithmeticError:
+                    self.mtd_price_change = 0.0
 
     def pl_sub_item(self, o):
         self.principal_res -= o.principal_res
@@ -1914,7 +2072,7 @@ class Report(object):
         self.transactions = []
 
     def __str__(self):
-        return "%s for %s @ %s" % (self.__class__.__name__, self.master_user, self.report_date)
+        return "%s for %s/%s @ %s" % (self.__class__.__name__, self.master_user, self.member, self.report_date)
 
     def close(self):
         for item in self.items:

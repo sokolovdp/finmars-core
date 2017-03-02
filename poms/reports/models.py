@@ -14,7 +14,7 @@ from poms.users.models import MasterUser
 class CustomField(models.Model):
     master_user = models.ForeignKey(MasterUser, related_name='custom_fields', verbose_name=ugettext_lazy('master user'))
     name = models.CharField(max_length=255, verbose_name=ugettext_lazy('name'))
-    expr = models.CharField(max_length=255, verbose_name=ugettext_lazy('expr'))
+    expr = models.CharField(max_length=2000, verbose_name=ugettext_lazy('expression'))
     layout_json = models.TextField(null=True, blank=True, verbose_name=ugettext_lazy('layout json'))
 
     class Meta:

@@ -40,7 +40,7 @@ from poms.users.fields import MasterUserField, HiddenMemberField
 
 class CustomFieldSerializer(serializers.ModelSerializer):
     master_user = MasterUserField()
-    expr = ExpressionField(required=False, allow_blank=True, default='""')
+    expr = ExpressionField(max_length=2000, required=False, allow_blank=True, default='""')
     layout = serializers.JSONField(required=False, allow_null=True)
 
     class Meta:
@@ -343,6 +343,14 @@ class ReportItemCustomFieldSerializer(serializers.Serializer):
 
         self.fields['custom_field_object'] = CustomFieldViewSerializer(source='custom_field', read_only=True)
 
+    @cached_property
+    def _readable_fields(self):
+        custom_fields_hide_objects = self.context.get('custom_fields_hide_objects', False)
+        return [
+            field for field in self.fields.values()
+            if not field.write_only and (
+                not custom_fields_hide_objects or field.field_name not in ('custom_field_object',))
+            ]
 
 class ReportItemSerializer(serializers.Serializer):
     id = serializers.SerializerMethodField()
@@ -420,10 +428,14 @@ class ReportItemSerializer(serializers.Serializer):
     gross_cost_price_loc = serializers.FloatField(source='gross_cost_loc', read_only=True)
     net_cost_price = serializers.FloatField(source='net_cost_res', read_only=True)
     net_cost_price_loc = serializers.FloatField(source='net_cost_loc', read_only=True)
+    principal_invested = serializers.FloatField(source='principal_invested_res', read_only=True)
+    principal_invested_loc = serializers.FloatField(read_only=True)
     amount_invested = serializers.FloatField(source='amount_invested_res', read_only=True)
     amount_invested_loc = serializers.FloatField(read_only=True)
     position_return = serializers.FloatField(source='pos_return_res', read_only=True)
     position_return_loc = serializers.FloatField(source='pos_return_loc', read_only=True)
+    net_position_return = serializers.FloatField(source='net_pos_return_res', read_only=True)
+    net_position_return_loc = serializers.FloatField(source='net_pos_return_loc', read_only=True)
     daily_price_change = serializers.FloatField(read_only=True)
     mtd_price_change = serializers.FloatField(read_only=True)
 
@@ -435,11 +447,21 @@ class ReportItemSerializer(serializers.Serializer):
     overheads = serializers.FloatField(source='overheads_res', read_only=True)
     total = serializers.FloatField(source='total_res', read_only=True)
 
+    principal_loc = serializers.FloatField(read_only=True)
+    carry_loc = serializers.FloatField(read_only=True)
+    overheads_loc = serializers.FloatField(read_only=True)
+    total_loc = serializers.FloatField(read_only=True)
+
     # full / closed ----------------------------------------------------
     principal_closed = serializers.FloatField(source='principal_closed_res', read_only=True)
     carry_closed = serializers.FloatField(source='carry_closed_res', read_only=True)
     overheads_closed = serializers.FloatField(source='overheads_closed_res', read_only=True)
     total_closed = serializers.FloatField(source='total_closed_res', read_only=True)
+
+    principal_closed_loc = serializers.FloatField(read_only=True)
+    carry_closed_loc = serializers.FloatField(read_only=True)
+    overheads_closed_loc = serializers.FloatField(read_only=True)
+    total_closed_loc = serializers.FloatField(read_only=True)
 
     # full / opened ----------------------------------------------------
     principal_opened = serializers.FloatField(source='principal_opened_res', read_only=True)
@@ -447,11 +469,21 @@ class ReportItemSerializer(serializers.Serializer):
     overheads_opened = serializers.FloatField(source='overheads_opened_res', read_only=True)
     total_opened = serializers.FloatField(source='total_opened_res', read_only=True)
 
+    principal_opened_loc = serializers.FloatField(read_only=True)
+    carry_opened_loc = serializers.FloatField(read_only=True)
+    overheads_opened_loc = serializers.FloatField(read_only=True)
+    total_opened_loc = serializers.FloatField(read_only=True)
+
     # fx ----------------------------------------------------
     principal_fx = serializers.FloatField(source='principal_fx_res', read_only=True)
     carry_fx = serializers.FloatField(source='carry_fx_res', read_only=True)
     overheads_fx = serializers.FloatField(source='overheads_fx_res', read_only=True)
     total_fx = serializers.FloatField(source='total_fx_res', read_only=True)
+
+    principal_fx_loc = serializers.FloatField(read_only=True)
+    carry_fx_loc = serializers.FloatField(read_only=True)
+    overheads_fx_loc = serializers.FloatField(read_only=True)
+    total_fx_loc = serializers.FloatField(read_only=True)
 
     # fx / closed ----------------------------------------------------
     principal_fx_closed = serializers.FloatField(source='principal_fx_closed_res', read_only=True)
@@ -459,11 +491,21 @@ class ReportItemSerializer(serializers.Serializer):
     overheads_fx_closed = serializers.FloatField(source='overheads_fx_closed_res', read_only=True)
     total_fx_closed = serializers.FloatField(source='total_fx_closed_res', read_only=True)
 
+    principal_fx_closed_loc = serializers.FloatField(read_only=True)
+    carry_fx_closed_loc = serializers.FloatField(read_only=True)
+    overheads_fx_closed_loc = serializers.FloatField(read_only=True)
+    total_fx_closed_loc = serializers.FloatField(read_only=True)
+
     # fx / opened ----------------------------------------------------
     principal_fx_opened = serializers.FloatField(source='principal_fx_opened_res', read_only=True)
     carry_fx_opened = serializers.FloatField(source='carry_fx_opened_res', read_only=True)
     overheads_fx_opened = serializers.FloatField(source='overheads_fx_opened_res', read_only=True)
     total_fx_opened = serializers.FloatField(source='total_fx_opened_res', read_only=True)
+
+    principal_fx_opened_loc = serializers.FloatField(read_only=True)
+    carry_fx_opened_loc = serializers.FloatField(read_only=True)
+    overheads_fx_opened_loc = serializers.FloatField(read_only=True)
+    total_fx_opened_loc = serializers.FloatField(read_only=True)
 
     # fixed ----------------------------------------------------
     principal_fixed = serializers.FloatField(source='principal_fixed_res', read_only=True)
@@ -471,17 +513,32 @@ class ReportItemSerializer(serializers.Serializer):
     overheads_fixed = serializers.FloatField(source='overheads_fixed_res', read_only=True)
     total_fixed = serializers.FloatField(source='total_fixed_res', read_only=True)
 
+    principal_fixed_loc = serializers.FloatField(read_only=True)
+    carry_fixed_loc = serializers.FloatField(read_only=True)
+    overheads_fixed_loc = serializers.FloatField(read_only=True)
+    total_fixed_loc = serializers.FloatField(read_only=True)
+
     # fixed / closed ----------------------------------------------------
     principal_fixed_closed = serializers.FloatField(source='principal_fixed_closed_res', read_only=True)
     carry_fixed_closed = serializers.FloatField(source='carry_fixed_closed_res', read_only=True)
     overheads_fixed_closed = serializers.FloatField(source='overheads_fixed_closed_res', read_only=True)
     total_fixed_closed = serializers.FloatField(source='total_fixed_closed_res', read_only=True)
 
+    principal_fixed_closed_loc = serializers.FloatField(read_only=True)
+    carry_fixed_closed_loc = serializers.FloatField(read_only=True)
+    overheads_fixed_closed_loc = serializers.FloatField(read_only=True)
+    total_fixed_closed_loc = serializers.FloatField(read_only=True)
+
     # fixed / opened ----------------------------------------------------
     principal_fixed_opened = serializers.FloatField(source='principal_fixed_opened_res', read_only=True)
     carry_fixed_opened = serializers.FloatField(source='carry_fixed_opened_res', read_only=True)
     overheads_fixed_opened = serializers.FloatField(source='overheads_fixed_opened_res', read_only=True)
     total_fixed_opened = serializers.FloatField(source='total_fixed_opened_res', read_only=True)
+
+    principal_fixed_opened_loc = serializers.FloatField(read_only=True)
+    carry_fixed_opened_loc = serializers.FloatField(read_only=True)
+    overheads_fixed_opened_loc = serializers.FloatField(read_only=True)
+    total_fixed_opened_loc = serializers.FloatField(read_only=True)
 
     # objects and data ----------------------------------------------------
 
@@ -730,6 +787,8 @@ class TransactionReportItemSerializer(serializers.Serializer):
     notes = serializers.ReadOnlyField()
     attributes = ReportGenericAttributeSerializer(many=True, read_only=True)
 
+    custom_fields = ReportItemCustomFieldSerializer(many=True, read_only=True)
+
     def __init__(self, *args, **kwargs):
         kwargs.setdefault('read_only', True)
 
@@ -745,6 +804,8 @@ class TransactionReportSerializer(serializers.Serializer):
 
     begin_date = serializers.DateField(required=False, allow_null=True)
     end_date = serializers.DateField(required=False, allow_null=True)
+
+    custom_fields = CustomFieldField(many=True, allow_empty=True, allow_null=True, required=False)
 
     items = TransactionReportItemSerializer(many=True, read_only=True)
     complex_transactions = ReportComplexTransactionSerializer(many=True, read_only=True)
@@ -771,9 +832,10 @@ class TransactionReportSerializer(serializers.Serializer):
                                                                         show_classifiers=True)
 
     def __init__(self, *args, **kwargs):
-        # kwargs.setdefault('read_only', True)
-
         super(TransactionReportSerializer, self).__init__(*args, **kwargs)
+
+        self.fields['custom_fields_object'] = CustomFieldViewSerializer(source='custom_fields', read_only=True,
+                                                                        many=True)
 
     def create(self, validated_data):
         return TransactionReport(**validated_data)

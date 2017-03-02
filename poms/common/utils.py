@@ -42,11 +42,15 @@ except AttributeError:
         return abs(a - b) <= max(rel_tol * max(abs(a), abs(b)), abs_tol)
 
 
-def safe_div(a, b, default=0.0):
-    try:
-        return a / b
-    except (ZeroDivisionError, TypeError):
-        return default
+def iszero(v):
+    return isclose(v, 0.0)
+
+
+# def safe_div(a, b, default=0.0):
+#     try:
+#         return a / b
+#     except (ZeroDivisionError, TypeError):
+#         return default
 
 
 class sfloat(float):
