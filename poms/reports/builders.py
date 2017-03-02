@@ -2072,7 +2072,7 @@ class Report(object):
         self.transactions = []
 
     def __str__(self):
-        return "%s for %s @ %s" % (self.__class__.__name__, self.master_user, self.report_date)
+        return "%s for %s/%s @ %s" % (self.__class__.__name__, self.master_user, self.member, self.report_date)
 
     def close(self):
         for item in self.items:
