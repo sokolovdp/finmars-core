@@ -21,7 +21,9 @@ _l = logging.getLogger('poms.reports')
 
 class ReportTestCase(TestCase):
     def setUp(self):
-        _l.debug('*' * 100)
+        _l.debug('')
+        _l.debug('')
+        # _l.debug('*' * 100)
 
         # if pandas:
         #     pandas.set_option('display.width', 10000)
@@ -142,7 +144,7 @@ class ReportTestCase(TestCase):
 
     def _t(self, master=None, t_class=None, p=None, instr=None, trn_ccy=None, position=0.0,
            stl_ccy=None, cash=None, principal=0.0, carry=0.0, overheads=0.0,
-           acc_date=None, acc_date_days=None, cash_date=None, cash_date_days=None,
+           acc_date=None, acc_date_days=-1, cash_date=None, cash_date_days=-1,
            acc_pos=None, acc_cash=None, acc_interim=None, fx_rate=0.0,
            s1_pos=None, s1_cash=None, s2_pos=None, s2_cash=None, s3_pos=None, s3_cash=None,
            link_instr=None, alloc_bl=None, alloc_pl=None,
@@ -240,17 +242,20 @@ class ReportTestCase(TestCase):
         return CostMethod.objects.get(pk=CostMethod.FIFO)
 
     def _print_transactions(self, transactions):
-        _l.debug('-' * 100)
+        _l.debug('')
         _l.debug('Transactions: ')
         VirtualTransaction.dumps(transactions)
 
     def _print_items(self, name, builder, items):
+        _l.debug('')
         _l.debug('%s:', name)
         ReportItem.dumps(items)
 
     def _dump(self, builder, name, show_trns=True, show_items=True):
         if show_trns or show_items:
+            _l.debug('-' * 100)
             _l.debug('Report: %s', name)
+            _l.debug('-' * 100)
 
             if show_trns:
                 self._print_transactions(builder.instance.transactions)
@@ -258,7 +263,7 @@ class ReportTestCase(TestCase):
             if show_items:
                 self._print_items('Items', builder, builder.instance.items)
 
-    def _test_avco_prtfl_0(self):
+    def test_avco_prtfl_0(self):
         self._t(t_class=self._buy, instr=self.bond0, position=5,
                 stl_ccy=self.usd, principal=-10.0,
                 acc_date_days=1, cash_date_days=1,
@@ -294,7 +299,7 @@ class ReportTestCase(TestCase):
         b.build()
         self._dump(b, 'test_avco_prtfl_0: INDEPENDENT')
 
-    def _test_avco_acc_0(self):
+    def test_avco_acc_0(self):
         self._t(t_class=self._buy, instr=self.bond0, position=5,
                 stl_ccy=self.usd, principal=-10.0,
                 acc_date_days=1, cash_date_days=1,
@@ -330,7 +335,7 @@ class ReportTestCase(TestCase):
         b.build()
         self._dump(b, 'test_avco_acc_0: INDEPENDENT')
 
-    def _test_avco_str1_0(self):
+    def test_avco_str1_0(self):
         self._t(t_class=self._buy, instr=self.bond0, position=5,
                 stl_ccy=self.usd, principal=-10.0,
                 acc_date_days=1, cash_date_days=1,
@@ -366,7 +371,7 @@ class ReportTestCase(TestCase):
         b.build()
         self._dump(b, 'test_avco_str1_0: OFFSETTING')
 
-    def _test_balance_0(self):
+    def test_balance_0(self):
         self._t(t_class=self._cash_inflow, trn_ccy=self.eur, position=1000, fx_rate=1.3)
         self._t(t_class=self._cash_outflow, trn_ccy=self.usd, position=-1000, acc_date_days=1, cash_date_days=1,
                 fx_rate=1.0)
@@ -376,7 +381,7 @@ class ReportTestCase(TestCase):
         b.build()
         self._dump(b, 'test_balance_0')
 
-    def _test_balance_1(self):
+    def test_balance_1(self):
         self._t(t_class=self._cash_inflow, stl_ccy=self.usd, trn_ccy=self.usd, position=1000, fx_rate=1.0)
         self._t(t_class=self._buy,
                 instr=self.bond0, position=100,
@@ -388,7 +393,7 @@ class ReportTestCase(TestCase):
         b.build()
         self._dump(b, 'test_balance_1')
 
-    def _test_balance_2(self):
+    def test_balance_2(self):
         self._t(t_class=self._cash_inflow, trn_ccy=self.eur, position=1000, fx_rate=1.3)
         self._t(t_class=self._buy,
                 instr=self.bond1, position=100,
@@ -409,7 +414,7 @@ class ReportTestCase(TestCase):
         b.build()
         self._dump(b, 'test_balance_2')
 
-    def _test_balance_3(self):
+    def test_balance_3(self):
         # self._t(t_class=self._cash_inflow, trn_ccy=self.usd, position=1000, fx_rate=1.3)
         self._t(t_class=self._buy,
                 instr=self.bond0, position=5,
@@ -429,7 +434,7 @@ class ReportTestCase(TestCase):
         b.build()
         self._dump(b, 'test_balance_3')
 
-    def _test_pl_0(self):
+    def test_pl_0(self):
         self._t(t_class=self._cash_inflow, trn_ccy=self.usd, position=1000, fx_rate=1.3)
 
         self._t(t_class=self._buy, instr=self.bond0, position=100,
@@ -441,7 +446,7 @@ class ReportTestCase(TestCase):
         b.build()
         self._dump(b, 'test_pl_0')
 
-    def _test_pl_1(self):
+    def test_pl_1(self):
         self._t(t_class=self._cash_inflow, trn_ccy=self.eur, position=1000, fx_rate=1.3)
 
         self._t(t_class=self._buy, instr=self.bond1, position=100,
@@ -473,7 +478,7 @@ class ReportTestCase(TestCase):
         b.build()
         self._dump(b, 'test_pl_1')
 
-    # def _test_pl_real_unreal_1(self):
+    # def test_pl_real_unreal_1(self):
     #     s1 = self.s1_1_1_1
     #     s2 = self.s1_1_1_2
     #     s3 = self.s1_1_1_3
@@ -542,7 +547,7 @@ class ReportTestCase(TestCase):
     #     b.build()
     #     self._dump(b, 'test_pl_real_unreal_1')
 
-    # def _test_pl_fx_fix_full_0(self):
+    # def test_pl_fx_fix_full_0(self):
     #     instr = Instrument.objects.create(master_user=self.m, name="I1, RUB/RUB",
     #                                       instrument_type=self.m.instrument_type,
     #                                       pricing_currency=self.rub, price_multiplier=1.0,
@@ -589,7 +594,7 @@ class ReportTestCase(TestCase):
     #     b.build()
     #     self._dump(b, 'test_pl_fx_fix_full_0')
 
-    def _test_pl_full_fx_fixed_buy_sell_1(self):
+    def test_pl_full_fx_fixed_buy_sell_1(self):
         instr = Instrument.objects.create(master_user=self.m, name="I1, RUB/RUB",
                                           instrument_type=self.m.instrument_type,
                                           pricing_currency=self.rub, price_multiplier=1.0,
@@ -637,7 +642,7 @@ class ReportTestCase(TestCase):
         b.build()
         self._dump(b, 'test_pl_full_fx_fixed_buy_sell_1')
 
-    def _test_pl_full_fx_fixed_cash_in_out_1(self):
+    def test_pl_full_fx_fixed_cash_in_out_1(self):
         self._ccy_hist(self.gbp, self._d(101), 1.45)
         self._ccy_hist(self.gbp, self._d(104), 1.2)
 
@@ -665,7 +670,7 @@ class ReportTestCase(TestCase):
         b.build()
         self._dump(b, 'test_pl_full_fx_fixed_cash_in_out_1')
 
-    def _test_pl_full_fx_fixed_instr_pl_1(self):
+    def test_pl_full_fx_fixed_instr_pl_1(self):
         self._ccy_hist(self.gbp, self._d(101), 1.45)
         self._ccy_hist(self.gbp, self._d(104), 1.2)
 
@@ -688,7 +693,7 @@ class ReportTestCase(TestCase):
         b.build()
         self._dump(b, 'test_pl_full_fx_fixed_instr_pl_1')
 
-    def _test_pl_full_fx_fixed_trn_pl_1(self):
+    def test_pl_full_fx_fixed_trn_pl_1(self):
         self._ccy_hist(self.gbp, self._d(101), 1.45)
         self._ccy_hist(self.gbp, self._d(104), 1.2)
 
@@ -710,7 +715,7 @@ class ReportTestCase(TestCase):
         b.build()
         self._dump(b, 'test_pl_full_fx_fixed_trn_pl_1')
 
-    def _test_pl_full_fx_fixed_fx_trade_1(self):
+    def test_pl_full_fx_fixed_fx_trade_1(self):
         self._ccy_hist(self.gbp, self._d(101), 1.45)
         self._ccy_hist(self.gbp, self._d(104), 1.2)
 
@@ -741,7 +746,7 @@ class ReportTestCase(TestCase):
         b.build()
         self._dump(b, 'test_pl_full_fx_fixed_fx_trade_1')
 
-    def _test_mismatch_0(self):
+    def test_mismatch_0(self):
         for i in range(0, 2):
             self._t(t_class=self._buy,
                     instr=self.bond0, position=100,
@@ -772,7 +777,7 @@ class ReportTestCase(TestCase):
         b.build()
         self._dump(b, 'test_mismatch_0')
 
-    def _test_approach_alloc_0(self):
+    def test_approach_alloc_0(self):
         # settings.DEBUG = True
 
         self.bond0.user_code = 'I1'
@@ -806,7 +811,7 @@ class ReportTestCase(TestCase):
         b.build()
         self._dump(b, 'test_approach_alloc_0')
 
-    def _test_approach_alloc_1(self):
+    def test_approach_alloc_1(self):
         self.bond0.user_code = 'instr1'
         self.bond0.save()
         self.bond1.user_code = 'A1'
@@ -837,7 +842,7 @@ class ReportTestCase(TestCase):
         b.build()
         self._dump(b, 'test_approach_alloc_1')
 
-    def _test_approach_str1_0(self):
+    def test_approach_str1_0(self):
         self.bond0.user_code = 'I1'
         self.bond0.price_multiplier = 5.0
         self.bond0.accrued_multiplier = 0.0

@@ -733,8 +733,9 @@ class PriceHistory(models.Model):
         ordering = ['date']
 
     def __str__(self):
-        return '%s:%s:%s:%s:%s' % (
-            self.instrument_id, self.pricing_policy_id, self.date, self.principal_price, self.accrued_price)
+        # return '%s:%s:%s:%s:%s' % (
+        #     self.instrument_id, self.pricing_policy_id, self.date, self.principal_price, self.accrued_price)
+        return '%s;%s @%s' % (self.principal_price, self.accrued_price, self.date)
 
 
 @python_2_unicode_compatible

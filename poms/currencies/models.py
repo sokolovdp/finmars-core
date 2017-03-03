@@ -98,5 +98,6 @@ class CurrencyHistory(models.Model):
         ordering = ['date']
 
     def __str__(self):
-        # return '%s/%s@%s,%s' % (self.currency, self.pricing_policy, self.date, self.fx_rate)
-        return '%s:%s:%s:%s' % (self.currency_id, self.pricing_policy_id, self.date, self.fx_rate)
+        # return '%s:%s:%s:%s' % (self.currency_id, self.pricing_policy_id, self.date, self.fx_rate)
+        from datetime import date
+        return '%s @%s' % (self.fx_rate, self.date)
