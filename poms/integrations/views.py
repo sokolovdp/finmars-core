@@ -19,13 +19,12 @@ from poms.integrations.models import ImportConfig, Task, InstrumentDownloadSchem
     FactorScheduleDownloadMethod, AccrualScheduleDownloadMethod, PriceDownloadScheme, CurrencyMapping, \
     InstrumentTypeMapping, InstrumentAttributeValueMapping, AccrualCalculationModelMapping, PeriodicityMapping, \
     PricingAutomatedSchedule, InstrumentDownloadSchemeAttribute
-from poms.integrations.serializers import ImportConfigSerializer, TaskSerializer, \
-    ImportFileInstrumentSerializer, ImportInstrumentSerializer, ImportPricingSerializer, \
-    InstrumentDownloadSchemeSerializer, ProviderClassSerializer, FactorScheduleDownloadMethodSerializer, \
-    AccrualScheduleDownloadMethodSerializer, PriceDownloadSchemeSerializer, CurrencyMappingSerializer, \
-    InstrumentTypeMappingSerializer, InstrumentAttributeValueMappingSerializer, \
-    AccrualCalculationModelMappingSerializer, \
-    PeriodicityMappingSerializer, PricingAutomatedScheduleSerializer
+from poms.integrations.serializers import ImportConfigSerializer, TaskSerializer, ImportInstrumentSerializer, \
+    ImportPricingSerializer, InstrumentDownloadSchemeSerializer, ProviderClassSerializer, \
+    FactorScheduleDownloadMethodSerializer, AccrualScheduleDownloadMethodSerializer, PriceDownloadSchemeSerializer, \
+    CurrencyMappingSerializer, InstrumentTypeMappingSerializer, InstrumentAttributeValueMappingSerializer, \
+    AccrualCalculationModelMappingSerializer, PeriodicityMappingSerializer, PricingAutomatedScheduleSerializer, \
+    AbstractFileImportSerializer, TransactionFileImportSerializer
 from poms.obj_attrs.models import GenericAttributeType
 from poms.obj_perms.utils import get_permissions_prefetch_lookups
 from poms.users.filters import OwnerByMasterUserFilter
@@ -348,16 +347,6 @@ class PricingAutomatedScheduleViewSet(AbstractModelViewSet):
         raise MethodNotAllowed(method=request.method)
 
 
-class ImportFileInstrumentViewSet(AbstractViewSet):
-    serializer_class = ImportFileInstrumentSerializer
-
-    def create(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response(serializer.data)
-
-
 class ImportInstrumentViewSet(AbstractViewSet):
     serializer_class = ImportInstrumentSerializer
 
@@ -376,3 +365,17 @@ class ImportPricingViewSet(AbstractViewSet):
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(serializer.data)
+
+
+class AbstractFileImportViewSet(AbstractViewSet):
+    serializer_class = AbstractFileImportSerializer
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data)
+
+
+class TransactionFileImportViewSet(AbstractFileImportViewSet):
+    serializer_class = TransactionFileImportSerializer

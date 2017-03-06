@@ -1,17 +1,19 @@
 from __future__ import unicode_literals, print_function
 
+import csv
 import json
 import uuid
 from datetime import timedelta
 from logging import getLogger
+from tempfile import NamedTemporaryFile
 
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ObjectDoesNotExist
-from django.core.signing import TimestampSigner, BadSignature
+from django.core.files import File
+from django.core.signing import BadSignature, TimestampSigner
 from django.utils import timezone
 from django.utils.translation import ugettext, ugettext_lazy
 from rest_framework import serializers
-from rest_framework.exceptions import ValidationError
 from rest_framework.fields import empty
 from rest_framework.validators import UniqueTogetherValidator
 
@@ -354,7 +356,7 @@ class InstrumentAttributeValueMappingSerializer(serializers.ModelSerializer):
         classifier = attrs.get('classifier', None)
         if classifier:
             if classifier.attribute_type_id != attribute_type.id:
-                raise ValidationError({'classifier': 'Invalid classifier'})
+                raise serializers.ValidationError({'classifier': 'Invalid classifier'})
         return attrs
 
 
@@ -449,57 +451,6 @@ class PricingAutomatedScheduleSerializer(serializers.ModelSerializer):
             'last_run_at', 'next_run_at',
         ]
         read_only_fields = ['last_run_at', 'next_run_at']
-
-
-class ImportFileInstrumentSerializer(serializers.Serializer):
-    master_user = MasterUserField()
-    mode = serializers.ChoiceField(choices=IMPORT_MODE_CHOICES)
-
-    file = serializers.FileField(required=False, allow_null=True)
-    token = serializers.CharField(required=False, allow_blank=True, allow_null=True)
-
-    format = serializers.ChoiceField(choices=FILE_FORMAT_CHOICES)
-    skip_first_line = serializers.BooleanField()
-    delimiter = serializers.CharField(max_length=1, initial=',')
-    quotechar = serializers.CharField(max_length=1, initial='|')
-    encoding = serializers.CharField(max_length=10, initial='utf-8')
-
-    instrument_type = InstrumentTypeField(required=False, allow_null=True)
-
-    def create(self, validated_data):
-        _l.info('InstrumentFileImportSerializer.create: %s', validated_data)
-        master_user = validated_data['master_user']
-
-        if validated_data.get('token', None):
-            try:
-                token = TimestampSigner().unsign(validated_data['token'])
-            except BadSignature:
-                raise ValidationError({'token': 'Invalid value.'})
-            tmp_file_name = self.get_file_path(master_user, token)
-        else:
-            file = validated_data['file']
-            if not file:
-                raise ValidationError({'file': 'This field is required.'})
-            token = '%s' % (uuid.uuid4().hex,)
-            validated_data['token'] = TimestampSigner().sign(token)
-            tmp_file_name = self.get_file_path(master_user, token)
-            import_file_storage.save(tmp_file_name, file)
-
-            from poms.integrations.tasks import schedule_file_import_delete
-            schedule_file_import_delete(tmp_file_name)
-
-        with import_file_storage.open(tmp_file_name, 'rt') as f:
-            # ret = []
-            # import csv
-            # for row in csv.reader(f):
-            #     ret.append(row)
-            #     data['preview'] = ret
-            pass
-
-        return validated_data
-
-    def get_file_path(self, owner, token):
-        return '%s/%s/%s' % (owner.pk, token[0:4], token)
 
 
 class ImportInstrumentViewSerializer(ModelWithAttributesSerializer, ModelWithObjectPermissionSerializer,
@@ -651,14 +602,14 @@ class ImportInstrumentSerializer(serializers.Serializer):
         try:
             provider = get_provider(master_user=master_user, provider=instrument_download_scheme.provider_id)
         except ProviderException:
-            raise ValidationError(
+            raise serializers.ValidationError(
                 {'instrument_download_scheme':
                      ugettext('Check "%(provider)s" provider configuration.') % {
                          'provider': instrument_download_scheme.provider}
                  })
 
         if not provider.is_valid_reference(instrument_code):
-            raise ValidationError(
+            raise serializers.ValidationError(
                 {'instrument_code':
                      ugettext('Invalid value for "%(provider)s" provider.') % {
                          'reference': instrument_code,
@@ -670,9 +621,9 @@ class ImportInstrumentSerializer(serializers.Serializer):
             try:
                 task_result_overrides = json.loads(task_result_overrides)
             except ValueError:
-                raise ValidationError({'task_result_overrides': ugettext('Invalid JSON string.')})
+                raise serializers.ValidationError({'task_result_overrides': ugettext('Invalid JSON string.')})
         if not isinstance(task_result_overrides, dict):
-            raise ValidationError({'task_result_overrides': ugettext('Invalid value.')})
+            raise serializers.ValidationError({'task_result_overrides': ugettext('Invalid value.')})
 
         task_result_overrides = {k: v for k, v in task_result_overrides.items()
                                  if k in instrument_download_scheme.fields}
@@ -836,9 +787,9 @@ class ImportPricingSerializer(serializers.Serializer):
         date_from = attrs.get('date_from', yesterday) or yesterday
         date_to = attrs.get('date_to', yesterday) or yesterday
         if date_from > date_to:
-            raise ValidationError({
-                'date_from': 'Invalid date range',
-                'date_to': 'Invalid date range',
+            raise serializers.ValidationError({
+                'date_from': ugettext('Invalid date range'),
+                'date_to': ugettext('Invalid date range'),
             })
 
         balance_date = attrs.get('balance_date', date_to) or date_to
@@ -876,3 +827,119 @@ class ImportPricingSerializer(serializers.Serializer):
             )
             instance.task_object = task
         return instance
+
+
+class AbstractFileImportSerializer(serializers.Serializer):
+    object_type = None
+
+    master_user = MasterUserField()
+    member = HiddenMemberField()
+
+    mode = serializers.ChoiceField(choices=IMPORT_MODE_CHOICES)
+
+    file = serializers.FileField(required=False, allow_null=True)
+    token = serializers.CharField(required=False, allow_blank=True, allow_null=True)
+
+    format = serializers.ChoiceField(choices=FILE_FORMAT_CHOICES)
+    skip_first_line = serializers.BooleanField()
+    delimiter = serializers.CharField(max_length=1, initial=',')
+    quotechar = serializers.CharField(max_length=1, initial='"')
+    encoding = serializers.CharField(max_length=10, required=False, initial='utf-8')
+
+    csv_error = serializers.ReadOnlyField()
+    csv_error_message = serializers.ReadOnlyField()
+    rows = serializers.ReadOnlyField()
+
+    def create(self, validated_data):
+        _l.info('create: %s', validated_data)
+        master_user = validated_data['master_user']
+
+        if validated_data.get('token', None):
+            file = None
+            try:
+                token = TimestampSigner().unsign(validated_data['token'])
+                # token = loads(validated_data['token'])
+            except BadSignature:
+                raise serializers.ValidationError({'token': ugettext('Invalid token.')})
+            remote_file_path = self._get_file_path(master_user, token)
+        else:
+            file = validated_data['file']
+            if not file:
+                raise serializers.ValidationError({'file': ugettext('This field is required.')})
+
+            token = '%s-%s' % (timezone.now().strftime('%Y%m%d%H%M%S'), uuid.uuid4().hex)
+            # token = {'token': str(uuid.uuid4()), 'date': timezone.now()}
+            # validated_data['token'] = dumps(token)
+            validated_data['token'] = TimestampSigner().sign(token)
+            remote_file_path = self._get_file_path(master_user, token)
+
+            import_file_storage.save(remote_file_path, file)
+
+            from poms.integrations.tasks import schedule_file_import_delete
+            schedule_file_import_delete(remote_file_path)
+
+        if file:
+            self._parse_csv_file(validated_data, file)
+        else:
+            with import_file_storage.open(remote_file_path, 'rb') as f:
+                self._parse_csv_file(validated_data, f)
+        # with import_file_storage.open(tmp_file_name, 'rb') as f:
+        #     self._parse_csv_file1(validated_data, f)
+
+        # with import_file_storage.open(tmp_file_name, 'rb') as f:
+        #     rows = []
+        #     for row_index, row in enumerate(csv.reader(f)):
+        #         if row_index == 0 and validated_data['skip_first_line']:
+        #             continue
+        #         rows.append(row)
+        #     validated_data['rows'] = rows
+
+        return validated_data
+
+    def _get_file_path(self, owner, token):
+        return '%s/%s/%s.dat' % (owner.pk, self.object_type, token)
+
+    def _parse_csv_file(self, validated_data, file):
+        csv_error_message = validated_data.get('csv_error_message', None)
+        try:
+            with NamedTemporaryFile() as tf1:
+                for chunk in file.chunks():
+                    tf1.write(chunk)
+                tf1.flush()
+                with open(tf1.name, mode='rt', encoding=validated_data.get('encoding', None)) as tf2:
+                    return self._parse_csv_file0(validated_data, File(tf2))
+                    # encoding = validated_data.get('encoding', None)
+                    # if encoding:
+                    #     with NamedTemporaryFile() as w:
+                    #         for chunk in file.chunks():
+                    #             w.write(chunk)
+                    #         w.flush()
+                    #         with open(w.name, mode='rt', encoding=encoding) as r:
+                    #             return self._parse_csv_file0(validated_data, File(r))
+                    # else:
+                    #     return self._parse_csv_file0(validated_data, file)
+        except csv.Error:
+            csv_error_message = ugettext("Can't read file. Invalid encoding or something else.")
+            _l.debug(csv_error_message, exc_info=True)
+        except (FileNotFoundError, IOError):
+            csv_error_message = ugettext("Can't read file. Invalid encoding or something else.")
+            _l.debug(csv_error_message, exc_info=True)
+        except:
+            csv_error_message = ugettext("Can't read file. Invalid encoding or something else.")
+            _l.debug(csv_error_message, exc_info=True)
+        finally:
+            validated_data['csv_error'] = bool(csv_error_message)
+            validated_data['csv_error_message'] = csv_error_message
+
+    def _parse_csv_file0(self, validated_data, file):
+        rows = []
+        for row_index, row in enumerate(csv.reader(file, delimiter=validated_data['delimiter'],
+                                                   quotechar=validated_data['quotechar'])):
+            if row_index == 0 and validated_data['skip_first_line']:
+                continue
+            rows.append(row)
+        validated_data['rows'] = rows
+
+
+class TransactionFileImportSerializer(AbstractFileImportSerializer):
+    object_type = 'transactions'
