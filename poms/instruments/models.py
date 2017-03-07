@@ -187,24 +187,14 @@ class Periodicity(AbstractClassModel):
         if self.id == Periodicity.N_DAY:
             return relativedelta.relativedelta(days=n * i)
         elif self.id == Periodicity.N_WEEK_EOBW:
-            if isclose(n, 0):
-                raise ValueError("N_WEEK_EOBW: n can't be zero")
             return relativedelta.relativedelta(weeks=n * i, weekday=relativedelta.FR)
         elif self.id == Periodicity.N_MONTH_EOM:
-            if isclose(n, 0):
-                raise ValueError("N_MONTH_EOM: n can't be zero")
             return relativedelta.relativedelta(months=n * i, day=31)
         elif self.id == Periodicity.N_MONTH_SAME_DAY:
-            if isclose(n, 0):
-                raise ValueError("N_MONTH_SAME_DAY: n can't be zero")
             return relativedelta.relativedelta(months=n * i, day=same_date.day)
         elif self.id == Periodicity.N_YEAR_EOY:
-            if isclose(n, 0):
-                raise ValueError("N_YEAR_EOY: n can't be zero")
             return relativedelta.relativedelta(years=n * i, month=12, day=31)
         elif self.id == Periodicity.N_YEAR_SAME_DAY:
-            if isclose(n, 0):
-                raise ValueError("N_YEAR_SAME_DAY: n can't be zero")
             return relativedelta.relativedelta(years=n * i, month=same_date.month, day=same_date.day)
         elif self.id == Periodicity.WEEKLY:
             return relativedelta.relativedelta(weeks=1 * i)
