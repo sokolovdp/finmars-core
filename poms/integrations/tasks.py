@@ -406,11 +406,10 @@ def download_pricing_async(self, task_id):
 
     if balance_date and (instruments_if_open or currencies_if_open):
         owner_or_admin = task.master_user.members.filter(Q(is_owner=True) | Q(is_admin=True)).first()
-        report = Report(master_user=task.master_user, member=owner_or_admin, report_date=balance_date,
-                        is_balance_only=True)
+        report = Report(master_user=task.master_user, member=owner_or_admin, report_date=balance_date)
         _l.info('calculate position report: %s', report)
         builder = ReportBuilder(instance=report)
-        builder.build()
+        builder.build_position_only()
         for i in report.items:
             if i.type == ReportItem.TYPE_INSTRUMENT and not isclose(i.pos_size, 0.0):
                 if i.instr:
