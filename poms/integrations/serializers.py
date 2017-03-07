@@ -908,8 +908,8 @@ class AbstractFileImportSerializer(serializers.Serializer):
     quotechar = serializers.CharField(max_length=1, required=False, initial='"', default='"')
     encoding = serializers.CharField(max_length=20, required=False, initial='utf-8', default='utf-8')
 
-    csv_error = serializers.ReadOnlyField()
-    csv_error_message = serializers.ReadOnlyField()
+    # csv_error = serializers.ReadOnlyField()
+    # csv_error_message = serializers.ReadOnlyField()
     rows = serializers.ReadOnlyField()
 
     def create(self, validated_data):
@@ -924,7 +924,7 @@ class AbstractFileImportSerializer(serializers.Serializer):
                     # token = loads(validated_data['token'])
                 except BadSignature:
                     raise serializers.ValidationError({'token': ugettext('Invalid token.')})
-                remote_file_path = self._get_file_path(master_user, token)
+                remote_file_path = self._get_path(master_user, token)
             else:
                 file = validated_data['file']
                 if not file:
@@ -934,22 +934,29 @@ class AbstractFileImportSerializer(serializers.Serializer):
                 # token = {'token': str(uuid.uuid4()), 'date': timezone.now()}
                 # validated_data['token'] = dumps(token)
                 validated_data['token'] = TimestampSigner().sign(token)
-                remote_file_path = self._get_file_path(master_user, token)
+                remote_file_path = self._get_path(master_user, token)
 
                 import_file_storage.save(remote_file_path, file)
 
                 from poms.integrations.tasks import schedule_file_import_delete
                 schedule_file_import_delete(remote_file_path)
 
-            # if file:
-            #     self._parse_csv_file(validated_data, file)
-            # else:
-            #     with import_file_storage.open(remote_file_path, 'rb') as f:
-            #         self._parse_csv_file(validated_data, f)
-            # with import_file_storage.open(tmp_file_name, 'rb') as f:
-            #     self._parse_csv_file1(validated_data, f)
-            with import_file_storage.open(remote_file_path, 'rb') as f:
-                self._parse_csv_file(validated_data, f)
+            try:
+                with import_file_storage.open(remote_file_path, 'rb') as f:
+                    with NamedTemporaryFile() as tmpf:
+                        for chunk in file.chunks():
+                            tmpf.write(chunk)
+                        tmpf.flush()
+                        with open(tmpf.name, mode='rt', encoding=validated_data.get('encoding', None)) as cf:
+                            if validated_data['format'] == FILE_FORMAT_CSV:
+                                self._read_csv(validated_data, File(cf))
+
+            except csv.Error:
+                raise serializers.ValidationError(ugettext("Invalid file format or file already deleted."))
+            except (FileNotFoundError, IOError):
+                raise serializers.ValidationError(ugettext("Invalid file format or file already deleted."))
+            except:
+                raise serializers.ValidationError(ugettext("Invalid file format or file already deleted."))
 
             # with import_file_storage.open(tmp_file_name, 'rb') as f:
             #     rows = []
@@ -964,46 +971,14 @@ class AbstractFileImportSerializer(serializers.Serializer):
             if validated_data.get('mode', None) != IMPORT_PROCESS:
                 transaction.set_rollback(True)
 
-    def _get_file_path(self, owner, token):
+    def _get_path(self, owner, token):
         return '%s/%s/%s.dat' % (owner.pk, self.object_type, token)
 
-    def _parse_csv_file(self, validated_data, file):
-        csv_error_message = validated_data.get('csv_error_message', None)
-        try:
-            with NamedTemporaryFile() as tf1:
-                for chunk in file.chunks():
-                    tf1.write(chunk)
-                tf1.flush()
-                with open(tf1.name, mode='rt', encoding=validated_data.get('encoding', None)) as tf2:
-                    return self._parse_csv_file0(validated_data, File(tf2))
-                    # encoding = validated_data.get('encoding', None)
-                    # if encoding:
-                    #     with NamedTemporaryFile() as w:
-                    #         for chunk in file.chunks():
-                    #             w.write(chunk)
-                    #         w.flush()
-                    #         with open(w.name, mode='rt', encoding=encoding) as r:
-                    #             return self._parse_csv_file0(validated_data, File(r))
-                    # else:
-                    #     return self._parse_csv_file0(validated_data, file)
-        except csv.Error:
-            csv_error_message = ugettext("Can't read file. Invalid encoding or something else.")
-            _l.debug(csv_error_message, exc_info=True)
-        except (FileNotFoundError, IOError):
-            csv_error_message = ugettext("Can't read file. Invalid encoding or something else.")
-            _l.debug(csv_error_message, exc_info=True)
-        except:
-            csv_error_message = ugettext("Can't read file. Invalid encoding or something else.")
-            _l.debug(csv_error_message, exc_info=True)
-        finally:
-            validated_data['csv_error'] = bool(csv_error_message)
-            validated_data['csv_error_message'] = csv_error_message
-
-    def _parse_csv_file0(self, validated_data, file):
+    def _read_csv(self, validated_data, file):
         rows = []
         for row_index, row in enumerate(csv.reader(file, delimiter=validated_data['delimiter'],
                                                    quotechar=validated_data['quotechar'])):
-            if row_index == 0 and validated_data['skip_first_line']:
+            if (row_index == 0 and validated_data['skip_first_line']) or not row:
                 continue
             self._process_row(validated_data, row_index, row)
             rows.append(row)
