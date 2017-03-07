@@ -105,7 +105,7 @@ def schedule_file_import_delete(path, countdown=None):
     if countdown == 0:
         file_import_delete_async(path=path)
     else:
-        if not settings.CELERY_TASK_ALWAYS_EAGER:
+        if not getattr(settings, 'CELERY_TASK_ALWAYS_EAGER', False):
             countdown = countdown or 600
             _l.debug('schedule_file_import_delete: path=%s, countdown=%s', path, countdown)
             file_import_delete_async.apply_async(kwargs={'path': path}, countdown=countdown)
