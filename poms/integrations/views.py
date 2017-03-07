@@ -2,6 +2,7 @@ from __future__ import unicode_literals, print_function
 
 import django_filters
 from django.core.exceptions import ObjectDoesNotExist
+from django.db import transaction
 from django.db.models import Prefetch
 from rest_framework.exceptions import MethodNotAllowed
 from rest_framework.filters import FilterSet
@@ -24,7 +25,7 @@ from poms.integrations.serializers import ImportConfigSerializer, TaskSerializer
     FactorScheduleDownloadMethodSerializer, AccrualScheduleDownloadMethodSerializer, PriceDownloadSchemeSerializer, \
     CurrencyMappingSerializer, InstrumentTypeMappingSerializer, InstrumentAttributeValueMappingSerializer, \
     AccrualCalculationModelMappingSerializer, PeriodicityMappingSerializer, PricingAutomatedScheduleSerializer, \
-    AbstractFileImportSerializer, TransactionFileImportSerializer
+    AbstractFileImportSerializer, ComplexTransactionFileImportSerializer
 from poms.obj_attrs.models import GenericAttributeType
 from poms.obj_perms.utils import get_permissions_prefetch_lookups
 from poms.users.filters import OwnerByMasterUserFilter
@@ -367,6 +368,40 @@ class ImportPricingViewSet(AbstractViewSet):
         return Response(serializer.data)
 
 
+# ----------------------------------------
+
+
+# class TransactionFileImportSchemeFilterSet(FilterSet):
+#     id = NoOpFilter()
+#     scheme_name = CharFilter()
+#     transaction_type = ModelExtWithPermissionMultipleChoiceFilter(model=TransactionType, name='transaction_types')
+#
+#     class Meta:
+#         model = TransactionFileImportScheme
+#         fields = []
+#
+#
+# class TransactionFileImportSchemeViewSet(AbstractModelViewSet):
+#     queryset = TransactionFileImportScheme.objects.select_related(
+#         'transaction_type', 'transaction_type__group',
+#     ).prefetch_related(
+#         'inputs',
+#         *get_permissions_prefetch_lookups(
+#             ('transaction_type', TransactionType),
+#         )
+#     )
+#     serializer_class = TransactionFileImportSchemeSerializer
+#     filter_backends = AbstractModelViewSet.filter_backends + [
+#         OwnerByMasterUserFilter,
+#     ]
+#     filter_class = TransactionFileImportSchemeFilterSet
+#     ordering_fields = [
+#         'scheme_name',
+#         'transaction_type', 'transaction_type__name',
+#     ]
+
+
+
 class AbstractFileImportViewSet(AbstractViewSet):
     serializer_class = AbstractFileImportSerializer
 
@@ -377,5 +412,5 @@ class AbstractFileImportViewSet(AbstractViewSet):
         return Response(serializer.data)
 
 
-class TransactionFileImportViewSet(AbstractFileImportViewSet):
-    serializer_class = TransactionFileImportSerializer
+class ComplexTransactionFileImportViewSet(AbstractFileImportViewSet):
+    serializer_class = ComplexTransactionFileImportSerializer

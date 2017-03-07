@@ -11,6 +11,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.files import File
 from django.core.signing import BadSignature, TimestampSigner
+from django.db import transaction
 from django.utils import timezone
 from django.utils.translation import ugettext, ugettext_lazy
 from rest_framework import serializers
@@ -39,15 +40,15 @@ from poms.users.fields import MasterUserField, MemberField, HiddenMemberField
 
 _l = getLogger('poms.integrations')
 
-IMPORT_PREVIEW = 1
-IMPORT_PROCESS = 2
+IMPORT_PREVIEW = 'preview'
+IMPORT_PROCESS = 'process'
 
 IMPORT_MODE_CHOICES = (
     (IMPORT_PREVIEW, 'Preview'),
     (IMPORT_PROCESS, 'Process'),
 )
 
-FILE_FORMAT_CSV = 1
+FILE_FORMAT_CSV = 'csv'
 FILE_FORMAT_CHOICES = (
     (FILE_FORMAT_CSV, 'CSV'),
 )
@@ -829,22 +830,83 @@ class ImportPricingSerializer(serializers.Serializer):
         return instance
 
 
+# ----------------------------------------
+
+
+# class TransactionFileImportSchemeInputSerializer(serializers.ModelSerializer):
+#     id = serializers.IntegerField(read_only=False, required=False, allow_null=True)
+#     name = serializers.CharField(max_length=255)
+#     value_expr = ExpressionField(max_length=2000)
+#
+#     class Meta:
+#         model = TransactionFileImportSchemeInput
+#         fields = ['id', 'name', 'value_expr']
+#
+#
+# class TransactionFileImportSchemeSerializer(serializers.ModelSerializer):
+#     master_user = MasterUserField()
+#     name = serializers.CharField(max_length=255)
+#     transaction_type = TransactionTypeField()
+#     inputs = TransactionFileImportSchemeInputSerializer(many=True, read_only=False)
+#
+#     class Meta:
+#         model = TransactionFileImportScheme
+#         fields = ['id', 'scheme_name', 'transaction_type', 'inputs']
+#
+#     def __init__(self, *args, **kwargs):
+#         super(TransactionFileImportSchemeSerializer, self).__init__(*args, **kwargs)
+#         self.fields['transaction_type_object'] = TransactionTypeViewSerializer(source='transaction_type',
+#                                                                                read_only=True)
+#
+#     def create(self, validated_data):
+#         inputs = validated_data.pop('inputs', None) or []
+#         instance = super(TransactionFileImportSchemeSerializer, self).create(validated_data)
+#         self.save_inputs(instance, inputs)
+#         return instance
+#
+#     def update(self, instance, validated_data):
+#         inputs = validated_data.pop('inputs', empty)
+#         instance = super(TransactionFileImportSchemeSerializer, self).update(instance, validated_data)
+#         if inputs is not empty:
+#             self.save_inputs(instance, inputs)
+#         return instance
+#
+#     def save_inputs(self, instance, inputs):
+#         pk_set = set()
+#         for input_values in inputs:
+#             input_id = input_values.pop('id', None)
+#             input0 = None
+#             if input_id:
+#                 try:
+#                     input0 = instance.inputs.get(pk=input_id)
+#                 except ObjectDoesNotExist:
+#                     pass
+#             if input0 is None:
+#                 input0 = TransactionFileImportSchemeInput(scheme=instance)
+#             for name, value in input_values.items():
+#                 setattr(input0, name, value)
+#             input0.save()
+#             pk_set.add(input0.id)
+#         instance.inputs.exclude(pk__in=pk_set).delete()
+
+
 class AbstractFileImportSerializer(serializers.Serializer):
     object_type = None
 
     master_user = MasterUserField()
     member = HiddenMemberField()
 
-    mode = serializers.ChoiceField(choices=IMPORT_MODE_CHOICES)
+    mode = serializers.ChoiceField(choices=IMPORT_MODE_CHOICES, default=IMPORT_PREVIEW, initial=IMPORT_PREVIEW)
 
     file = serializers.FileField(required=False, allow_null=True)
     token = serializers.CharField(required=False, allow_blank=True, allow_null=True)
 
-    format = serializers.ChoiceField(choices=FILE_FORMAT_CHOICES)
-    skip_first_line = serializers.BooleanField()
-    delimiter = serializers.CharField(max_length=1, initial=',')
-    quotechar = serializers.CharField(max_length=1, initial='"')
-    encoding = serializers.CharField(max_length=10, required=False, initial='utf-8')
+    format = serializers.ChoiceField(choices=FILE_FORMAT_CHOICES, required=False, initial=FILE_FORMAT_CSV,
+                                     default=FILE_FORMAT_CSV)
+    skip_first_line = serializers.BooleanField(required=False, default=True)
+    delimiter = serializers.CharField(max_length=1, required=False, initial=',', default=',')
+    quotechar = serializers.CharField(max_length=1, required=False, initial='"', default='"')
+    encoding = serializers.CharField(max_length=20, required=False, initial='utf-8', default='utf-8')
 
     csv_error = serializers.ReadOnlyField()
     csv_error_message = serializers.ReadOnlyField()
@@ -852,49 +914,53 @@ class AbstractFileImportSerializer(serializers.Serializer):
 
     def create(self, validated_data):
         _l.info('create: %s', validated_data)
-        master_user = validated_data['master_user']
+        try:
+            master_user = validated_data['master_user']
 
-        if validated_data.get('token', None):
-            file = None
-            try:
-                token = TimestampSigner().unsign(validated_data['token'])
-                # token = loads(validated_data['token'])
-            except BadSignature:
-                raise serializers.ValidationError({'token': ugettext('Invalid token.')})
-            remote_file_path = self._get_file_path(master_user, token)
-        else:
-            file = validated_data['file']
-            if not file:
-                raise serializers.ValidationError({'file': ugettext('This field is required.')})
+            if validated_data.get('token', None):
+                file = None
+                try:
+                    token = TimestampSigner().unsign(validated_data['token'])
+                    # token = loads(validated_data['token'])
+                except BadSignature:
+                    raise serializers.ValidationError({'token': ugettext('Invalid token.')})
+                remote_file_path = self._get_file_path(master_user, token)
+            else:
+                file = validated_data['file']
+                if not file:
+                    raise serializers.ValidationError({'file': ugettext('This field is required.')})
 
-            token = '%s-%s' % (timezone.now().strftime('%Y%m%d%H%M%S'), uuid.uuid4().hex)
-            # token = {'token': str(uuid.uuid4()), 'date': timezone.now()}
-            # validated_data['token'] = dumps(token)
-            validated_data['token'] = TimestampSigner().sign(token)
-            remote_file_path = self._get_file_path(master_user, token)
+                token = '%s-%s' % (timezone.now().strftime('%Y%m%d%H%M%S'), uuid.uuid4().hex)
+                # token = {'token': str(uuid.uuid4()), 'date': timezone.now()}
+                # validated_data['token'] = dumps(token)
+                validated_data['token'] = TimestampSigner().sign(token)
+                remote_file_path = self._get_file_path(master_user, token)
 
-            import_file_storage.save(remote_file_path, file)
+                import_file_storage.save(remote_file_path, file)
 
-            from poms.integrations.tasks import schedule_file_import_delete
-            schedule_file_import_delete(remote_file_path)
+                from poms.integrations.tasks import schedule_file_import_delete
+                schedule_file_import_delete(remote_file_path)
 
-        if file:
-            self._parse_csv_file(validated_data, file)
-        else:
-            with import_file_storage.open(remote_file_path, 'rb') as f:
-                self._parse_csv_file(validated_data, f)
-        # with import_file_storage.open(tmp_file_name, 'rb') as f:
-        #     self._parse_csv_file1(validated_data, f)
+            if file:
+                self._parse_csv_file(validated_data, file)
+            else:
+                with import_file_storage.open(remote_file_path, 'rb') as f:
+                    self._parse_csv_file(validated_data, f)
+            # with import_file_storage.open(tmp_file_name, 'rb') as f:
+            #     self._parse_csv_file1(validated_data, f)
 
-        # with import_file_storage.open(tmp_file_name, 'rb') as f:
-        #     rows = []
-        #     for row_index, row in enumerate(csv.reader(f)):
-        #         if row_index == 0 and validated_data['skip_first_line']:
-        #             continue
-        #         rows.append(row)
-        #     validated_data['rows'] = rows
+            # with import_file_storage.open(tmp_file_name, 'rb') as f:
+            #     rows = []
+            #     for row_index, row in enumerate(csv.reader(f)):
+            #         if row_index == 0 and validated_data['skip_first_line']:
+            #             continue
+            #         rows.append(row)
+            #     validated_data['rows'] = rows
 
-        return validated_data
+            return validated_data
+        finally:
+            if validated_data.get('mode', None) != IMPORT_PROCESS:
+                transaction.set_rollback(True)
 
     def _get_file_path(self, owner, token):
         return '%s/%s/%s.dat' % (owner.pk, self.object_type, token)
@@ -937,9 +1003,16 @@ class AbstractFileImportSerializer(serializers.Serializer):
                                                    quotechar=validated_data['quotechar'])):
             if row_index == 0 and validated_data['skip_first_line']:
                 continue
+            self._process_row(validated_data, row_index, row)
             rows.append(row)
         validated_data['rows'] = rows
 
+    def _process_row(self, validated_data, row_index, row):
+        pass
 
-class TransactionFileImportSerializer(AbstractFileImportSerializer):
-    object_type = 'transactions'
+
+class ComplexTransactionFileImportSerializer(AbstractFileImportSerializer):
+    object_type = 'complex_transaction'
+
+    def _process_row(self, validated_data, row_index, row):
+        pass
