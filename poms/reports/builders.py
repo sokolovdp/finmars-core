@@ -3012,10 +3012,11 @@ class ReportBuilder(object):
     def _aggregate_items(self):
         _l.debug('items - aggregate')
 
-        sorted_items = sorted(self._items, key=lambda item: self._item_group_key(item))
-
         aggr_items = []
-        for k, g in groupby(sorted_items, key=lambda item: self._item_group_key(item)):
+
+        sorted_items = sorted(self._items, key=lambda x: self._item_group_key(x))
+        for k, g in groupby(sorted_items, key=lambda x: self._item_group_key(x)):
+            _l.debug('items - aggregate - group=%s', k)
             res_item = None
 
             for item in g:
@@ -3026,10 +3027,13 @@ class ReportBuilder(object):
                     res_item.add(item)
 
             if res_item:
-                _l.debug('items - aggregate - item=%s, instr=%s', res_item, getattr(res_item.instr, 'id', None))
+                _l.debug('items - aggregate - add item=%s, instr=%s', res_item, getattr(res_item.instr, 'id', None))
+                _l.debug('pricing')
                 res_item.pricing()
+                _l.debug('close')
                 res_item.close()
                 aggr_items.append(res_item)
+
         self._items = aggr_items
 
         _l.debug('items - len=%s', len(self._items))
