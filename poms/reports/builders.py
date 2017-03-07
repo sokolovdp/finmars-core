@@ -613,7 +613,10 @@ class VirtualTransaction(_Base):
                 principal_ccy_fx=self.instr_pricing_ccy_cur_fx,
                 accrual_ccy_fx=self.instr_accrued_ccy_cur_fx
             )
-            self.ytm = f_xirr(future_accrual_payments)
+            if self.report.is_balance_only:
+                self.ytm = 0.0
+            else:
+                self.ytm = f_xirr(future_accrual_payments)
 
             # data = [(self.report.report_date, self.market_value_res)]
             # data = self.instr.get_future_accrual_payments(data)
@@ -1613,8 +1616,12 @@ class ReportItem(_Base):
                     principal_ccy_fx=self.instr_pricing_ccy_cur_fx,
                     accrual_ccy_fx=self.instr_accrued_ccy_cur_fx
                 )
-                self.ytm = f_xirr(future_accrual_payments)
-                self.modified_duration = f_duration(future_accrual_payments, ytm=self.ytm)
+                if self.report.is_balance_only:
+                    self.ytm = 0.0
+                    self.modified_duration = 0.0
+                else:
+                    self.ytm = f_xirr(future_accrual_payments)
+                    self.modified_duration = f_duration(future_accrual_payments, ytm=self.ytm)
 
         elif self.type == ReportItem.TYPE_MISMATCH:
             # self.market_value_res = self.pos_size * self.ccy_cur_fx
@@ -2032,7 +2039,8 @@ class Report(object):
                  transaction_classes=None,
                  date_field=None,
                  custom_fields=None,
-                 items=None):
+                 items=None,
+                 is_balance_only=False):
         self.id = id
         self.task_id = task_id
         self.task_status = task_status
@@ -2048,6 +2056,7 @@ class Report(object):
         self.report_date = report_date or (date_now() - timedelta(days=1))
         self.report_currency = report_currency or master_user.system_currency
         self.cost_method = cost_method or CostMethod.objects.get(pk=CostMethod.AVCO)
+        self.is_balance_only = is_balance_only
 
         self.portfolio_mode = portfolio_mode
         self.account_mode = account_mode
@@ -2585,14 +2594,19 @@ class ReportBuilder(object):
 
     def build(self, full=True):
         mismatch_items = []
+        _l.debug('build report: %s', self.instance)
 
         # split transactions to atomic items using transaction class, case and something else
 
+        _l.debug('load transactions')
         transactions = self.get_transactions()
+        _l.debug('calculate multipliers')
         self.calc_multipliers(transactions)
+        _l.debug('clone transactions for some states')
         transactions = self.clone_transactions_if_need(transactions)
         self.instance.transactions = transactions
 
+        _l.debug('generate items')
         for trn in transactions:
             if trn.is_mismatch and trn.link_instr and not isclose(trn.mismatch, 0.0):
                 item = ReportItem.from_trn(self.instance, self.pricing_provider, self.fx_rate_provider,
@@ -2702,7 +2716,7 @@ class ReportBuilder(object):
 
         _items = sorted(self._items, key=_item_key)
 
-        # aggregate items
+        _l.debug('aggregate items')
 
         res_items = []
         res_items_for_instr = {}
@@ -2726,6 +2740,7 @@ class ReportBuilder(object):
                     res_items_for_instr[pass2_item_key] = res_item
 
         # pass 2 - some values can calculate only after "balance"
+        _l.debug('process transactions step 2')
         for trn in transactions:
             if not trn.is_cloned and trn.trn_cls.id in [TransactionClass.BUY, TransactionClass.SELL]:
                 pass2_item_key = _pass2_item_key(trn=trn)
@@ -2743,9 +2758,9 @@ class ReportBuilder(object):
 
         # res_items = [item for item in res_items if not item.is_empty]
 
-        # aggregate summary
         summaries = []
         if settings.DEBUG:
+            _l.debug('aggregate summary')
             summary = ReportItem(self.instance, self.pricing_provider, self.fx_rate_provider, ReportItem.TYPE_SUMMARY)
             for item in res_items:
                 if item.type in [ReportItem.TYPE_INSTRUMENT, ReportItem.TYPE_CURRENCY, ReportItem.TYPE_TRANSACTION_PL,
@@ -2754,7 +2769,7 @@ class ReportBuilder(object):
             summary.close()
             summaries.append(summary)
 
-        # mismatches
+        _l.debug('find mismatches')
 
         def _mismatch_group_key(item):
             return (
@@ -2790,6 +2805,7 @@ class ReportBuilder(object):
         if full:
             self._refresh_with_perms()
 
+        _l.debug('finalize report')
         self.instance.close()
 
         # _l.debug('0' * 100)
@@ -2800,6 +2816,7 @@ class ReportBuilder(object):
         # ReportItem.dumps(self.instance.items)
         # _l.debug('3' * 100)
 
+        _l.debug('done')
         return self.instance
 
     def _build_on_pl_first_date(self):
