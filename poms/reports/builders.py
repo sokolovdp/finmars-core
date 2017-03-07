@@ -1685,14 +1685,20 @@ class ReportItem(_Base):
                 # YTM/Duration - берем price из price history на дату репорта.
                 # Для записка итеративного алгоритма, для x0 из accrued schedule
                 # берем на текущую дату - (accrued_size * accrued_multiplier)/(price * price_multiplier).
+                _l.debug('> future_accrual_payments: instr=%s', self.instr.id)
                 future_accrual_payments = self.instr.get_future_accrual_payments(
                     d0=self.report.report_date,
                     v0=self.instr_price_cur_principal_price,
                     principal_ccy_fx=self.instr_pricing_ccy_cur_fx,
                     accrual_ccy_fx=self.instr_accrued_ccy_cur_fx
                 )
+                _l.debug('< future_accrual_payments: %s', future_accrual_payments)
+                _l.debug('> ytm: instr=%s', self.instr.id)
                 self.ytm = f_xirr(future_accrual_payments)
+                _l.debug('< ytm: %s', self.ytm)
+                _l.debug('> modified_duration: instr=%s', self.instr.id)
                 self.modified_duration = f_duration(future_accrual_payments, ytm=self.ytm)
+                _l.debug('< modified_duration: %s', self.modified_duration)
 
         elif self.type == ReportItem.TYPE_MISMATCH:
             # self.market_value_res = self.pos_size * self.ccy_cur_fx
@@ -3020,6 +3026,7 @@ class ReportBuilder(object):
                     res_item.add(item)
 
             if res_item:
+                _l.debug('items - aggregate - item=%s, instr=%s', res_item, getattr(res_item.instr, 'id', None))
                 res_item.pricing()
                 res_item.close()
                 aggr_items.append(res_item)

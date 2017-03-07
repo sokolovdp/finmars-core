@@ -8,7 +8,7 @@ from poms.reports.builders import ReportBuilder
 from poms.reports.cash_flow_projection import TransactionReportBuilder, CashFlowProjectionReportBuilder
 from poms.users.models import MasterUser, Member
 
-_l = logging.getLogger('poms.instruments')
+_l = logging.getLogger('poms.reports')
 
 
 # curl -X POST --user a:a  http://127.0.0.1:8000/api/v1/reports/transaction-report/?format=json  -v -o /dev/null
