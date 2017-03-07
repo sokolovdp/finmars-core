@@ -2,7 +2,7 @@ from __future__ import unicode_literals
 
 import django_filters
 from django.db import transaction
-from django.db.models import Prefetch
+from django.db.models import Prefetch, Q
 from rest_framework.decorators import detail_route
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.filters import FilterSet
@@ -89,6 +89,29 @@ class TransactionTypeGroupViewSet(AbstractWithObjectPermissionViewSet):
     ]
 
 
+class ModelExtWithAllWithPermissionMultipleChoiceFilter(ModelExtWithPermissionMultipleChoiceFilter):
+    all_field_name = None
+    def __init__(self, *args, **kwargs):
+        self.all_field_name = kwargs.pop('all_field_name')
+        super(ModelExtWithAllWithPermissionMultipleChoiceFilter, self).__init__(*args, **kwargs)
+
+    def filter(self, qs, value):
+        if not value:
+            return qs
+
+        if self.is_noop(qs, value):
+            return qs
+
+        q = Q()
+        for v in set(value):
+            predicate = self.get_filter_predicate(v)
+            q |= Q(**predicate)
+
+        qs = self.get_method(qs)(q | Q(**{self.all_field_name: True}))
+
+        return qs.distinct() if self.distinct else qs
+
+
 class TransactionTypeFilterSet(FilterSet):
     id = NoOpFilter()
     user_code = CharFilter()
@@ -96,10 +119,14 @@ class TransactionTypeFilterSet(FilterSet):
     short_name = CharFilter()
     public_name = CharFilter()
     group = ModelExtWithPermissionMultipleChoiceFilter(model=TransactionTypeGroup)
-    instrument_type = ModelExtWithPermissionMultipleChoiceFilter(model=InstrumentType, name='instrument_types')
+    # portfolio = ModelExtWithPermissionMultipleChoiceFilter(model=Portfolio, name='portfolios')
+    portfolio = ModelExtWithAllWithPermissionMultipleChoiceFilter(model=Portfolio, name='portfolios',
+                                                                  all_field_name='is_valid_for_all_portfolios')
+    # instrument_type = ModelExtWithPermissionMultipleChoiceFilter(model=InstrumentType, name='instrument_types')
+    instrument_type = ModelExtWithAllWithPermissionMultipleChoiceFilter(model=InstrumentType, name='instrument_types',
+                                                                        all_field_name='is_valid_for_all_instruments')
     is_valid_for_all_portfolios = django_filters.BooleanFilter()
     is_valid_for_all_instruments = django_filters.BooleanFilter()
-    portfolio = ModelExtWithPermissionMultipleChoiceFilter(model=Portfolio, name='portfolios')
     tag = TagFilter(model=TransactionType)
     member = ObjectPermissionMemberFilter(object_permission_model=TransactionType)
     member_group = ObjectPermissionGroupFilter(object_permission_model=TransactionType)
