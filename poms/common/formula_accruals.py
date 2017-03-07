@@ -73,11 +73,11 @@ def coupon_accrual_factor(
         #         dt3 = maturity_date
 
         k = 0
-        while (dt3 + periodicity.to_timedelta(k)) <= dt2:
+        while (dt3 + periodicity.to_timedelta(i=k)) <= dt2:
             k += 1
-        dt3 += periodicity.to_timedelta(k)
+        dt3 += periodicity.to_timedelta(i=k)
         if k > 0:
-            dt1 = dt3 - periodicity.to_timedelta(1)
+            dt1 = dt3 - periodicity.to_timedelta(i=1)
         if maturity_date is not None:
             if dt3 >= maturity_date > dt2:
                 dt3 = maturity_date
@@ -499,7 +499,7 @@ if __name__ == "__main__":
 
     django.setup()
 
-    from poms.instruments.models import AccrualCalculationModel, Periodicity
+    from poms.instruments.models import AccrualCalculationModel, Instrument
 
     # print('1 -> ', coupon_accrual_factor(
     #     accrual_calculation_model=AccrualCalculationModel.NONE,
@@ -510,75 +510,75 @@ if __name__ == "__main__":
     #     maturity_date=date(2016, 12, 31)
     # ))
 
-    d0 = date(2016, 2, 29)
-    d1 = date(2016, 1, 31)
-    d2 = date(2016, 2, 11)
-    d3 = date(2016, 3, 3)
-    for d in [d0, d1, d2, d3]:
-        print(d, d.strftime('%A'))
-
-    print('-' * 10)
-    for periodicity in Periodicity.objects.all():
-        d = d0
-        td0 = periodicity.to_timedelta(n=0, i=1, same_date=d)
-        td1 = periodicity.to_timedelta(n=1, i=1, same_date=d)
-        td2 = periodicity.to_timedelta(n=2, i=1, same_date=d)
-        print(0, periodicity.id, periodicity.system_code, td0, td1, td2)
-        print('\t', d + td0, d + td1, d + td2)
-
-    print('-' * 10)
-    print(101, 'd2 - d1', d2 - d1)
-    print(102, 'd2 - d1', relativedelta.relativedelta(d2, d1))
-    print(103, 'd3 - d1', relativedelta.relativedelta(d3, d1))
-    print(104, relativedelta.relativedelta(date(2016, 1, 1), date(2016, 1, 12)))
-
-    print('-' * 10)
-    print(200, d1 + relativedelta.relativedelta(days=5))
-    print(201, d1 + relativedelta.relativedelta(days=5, weekday=relativedelta.MO))
-    print(202, d1 + relativedelta.relativedelta(days=20, weekday=relativedelta.MO))
-    print(203, d1 + relativedelta.relativedelta(days=5, weekday=relativedelta.MO) +
-          relativedelta.relativedelta(days=5, weekday=relativedelta.MO) +
-          relativedelta.relativedelta(days=5, weekday=relativedelta.MO) +
-          relativedelta.relativedelta(days=5, weekday=relativedelta.MO))
-    print(204, d1 + relativedelta.relativedelta(day=31))
-    print(205, d1 + relativedelta.relativedelta(months=1, day=31))
-
-    print('-' * 10)
-    print(300, [d.date().isoformat() for d in rrule.rrule(dtstart=d1, count=4, freq=rrule.WEEKLY)])
-    print(300, [d.date().isoformat() for d in rrule.rrule(dtstart=d1, count=4, freq=rrule.WEEKLY,
-                                                          byweekday=[rrule.FR])])
-
-    print(301, [d.date().isoformat() for d in rrule.rrule(dtstart=d1, count=4, freq=rrule.MONTHLY)])
-
-    print(302, [d.date().isoformat() for d in rrule.rrule(dtstart=d1, count=7, freq=rrule.DAILY)])
-    print(303, [d.date().isoformat() for d in rrule.rrule(dtstart=d1, count=7, freq=rrule.DAILY,
-                                                          byweekday=[rrule.FR])])
-    print(304, [d.date().isoformat() for d in rrule.rrule(dtstart=d1, count=7, freq=rrule.DAILY,
-                                                          byweekday=[rrule.MO, rrule.TU, rrule.WE, rrule.TH,
-                                                                     rrule.FR])])
-    print(305, [d.date().isoformat() for d in rrule.rrule(dtstart=d1, count=4, freq=rrule.MONTHLY,
-                                                          bymonthday=[31], bysetpos=-1)])
-
-    print('-' * 10)
-    print(401, weekday(date(2016, 1, 31), date(2016, 2, 14), rrule.SU))
-    print(402, weekday(date(2016, 1, 31), date(2016, 2, 13), rrule.SU))
-    print(403, weekday(date(2016, 2, 1), date(2016, 2, 14), rrule.SU))
-    print(404, weekday(date(2016, 2, 1), date(2016, 2, 13), rrule.SU))
-
-    print(411, weekday(date(2016, 1, 31), date(2016, 2, 14), rrule.SA))
-    print(412, weekday(date(2016, 1, 31), date(2016, 2, 13), rrule.SA))
-    print(413, weekday(date(2016, 2, 1), date(2016, 2, 14), rrule.SA))
-    print(414, weekday(date(2016, 2, 1), date(2016, 2, 13), rrule.SA))
-
-    print('-' * 10)
-    print(500, coupon_accrual_factor(
-        accrual_calculation_model=AccrualCalculationModel.objects.get(pk=AccrualCalculationModel.ACT_ACT),
-        periodicity=Periodicity.objects.get(pk=Periodicity.MONTHLY),
-        dt1=date(2016, 1, 1),
-        dt2=date(2016, 3, 31),
-        dt3=date(2016, 2, 1),
-        maturity_date=date.max
-    ))
+    # d0 = date(2016, 2, 29)
+    # d1 = date(2016, 1, 31)
+    # d2 = date(2016, 2, 11)
+    # d3 = date(2016, 3, 3)
+    # for d in [d0, d1, d2, d3]:
+    #     print(d, d.strftime('%A'))
+    #
+    # print('-' * 10)
+    # for periodicity in Periodicity.objects.all():
+    #     d = d0
+    #     td0 = periodicity.to_timedelta(n=0, i=1, same_date=d)
+    #     td1 = periodicity.to_timedelta(n=1, i=1, same_date=d)
+    #     td2 = periodicity.to_timedelta(n=2, i=1, same_date=d)
+    #     print(0, periodicity.id, periodicity.system_code, td0, td1, td2)
+    #     print('\t', d + td0, d + td1, d + td2)
+    #
+    # print('-' * 10)
+    # print(101, 'd2 - d1', d2 - d1)
+    # print(102, 'd2 - d1', relativedelta.relativedelta(d2, d1))
+    # print(103, 'd3 - d1', relativedelta.relativedelta(d3, d1))
+    # print(104, relativedelta.relativedelta(date(2016, 1, 1), date(2016, 1, 12)))
+    #
+    # print('-' * 10)
+    # print(200, d1 + relativedelta.relativedelta(days=5))
+    # print(201, d1 + relativedelta.relativedelta(days=5, weekday=relativedelta.MO))
+    # print(202, d1 + relativedelta.relativedelta(days=20, weekday=relativedelta.MO))
+    # print(203, d1 + relativedelta.relativedelta(days=5, weekday=relativedelta.MO) +
+    #       relativedelta.relativedelta(days=5, weekday=relativedelta.MO) +
+    #       relativedelta.relativedelta(days=5, weekday=relativedelta.MO) +
+    #       relativedelta.relativedelta(days=5, weekday=relativedelta.MO))
+    # print(204, d1 + relativedelta.relativedelta(day=31))
+    # print(205, d1 + relativedelta.relativedelta(months=1, day=31))
+    #
+    # print('-' * 10)
+    # print(300, [d.date().isoformat() for d in rrule.rrule(dtstart=d1, count=4, freq=rrule.WEEKLY)])
+    # print(300, [d.date().isoformat() for d in rrule.rrule(dtstart=d1, count=4, freq=rrule.WEEKLY,
+    #                                                       byweekday=[rrule.FR])])
+    #
+    # print(301, [d.date().isoformat() for d in rrule.rrule(dtstart=d1, count=4, freq=rrule.MONTHLY)])
+    #
+    # print(302, [d.date().isoformat() for d in rrule.rrule(dtstart=d1, count=7, freq=rrule.DAILY)])
+    # print(303, [d.date().isoformat() for d in rrule.rrule(dtstart=d1, count=7, freq=rrule.DAILY,
+    #                                                       byweekday=[rrule.FR])])
+    # print(304, [d.date().isoformat() for d in rrule.rrule(dtstart=d1, count=7, freq=rrule.DAILY,
+    #                                                       byweekday=[rrule.MO, rrule.TU, rrule.WE, rrule.TH,
+    #                                                                  rrule.FR])])
+    # print(305, [d.date().isoformat() for d in rrule.rrule(dtstart=d1, count=4, freq=rrule.MONTHLY,
+    #                                                       bymonthday=[31], bysetpos=-1)])
+    #
+    # print('-' * 10)
+    # print(401, weekday(date(2016, 1, 31), date(2016, 2, 14), rrule.SU))
+    # print(402, weekday(date(2016, 1, 31), date(2016, 2, 13), rrule.SU))
+    # print(403, weekday(date(2016, 2, 1), date(2016, 2, 14), rrule.SU))
+    # print(404, weekday(date(2016, 2, 1), date(2016, 2, 13), rrule.SU))
+    #
+    # print(411, weekday(date(2016, 1, 31), date(2016, 2, 14), rrule.SA))
+    # print(412, weekday(date(2016, 1, 31), date(2016, 2, 13), rrule.SA))
+    # print(413, weekday(date(2016, 2, 1), date(2016, 2, 14), rrule.SA))
+    # print(414, weekday(date(2016, 2, 1), date(2016, 2, 13), rrule.SA))
+    #
+    # print('-' * 10)
+    # print(500, coupon_accrual_factor(
+    #     accrual_calculation_model=AccrualCalculationModel.objects.get(pk=AccrualCalculationModel.ACT_ACT),
+    #     periodicity=Periodicity.objects.get(pk=Periodicity.MONTHLY),
+    #     dt1=date(2016, 1, 1),
+    #     dt2=date(2016, 3, 31),
+    #     dt3=date(2016, 2, 1),
+    #     maturity_date=date.max
+    # ))
 
     # s = datetime.utcnow()
     # count = 0
@@ -598,3 +598,13 @@ if __name__ == "__main__":
     #     if d >= date.max:
     #         break
     # print(401, date.min, date.max, count, datetime.utcnow() - s)
+
+    i = Instrument.objects.get(pk=19)
+    _l.debug('> instr_accrual: instr=%s', i.id)
+    d = date(2016, 4, 7)
+    instr_accrual = i.find_accrual(d)
+    _l.debug('< instr_accrual: %s', instr_accrual)
+    if instr_accrual:
+        _l.debug('> instr_accrual_accrued_price: instr=%s', i.id)
+        instr_accrual_accrued_price = i.get_accrued_price(d, accrual=instr_accrual)
+        _l.debug('< instr_accrual_accrued_price: %s', instr_accrual_accrued_price)
