@@ -25,7 +25,6 @@ from poms.obj_perms.serializers import ModelWithObjectPermissionSerializer
 from poms.tags.serializers import ModelWithTagSerializer
 from poms.transactions.fields import TransactionTypeField
 from poms.users.fields import MasterUserField
-from poms.users.utils import get_member_from_context
 
 
 class InstrumentClassSerializer(PomsClassSerializer):
@@ -403,6 +402,7 @@ class ManualPricingFormulaSerializer(serializers.ModelSerializer):
 
 class AccrualCalculationScheduleSerializer(serializers.ModelSerializer):
     id = serializers.IntegerField(read_only=False, required=False, allow_null=True)
+    periodicity_n = serializers.IntegerField(required=False, default=0, initial=0, min_value=0, max_value=10 * 365)
     accrual_calculation_model_object = AccrualCalculationModelSerializer(source='accrual_calculation_model',
                                                                          read_only=True)
     periodicity_object = PeriodicitySerializer(source='periodicity', read_only=True)
@@ -412,6 +412,22 @@ class AccrualCalculationScheduleSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'accrual_start_date', 'first_payment_date', 'accrual_size', 'accrual_calculation_model',
             'accrual_calculation_model_object', 'periodicity', 'periodicity_object', 'periodicity_n', 'notes']
+
+    def validate(self, attrs):
+        periodicity = attrs['periodicity']
+        if periodicity:
+            periodicity_n = attrs.get('periodicity_n', 0)
+            try:
+                periodicity.to_timedelta(n=periodicity_n)
+            except ValueError:
+                v = serializers.MinValueValidator(1)
+                try:
+                    v(periodicity_n)
+                except serializers.ValidationError as e:
+                    raise ValidationError({'periodicity_n': [str(e)]})
+                except serializers.DjangoValidationError as e:
+                    raise ValidationError({'periodicity_n': e.messages})
+        return attrs
 
 
 class InstrumentFactorScheduleSerializer(serializers.ModelSerializer):
@@ -454,10 +470,11 @@ class EventScheduleActionSerializer(serializers.ModelSerializer):
 
 class EventScheduleSerializer(serializers.ModelSerializer):
     id = serializers.IntegerField(read_only=False, required=False, allow_null=True)
+    periodicity_n = serializers.IntegerField(required=False, default=0, initial=0, min_value=0, max_value=10 * 365)
+    actions = EventScheduleActionSerializer(many=True, required=False, allow_null=True)
     event_class_object = serializers.PrimaryKeyRelatedField(source='event_class', read_only=True)
     notification_class_object = serializers.PrimaryKeyRelatedField(source='notification_class', read_only=True)
     periodicity_object = PeriodicitySerializer(source='periodicity', read_only=True)
-    actions = EventScheduleActionSerializer(many=True, required=False, allow_null=True)
 
     display_name = serializers.SerializerMethodField()
     display_description = serializers.SerializerMethodField()
@@ -480,6 +497,22 @@ class EventScheduleSerializer(serializers.ModelSerializer):
         self.fields['event_class_object'] = EventClassSerializer(source='event_class', read_only=True)
         self.fields['notification_class_object'] = NotificationClassSerializer(source='notification_class',
                                                                                read_only=True)
+
+    def validate(self, attrs):
+        periodicity = attrs['periodicity']
+        if periodicity:
+            periodicity_n = attrs.get('periodicity_n', 0)
+            try:
+                periodicity.to_timedelta(n=periodicity_n)
+            except ValueError:
+                v = serializers.MinValueValidator(1)
+                try:
+                    v(periodicity_n)
+                except serializers.ValidationError as e:
+                    raise ValidationError({'periodicity_n': [str(e)]})
+                except serializers.DjangoValidationError as e:
+                    raise ValidationError({'periodicity_n': e.messages})
+        return attrs
 
     def get_display_name(self, obj):
         r = self.root
@@ -593,9 +626,6 @@ class GeneratedEventSerializer(serializers.ModelSerializer):
 
     def generate_text(self, exr, obj, names=None):
         # member = get_member_from_context(self.context)
-        from poms.portfolios.serializers import PortfolioViewSerializer
-        from poms.accounts.serializers import AccountViewSerializer
-        from poms.strategies.serializers import Strategy1ViewSerializer, Strategy2ViewSerializer, Strategy3ViewSerializer
         names = names or {}
         if obj is None:
             obj = self._current_instance
@@ -612,7 +642,7 @@ class GeneratedEventSerializer(serializers.ModelSerializer):
             # 'strategy1': formula.get_model_data(obj.strategy1, Strategy1ViewSerializer, context=self.context),
             # 'strategy2': formula.get_model_data(obj.strategy2, Strategy2ViewSerializer, context=self.context),
             # 'strategy3': formula.get_model_data(obj.strategy3, Strategy3ViewSerializer, context=self.context),
-            'instrument':  obj.instrument,
+            'instrument': obj.instrument,
             'portfolio': obj.portfolio,
             'account': obj.account,
             'strategy1': obj.strategy1,
