@@ -941,13 +941,15 @@ class AbstractFileImportSerializer(serializers.Serializer):
                 from poms.integrations.tasks import schedule_file_import_delete
                 schedule_file_import_delete(remote_file_path)
 
-            if file:
-                self._parse_csv_file(validated_data, file)
-            else:
-                with import_file_storage.open(remote_file_path, 'rb') as f:
-                    self._parse_csv_file(validated_data, f)
+            # if file:
+            #     self._parse_csv_file(validated_data, file)
+            # else:
+            #     with import_file_storage.open(remote_file_path, 'rb') as f:
+            #         self._parse_csv_file(validated_data, f)
             # with import_file_storage.open(tmp_file_name, 'rb') as f:
             #     self._parse_csv_file1(validated_data, f)
+            with import_file_storage.open(remote_file_path, 'rb') as f:
+                self._parse_csv_file(validated_data, f)
 
             # with import_file_storage.open(tmp_file_name, 'rb') as f:
             #     rows = []
