@@ -2,6 +2,7 @@ from __future__ import unicode_literals, print_function
 
 import django_filters
 from django.core.exceptions import ObjectDoesNotExist
+from django.db import transaction
 from django.db.models import Prefetch
 from rest_framework.exceptions import MethodNotAllowed
 from rest_framework.filters import FilterSet
@@ -19,13 +20,12 @@ from poms.integrations.models import ImportConfig, Task, InstrumentDownloadSchem
     FactorScheduleDownloadMethod, AccrualScheduleDownloadMethod, PriceDownloadScheme, CurrencyMapping, \
     InstrumentTypeMapping, InstrumentAttributeValueMapping, AccrualCalculationModelMapping, PeriodicityMapping, \
     PricingAutomatedSchedule, InstrumentDownloadSchemeAttribute
-from poms.integrations.serializers import ImportConfigSerializer, TaskSerializer, \
-    ImportFileInstrumentSerializer, ImportInstrumentSerializer, ImportPricingSerializer, \
-    InstrumentDownloadSchemeSerializer, ProviderClassSerializer, FactorScheduleDownloadMethodSerializer, \
-    AccrualScheduleDownloadMethodSerializer, PriceDownloadSchemeSerializer, CurrencyMappingSerializer, \
-    InstrumentTypeMappingSerializer, InstrumentAttributeValueMappingSerializer, \
-    AccrualCalculationModelMappingSerializer, \
-    PeriodicityMappingSerializer, PricingAutomatedScheduleSerializer
+from poms.integrations.serializers import ImportConfigSerializer, TaskSerializer, ImportInstrumentSerializer, \
+    ImportPricingSerializer, InstrumentDownloadSchemeSerializer, ProviderClassSerializer, \
+    FactorScheduleDownloadMethodSerializer, AccrualScheduleDownloadMethodSerializer, PriceDownloadSchemeSerializer, \
+    CurrencyMappingSerializer, InstrumentTypeMappingSerializer, InstrumentAttributeValueMappingSerializer, \
+    AccrualCalculationModelMappingSerializer, PeriodicityMappingSerializer, PricingAutomatedScheduleSerializer, \
+    AbstractFileImportSerializer, ComplexTransactionFileImportSerializer
 from poms.obj_attrs.models import GenericAttributeType
 from poms.obj_perms.utils import get_permissions_prefetch_lookups
 from poms.users.filters import OwnerByMasterUserFilter
@@ -348,16 +348,6 @@ class PricingAutomatedScheduleViewSet(AbstractModelViewSet):
         raise MethodNotAllowed(method=request.method)
 
 
-class ImportFileInstrumentViewSet(AbstractViewSet):
-    serializer_class = ImportFileInstrumentSerializer
-
-    def create(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response(serializer.data)
-
-
 class ImportInstrumentViewSet(AbstractViewSet):
     serializer_class = ImportInstrumentSerializer
 
@@ -376,3 +366,51 @@ class ImportPricingViewSet(AbstractViewSet):
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(serializer.data)
+
+
+# ----------------------------------------
+
+
+# class TransactionFileImportSchemeFilterSet(FilterSet):
+#     id = NoOpFilter()
+#     scheme_name = CharFilter()
+#     transaction_type = ModelExtWithPermissionMultipleChoiceFilter(model=TransactionType, name='transaction_types')
+#
+#     class Meta:
+#         model = TransactionFileImportScheme
+#         fields = []
+#
+#
+# class TransactionFileImportSchemeViewSet(AbstractModelViewSet):
+#     queryset = TransactionFileImportScheme.objects.select_related(
+#         'transaction_type', 'transaction_type__group',
+#     ).prefetch_related(
+#         'inputs',
+#         *get_permissions_prefetch_lookups(
+#             ('transaction_type', TransactionType),
+#         )
+#     )
+#     serializer_class = TransactionFileImportSchemeSerializer
+#     filter_backends = AbstractModelViewSet.filter_backends + [
+#         OwnerByMasterUserFilter,
+#     ]
+#     filter_class = TransactionFileImportSchemeFilterSet
+#     ordering_fields = [
+#         'scheme_name',
+#         'transaction_type', 'transaction_type__name',
+#     ]
+
+
+
+class AbstractFileImportViewSet(AbstractViewSet):
+    serializer_class = AbstractFileImportSerializer
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data)
+
+
+class ComplexTransactionFileImportViewSet(AbstractFileImportViewSet):
+    serializer_class = ComplexTransactionFileImportSerializer

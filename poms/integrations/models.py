@@ -7,6 +7,7 @@ from logging import getLogger
 
 from croniter import croniter
 from django.conf import settings
+from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ValidationError
 from django.core.serializers.json import DjangoJSONEncoder
 from django.db import models
@@ -156,7 +157,7 @@ class InstrumentDownloadScheme(models.Model):
     maturity_date = models.CharField(max_length=255, blank=True, default='',
                                      verbose_name=ugettext_lazy('maturity date'))
     maturity_price = models.CharField(max_length=255, blank=True, default='',
-                                        verbose_name=ugettext_lazy('maturity price'))
+                                      verbose_name=ugettext_lazy('maturity price'))
     user_text_1 = models.CharField(max_length=255, blank=True, default='', verbose_name=ugettext_lazy('user text 1'))
     user_text_2 = models.CharField(max_length=255, blank=True, default='', verbose_name=ugettext_lazy('user text 2'))
     user_text_3 = models.CharField(max_length=255, blank=True, default='', verbose_name=ugettext_lazy('user text 3'))
@@ -608,3 +609,60 @@ class PricingAutomatedSchedule(models.Model):
 
         if save:
             self.save(update_fields=['last_run_at', 'next_run_at', ])
+
+
+# ----------------------------------------
+
+
+class ComplexTransactionFileImportScheme(models.Model):
+    master_user = models.ForeignKey('users.MasterUser', verbose_name=ugettext_lazy('master user'))
+    scheme_name = models.CharField(max_length=255, verbose_name=ugettext_lazy('name'))
+    type_expr = models.CharField(max_length=255, verbose_name=ugettext_lazy('type expressions'))
+
+    class Meta:
+        abstract = True
+        verbose_name = ugettext_lazy('complex transaction file import scheme')
+        verbose_name_plural = ugettext_lazy('complex transaction file import schemes')
+        unique_together = [
+            ['master_user', 'scheme_name']
+        ]
+
+    def __str__(self):
+        return self.scheme_name
+
+
+class ComplexTransactionFileImportSchemeType(models.Model):
+    scheme = models.ForeignKey(ComplexTransactionFileImportScheme, verbose_name=ugettext_lazy('scheme'))
+    user_code = models.CharField(max_length=255, blank=True, default='', verbose_name=ugettext_lazy('user code'))
+    transaction_type = models.ForeignKey('transactions.TransactionType', verbose_name=ugettext_lazy('transaction type'))
+
+    class Meta:
+        abstract = True
+        verbose_name = ugettext_lazy('complex transaction file import scheme type')
+        verbose_name_plural = ugettext_lazy('complex transaction file import scheme types')
+        unique_together = [
+            ['scheme', 'transaction_type'],
+            ['scheme', 'user_code'],
+        ]
+
+    def __str__(self):
+        return '%s-%s' % (self.scheme, self.transaction_type,)
+
+
+class ComplexTransactionFileImportField(models.Model):
+    type0 = models.ForeignKey(ComplexTransactionFileImportSchemeType, verbose_name=ugettext_lazy('type'))
+    name = models.CharField(max_length=255, verbose_name=ugettext_lazy('name'))
+    # input = models.ForeignKey('transactions.TransactionTypeInput', verbose_name=ugettext_lazy('transaction type input'))
+    value_expr = models.CharField(max_length=2000, verbose_name=ugettext_lazy('value expression'))
+
+    class Meta:
+        abstract = True
+        verbose_name = ugettext_lazy('complex transaction file import scheme type field')
+        verbose_name_plural = ugettext_lazy('complex transaction file import scheme type fields')
+        unique_together = [
+            ['type0', 'name'],
+            # ['object0', 'input'],
+        ]
+
+    def __str__(self):
+        return '%s-%s' % (self.type0, self.name,)

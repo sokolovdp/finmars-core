@@ -665,17 +665,17 @@ class ReportSerializer(serializers.Serializer):
     cost_method = serializers.PrimaryKeyRelatedField(queryset=CostMethod.objects, allow_null=True, allow_empty=True)
 
     portfolio_mode = serializers.ChoiceField(default=Report.MODE_INDEPENDENT, initial=Report.MODE_INDEPENDENT,
-                                             choices=Report.MODE_CHOICES)
+                                             choices=Report.MODE_CHOICES, required=False)
     account_mode = serializers.ChoiceField(default=Report.MODE_INDEPENDENT, initial=Report.MODE_INDEPENDENT,
-                                           choices=Report.MODE_CHOICES)
+                                           choices=Report.MODE_CHOICES, required=False)
     strategy1_mode = serializers.ChoiceField(default=Report.MODE_INDEPENDENT, initial=Report.MODE_INDEPENDENT,
-                                             choices=Report.MODE_CHOICES)
+                                             choices=Report.MODE_CHOICES, required=False)
     strategy2_mode = serializers.ChoiceField(default=Report.MODE_INDEPENDENT, initial=Report.MODE_INDEPENDENT,
-                                             choices=Report.MODE_CHOICES)
+                                             choices=Report.MODE_CHOICES, required=False)
     strategy3_mode = serializers.ChoiceField(default=Report.MODE_INDEPENDENT, initial=Report.MODE_INDEPENDENT,
-                                             choices=Report.MODE_CHOICES)
+                                             choices=Report.MODE_CHOICES, required=False)
     show_transaction_details = serializers.BooleanField(default=False)
-    approach_multiplier = serializers.FloatField(default=0.5, initial=0.5, min_value=0.0, max_value=1.0)
+    approach_multiplier = serializers.FloatField(default=0.5, initial=0.5, min_value=0.0, max_value=1.0, required=False)
 
     custom_fields = CustomFieldField(many=True, allow_empty=True, allow_null=True, required=False)
 

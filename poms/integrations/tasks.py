@@ -102,10 +102,13 @@ def file_import_delete_async(path):
 
 
 def schedule_file_import_delete(path, countdown=None):
-    if countdown is None:
-        countdown = 600
-    _l.debug('schedule_file_import_delete: path=%s, countdown=%s', path, countdown)
-    file_import_delete_async.apply_async(kwargs={'path': path}, countdown=countdown)
+    if countdown == 0:
+        file_import_delete_async(path=path)
+    else:
+        if not getattr(settings, 'CELERY_TASK_ALWAYS_EAGER', False):
+            countdown = countdown or 600
+            _l.debug('schedule_file_import_delete: path=%s, countdown=%s', path, countdown)
+            file_import_delete_async.apply_async(kwargs={'path': path}, countdown=countdown)
 
 
 @shared_task(name='integrations.auth_log_statistics', ignore_result=True)
@@ -374,15 +377,20 @@ def download_pricing_async(self, task_id):
     instruments_always = set()
     instruments_if_open = set()
     instruments_opened = set()
+    currencies_always = set()
+    currencies_if_open = set()
+    currencies_opened = set()
+
     for i in instruments:
         if i.daily_pricing_model_id in [DailyPricingModel.FORMULA_IF_OPEN, DailyPricingModel.PROVIDER_IF_OPEN]:
             instruments_if_open.add(i.id)
         elif i.daily_pricing_model_id in [DailyPricingModel.FORMULA_ALWAYS, DailyPricingModel.PROVIDER_ALWAYS]:
             instruments_always.add(i.id)
+            if i.pricing_currency_id:
+                currencies_always.add(i.pricing_currency_id)
+            if i.instr.accrued_currency_id:
+                currencies_always.add(i.accrued_currency_id)
 
-    currencies_always = set()
-    currencies_if_open = set()
-    currencies_opened = set()
     for i in currencies:
         if i.daily_pricing_model_id in [DailyPricingModel.FORMULA_IF_OPEN, DailyPricingModel.PROVIDER_IF_OPEN]:
             currencies_if_open.add(i.id)
@@ -398,11 +406,10 @@ def download_pricing_async(self, task_id):
 
     if balance_date and (instruments_if_open or currencies_if_open):
         owner_or_admin = task.master_user.members.filter(Q(is_owner=True) | Q(is_admin=True)).first()
-        report = Report(master_user=task.master_user, member=owner_or_admin, report_date=balance_date,
-                        is_balance_only=True)
+        report = Report(master_user=task.master_user, member=owner_or_admin, report_date=balance_date)
         _l.info('calculate position report: %s', report)
         builder = ReportBuilder(instance=report)
-        builder.build()
+        builder.build_position_only()
         for i in report.items:
             if i.type == ReportItem.TYPE_INSTRUMENT and not isclose(i.pos_size, 0.0):
                 if i.instr:
@@ -413,7 +420,6 @@ def download_pricing_async(self, task_id):
                         currencies_opened.add(i.instr.accrued_currency_id)
                 if i.trn_ccy:
                     currencies_opened.add(i.trn_ccy.id)
-
             elif i.type == ReportItem.TYPE_CURRENCY and not isclose(i.pos_size, 0.0):
                 if i.ccy:
                     currencies_opened.add(i.ccy.id)

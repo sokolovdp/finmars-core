@@ -21,7 +21,9 @@ _l = logging.getLogger('poms.reports')
 
 class ReportTestCase(TestCase):
     def setUp(self):
-        _l.debug('*' * 100)
+        _l.debug('')
+        _l.debug('')
+        # _l.debug('*' * 100)
 
         # if pandas:
         #     pandas.set_option('display.width', 10000)
@@ -142,7 +144,7 @@ class ReportTestCase(TestCase):
 
     def _t(self, master=None, t_class=None, p=None, instr=None, trn_ccy=None, position=0.0,
            stl_ccy=None, cash=None, principal=0.0, carry=0.0, overheads=0.0,
-           acc_date=None, acc_date_days=None, cash_date=None, cash_date_days=None,
+           acc_date=None, acc_date_days=-1, cash_date=None, cash_date_days=-1,
            acc_pos=None, acc_cash=None, acc_interim=None, fx_rate=0.0,
            s1_pos=None, s1_cash=None, s2_pos=None, s2_cash=None, s3_pos=None, s3_cash=None,
            link_instr=None, alloc_bl=None, alloc_pl=None,
@@ -239,24 +241,27 @@ class ReportTestCase(TestCase):
     def _fifo(self):
         return CostMethod.objects.get(pk=CostMethod.FIFO)
 
-    def _print_transactions(self, transactions):
-        _l.debug('-' * 100)
+    def _print_transactions(self, transactions, columns=None):
+        _l.debug('')
         _l.debug('Transactions: ')
-        VirtualTransaction.dumps(transactions)
+        VirtualTransaction.dumps(transactions, columns=columns)
 
-    def _print_items(self, name, builder, items):
+    def _print_items(self, name, builder, items, columns=None):
+        _l.debug('')
         _l.debug('%s:', name)
-        ReportItem.dumps(items)
+        ReportItem.dumps(items, columns=columns)
 
-    def _dump(self, builder, name, show_trns=True, show_items=True):
+    def _dump(self, builder, name, show_trns=True, show_items=True, trn_columns=None, item_columns=None):
         if show_trns or show_items:
+            _l.debug('-' * 100)
             _l.debug('Report: %s', name)
+            _l.debug('-' * 100)
 
             if show_trns:
-                self._print_transactions(builder.instance.transactions)
+                self._print_transactions(builder.instance.transactions, columns=trn_columns)
 
             if show_items:
-                self._print_items('Items', builder, builder.instance.items)
+                self._print_items('Items', builder, builder.instance.items, columns=item_columns)
 
     def _test_avco_prtfl_0(self):
         self._t(t_class=self._buy, instr=self.bond0, position=5,
@@ -376,7 +381,7 @@ class ReportTestCase(TestCase):
         b.build()
         self._dump(b, 'test_balance_0')
 
-    def _test_balance_1(self):
+    def test_balance_1(self):
         self._t(t_class=self._cash_inflow, stl_ccy=self.usd, trn_ccy=self.usd, position=1000, fx_rate=1.0)
         self._t(t_class=self._buy,
                 instr=self.bond0, position=100,
@@ -387,6 +392,32 @@ class ReportTestCase(TestCase):
         b = ReportBuilder(instance=r)
         b.build()
         self._dump(b, 'test_balance_1')
+
+    def test_build_position_only(self):
+        self._t(t_class=self._cash_inflow, stl_ccy=self.usd, trn_ccy=self.usd, position=1000, fx_rate=1.0)
+
+        self._t(t_class=self._buy,
+                instr=self.bond0, position=100,
+                stl_ccy=self.usd, principal=-180., carry=-5., overheads=-15.,
+                acc_date_days=1, cash_date_days=1)
+
+        self._t(t_class=self._buy,
+                instr=self.bond1, position=100,
+                stl_ccy=self.usd, principal=-180., carry=-5., overheads=-15.,
+                acc_date_days=2, cash_date_days=2)
+
+        self._t(t_class=self._sell,
+                instr=self.bond1, position=-100,
+                trn_ccy=self.rub,
+                stl_ccy=self.chf, principal=180., carry=5., overheads=-15.,
+                acc_date_days=3, cash_date_days=3)
+
+        r = Report(master_user=self.m, pricing_policy=self.pp, report_date=self._d(14))
+        b = ReportBuilder(instance=r)
+        b.build_position_only()
+        self._dump(b, 'test_build_position_only',
+                   item_columns=['type_code', 'instr', 'ccy', 'prtfl', 'acc', 'str1', 'str2', 'str3', 'alloc_bl',
+                                 'alloc_pl', 'pos_size', ])
 
     def _test_balance_2(self):
         self._t(t_class=self._cash_inflow, trn_ccy=self.eur, position=1000, fx_rate=1.3)
@@ -975,7 +1006,7 @@ class ReportTestCase(TestCase):
         for i in range(1000, 30000, 1000):
             _l.debug('    %s -> %s', i, timeit.Timer(lambda: f_xirr(data)).timeit(i))
 
-    def test_pl_date_interval_1(self):
+    def _test_pl_date_interval_1(self):
         show_trns = False
 
         self._t(t_class=self._buy, instr=self.bond0, position=100,
@@ -992,7 +1023,7 @@ class ReportTestCase(TestCase):
 
         pl_first_date = self._d(10)
         # report_date = self._d(12)
-        report_date=self._d(22)
+        report_date = self._d(22)
 
         r = Report(master_user=self.m, pricing_policy=self.pp, report_date=pl_first_date)
         b = ReportBuilder(instance=r)

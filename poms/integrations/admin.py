@@ -10,7 +10,8 @@ from poms.common.admin import ClassModelAdmin, AbstractModelAdmin
 from poms.integrations.models import Task, ImportConfig, ProviderClass, CurrencyMapping, \
     InstrumentTypeMapping, InstrumentAttributeValueMapping, FactorScheduleDownloadMethod, AccrualScheduleDownloadMethod, \
     InstrumentDownloadScheme, InstrumentDownloadSchemeInput, InstrumentDownloadSchemeAttribute, PriceDownloadScheme, \
-    AccrualCalculationModelMapping, PeriodicityMapping, PricingAutomatedSchedule
+    AccrualCalculationModelMapping, PeriodicityMapping, PricingAutomatedSchedule, ComplexTransactionFileImportScheme, \
+    ComplexTransactionFileImportField, ComplexTransactionFileImportSchemeType
 
 admin.site.register(ProviderClass, ClassModelAdmin)
 admin.site.register(FactorScheduleDownloadMethod, ClassModelAdmin)
@@ -234,3 +235,46 @@ class PricingAutomatedScheduleAdmin(AbstractModelAdmin):
 
 
 admin.site.register(PricingAutomatedSchedule, PricingAutomatedScheduleAdmin)
+
+
+# --------
+
+
+# class ComplexTransactionFileImportSchemeAdmin(AbstractModelAdmin):
+#     model = ComplexTransactionFileImportScheme
+#     master_user_path = 'master_user'
+#     list_display = ['id', 'master_user', 'scheme_name']
+#     list_select_related = ['master_user', ]
+#     search_fields = ['id', 'scheme_name', ]
+#     raw_id_fields = ['master_user']
+#     save_as = True
+#
+#
+# admin.site.register(ComplexTransactionFileImportScheme, ComplexTransactionFileImportSchemeAdmin)
+#
+#
+# class ComplexTransactionFileImportFieldInline(admin.TabularInline):
+#     model = ComplexTransactionFileImportField
+#     extra = 0
+#
+#
+# class ComplexTransactionFileImportSchemeTypeAdmin(AbstractModelAdmin):
+#     model = ComplexTransactionFileImportSchemeType
+#     master_user_path = 'scheme__master_user'
+#     list_display = ['id', 'master_user', 'scheme', 'transaction_type', 'user_code']
+#     list_select_related = ['scheme', 'scheme__master_user', 'transaction_type']
+#     search_fields = ['id', 'scheme__scheme_name', ]
+#     raw_id_fields = ['scheme', 'transaction_type']
+#     inlines = [
+#         ComplexTransactionFileImportFieldInline,
+#     ]
+#     save_as = True
+#
+#     def master_user(self, obj):
+#         return obj.scheme.master_user
+#
+#     master_user.admin_order_field = 'scheme__master_user'
+#
+#
+# admin.site.register(ComplexTransactionFileImportSchemeType, ComplexTransactionFileImportSchemeTypeAdmin)
+

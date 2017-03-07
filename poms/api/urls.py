@@ -162,13 +162,14 @@ router.register(r'import/instrument-attribute-value-mapping', integrations.Instr
 router.register(r'import/accrual-calculation-model-mapping', integrations.AccrualCalculationModelMappingViewSet)
 router.register(r'import/periodicity-mapping', integrations.PeriodicityMappingViewSet)
 
-router.register(r'import/file/instrument', integrations.ImportFileInstrumentViewSet, 'importfileinstrument')
-
 router.register(r'import/instrument', integrations.ImportInstrumentViewSet, 'importinstrument')
 router.register(r'import/pricing', integrations.ImportPricingViewSet, 'importpricing')
 router.register(r'import/pricing-automated-schedule', integrations.PricingAutomatedScheduleViewSet)
 
 router.register(r'import/task', integrations.TaskViewSet)
+
+router.register(r'import/file/complex-transaction', integrations.ComplexTransactionFileImportViewSet,
+                'complextransactionfileimport')
 
 router.register(r'utils/expression', api.ExpressionViewSet, 'expression')
 

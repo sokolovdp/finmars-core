@@ -75,6 +75,7 @@ class _Base:
 
 class VirtualTransaction(_Base):
     trn = None
+    lid = None
     pk = None
     is_hidden = False  # if True it is not involved in the calculations
     is_mismatch = True
@@ -260,111 +261,129 @@ class VirtualTransaction(_Base):
     total_fixed_opened_res = 0.0
 
     dump_columns = [
-        'pk',
-        # 'lid',
         'is_cloned',
-        'is_hidden',
+        # 'lid',
+        'pk',
+        # 'is_hidden',
         # 'is_mismatch',
+        # 'trn_code',
         'trn_cls',
-        # 'case',
         # 'avco_multiplier',
         # 'avco_closed_by',
         # 'fifo_multiplier',
         # 'fifo_closed_by',
-        # 'multiplier',
-        # 'closed_by',
-        'trn_date',
-        # 'acc_date',
-        # 'cash_date',
+        'multiplier',
+        'closed_by',
         'instr',
-        # 'trn_ccy',
-        # 'stl_ccy',
-        # 'prtfl',
-        # 'acc_pos',
-        # 'acc_cash',
-        # 'acc_interim',
-        # 'str1_pos',
-        # 'str1_cash',
-        # 'str2_pos',
-        # 'str2_cash',
-        # 'str3_pos',
-        # 'str3_cash',
-        # 'link_instr',
-        # 'alloc_bl',
-        # 'alloc_pl',
+        'trn_ccy',
         'pos_size',
+        'stl_ccy',
         'cash',
         'principal',
         'carry',
         'overheads',
+        'ref_fx',
+        'trn_date',
+        'acc_date',
+        'cash_date',
+        'prtfl',
+        'acc_pos',
+        'acc_cash',
+        'acc_interim',
+        'str1_pos',
+        'str1_cash',
+        'str2_pos',
+        'str2_cash',
+        'str3_pos',
+        'str3_cash',
+        'link_instr',
+        'alloc_bl',
+        'alloc_pl',
+        'trade_price',
+        'notes',
+        'case',
+        'report_ccy_cur',
+        'report_ccy_cur_fx',
+        'report_ccy_cash_hist',
+        'report_ccy_cash_hist_fx',
+        'report_ccy_acc_hist',
+        'report_ccy_acc_hist_fx',
+        'instr_price_cur',
+        'instr_price_cur_principal_price',
+        'instr_price_cur_accrued_price',
+        'instr_pricing_ccy_cur',
+        'instr_pricing_ccy_cur_fx',
+        'instr_accrued_ccy_cur',
+        'instr_accrued_ccy_cur_fx',
+        'trn_ccy_cash_hist',
+        'trn_ccy_cash_hist_fx',
+        'trn_ccy_acc_hist',
+        'trn_ccy_acc_hist_fx',
+        'trn_ccy_cur',
+        'trn_ccy_cur_fx',
+        'stl_ccy_cash_hist',
+        'stl_ccy_cash_hist_fx',
+        'stl_ccy_acc_hist',
+        'stl_ccy_acc_hist_fx',
+        'stl_ccy_cur',
+        'stl_ccy_cur_fx',
+        'mismatch',
+        'instr_principal',
+        'instr_principal_res',
+        'instr_accrued',
+        'instr_accrued_res',
+        'gross_cost_res',
+        'net_cost_res',
+        'principal_invested_res',
+        'amount_invested_res',
+        'remaining_pos_size',
+        'remaining_pos_size_percent',
+        'ytm',
+        'time_invested_days',
+        'time_invested',
+        'weighted_ytm',
+        'weighted_time_invested_days',
+        'weighted_time_invested',
+        'cash_res',
         'total',
-        # 'mismatch',
-        # 'ref_fx',
-        # 'trn_ccy_acc_hist_fx',
-        # 'trn_ccy_cash_hist_fx',
-        # 'trn_ccy_cur_fx',
-        # 'stl_ccy_acc_hist_fx',
-        # 'stl_ccy_cur_fx',
-        # 'report_ccy_cash_hist_fx',
-        # 'report_ccy_acc_hist_fx',
-        # 'report_ccy_cur_fx',
-
-        # 'instr_principal_res',
-        # 'instr_accrued_res',
-
-        # full ----------------------------------------------------
-        # 'principal_res',
-        # 'carry_res',
-        # 'overheads_res',
-        # 'total_res',
-
-        # full / closed ----------------------------------------------------
-        # 'principal_closed_res',
-        # 'carry_closed_res',
-        # 'overheads_closed_res',
-        # 'total_closed_res',
-
-        # full / opened ----------------------------------------------------
-        # 'principal_opened_res',
-        # 'carry_opened_res',
-        # 'overheads_opened_res',
-        # 'total_opened_res',
-
-        # fx ----------------------------------------------------
-        # 'principal_fx_res',
-        # 'carry_fx_res',
-        # 'overheads_fx_res',
-        # 'total_fx_res',
-
-        # fx / closed ----------------------------------------------------
-        # 'principal_fx_closed_res',
-        # 'carry_fx_closed_res',
-        # 'overheads_fx_closed_res',
-        # 'total_fx_closed_res',
-
-        # fx / opened ----------------------------------------------------
-        # 'principal_fx_opened_res',
-        # 'carry_fx_opened_res',
-        # 'overheads_fx_opened_res',
-        # 'total_fx_opened_res',
-
-        # fixed ----------------------------------------------------
-        # 'principal_fixed_res',
-        # 'carry_fixed_res',
-        # 'overheads_fixed_res',
-        # 'total_fixed_res',
-
-        # fixed / closed ----------------------------------------------------
-        # 'principal_fixed_closed_res',
-        # 'carry_fixed_closed_res',
-        # 'overheads_fixed_closed_res',
-        # 'total_fixed_closed_res',
-
-        # fixed / opened ----------------------------------------------------
-        # 'principal_fixed_opened_res',
-        # 'carry_fixed_opened_res',
-        # 'overheads_fixed_opened_res',
-        # 'total_fixed_opened_res',
+        'principal_res',
+        'carry_res',
+        'overheads_res',
+        'total_res',
+        'principal_closed_res',
+        'carry_closed_res',
+        'overheads_closed_res',
+        'total_closed_res',
+        'principal_opened_res',
+        'carry_opened_res',
+        'overheads_opened_res',
+        'total_opened_res',
+        'pl_fx_mul',
+        'principal_fx_res',
+        'carry_fx_res',
+        'overheads_fx_res',
+        'total_fx_res',
+        'principal_fx_closed_res',
+        'carry_fx_closed_res',
+        'overheads_fx_closed_res',
+        'total_fx_closed_res',
+        'principal_fx_opened_res',
+        'carry_fx_opened_res',
+        'overheads_fx_opened_res',
+        'total_fx_opened_res',
+        'pl_fixed_mul',
+        'principal_fixed_res',
+        'carry_fixed_res',
+        'overheads_fixed_res',
+        'total_fixed_res',
+        'principal_fixed_closed_res',
+        'carry_fixed_closed_res',
+        'overheads_fixed_closed_res',
+        'total_fixed_closed_res',
+        'principal_fixed_opened_res',
+        'carry_fixed_opened_res',
+        'overheads_fixed_opened_res',
+        'total_fixed_opened_res',
     ]
 
     def __init__(self, report, pricing_provider, fx_rate_provider, trn, overrides=None):
@@ -613,10 +632,7 @@ class VirtualTransaction(_Base):
                 principal_ccy_fx=self.instr_pricing_ccy_cur_fx,
                 accrual_ccy_fx=self.instr_accrued_ccy_cur_fx
             )
-            if self.report.is_balance_only:
-                self.ytm = 0.0
-            else:
-                self.ytm = f_xirr(future_accrual_payments)
+            self.ytm = f_xirr(future_accrual_payments)
 
             # data = [(self.report.report_date, self.market_value_res)]
             # data = self.instr.get_future_accrual_payments(data)
@@ -1162,88 +1178,140 @@ class ReportItem(_Base):
     total_fixed_opened_loc = 0.0
 
     dump_columns = [
+        # 'is_cloned',
         'type_code',
-        'user_code',
-        # 'short_name',
-        # 'name',
         # 'trn',
-        # 'prtfl',
-        # 'acc',
-        # 'str1',
-        # 'str2',
-        # 'str3',
-        # 'detail_trn',
         'instr',
         'ccy',
         'trn_ccy',
-        # 'alloc_bl',
-        # 'alloc_pl',
-
-        # 'mismatch_prtfl',
-        # 'mismatch_acc',
-        # 'mismatch_ccy',
-        # 'mismatch',
-
+        'prtfl',
+        'acc',
+        'str1',
+        'str2',
+        'str3',
+        # 'custom_fields',
+        # 'is_empty',
+        'pricing_ccy',
+        'last_notes',
+        'mismatch',
+        'mismatch_prtfl',
+        'mismatch_acc',
+        'alloc_bl',
+        'alloc_pl',
+        'report_ccy_cur',
+        'report_ccy_cur_fx',
+        'instr_price_cur',
+        'instr_price_cur_principal_price',
+        'instr_price_cur_accrued_price',
+        'instr_pricing_ccy_cur',
+        'instr_pricing_ccy_cur_fx',
+        'instr_accrued_ccy_cur',
+        'instr_accrued_ccy_cur_fx',
+        'ccy_cur',
+        'ccy_cur_fx',
+        'pricing_ccy_cur',
+        'pricing_ccy_cur_fx',
+        'instr_principal_res',
+        'instr_accrued_res',
+        'exposure_res',
+        'exposure_loc',
+        'instr_accrual',
+        'instr_accrual_accrued_price',
         'pos_size',
         'market_value_res',
-
-        # 'cost_res',
-        # 'instr_principal_res',
-        # 'instr_accrued_res',
-
-        # full ----------------------------------------------------
+        'market_value_loc',
+        'cost_res',
+        'ytm',
+        'modified_duration',
+        'ytm_at_cost',
+        'time_invested_days',
+        'time_invested',
+        'gross_cost_res',
+        'gross_cost_loc',
+        'net_cost_res',
+        'net_cost_loc',
+        'principal_invested_res',
+        'principal_invested_loc',
+        'amount_invested_res',
+        'amount_invested_loc',
+        'pos_return_res',
+        'pos_return_loc',
+        'net_pos_return_res',
+        'net_pos_return_loc',
+        'daily_price_change',
+        'mtd_price_change',
         'principal_res',
         'carry_res',
         'overheads_res',
         'total_res',
-
-        # full / closed ----------------------------------------------------
-        # 'principal_closed_res',
-        # 'carry_closed_res',
-        # 'overheads_closed_res',
-        # 'total_closed_res',
-
-        # full / opened ----------------------------------------------------
-        # 'principal_opened_res',
-        # 'carry_opened_res',
-        # 'overheads_opened_res',
-        # 'total_opened_res',
-
-        # fx ----------------------------------------------------
-        # 'principal_fx_res',
-        # 'carry_fx_res',
-        # 'overheads_fx_res',
-        # 'total_fx_res',
-
-        # fx / closed ----------------------------------------------------
-        # 'principal_fx_closed_res',
-        # 'carry_fx_closed_res',
-        # 'overheads_fx_closed_res',
-        # 'total_fx_closed_res',
-
-        # fx / opened ----------------------------------------------------
-        # 'principal_fx_opened_res',
-        # 'carry_fx_opened_res',
-        # 'overheads_fx_opened_res',
-        # 'total_fx_opened_res',
-
-        # fixed ----------------------------------------------------
-        # 'principal_fixed_res',
-        # 'carry_fixed_res',
-        # 'overheads_fixed_res',
-        # 'total_fixed_res',
-
-        # fixed / closed ----------------------------------------------------
-        # 'principal_fixed_closed_res',
-        # 'carry_fixed_closed_res',
-        # 'overheads_fixed_closed_res',
-        # 'total_fixed_closed_res',
-
-        # fixed / opened ----------------------------------------------------
-        # 'principal_fixed_opened_res',
-        # 'carry_fixed_opened_res',
-        # 'overheads_fixed_opened_res',
-        # 'total_fixed_opened_res',
+        'principal_loc',
+        'carry_loc',
+        'overheads_loc',
+        'total_loc',
+        'principal_closed_res',
+        'carry_closed_res',
+        'overheads_closed_res',
+        'total_closed_res',
+        'principal_closed_loc',
+        'carry_closed_loc',
+        'overheads_closed_loc',
+        'total_closed_loc',
+        'principal_opened_res',
+        'carry_opened_res',
+        'overheads_opened_res',
+        'total_opened_res',
+        'principal_opened_loc',
+        'carry_opened_loc',
+        'overheads_opened_loc',
+        'total_opened_loc',
+        'principal_fx_res',
+        'carry_fx_res',
+        'overheads_fx_res',
+        'total_fx_res',
+        'principal_fx_loc',
+        'carry_fx_loc',
+        'overheads_fx_loc',
+        'total_fx_loc',
+        'principal_fx_closed_res',
+        'carry_fx_closed_res',
+        'overheads_fx_closed_res',
+        'total_fx_closed_res',
+        'principal_fx_closed_loc',
+        'carry_fx_closed_loc',
+        'overheads_fx_closed_loc',
+        'total_fx_closed_loc',
+        'principal_fx_opened_res',
+        'carry_fx_opened_res',
+        'overheads_fx_opened_res',
+        'total_fx_opened_res',
+        'principal_fx_opened_loc',
+        'carry_fx_opened_loc',
+        'overheads_fx_opened_loc',
+        'total_fx_opened_loc',
+        'principal_fixed_res',
+        'carry_fixed_res',
+        'overheads_fixed_res',
+        'total_fixed_res',
+        'principal_fixed_loc',
+        'carry_fixed_loc',
+        'overheads_fixed_loc',
+        'total_fixed_loc',
+        'principal_fixed_closed_res',
+        'carry_fixed_closed_res',
+        'overheads_fixed_closed_res',
+        'total_fixed_closed_res',
+        'principal_fixed_closed_loc',
+        'carry_fixed_closed_loc',
+        'overheads_fixed_closed_loc',
+        'total_fixed_closed_loc',
+        'principal_fixed_opened_res',
+        'carry_fixed_opened_res',
+        'overheads_fixed_opened_res',
+        'total_fixed_opened_res',
+        'principal_fixed_opened_loc',
+        'carry_fixed_opened_loc',
+        'overheads_fixed_opened_loc',
+        'total_fixed_opened_loc',
     ]
 
     def __init__(self, report, pricing_provider, fx_rate_provider, type):
@@ -1537,6 +1605,13 @@ class ReportItem(_Base):
         elif self.type == ReportItem.TYPE_MISMATCH:
             self.mismatch += o.mismatch
 
+    def add_pos(self, o):
+        if self.type == ReportItem.TYPE_CURRENCY:
+            self.pos_size += o.pos_size
+
+        elif self.type == ReportItem.TYPE_INSTRUMENT:
+            self.pos_size += o.pos_size
+
     def close(self):
         # if self.type == ReportItem.TYPE_CURRENCY or self.type == ReportItem.TYPE_INVESTED_CURRENCY:
         if self.type == ReportItem.TYPE_CURRENCY:
@@ -1602,7 +1677,7 @@ class ReportItem(_Base):
                 self.pos_return_res = 0
             try:
                 self.net_pos_return_res = (
-                                          self.principal_opened_res + self.carry_opened_res + self.overheads_opened_res) / self.principal_invested_res
+                                              self.principal_opened_res + self.carry_opened_res + self.overheads_opened_res) / self.principal_invested_res
             except ArithmeticError:
                 self.net_pos_return_res = 0.0
 
@@ -1616,12 +1691,8 @@ class ReportItem(_Base):
                     principal_ccy_fx=self.instr_pricing_ccy_cur_fx,
                     accrual_ccy_fx=self.instr_accrued_ccy_cur_fx
                 )
-                if self.report.is_balance_only:
-                    self.ytm = 0.0
-                    self.modified_duration = 0.0
-                else:
-                    self.ytm = f_xirr(future_accrual_payments)
-                    self.modified_duration = f_duration(future_accrual_payments, ytm=self.ytm)
+                self.ytm = f_xirr(future_accrual_payments)
+                self.modified_duration = f_duration(future_accrual_payments, ytm=self.ytm)
 
         elif self.type == ReportItem.TYPE_MISMATCH:
             # self.market_value_res = self.pos_size * self.ccy_cur_fx
@@ -2039,8 +2110,7 @@ class Report(object):
                  transaction_classes=None,
                  date_field=None,
                  custom_fields=None,
-                 items=None,
-                 is_balance_only=False):
+                 items=None):
         self.id = id
         self.task_id = task_id
         self.task_status = task_status
@@ -2056,7 +2126,6 @@ class Report(object):
         self.report_date = report_date or (date_now() - timedelta(days=1))
         self.report_currency = report_currency or master_user.system_currency
         self.cost_method = cost_method or CostMethod.objects.get(pk=CostMethod.AVCO)
-        self.is_balance_only = is_balance_only
 
         self.portfolio_mode = portfolio_mode
         self.account_mode = account_mode
@@ -2111,7 +2180,268 @@ class ReportBuilder(object):
         self._pricing_provider = pricing_provider
         self._fx_rate_provider = fx_rate_provider
 
+        self._transactions = []
+        self._mismatch_items = []
         self._items = []
+        self._summaries = []
+
+    def build(self, full=True):
+        _l.debug('build report: %s', self.instance)
+
+        # split transactions to atomic items using transaction class, case and something else
+
+        self._load_transactions()
+
+        self._transaction_pricing()
+
+        self._transaction_multipliers()
+
+        self._transaction_calc()
+
+        self.clone_transactions_if_need()
+
+        self.instance.transactions = self._transactions
+
+        # _l.debug('generate items')
+        # for trn in transactions:
+        #     if trn.is_mismatch and trn.link_instr and not isclose(trn.mismatch, 0.0):
+        #         item = ReportItem.from_trn(self.instance, self.pricing_provider, self.fx_rate_provider,
+        #                                    ReportItem.TYPE_MISMATCH, trn)
+        #         mismatch_items.append(item)
+        #
+        #     if trn.is_hidden:
+        #         continue
+        #
+        #     if trn.trn_cls.id in [TransactionClass.BUY, TransactionClass.SELL]:
+        #         self._add_instr(trn)
+        #         self._add_cash(trn, val=trn.cash, ccy=trn.stl_ccy)
+        #
+        #     elif trn.trn_cls.id in [TransactionClass.CASH_INFLOW, TransactionClass.CASH_OUTFLOW]:
+        #         self._add_cash(trn, val=trn.cash, ccy=trn.stl_ccy,
+        #                        acc=trn.acc_pos, str1=trn.str1_pos, str2=trn.str2_pos,
+        #                        str3=trn.str3_pos)
+        #
+        #         # P&L
+        #         item = ReportItem.from_trn(self.instance, self.pricing_provider, self.fx_rate_provider,
+        #                                    ReportItem.TYPE_CASH_IN_OUT, trn, acc=trn.acc_cash,
+        #                                    str1=trn.str1_cash, str2=trn.str2_cash, str3=trn.str3_cash,
+        #                                    ccy=trn.stl_ccy)
+        #         self._items.append(item)
+        #
+        #     elif trn.trn_cls.id == TransactionClass.INSTRUMENT_PL:
+        #         self._add_instr(trn)
+        #         self._add_cash(trn, val=trn.cash, ccy=trn.stl_ccy)
+        #
+        #     elif trn.trn_cls.id == TransactionClass.TRANSACTION_PL:
+        #         self._add_cash(trn, val=trn.cash, ccy=trn.stl_ccy)
+        #
+        #         item = ReportItem.from_trn(self.instance, self.pricing_provider, self.fx_rate_provider,
+        #                                    ReportItem.TYPE_TRANSACTION_PL, trn, acc=trn.acc_pos,
+        #                                    str1=trn.str1_pos, str2=trn.str2_pos, str3=trn.str3_pos)
+        #         self._items.append(item)
+        #
+        #     elif trn.trn_cls.id == TransactionClass.FX_TRADE:
+        #         # TODO: Что используем для strategy?
+        #         self._add_cash(trn, val=trn.principal, ccy=trn.stl_ccy)
+        #
+        #         # self._add_cash(trn, val=trn.cash, ccy=trn.stl_ccy)
+        #
+        #         # P&L
+        #         item = ReportItem.from_trn(self.instance, self.pricing_provider, self.fx_rate_provider,
+        #                                    ReportItem.TYPE_FX_TRADE, trn, acc=trn.acc_cash,
+        #                                    str1=trn.str1_cash, str2=trn.str2_cash, str3=trn.str3_cash,
+        #                                    ccy=trn.trn.settlement_currency, trn_ccy=trn.trn_ccy)
+        #         self._items.append(item)
+        #
+        #     elif trn.trn_cls.id == TransactionClass.TRANSFER:
+        #         # raise RuntimeError('Virtual transaction must be created')
+        #         pass
+        #
+        #     elif trn.trn_cls.id == TransactionClass.FX_TRANSFER:
+        #         # raise RuntimeError('Virtual transaction must be created')
+        #         pass
+        #
+        #     else:
+        #         raise RuntimeError('Invalid transaction class: %s' % trn.trn_cls.id)
+        self._generate_items()
+
+        # def _item_key(item):
+        #     return (
+        #         item.type,
+        #         getattr(item.prtfl, 'id', -1),
+        #         getattr(item.acc, 'id', -1),
+        #         getattr(item.str1, 'id', -1),
+        #         getattr(item.str2, 'id', -1),
+        #         getattr(item.str3, 'id', -1),
+        #         getattr(item.alloc_bl, 'id', -1),
+        #         getattr(item.alloc_pl, 'id', -1),
+        #         getattr(item.instr, 'id', -1),
+        #         getattr(item.ccy, 'id', -1),
+        #         getattr(item.trn_ccy, 'id', -1),
+        #         getattr(item.detail_trn, 'id', -1),
+        #     )
+        #
+        # def _pass2_item_key(trn=None, item=None):
+        #     if trn:
+        #         return (
+        #             getattr(trn.prtfl, 'id', -1),
+        #             getattr(trn.acc_pos, 'id', -1),
+        #             getattr(trn.str1_pos, 'id', -1),
+        #             getattr(trn.str2_pos, 'id', -1),
+        #             getattr(trn.str3_pos, 'id', -1),
+        #             getattr(trn.alloc_bl, 'id', -1),
+        #             getattr(trn.alloc_pl, 'id', -1),
+        #             getattr(trn.instr, 'id', -1),
+        #             # getattr(trn.ccy, 'id', -1),
+        #             # getattr(trn.trn_ccy, 'id', -1),
+        #         )
+        #     elif item:
+        #         return (
+        #             getattr(item.prtfl, 'id', -1),
+        #             getattr(item.acc, 'id', -1),
+        #             getattr(item.str1, 'id', -1),
+        #             getattr(item.str2, 'id', -1),
+        #             getattr(item.str3, 'id', -1),
+        #             getattr(item.alloc_bl, 'id', -1),
+        #             getattr(item.alloc_pl, 'id', -1),
+        #             getattr(item.instr, 'id', -1),
+        #             # getattr(item.ccy, 'id', -1),
+        #             # getattr(item.trn_ccy, 'id', -1),
+        #         )
+        #     else:
+        #         raise RuntimeError('code bug')
+
+        # _l.debug('aggregate items')
+        # sorted_items = sorted(self._items, key=lambda item: self._item_group_key(item))
+        # res_items = []
+        # res_items_for_instr = {}
+        # for k, g in groupby(sorted_items, key=lambda item: self._item_group_key(item)):
+        #     res_item = None
+        #
+        #     for item in g:
+        #         if item.type in [ReportItem.TYPE_INSTRUMENT, ReportItem.TYPE_CURRENCY, ReportItem.TYPE_TRANSACTION_PL,
+        #                          ReportItem.TYPE_FX_TRADE, ReportItem.TYPE_CASH_IN_OUT, ]:
+        #             if res_item is None:
+        #                 res_item = ReportItem.from_item(item)
+        #             res_item.add(item)
+        #
+        #     if res_item:
+        #         res_item.pricing()
+        #         res_item.close()
+        #         res_items.append(res_item)
+        #
+        #         if res_item.type == ReportItem.TYPE_INSTRUMENT and res_item.instr:
+        #             pass2_item_key = self._item_group_key_pass2(item=res_item)
+        #             res_items_for_instr[pass2_item_key] = res_item
+        self._aggregate_items()
+
+        # pass 2 - some values can calculate only after "balance"
+        # _l.debug('process transactions step 2')
+        # for trn in self._transactions:
+        #     if not trn.is_cloned and trn.trn_cls.id in [TransactionClass.BUY, TransactionClass.SELL]:
+        #         pass2_item_key = self._item_group_key_pass2(trn=trn)
+        #         item = res_items_for_instr.get(pass2_item_key, None)
+        #         if item:
+        #             trn.calc_pass2(balance_pos_size=item.pos_size)
+        #             item.add_pass2(trn)
+        #         else:
+        #             raise RuntimeError('Oh error')
+        #
+        # for item in res_items:
+        #     item.close_pass2()
+        self._calc_pass2()
+
+        # ReportItem.dumps(_items)
+
+        # res_items = [item for item in res_items if not item.is_empty]
+
+        # summaries = []
+        # if settings.DEBUG:
+        #     _l.debug('aggregate summary')
+        #     summary = ReportItem(self.instance, self.pricing_provider, self.fx_rate_provider, ReportItem.TYPE_SUMMARY)
+        #     for item in res_items:
+        #         if item.type in [ReportItem.TYPE_INSTRUMENT, ReportItem.TYPE_CURRENCY, ReportItem.TYPE_TRANSACTION_PL,
+        #                          ReportItem.TYPE_FX_TRADE, ReportItem.TYPE_CASH_IN_OUT]:
+        #             summary.add(item)
+        #     summary.close()
+        #     summaries.append(summary)
+        self._aggregate_summary()
+
+        # _l.debug('find mismatches')
+        # mismatch_items0 = sorted(self._mismatch_items, key=lambda item: self._item_mismatch_group_key(item))
+        # mismatch_items = []
+        # for k, g in groupby(mismatch_items0, key=lambda item: self._item_mismatch_group_key(item)):
+        #     mismatch_item = None
+        #     for item in g:
+        #         if mismatch_item is None:
+        #             mismatch_item = ReportItem.from_item(item)
+        #         mismatch_item.add(item)
+        #
+        #     if mismatch_item:
+        #         mismatch_item.pricing()
+        #         mismatch_item.close()
+        #         mismatch_items.append(mismatch_item)
+        # self._mismatch_items = mismatch_items
+        self._detect_mismatches()
+
+        # self.instance.items = res_items + mismatch_items + [summary, ] + invested_items + [invested_summary, ]
+        # self.instance.items = res_items + mismatch_items + summaries
+        self.instance.items = self._items + self._mismatch_items + self._summaries
+
+        if self.instance.pl_first_date and self.instance.pl_first_date != date.min:
+            self._build_on_pl_first_date()
+
+        if full:
+            self._refresh_with_perms()
+
+        _l.debug('finalize report')
+        self.instance.close()
+
+        # _l.debug('0' * 100)
+        # VirtualTransaction.dumps(self.instance.transactions)
+        # _l.debug('1' * 100)
+        # ReportItem.dumps(self._items)
+        # _l.debug('2' * 100)
+        # ReportItem.dumps(self.instance.items)
+        # _l.debug('3' * 100)
+
+        _l.debug('done')
+        return self.instance
+
+    def build_position_only(self):
+        _l.debug('build position only report: %s', self.instance)
+
+        # split transactions to atomic items using transaction class, case and something else
+
+        self._load_transactions()
+        self.instance.transactions = self._transactions
+
+        if not self._transactions:
+            return
+
+        self._generate_items()
+
+        sorted_items = sorted(self._items, key=lambda item: self._item_group_key(item))
+
+        _l.debug('aggregate items')
+        res_items = []
+        for k, g in groupby(sorted_items, key=lambda item: self._item_group_key(item)):
+            res_item = None
+
+            for item in g:
+                if item.type in [ReportItem.TYPE_INSTRUMENT, ReportItem.TYPE_CURRENCY, ReportItem.TYPE_TRANSACTION_PL,
+                                 ReportItem.TYPE_FX_TRADE, ReportItem.TYPE_CASH_IN_OUT, ]:
+                    if res_item is None:
+                        res_item = ReportItem.from_item(item)
+                    res_item.pos_size += item.trn.pos_size
+
+            if res_item:
+                res_items.append(res_item)
+
+        self.instance.items = res_items
+
+        _l.debug('done')
+        return self.instance
 
     @cached_property
     def _trn_cls_sell(self):
@@ -2323,15 +2653,15 @@ class ReportBuilder(object):
             self._fx_rate_provider = p
         return self._fx_rate_provider
 
-    def get_transactions(self):
-        if self._transactions is not None:
-            return self._transactions
+    def _load_transactions(self):
+        _l.debug('transactions - load')
+
+        self._transactions = []
 
         trn_qs = self._trn_qs()
         if not trn_qs.exists():
-            return []
+            return
 
-        res = []
         for t in trn_qs:
             overrides = {}
 
@@ -2362,17 +2692,28 @@ class ReportBuilder(object):
                 trn=t,
                 overrides=overrides
             )
+            self._transactions.append(trn)
+
+        _l.debug('transactions - len=%s', len(self._transactions))
+
+    def _transaction_pricing(self):
+        _l.debug('transactions - add pricing')
+
+        for trn in self._transactions:
             trn.pricing()
-            res.append(trn)
 
-        return res
+    def _transaction_calc(self):
+        _l.debug('transactions - calculate')
 
-    def clone_transactions_if_need(self, transactions):
-        res = []
-        for trn in transactions:
-            res.append(trn)
-
+        for trn in self._transactions:
             trn.calc()
+
+    def clone_transactions_if_need(self):
+        _l.debug('transactions - clone if need')
+
+        res = []
+        for trn in self._transactions:
+            res.append(trn)
 
             if trn.trn_cls.id in [TransactionClass.BUY, TransactionClass.SELL]:
                 if trn.closed_by:
@@ -2405,15 +2746,16 @@ class ReportBuilder(object):
                 res.append(trn1)
                 res.append(trn2)
 
-        return res
+        self._transactions = res
+        _l.debug('transactions - len=%s', len(self._transactions))
 
-    def calc_multipliers(self, transactions):
-        self.calc_avco_multipliers(transactions)
-        self.calc_fifo_multipliers(transactions)
+    def _transaction_multipliers(self):
+        _l.debug('transactions - calculate multipliers')
 
-        for t in transactions:
-            # res.append(t)
+        self._calc_avco_multipliers()
+        self._calc_fifo_multipliers()
 
+        for t in self._transactions:
             if t.instr and t.instr.instrument_type.instrument_class_id == InstrumentClass.CONTRACT_FOR_DIFFERENCE:
                 t.multiplier = t.fifo_multiplier
                 t.closed_by = t.fifo_closed_by
@@ -2436,7 +2778,9 @@ class ReportBuilder(object):
             getattr(t.instr, 'id', None),
         )
 
-    def calc_avco_multipliers(self, src):
+    def _calc_avco_multipliers(self):
+        _l.debug('transactions - calculate multipliers - avco')
+
         rolling_positions = Counter()
         items = defaultdict(list)
 
@@ -2450,7 +2794,7 @@ class ReportBuilder(object):
             closed.avco_closed_by.append((cur, delta))
 
         # res = []
-        for t in src:
+        for t in self._transactions:
             # res.append(t)
 
             if t.trn_cls.id not in [TransactionClass.BUY, TransactionClass.SELL]:
@@ -2502,7 +2846,9 @@ class ReportBuilder(object):
 
             # return res
 
-    def calc_fifo_multipliers(self, src):
+    def _calc_fifo_multipliers(self):
+        _l.debug('transactions - calculate multipliers - fifo')
+
         rolling_positions = Counter()
         items = defaultdict(list)
 
@@ -2516,7 +2862,7 @@ class ReportBuilder(object):
             closed.fifo_closed_by.append((cur, delta))
 
         # res = []
-        for t in src:
+        for t in self._transactions:
             # res.append(t)
 
             if t.trn_cls.id not in [TransactionClass.BUY, TransactionClass.SELL]:
@@ -2592,26 +2938,13 @@ class ReportBuilder(object):
 
             # return res
 
-    def build(self, full=True):
-        mismatch_items = []
-        _l.debug('build report: %s', self.instance)
-
-        # split transactions to atomic items using transaction class, case and something else
-
-        _l.debug('load transactions')
-        transactions = self.get_transactions()
-        _l.debug('calculate multipliers')
-        self.calc_multipliers(transactions)
-        _l.debug('clone transactions for some states')
-        transactions = self.clone_transactions_if_need(transactions)
-        self.instance.transactions = transactions
-
-        _l.debug('generate items')
-        for trn in transactions:
-            if trn.is_mismatch and trn.link_instr and not isclose(trn.mismatch, 0.0):
-                item = ReportItem.from_trn(self.instance, self.pricing_provider, self.fx_rate_provider,
-                                           ReportItem.TYPE_MISMATCH, trn)
-                mismatch_items.append(item)
+    def _generate_items(self):
+        _l.debug('items - generate')
+        for trn in self._transactions:
+            # if trn.is_mismatch and trn.link_instr and not isclose(trn.mismatch, 0.0):
+            #     item = ReportItem.from_trn(self.instance, self.pricing_provider, self.fx_rate_provider,
+            #                                ReportItem.TYPE_MISMATCH, trn)
+            #     self._mismatch_items.append(item)
 
             if trn.is_hidden:
                 continue
@@ -2668,59 +3001,15 @@ class ReportBuilder(object):
             else:
                 raise RuntimeError('Invalid transaction class: %s' % trn.trn_cls.id)
 
-        def _item_key(item):
-            return (
-                item.type,
-                getattr(item.prtfl, 'id', -1),
-                getattr(item.acc, 'id', -1),
-                getattr(item.str1, 'id', -1),
-                getattr(item.str2, 'id', -1),
-                getattr(item.str3, 'id', -1),
-                getattr(item.alloc_bl, 'id', -1),
-                getattr(item.alloc_pl, 'id', -1),
-                getattr(item.instr, 'id', -1),
-                getattr(item.ccy, 'id', -1),
-                getattr(item.trn_ccy, 'id', -1),
-                getattr(item.detail_trn, 'id', -1),
-            )
+        _l.debug('items - raw.len=%s', len(self._items))
 
-        def _pass2_item_key(trn=None, item=None):
-            if trn:
-                return (
-                    getattr(trn.prtfl, 'id', -1),
-                    getattr(trn.acc_pos, 'id', -1),
-                    getattr(trn.str1_pos, 'id', -1),
-                    getattr(trn.str2_pos, 'id', -1),
-                    getattr(trn.str3_pos, 'id', -1),
-                    getattr(trn.alloc_bl, 'id', -1),
-                    getattr(trn.alloc_pl, 'id', -1),
-                    getattr(trn.instr, 'id', -1),
-                    # getattr(trn.ccy, 'id', -1),
-                    # getattr(trn.trn_ccy, 'id', -1),
-                )
-            elif item:
-                return (
-                    getattr(item.prtfl, 'id', -1),
-                    getattr(item.acc, 'id', -1),
-                    getattr(item.str1, 'id', -1),
-                    getattr(item.str2, 'id', -1),
-                    getattr(item.str3, 'id', -1),
-                    getattr(item.alloc_bl, 'id', -1),
-                    getattr(item.alloc_pl, 'id', -1),
-                    getattr(item.instr, 'id', -1),
-                    # getattr(item.ccy, 'id', -1),
-                    # getattr(item.trn_ccy, 'id', -1),
-                )
-            else:
-                raise RuntimeError('code bug')
+    def _aggregate_items(self):
+        _l.debug('items - aggregate')
 
-        _items = sorted(self._items, key=_item_key)
+        sorted_items = sorted(self._items, key=lambda item: self._item_group_key(item))
 
-        _l.debug('aggregate items')
-
-        res_items = []
-        res_items_for_instr = {}
-        for k, g in groupby(_items, key=_item_key):
+        aggr_items = []
+        for k, g in groupby(sorted_items, key=lambda item: self._item_group_key(item)):
             res_item = None
 
             for item in g:
@@ -2733,91 +3022,67 @@ class ReportBuilder(object):
             if res_item:
                 res_item.pricing()
                 res_item.close()
-                res_items.append(res_item)
+                aggr_items.append(res_item)
+        self._items = aggr_items
 
-                if res_item.type == ReportItem.TYPE_INSTRUMENT and res_item.instr:
-                    pass2_item_key = _pass2_item_key(item=res_item)
-                    res_items_for_instr[pass2_item_key] = res_item
+        _l.debug('items - len=%s', len(self._items))
 
-        # pass 2 - some values can calculate only after "balance"
-        _l.debug('process transactions step 2')
-        for trn in transactions:
-            if not trn.is_cloned and trn.trn_cls.id in [TransactionClass.BUY, TransactionClass.SELL]:
-                pass2_item_key = _pass2_item_key(trn=trn)
-                item = res_items_for_instr.get(pass2_item_key, None)
-                if item:
-                    trn.calc_pass2(balance_pos_size=item.pos_size)
-                    item.add_pass2(trn)
-                else:
-                    raise RuntimeError('Oh error')
+    def _item_group_key(self, item):
+        return (
+            item.type,
+            getattr(item.prtfl, 'id', -1),
+            getattr(item.acc, 'id', -1),
+            getattr(item.str1, 'id', -1),
+            getattr(item.str2, 'id', -1),
+            getattr(item.str3, 'id', -1),
+            getattr(item.alloc_bl, 'id', -1),
+            getattr(item.alloc_pl, 'id', -1),
+            getattr(item.instr, 'id', -1),
+            getattr(item.ccy, 'id', -1),
+            getattr(item.trn_ccy, 'id', -1),
+            getattr(item.detail_trn, 'id', -1),
+        )
 
-        for item in res_items:
-            item.close_pass2()
+    def _item_mismatch_group_key(self, item):
+        return (
+            item.type,
+            getattr(item.prtfl, 'id', -1),
+            getattr(item.acc, 'id', -1),
+            getattr(item.instr, 'id', -1),
+            getattr(item.ccy, 'id', -1),
+            getattr(item.mismatch_prtfl, 'id', -1),
+            getattr(item.mismatch_acc, 'id', -1),
+        )
 
-        # ReportItem.dumps(_items)
-
-        # res_items = [item for item in res_items if not item.is_empty]
-
-        summaries = []
-        if settings.DEBUG:
-            _l.debug('aggregate summary')
-            summary = ReportItem(self.instance, self.pricing_provider, self.fx_rate_provider, ReportItem.TYPE_SUMMARY)
-            for item in res_items:
-                if item.type in [ReportItem.TYPE_INSTRUMENT, ReportItem.TYPE_CURRENCY, ReportItem.TYPE_TRANSACTION_PL,
-                                 ReportItem.TYPE_FX_TRADE, ReportItem.TYPE_CASH_IN_OUT]:
-                    summary.add(item)
-            summary.close()
-            summaries.append(summary)
-
-        _l.debug('find mismatches')
-
-        def _mismatch_group_key(item):
+    def _item_group_key_pass2(self, trn=None, item=None):
+        if trn:
             return (
-                item.type,
+                getattr(trn.prtfl, 'id', -1),
+                getattr(trn.acc_pos, 'id', -1),
+                getattr(trn.str1_pos, 'id', -1),
+                getattr(trn.str2_pos, 'id', -1),
+                getattr(trn.str3_pos, 'id', -1),
+                getattr(trn.alloc_bl, 'id', -1),
+                getattr(trn.alloc_pl, 'id', -1),
+                getattr(trn.instr, 'id', -1),
+                # getattr(trn.ccy, 'id', -1),
+                # getattr(trn.trn_ccy, 'id', -1),
+            )
+        elif item:
+            return (
                 getattr(item.prtfl, 'id', -1),
                 getattr(item.acc, 'id', -1),
+                getattr(item.str1, 'id', -1),
+                getattr(item.str2, 'id', -1),
+                getattr(item.str3, 'id', -1),
+                getattr(item.alloc_bl, 'id', -1),
+                getattr(item.alloc_pl, 'id', -1),
                 getattr(item.instr, 'id', -1),
-                getattr(item.ccy, 'id', -1),
-                getattr(item.mismatch_prtfl, 'id', -1),
-                getattr(item.mismatch_acc, 'id', -1),
+                # getattr(item.ccy, 'id', -1),
+                # getattr(item.trn_ccy, 'id', -1),
             )
-
-        mismatch_items0 = sorted(mismatch_items, key=_mismatch_group_key)
-        mismatch_items = []
-        for k, g in groupby(mismatch_items0, key=_mismatch_group_key):
-            mismatch_item = None
-            for item in g:
-                if mismatch_item is None:
-                    mismatch_item = ReportItem.from_item(item)
-                mismatch_item.add(item)
-
-            if mismatch_item:
-                mismatch_item.pricing()
-                mismatch_item.close()
-                mismatch_items.append(mismatch_item)
-
-        # self.instance.items = res_items + mismatch_items + [summary, ] + invested_items + [invested_summary, ]
-        self.instance.items = res_items + mismatch_items + summaries
-
-        if self.instance.pl_first_date and self.instance.pl_first_date != date.min:
-            self._build_on_pl_first_date()
-
-        if full:
-            self._refresh_with_perms()
-
-        _l.debug('finalize report')
-        self.instance.close()
-
-        # _l.debug('0' * 100)
-        # VirtualTransaction.dumps(self.instance.transactions)
-        # _l.debug('1' * 100)
-        # ReportItem.dumps(self._items)
-        # _l.debug('2' * 100)
-        # ReportItem.dumps(self.instance.items)
-        # _l.debug('3' * 100)
-
-        _l.debug('done')
-        return self.instance
+        else:
+            raise RuntimeError('code bug')
 
     def _build_on_pl_first_date(self):
         report_on_pl_first_date = Report(
@@ -2904,6 +3169,98 @@ class ReportBuilder(object):
 
         return report_on_pl_first_date
 
+    # def _aggregate_items(self):
+    #     _l.debug('items - aggregate')
+    #     sorted_items = sorted(self._items, key=lambda item: self._item_group_key(item))
+    #
+    #     res = []
+    #     for k, g in groupby(sorted_items, key=lambda item: self._item_group_key(item)):
+    #         res_item = None
+    #
+    #         for item in g:
+    #             if item.type in [ReportItem.TYPE_INSTRUMENT, ReportItem.TYPE_CURRENCY, ReportItem.TYPE_TRANSACTION_PL,
+    #                              ReportItem.TYPE_FX_TRADE, ReportItem.TYPE_CASH_IN_OUT, ]:
+    #                 if res_item is None:
+    #                     res_item = ReportItem.from_item(item)
+    #                 res_item.add(item)
+    #
+    #         if res_item:
+    #             res_item.pricing()
+    #             res_item.close()
+    #             res.append(res_item)
+    #     self._items = res
+    #
+    #     _l.debug('items - aggregated %s items', len(self._items))
+
+    def _calc_pass2(self):
+        _l.debug('transactions - pass 2')
+
+        items_map = {}
+        for item in self._items:
+            if item.type == ReportItem.TYPE_INSTRUMENT and item.instr:
+                key = self._item_group_key_pass2(item=item)
+                items_map[key] = item
+
+        for trn in self._transactions:
+            if not trn.is_cloned and trn.trn_cls.id in [TransactionClass.BUY, TransactionClass.SELL]:
+                key = self._item_group_key_pass2(trn=trn)
+                item = items_map.get(key, None)
+                if item:
+                    trn.calc_pass2(balance_pos_size=item.pos_size)
+                    item.add_pass2(trn)
+                else:
+                    raise RuntimeError('Oh error')
+
+        _l.debug('items - pass 2')
+        for item in self._items:
+            item.close_pass2()
+
+    def _aggregate_summary(self):
+        if not settings.DEBUG:
+            return
+
+        _l.debug('aggregate summary')
+        total = ReportItem(self.instance, self.pricing_provider, self.fx_rate_provider, ReportItem.TYPE_SUMMARY)
+        for item in self._items:
+            if item.type in [ReportItem.TYPE_INSTRUMENT, ReportItem.TYPE_CURRENCY, ReportItem.TYPE_TRANSACTION_PL,
+                             ReportItem.TYPE_FX_TRADE, ReportItem.TYPE_CASH_IN_OUT]:
+                total.add(item)
+        total.pricing()
+        total.close()
+        self._summaries.append(total)
+
+    def _detect_mismatches(self):
+        _l.debug('mismatches - detect')
+
+        l = []
+        for trn in self._transactions:
+            if trn.is_mismatch and trn.link_instr and not isclose(trn.mismatch, 0.0):
+                item = ReportItem.from_trn(self.instance, self.pricing_provider, self.fx_rate_provider,
+                                           ReportItem.TYPE_MISMATCH, trn)
+                l.append(item)
+
+        _l.debug('mismatches - raw.len=%s', len(l))
+
+        if not l:
+            return
+
+        _l.debug('mismatches - aggregate')
+        l = sorted(l, key=lambda x: self._item_mismatch_group_key(x))
+        for k, g in groupby(l, key=lambda x: self._item_mismatch_group_key(x)):
+
+            mismatch_item = None
+            for item in g:
+                if mismatch_item is None:
+                    mismatch_item = ReportItem.from_item(item)
+                mismatch_item.add(item)
+
+            if mismatch_item:
+                mismatch_item.pricing()
+                mismatch_item.close()
+                self._mismatch_items.append(mismatch_item)
+
+        _l.debug('mismatches - len=%s', len(self._mismatch_items))
+
     def _add_instr(self, trn):
         if trn.case == 0:
             item = ReportItem.from_trn(self.instance, self.pricing_provider, self.fx_rate_provider,
@@ -2953,6 +3310,8 @@ class ReportBuilder(object):
             raise RuntimeError('Invalid transaction case: %s' % trn.case)
 
     def _refresh_with_perms(self):
+        _l.debug('items - refresh all objects with permissions')
+
         instrs = set()
         ccys = set()
         prtfls = set()
