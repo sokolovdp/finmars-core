@@ -2185,6 +2185,264 @@ class ReportBuilder(object):
         self._items = []
         self._summaries = []
 
+    def build(self, full=True):
+        _l.debug('build report: %s', self.instance)
+
+        # split transactions to atomic items using transaction class, case and something else
+
+        self._load_transactions()
+
+        self._transaction_pricing()
+
+        self._transaction_multipliers()
+
+        self._transaction_calc()
+
+        self.clone_transactions_if_need()
+
+        self.instance.transactions = self._transactions
+
+        # _l.debug('generate items')
+        # for trn in transactions:
+        #     if trn.is_mismatch and trn.link_instr and not isclose(trn.mismatch, 0.0):
+        #         item = ReportItem.from_trn(self.instance, self.pricing_provider, self.fx_rate_provider,
+        #                                    ReportItem.TYPE_MISMATCH, trn)
+        #         mismatch_items.append(item)
+        #
+        #     if trn.is_hidden:
+        #         continue
+        #
+        #     if trn.trn_cls.id in [TransactionClass.BUY, TransactionClass.SELL]:
+        #         self._add_instr(trn)
+        #         self._add_cash(trn, val=trn.cash, ccy=trn.stl_ccy)
+        #
+        #     elif trn.trn_cls.id in [TransactionClass.CASH_INFLOW, TransactionClass.CASH_OUTFLOW]:
+        #         self._add_cash(trn, val=trn.cash, ccy=trn.stl_ccy,
+        #                        acc=trn.acc_pos, str1=trn.str1_pos, str2=trn.str2_pos,
+        #                        str3=trn.str3_pos)
+        #
+        #         # P&L
+        #         item = ReportItem.from_trn(self.instance, self.pricing_provider, self.fx_rate_provider,
+        #                                    ReportItem.TYPE_CASH_IN_OUT, trn, acc=trn.acc_cash,
+        #                                    str1=trn.str1_cash, str2=trn.str2_cash, str3=trn.str3_cash,
+        #                                    ccy=trn.stl_ccy)
+        #         self._items.append(item)
+        #
+        #     elif trn.trn_cls.id == TransactionClass.INSTRUMENT_PL:
+        #         self._add_instr(trn)
+        #         self._add_cash(trn, val=trn.cash, ccy=trn.stl_ccy)
+        #
+        #     elif trn.trn_cls.id == TransactionClass.TRANSACTION_PL:
+        #         self._add_cash(trn, val=trn.cash, ccy=trn.stl_ccy)
+        #
+        #         item = ReportItem.from_trn(self.instance, self.pricing_provider, self.fx_rate_provider,
+        #                                    ReportItem.TYPE_TRANSACTION_PL, trn, acc=trn.acc_pos,
+        #                                    str1=trn.str1_pos, str2=trn.str2_pos, str3=trn.str3_pos)
+        #         self._items.append(item)
+        #
+        #     elif trn.trn_cls.id == TransactionClass.FX_TRADE:
+        #         # TODO: Что используем для strategy?
+        #         self._add_cash(trn, val=trn.principal, ccy=trn.stl_ccy)
+        #
+        #         # self._add_cash(trn, val=trn.cash, ccy=trn.stl_ccy)
+        #
+        #         # P&L
+        #         item = ReportItem.from_trn(self.instance, self.pricing_provider, self.fx_rate_provider,
+        #                                    ReportItem.TYPE_FX_TRADE, trn, acc=trn.acc_cash,
+        #                                    str1=trn.str1_cash, str2=trn.str2_cash, str3=trn.str3_cash,
+        #                                    ccy=trn.trn.settlement_currency, trn_ccy=trn.trn_ccy)
+        #         self._items.append(item)
+        #
+        #     elif trn.trn_cls.id == TransactionClass.TRANSFER:
+        #         # raise RuntimeError('Virtual transaction must be created')
+        #         pass
+        #
+        #     elif trn.trn_cls.id == TransactionClass.FX_TRANSFER:
+        #         # raise RuntimeError('Virtual transaction must be created')
+        #         pass
+        #
+        #     else:
+        #         raise RuntimeError('Invalid transaction class: %s' % trn.trn_cls.id)
+        self._generate_items()
+
+        # def _item_key(item):
+        #     return (
+        #         item.type,
+        #         getattr(item.prtfl, 'id', -1),
+        #         getattr(item.acc, 'id', -1),
+        #         getattr(item.str1, 'id', -1),
+        #         getattr(item.str2, 'id', -1),
+        #         getattr(item.str3, 'id', -1),
+        #         getattr(item.alloc_bl, 'id', -1),
+        #         getattr(item.alloc_pl, 'id', -1),
+        #         getattr(item.instr, 'id', -1),
+        #         getattr(item.ccy, 'id', -1),
+        #         getattr(item.trn_ccy, 'id', -1),
+        #         getattr(item.detail_trn, 'id', -1),
+        #     )
+        #
+        # def _pass2_item_key(trn=None, item=None):
+        #     if trn:
+        #         return (
+        #             getattr(trn.prtfl, 'id', -1),
+        #             getattr(trn.acc_pos, 'id', -1),
+        #             getattr(trn.str1_pos, 'id', -1),
+        #             getattr(trn.str2_pos, 'id', -1),
+        #             getattr(trn.str3_pos, 'id', -1),
+        #             getattr(trn.alloc_bl, 'id', -1),
+        #             getattr(trn.alloc_pl, 'id', -1),
+        #             getattr(trn.instr, 'id', -1),
+        #             # getattr(trn.ccy, 'id', -1),
+        #             # getattr(trn.trn_ccy, 'id', -1),
+        #         )
+        #     elif item:
+        #         return (
+        #             getattr(item.prtfl, 'id', -1),
+        #             getattr(item.acc, 'id', -1),
+        #             getattr(item.str1, 'id', -1),
+        #             getattr(item.str2, 'id', -1),
+        #             getattr(item.str3, 'id', -1),
+        #             getattr(item.alloc_bl, 'id', -1),
+        #             getattr(item.alloc_pl, 'id', -1),
+        #             getattr(item.instr, 'id', -1),
+        #             # getattr(item.ccy, 'id', -1),
+        #             # getattr(item.trn_ccy, 'id', -1),
+        #         )
+        #     else:
+        #         raise RuntimeError('code bug')
+
+        # _l.debug('aggregate items')
+        # sorted_items = sorted(self._items, key=lambda item: self._item_group_key(item))
+        # res_items = []
+        # res_items_for_instr = {}
+        # for k, g in groupby(sorted_items, key=lambda item: self._item_group_key(item)):
+        #     res_item = None
+        #
+        #     for item in g:
+        #         if item.type in [ReportItem.TYPE_INSTRUMENT, ReportItem.TYPE_CURRENCY, ReportItem.TYPE_TRANSACTION_PL,
+        #                          ReportItem.TYPE_FX_TRADE, ReportItem.TYPE_CASH_IN_OUT, ]:
+        #             if res_item is None:
+        #                 res_item = ReportItem.from_item(item)
+        #             res_item.add(item)
+        #
+        #     if res_item:
+        #         res_item.pricing()
+        #         res_item.close()
+        #         res_items.append(res_item)
+        #
+        #         if res_item.type == ReportItem.TYPE_INSTRUMENT and res_item.instr:
+        #             pass2_item_key = self._item_group_key_pass2(item=res_item)
+        #             res_items_for_instr[pass2_item_key] = res_item
+        self._aggregate_items()
+
+        # pass 2 - some values can calculate only after "balance"
+        # _l.debug('process transactions step 2')
+        # for trn in self._transactions:
+        #     if not trn.is_cloned and trn.trn_cls.id in [TransactionClass.BUY, TransactionClass.SELL]:
+        #         pass2_item_key = self._item_group_key_pass2(trn=trn)
+        #         item = res_items_for_instr.get(pass2_item_key, None)
+        #         if item:
+        #             trn.calc_pass2(balance_pos_size=item.pos_size)
+        #             item.add_pass2(trn)
+        #         else:
+        #             raise RuntimeError('Oh error')
+        #
+        # for item in res_items:
+        #     item.close_pass2()
+        self._calc_pass2()
+
+        # ReportItem.dumps(_items)
+
+        # res_items = [item for item in res_items if not item.is_empty]
+
+        # summaries = []
+        # if settings.DEBUG:
+        #     _l.debug('aggregate summary')
+        #     summary = ReportItem(self.instance, self.pricing_provider, self.fx_rate_provider, ReportItem.TYPE_SUMMARY)
+        #     for item in res_items:
+        #         if item.type in [ReportItem.TYPE_INSTRUMENT, ReportItem.TYPE_CURRENCY, ReportItem.TYPE_TRANSACTION_PL,
+        #                          ReportItem.TYPE_FX_TRADE, ReportItem.TYPE_CASH_IN_OUT]:
+        #             summary.add(item)
+        #     summary.close()
+        #     summaries.append(summary)
+        self._aggregate_summary()
+
+        # _l.debug('find mismatches')
+        # mismatch_items0 = sorted(self._mismatch_items, key=lambda item: self._item_mismatch_group_key(item))
+        # mismatch_items = []
+        # for k, g in groupby(mismatch_items0, key=lambda item: self._item_mismatch_group_key(item)):
+        #     mismatch_item = None
+        #     for item in g:
+        #         if mismatch_item is None:
+        #             mismatch_item = ReportItem.from_item(item)
+        #         mismatch_item.add(item)
+        #
+        #     if mismatch_item:
+        #         mismatch_item.pricing()
+        #         mismatch_item.close()
+        #         mismatch_items.append(mismatch_item)
+        # self._mismatch_items = mismatch_items
+        self._detect_mismatches()
+
+        # self.instance.items = res_items + mismatch_items + [summary, ] + invested_items + [invested_summary, ]
+        # self.instance.items = res_items + mismatch_items + summaries
+        self.instance.items = self._items + self._mismatch_items + self._summaries
+
+        if self.instance.pl_first_date and self.instance.pl_first_date != date.min:
+            self._build_on_pl_first_date()
+
+        if full:
+            self._refresh_with_perms()
+
+        _l.debug('finalize report')
+        self.instance.close()
+
+        # _l.debug('0' * 100)
+        # VirtualTransaction.dumps(self.instance.transactions)
+        # _l.debug('1' * 100)
+        # ReportItem.dumps(self._items)
+        # _l.debug('2' * 100)
+        # ReportItem.dumps(self.instance.items)
+        # _l.debug('3' * 100)
+
+        _l.debug('done')
+        return self.instance
+
+    def build_position_only(self):
+        _l.debug('build position only report: %s', self.instance)
+
+        # split transactions to atomic items using transaction class, case and something else
+
+        self._load_transactions()
+        self.instance.transactions = self._transactions
+
+        if not self._transactions:
+            return
+
+        self._generate_items()
+
+        sorted_items = sorted(self._items, key=lambda item: self._item_group_key(item))
+
+        _l.debug('aggregate items')
+        res_items = []
+        for k, g in groupby(sorted_items, key=lambda item: self._item_group_key(item)):
+            res_item = None
+
+            for item in g:
+                if item.type in [ReportItem.TYPE_INSTRUMENT, ReportItem.TYPE_CURRENCY, ReportItem.TYPE_TRANSACTION_PL,
+                                 ReportItem.TYPE_FX_TRADE, ReportItem.TYPE_CASH_IN_OUT, ]:
+                    if res_item is None:
+                        res_item = ReportItem.from_item(item)
+                    res_item.pos_size += item.trn.pos_size
+
+            if res_item:
+                res_items.append(res_item)
+
+        self.instance.items = res_items
+
+        _l.debug('done')
+        return self.instance
+
     @cached_property
     def _trn_cls_sell(self):
         return TransactionClass.objects.get(pk=TransactionClass.SELL)
@@ -2436,7 +2694,7 @@ class ReportBuilder(object):
             )
             self._transactions.append(trn)
 
-        _l.debug('transactions - loaded %s transactions', len(self._transactions))
+        _l.debug('transactions - len=%s', len(self._transactions))
 
     def _transaction_pricing(self):
         _l.debug('transactions - add pricing')
@@ -2489,7 +2747,7 @@ class ReportBuilder(object):
                 res.append(trn2)
 
         self._transactions = res
-        _l.debug('transactions - after clone we have %s transactions', len(self._transactions))
+        _l.debug('transactions - len=%s', len(self._transactions))
 
     def _transaction_multipliers(self):
         _l.debug('transactions - calculate multipliers')
@@ -2680,261 +2938,6 @@ class ReportBuilder(object):
 
             # return res
 
-    def build(self, full=True):
-        _l.debug('build report: %s', self.instance)
-
-        # split transactions to atomic items using transaction class, case and something else
-
-        self._load_transactions()
-
-        self._transaction_pricing()
-
-        self._transaction_multipliers()
-
-        self._transaction_calc()
-
-        self.clone_transactions_if_need()
-
-        self.instance.transactions = self._transactions
-
-        # _l.debug('generate items')
-        # for trn in transactions:
-        #     if trn.is_mismatch and trn.link_instr and not isclose(trn.mismatch, 0.0):
-        #         item = ReportItem.from_trn(self.instance, self.pricing_provider, self.fx_rate_provider,
-        #                                    ReportItem.TYPE_MISMATCH, trn)
-        #         mismatch_items.append(item)
-        #
-        #     if trn.is_hidden:
-        #         continue
-        #
-        #     if trn.trn_cls.id in [TransactionClass.BUY, TransactionClass.SELL]:
-        #         self._add_instr(trn)
-        #         self._add_cash(trn, val=trn.cash, ccy=trn.stl_ccy)
-        #
-        #     elif trn.trn_cls.id in [TransactionClass.CASH_INFLOW, TransactionClass.CASH_OUTFLOW]:
-        #         self._add_cash(trn, val=trn.cash, ccy=trn.stl_ccy,
-        #                        acc=trn.acc_pos, str1=trn.str1_pos, str2=trn.str2_pos,
-        #                        str3=trn.str3_pos)
-        #
-        #         # P&L
-        #         item = ReportItem.from_trn(self.instance, self.pricing_provider, self.fx_rate_provider,
-        #                                    ReportItem.TYPE_CASH_IN_OUT, trn, acc=trn.acc_cash,
-        #                                    str1=trn.str1_cash, str2=trn.str2_cash, str3=trn.str3_cash,
-        #                                    ccy=trn.stl_ccy)
-        #         self._items.append(item)
-        #
-        #     elif trn.trn_cls.id == TransactionClass.INSTRUMENT_PL:
-        #         self._add_instr(trn)
-        #         self._add_cash(trn, val=trn.cash, ccy=trn.stl_ccy)
-        #
-        #     elif trn.trn_cls.id == TransactionClass.TRANSACTION_PL:
-        #         self._add_cash(trn, val=trn.cash, ccy=trn.stl_ccy)
-        #
-        #         item = ReportItem.from_trn(self.instance, self.pricing_provider, self.fx_rate_provider,
-        #                                    ReportItem.TYPE_TRANSACTION_PL, trn, acc=trn.acc_pos,
-        #                                    str1=trn.str1_pos, str2=trn.str2_pos, str3=trn.str3_pos)
-        #         self._items.append(item)
-        #
-        #     elif trn.trn_cls.id == TransactionClass.FX_TRADE:
-        #         # TODO: Что используем для strategy?
-        #         self._add_cash(trn, val=trn.principal, ccy=trn.stl_ccy)
-        #
-        #         # self._add_cash(trn, val=trn.cash, ccy=trn.stl_ccy)
-        #
-        #         # P&L
-        #         item = ReportItem.from_trn(self.instance, self.pricing_provider, self.fx_rate_provider,
-        #                                    ReportItem.TYPE_FX_TRADE, trn, acc=trn.acc_cash,
-        #                                    str1=trn.str1_cash, str2=trn.str2_cash, str3=trn.str3_cash,
-        #                                    ccy=trn.trn.settlement_currency, trn_ccy=trn.trn_ccy)
-        #         self._items.append(item)
-        #
-        #     elif trn.trn_cls.id == TransactionClass.TRANSFER:
-        #         # raise RuntimeError('Virtual transaction must be created')
-        #         pass
-        #
-        #     elif trn.trn_cls.id == TransactionClass.FX_TRANSFER:
-        #         # raise RuntimeError('Virtual transaction must be created')
-        #         pass
-        #
-        #     else:
-        #         raise RuntimeError('Invalid transaction class: %s' % trn.trn_cls.id)
-        self._generate_items()
-
-        # def _item_key(item):
-        #     return (
-        #         item.type,
-        #         getattr(item.prtfl, 'id', -1),
-        #         getattr(item.acc, 'id', -1),
-        #         getattr(item.str1, 'id', -1),
-        #         getattr(item.str2, 'id', -1),
-        #         getattr(item.str3, 'id', -1),
-        #         getattr(item.alloc_bl, 'id', -1),
-        #         getattr(item.alloc_pl, 'id', -1),
-        #         getattr(item.instr, 'id', -1),
-        #         getattr(item.ccy, 'id', -1),
-        #         getattr(item.trn_ccy, 'id', -1),
-        #         getattr(item.detail_trn, 'id', -1),
-        #     )
-        #
-        # def _pass2_item_key(trn=None, item=None):
-        #     if trn:
-        #         return (
-        #             getattr(trn.prtfl, 'id', -1),
-        #             getattr(trn.acc_pos, 'id', -1),
-        #             getattr(trn.str1_pos, 'id', -1),
-        #             getattr(trn.str2_pos, 'id', -1),
-        #             getattr(trn.str3_pos, 'id', -1),
-        #             getattr(trn.alloc_bl, 'id', -1),
-        #             getattr(trn.alloc_pl, 'id', -1),
-        #             getattr(trn.instr, 'id', -1),
-        #             # getattr(trn.ccy, 'id', -1),
-        #             # getattr(trn.trn_ccy, 'id', -1),
-        #         )
-        #     elif item:
-        #         return (
-        #             getattr(item.prtfl, 'id', -1),
-        #             getattr(item.acc, 'id', -1),
-        #             getattr(item.str1, 'id', -1),
-        #             getattr(item.str2, 'id', -1),
-        #             getattr(item.str3, 'id', -1),
-        #             getattr(item.alloc_bl, 'id', -1),
-        #             getattr(item.alloc_pl, 'id', -1),
-        #             getattr(item.instr, 'id', -1),
-        #             # getattr(item.ccy, 'id', -1),
-        #             # getattr(item.trn_ccy, 'id', -1),
-        #         )
-        #     else:
-        #         raise RuntimeError('code bug')
-
-        # _l.debug('aggregate items')
-        # sorted_items = sorted(self._items, key=lambda item: self._item_group_key(item))
-        # res_items = []
-        # res_items_for_instr = {}
-        # for k, g in groupby(sorted_items, key=lambda item: self._item_group_key(item)):
-        #     res_item = None
-        #
-        #     for item in g:
-        #         if item.type in [ReportItem.TYPE_INSTRUMENT, ReportItem.TYPE_CURRENCY, ReportItem.TYPE_TRANSACTION_PL,
-        #                          ReportItem.TYPE_FX_TRADE, ReportItem.TYPE_CASH_IN_OUT, ]:
-        #             if res_item is None:
-        #                 res_item = ReportItem.from_item(item)
-        #             res_item.add(item)
-        #
-        #     if res_item:
-        #         res_item.pricing()
-        #         res_item.close()
-        #         res_items.append(res_item)
-        #
-        #         if res_item.type == ReportItem.TYPE_INSTRUMENT and res_item.instr:
-        #             pass2_item_key = self._item_group_key_pass2(item=res_item)
-        #             res_items_for_instr[pass2_item_key] = res_item
-        self._aggregate_items()
-
-        # pass 2 - some values can calculate only after "balance"
-        # _l.debug('process transactions step 2')
-        # for trn in self._transactions:
-        #     if not trn.is_cloned and trn.trn_cls.id in [TransactionClass.BUY, TransactionClass.SELL]:
-        #         pass2_item_key = self._item_group_key_pass2(trn=trn)
-        #         item = res_items_for_instr.get(pass2_item_key, None)
-        #         if item:
-        #             trn.calc_pass2(balance_pos_size=item.pos_size)
-        #             item.add_pass2(trn)
-        #         else:
-        #             raise RuntimeError('Oh error')
-        #
-        # for item in res_items:
-        #     item.close_pass2()
-        self._calc_pass2()
-
-        # ReportItem.dumps(_items)
-
-        # res_items = [item for item in res_items if not item.is_empty]
-
-        # summaries = []
-        # if settings.DEBUG:
-        #     _l.debug('aggregate summary')
-        #     summary = ReportItem(self.instance, self.pricing_provider, self.fx_rate_provider, ReportItem.TYPE_SUMMARY)
-        #     for item in res_items:
-        #         if item.type in [ReportItem.TYPE_INSTRUMENT, ReportItem.TYPE_CURRENCY, ReportItem.TYPE_TRANSACTION_PL,
-        #                          ReportItem.TYPE_FX_TRADE, ReportItem.TYPE_CASH_IN_OUT]:
-        #             summary.add(item)
-        #     summary.close()
-        #     summaries.append(summary)
-        self._aggregate_summary()
-
-        # _l.debug('find mismatches')
-        # mismatch_items0 = sorted(self._mismatch_items, key=lambda item: self._item_mismatch_group_key(item))
-        # mismatch_items = []
-        # for k, g in groupby(mismatch_items0, key=lambda item: self._item_mismatch_group_key(item)):
-        #     mismatch_item = None
-        #     for item in g:
-        #         if mismatch_item is None:
-        #             mismatch_item = ReportItem.from_item(item)
-        #         mismatch_item.add(item)
-        #
-        #     if mismatch_item:
-        #         mismatch_item.pricing()
-        #         mismatch_item.close()
-        #         mismatch_items.append(mismatch_item)
-        # self._mismatch_items = mismatch_items
-        self._detect_mismatches()
-
-        # self.instance.items = res_items + mismatch_items + [summary, ] + invested_items + [invested_summary, ]
-        # self.instance.items = res_items + mismatch_items + summaries
-        self.instance.items = self._items + self._mismatch_items + self._summaries
-
-        if self.instance.pl_first_date and self.instance.pl_first_date != date.min:
-            self._build_on_pl_first_date()
-
-        if full:
-            self._refresh_with_perms()
-
-        _l.debug('finalize report')
-        self.instance.close()
-
-        # _l.debug('0' * 100)
-        # VirtualTransaction.dumps(self.instance.transactions)
-        # _l.debug('1' * 100)
-        # ReportItem.dumps(self._items)
-        # _l.debug('2' * 100)
-        # ReportItem.dumps(self.instance.items)
-        # _l.debug('3' * 100)
-
-        _l.debug('done')
-        return self.instance
-
-    def build_position_only(self):
-        _l.debug('build position only report: %s', self.instance)
-
-        # split transactions to atomic items using transaction class, case and something else
-
-        self._load_transactions()
-        self.instance.transactions = self._transactions
-
-        self._generate_items()
-
-        sorted_items = sorted(self._items, key=lambda item: self._item_group_key(item))
-
-        _l.debug('aggregate items')
-        res_items = []
-        for k, g in groupby(sorted_items, key=lambda item: self._item_group_key(item)):
-            res_item = None
-
-            for item in g:
-                if item.type in [ReportItem.TYPE_INSTRUMENT, ReportItem.TYPE_CURRENCY, ReportItem.TYPE_TRANSACTION_PL,
-                                 ReportItem.TYPE_FX_TRADE, ReportItem.TYPE_CASH_IN_OUT, ]:
-                    if res_item is None:
-                        res_item = ReportItem.from_item(item)
-                    res_item.pos_size += item.trn.pos_size
-
-            if res_item:
-                res_items.append(res_item)
-
-        self.instance.items = res_items
-
-        _l.debug('done')
-        return self.instance
-
     def _generate_items(self):
         _l.debug('items - generate')
         for trn in self._transactions:
@@ -2998,7 +3001,31 @@ class ReportBuilder(object):
             else:
                 raise RuntimeError('Invalid transaction class: %s' % trn.trn_cls.id)
 
-        _l.debug('items - generated %s items', len(self._items))
+        _l.debug('items - raw.len=%s', len(self._items))
+
+    def _aggregate_items(self):
+        _l.debug('items - aggregate')
+
+        sorted_items = sorted(self._items, key=lambda item: self._item_group_key(item))
+
+        aggr_items = []
+        for k, g in groupby(sorted_items, key=lambda item: self._item_group_key(item)):
+            res_item = None
+
+            for item in g:
+                if item.type in [ReportItem.TYPE_INSTRUMENT, ReportItem.TYPE_CURRENCY, ReportItem.TYPE_TRANSACTION_PL,
+                                 ReportItem.TYPE_FX_TRADE, ReportItem.TYPE_CASH_IN_OUT, ]:
+                    if res_item is None:
+                        res_item = ReportItem.from_item(item)
+                    res_item.add(item)
+
+            if res_item:
+                res_item.pricing()
+                res_item.close()
+                aggr_items.append(res_item)
+        self._items = aggr_items
+
+        _l.debug('items - len=%s', len(self._items))
 
     def _item_group_key(self, item):
         return (
@@ -3142,28 +3169,28 @@ class ReportBuilder(object):
 
         return report_on_pl_first_date
 
-    def _aggregate_items(self):
-        _l.debug('items - aggregate')
-        sorted_items = sorted(self._items, key=lambda item: self._item_group_key(item))
-
-        res = []
-        for k, g in groupby(sorted_items, key=lambda item: self._item_group_key(item)):
-            res_item = None
-
-            for item in g:
-                if item.type in [ReportItem.TYPE_INSTRUMENT, ReportItem.TYPE_CURRENCY, ReportItem.TYPE_TRANSACTION_PL,
-                                 ReportItem.TYPE_FX_TRADE, ReportItem.TYPE_CASH_IN_OUT, ]:
-                    if res_item is None:
-                        res_item = ReportItem.from_item(item)
-                    res_item.add(item)
-
-            if res_item:
-                res_item.pricing()
-                res_item.close()
-                res.append(res_item)
-        self._items = res
-
-        _l.debug('items - aggregated %s items', len(self._items))
+    # def _aggregate_items(self):
+    #     _l.debug('items - aggregate')
+    #     sorted_items = sorted(self._items, key=lambda item: self._item_group_key(item))
+    #
+    #     res = []
+    #     for k, g in groupby(sorted_items, key=lambda item: self._item_group_key(item)):
+    #         res_item = None
+    #
+    #         for item in g:
+    #             if item.type in [ReportItem.TYPE_INSTRUMENT, ReportItem.TYPE_CURRENCY, ReportItem.TYPE_TRANSACTION_PL,
+    #                              ReportItem.TYPE_FX_TRADE, ReportItem.TYPE_CASH_IN_OUT, ]:
+    #                 if res_item is None:
+    #                     res_item = ReportItem.from_item(item)
+    #                 res_item.add(item)
+    #
+    #         if res_item:
+    #             res_item.pricing()
+    #             res_item.close()
+    #             res.append(res_item)
+    #     self._items = res
+    #
+    #     _l.debug('items - aggregated %s items', len(self._items))
 
     def _calc_pass2(self):
         _l.debug('transactions - pass 2')
@@ -3203,7 +3230,7 @@ class ReportBuilder(object):
         self._summaries.append(total)
 
     def _detect_mismatches(self):
-        _l.debug('transactions - detect mismatches')
+        _l.debug('mismatches - detect')
 
         l = []
         for trn in self._transactions:
@@ -3212,10 +3239,12 @@ class ReportBuilder(object):
                                            ReportItem.TYPE_MISMATCH, trn)
                 l.append(item)
 
-        _l.debug('transactions - detected %s mismatches', len(l))
+        _l.debug('mismatches - raw.len=%s', len(l))
 
-        _l.debug('items - aggregate mismatches')
+        if not l:
+            return
 
+        _l.debug('mismatches - aggregate')
         l = sorted(l, key=lambda x: self._item_mismatch_group_key(x))
         for k, g in groupby(l, key=lambda x: self._item_mismatch_group_key(x)):
 
@@ -3230,7 +3259,7 @@ class ReportBuilder(object):
                 mismatch_item.close()
                 self._mismatch_items.append(mismatch_item)
 
-        _l.debug('items - aggregated %s mismatches', len(self._mismatch_items))
+        _l.debug('mismatches - len=%s', len(self._mismatch_items))
 
     def _add_instr(self, trn):
         if trn.case == 0:
