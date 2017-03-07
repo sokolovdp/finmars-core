@@ -66,12 +66,16 @@ CELERY_RESULT_EXPIRES = 60
 CELERY_BEAT_SCHEDULE = {
     # 'integrations.download_pricing_auto_scheduler': {
     #     'task': 'integrations.download_pricing_auto_scheduler',
-    #     'schedule': 60,
+    #     'schedule': 10,
     # },
-    # 'instruments.process_events_auto': {
-    #     'task': 'instruments.process_events_auto',
-    #     'schedule': 60,
-    # }
+    # 'instruments.generate_events': {
+    #     'task': 'instruments.generate_events',
+    #     'schedule': 10,
+    # },
+    # 'instruments.process_events': {
+    #     'task': 'instruments.process_events',
+    #     'schedule': 10,
+    # },
 }
 
 # REDIS ------------------------------------------------
