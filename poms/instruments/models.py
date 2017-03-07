@@ -13,7 +13,7 @@ from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext, ugettext_lazy
 from mptt.models import MPTTModel
 
-from poms.common.formula_accruals import f_xirr, f_duration
+from poms.common.formula_accruals import f_xirr
 from poms.common.models import NamedModel, AbstractClassModel, FakeDeletableModel
 from poms.common.utils import date_now, isclose
 from poms.obj_attrs.models import GenericAttribute
@@ -185,17 +185,28 @@ class Periodicity(AbstractClassModel):
 
     def to_timedelta(self, n=1, i=1, same_date=None):
         if self.id == Periodicity.N_DAY:
+            if isclose(n, 0):
+                raise ValueError("N_DAY: n can't be zero")
             return relativedelta.relativedelta(days=n * i)
         elif self.id == Periodicity.N_WEEK_EOBW:
-            # return relativedelta.relativedelta(days=7 * delta, weekday=relativedelta.FR)
+            if isclose(n, 0):
+                raise ValueError("N_WEEK_EOBW: n can't be zero")
             return relativedelta.relativedelta(weeks=n * i, weekday=relativedelta.FR)
         elif self.id == Periodicity.N_MONTH_EOM:
+            if isclose(n, 0):
+                raise ValueError("N_MONTH_EOM: n can't be zero")
             return relativedelta.relativedelta(months=n * i, day=31)
         elif self.id == Periodicity.N_MONTH_SAME_DAY:
+            if isclose(n, 0):
+                raise ValueError("N_MONTH_SAME_DAY: n can't be zero")
             return relativedelta.relativedelta(months=n * i, day=same_date.day)
         elif self.id == Periodicity.N_YEAR_EOY:
+            if isclose(n, 0):
+                raise ValueError("N_YEAR_EOY: n can't be zero")
             return relativedelta.relativedelta(years=n * i, month=12, day=31)
         elif self.id == Periodicity.N_YEAR_SAME_DAY:
+            if isclose(n, 0):
+                raise ValueError("N_YEAR_SAME_DAY: n can't be zero")
             return relativedelta.relativedelta(years=n * i, month=same_date.month, day=same_date.day)
         elif self.id == Periodicity.WEEKLY:
             return relativedelta.relativedelta(weeks=1 * i)
@@ -661,7 +672,7 @@ class Instrument(NamedModel, FakeDeletableModel):
 
                 if a_to_p_mul is None:
                     try:
-                        a_to_p_mul = self.accrued_multiplier /  self.price_multiplier
+                        a_to_p_mul = self.accrued_multiplier / self.price_multiplier
                     except ArithmeticError:
                         a_to_p_mul = 0.0
                     if not isclose(principal_ccy_fx, accrual_ccy_fx):
@@ -690,8 +701,8 @@ class Instrument(NamedModel, FakeDeletableModel):
         data = self.get_future_accrual_payments(data)
         return data, f_xirr(data)
 
-    # def duration(self, data, ytm):
-    #     return f_duration(data, self.ytm)
+        # def duration(self, data, ytm):
+        #     return f_duration(data, self.ytm)
 
 
 @python_2_unicode_compatible
