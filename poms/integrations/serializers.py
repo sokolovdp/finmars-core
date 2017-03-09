@@ -18,23 +18,31 @@ from rest_framework import serializers
 from rest_framework.fields import empty
 from rest_framework.validators import UniqueTogetherValidator
 
+from poms.accounts.fields import AccountField
 from poms.common.fields import ExpressionField, DateTimeTzAwareField
 from poms.common.serializers import PomsClassSerializer, ModelWithUserCodeSerializer
+from poms.counterparties.fields import CounterpartyField, ResponsibleField
 from poms.currencies.fields import CurrencyField, CurrencyDefault
 from poms.currencies.models import CurrencyHistory
-from poms.instruments.fields import InstrumentTypeField, InstrumentTypeDefault
-from poms.instruments.models import PriceHistory, Instrument
+from poms.instruments.fields import InstrumentTypeField, InstrumentTypeDefault, InstrumentField
+from poms.instruments.models import PriceHistory, Instrument, AccrualCalculationModel, Periodicity, DailyPricingModel, \
+    PaymentSizeDetail
 from poms.integrations.fields import InstrumentDownloadSchemeField, PriceDownloadSchemeField
 from poms.integrations.models import InstrumentDownloadSchemeInput, InstrumentDownloadSchemeAttribute, \
     InstrumentDownloadScheme, ImportConfig, Task, ProviderClass, FactorScheduleDownloadMethod, \
     AccrualScheduleDownloadMethod, PriceDownloadScheme, CurrencyMapping, InstrumentTypeMapping, \
-    InstrumentAttributeValueMapping, AccrualCalculationModelMapping, PeriodicityMapping, PricingAutomatedSchedule
+    InstrumentAttributeValueMapping, AccrualCalculationModelMapping, PeriodicityMapping, PricingAutomatedSchedule, \
+    AbstractMapping, AccountMapping, InstrumentMapping, CounterpartyMapping, ResponsibleMapping, PortfolioMapping, \
+    Strategy1Mapping, Strategy2Mapping, Strategy3Mapping, DailyPricingModelMapping, PaymentSizeDetailMapping, \
+    PriceDownloadSchemeMapping
 from poms.integrations.providers.base import get_provider, ProviderException
 from poms.integrations.storage import import_file_storage
 from poms.integrations.tasks import download_pricing, download_instrument
 from poms.obj_attrs.fields import GenericAttributeTypeField, GenericClassifierField
 from poms.obj_attrs.serializers import ModelWithAttributesSerializer
 from poms.obj_perms.serializers import ModelWithObjectPermissionSerializer
+from poms.portfolios.fields import PortfolioField
+from poms.strategies.fields import Strategy1Field, Strategy2Field, Strategy3Field
 from poms.tags.serializers import ModelWithTagSerializer
 from poms.users.fields import MasterUserField, MemberField, HiddenMemberField
 
@@ -264,154 +272,447 @@ class PriceDownloadSchemeViewSerializer(serializers.ModelSerializer):
         ]
 
 
-class CurrencyMappingSerializer(serializers.ModelSerializer):
+# ------------------
+
+
+# class CurrencyMappingSerializer(serializers.ModelSerializer):
+#     master_user = MasterUserField()
+#     provider_object = ProviderClassSerializer(source='provider', read_only=True)
+#     currency = CurrencyField()
+#     currency_object = serializers.PrimaryKeyRelatedField(source='currency', read_only=True)
+#
+#     class Meta:
+#         model = CurrencyMapping
+#         fields = [
+#             'id', 'master_user', 'provider', 'provider_object', 'value', 'currency', 'currency_object',
+#         ]
+#         validators = [
+#             UniqueTogetherValidator(
+#                 queryset=CurrencyMapping.objects.all(),
+#                 fields=('master_user', 'provider', 'value'),
+#                 message=ugettext_lazy('The fields provider and value must make a unique set.')
+#             )
+#         ]
+#
+#     def __init__(self, *args, **kwargs):
+#         super(CurrencyMappingSerializer, self).__init__(*args, **kwargs)
+#
+#         from poms.currencies.serializers import CurrencyViewSerializer
+#         self.fields['currency_object'] = CurrencyViewSerializer(source='currency', read_only=True)
+
+
+# class InstrumentTypeMappingSerializer(serializers.ModelSerializer):
+#     master_user = MasterUserField()
+#     provider_object = ProviderClassSerializer(source='provider', read_only=True)
+#     instrument_type = InstrumentTypeField()
+#     instrument_type_object = serializers.PrimaryKeyRelatedField(source='instrument_type', read_only=True)
+#
+#     class Meta:
+#         model = InstrumentTypeMapping
+#         fields = [
+#             'id', 'master_user', 'provider', 'provider_object', 'value', 'instrument_type',
+#             'instrument_type_object',
+#         ]
+#         validators = [
+#             UniqueTogetherValidator(
+#                 queryset=InstrumentTypeMapping.objects.all(),
+#                 fields=('master_user', 'provider', 'value'),
+#                 message=ugettext_lazy('The fields provider and value must make a unique set.')
+#             )
+#         ]
+#
+#     def __init__(self, *args, **kwargs):
+#         super(InstrumentTypeMappingSerializer, self).__init__(*args, **kwargs)
+#
+#         from poms.instruments.serializers import InstrumentTypeViewSerializer
+#         self.fields['instrument_type_object'] = InstrumentTypeViewSerializer(source='instrument_type', read_only=True)
+
+
+# class InstrumentAttributeValueMappingSerializer(serializers.ModelSerializer):
+#     master_user = MasterUserField()
+#     provider_object = ProviderClassSerializer(source='provider', read_only=True)
+#     attribute_type = GenericAttributeTypeField()
+#     attribute_type_object = serializers.PrimaryKeyRelatedField(source='attribute_type', read_only=True)
+#     classifier = GenericClassifierField(allow_empty=True, allow_null=True)
+#     classifier_object = serializers.PrimaryKeyRelatedField(source='classifier', read_only=True)
+#
+#     class Meta:
+#         model = InstrumentAttributeValueMapping
+#         fields = [
+#             'id', 'master_user', 'provider', 'provider_object', 'value',
+#             'attribute_type', 'attribute_type_object', 'value_string', 'value_float', 'value_date',
+#             'classifier', 'classifier_object',
+#         ]
+#         validators = [
+#             UniqueTogetherValidator(
+#                 queryset=InstrumentAttributeValueMapping.objects.all(),
+#                 fields=('master_user', 'provider', 'value'),
+#                 message=ugettext_lazy('The fields provider and value must make a unique set.')
+#             )
+#         ]
+#
+#     def __init__(self, *args, **kwargs):
+#         super(InstrumentAttributeValueMappingSerializer, self).__init__(*args, **kwargs)
+#
+#         from poms.obj_attrs.serializers import GenericAttributeTypeViewSerializer, GenericClassifierViewSerializer
+#         self.fields['attribute_type_object'] = GenericAttributeTypeViewSerializer(source='attribute_type',
+#                                                                                   read_only=True)
+#         self.fields['classifier_object'] = GenericClassifierViewSerializer(source='classifier', read_only=True)
+#
+#     def validate(self, attrs):
+#         attribute_type = attrs.get('attribute_type', None)
+#         if attribute_type:
+#             if attribute_type.content_type_id != ContentType.objects.get_for_model(Instrument).id:
+#                 self.fields['attribute_type'].fail('does_not_exist', pk_value=attribute_type.id)
+#
+#         classifier = attrs.get('classifier', None)
+#         if classifier:
+#             if classifier.attribute_type_id != attribute_type.id:
+#                 raise serializers.ValidationError({'classifier': 'Invalid classifier'})
+#         return attrs
+
+
+# class AccrualCalculationModelMappingSerializer(serializers.ModelSerializer):
+#     master_user = MasterUserField()
+#     provider_object = ProviderClassSerializer(source='provider', read_only=True)
+#     accrual_calculation_model_object = serializers.PrimaryKeyRelatedField(source='accrual_calculation_model',
+#                                                                           read_only=True)
+#
+#     class Meta:
+#         model = AccrualCalculationModelMapping
+#         fields = [
+#             'id', 'master_user', 'provider', 'provider_object', 'value', 'accrual_calculation_model',
+#             'accrual_calculation_model_object',
+#         ]
+#         validators = [
+#             UniqueTogetherValidator(
+#                 queryset=AccrualCalculationModelMapping.objects.all(),
+#                 fields=('master_user', 'provider', 'value'),
+#                 message=ugettext_lazy('The fields provider and value must make a unique set.')
+#             )
+#         ]
+#
+#     def __init__(self, *args, **kwargs):
+#         super(AccrualCalculationModelMappingSerializer, self).__init__(*args, **kwargs)
+#
+#         from poms.instruments.serializers import AccrualCalculationModelSerializer
+#         self.fields['accrual_calculation_model_object'] = AccrualCalculationModelSerializer(
+#             source='accrual_calculation_model', read_only=True)
+#
+#
+# class PeriodicityMappingSerializer(serializers.ModelSerializer):
+#     master_user = MasterUserField()
+#     provider_object = ProviderClassSerializer(source='provider', read_only=True)
+#     periodicity_object = serializers.PrimaryKeyRelatedField(source='periodicity', read_only=True)
+#
+#     class Meta:
+#         model = PeriodicityMapping
+#         fields = [
+#             'id', 'master_user', 'provider', 'provider_object', 'value', 'periodicity', 'periodicity_object',
+#         ]
+#         validators = [
+#             UniqueTogetherValidator(
+#                 queryset=PeriodicityMapping.objects.all(),
+#                 fields=('master_user', 'provider', 'value'),
+#                 message=ugettext_lazy('The fields provider and value must make a unique set.')
+#             )
+#         ]
+#
+#     def __init__(self, *args, **kwargs):
+#         super(PeriodicityMappingSerializer, self).__init__(*args, **kwargs)
+#
+#         from poms.instruments.serializers import PeriodicitySerializer
+#         self.fields['periodicity_object'] = PeriodicitySerializer(source='periodicity', read_only=True)
+
+
+class AbstractMappingSerializer(serializers.ModelSerializer):
     master_user = MasterUserField()
-    provider_object = ProviderClassSerializer(source='provider', read_only=True)
-    currency = CurrencyField()
-    currency_object = serializers.PrimaryKeyRelatedField(source='currency', read_only=True)
+
+    # currency = CurrencyField()
+    # currency_object = serializers.PrimaryKeyRelatedField(source='currency', read_only=True)
 
     class Meta:
-        model = CurrencyMapping
+        model = AbstractMapping
         fields = [
-            'id', 'master_user', 'provider', 'provider_object', 'value', 'currency', 'currency_object',
+            'id', 'master_user', 'provider', 'value', 'content_object',
+            # 'provider_object', 'content_object_object',
         ]
-        validators = [
+        # validators = [
+        #     UniqueTogetherValidator(
+        #         queryset=CurrencyMapping.objects.all(),
+        #         fields=('master_user', 'provider', 'value'),
+        #         message=ugettext_lazy('The fields provider and value must make a unique set.')
+        #     )
+        # ]
+
+    def __init__(self, *args, **kwargs):
+        super(AbstractMappingSerializer, self).__init__(*args, **kwargs)
+
+        self.fields['provider_object'] = ProviderClassSerializer(source='provider', read_only=True)
+
+        content_object_view_serializer_class = self.get_content_object_view_serializer()
+        self.fields['content_object_object'] = content_object_view_serializer_class(source='content_object',
+                                                                                    read_only=True)
+
+        model = self.Meta.model
+        self.validators.append(
             UniqueTogetherValidator(
-                queryset=CurrencyMapping.objects.all(),
+                queryset=model.objects.all(),
                 fields=('master_user', 'provider', 'value'),
                 message=ugettext_lazy('The fields provider and value must make a unique set.')
             )
-        ]
+        )
+
+    def get_content_object_view_serializer(self):
+        raise NotImplementedError()
+
+
+class CurrencyMappingSerializer(AbstractMappingSerializer):
+    content_object = CurrencyField()
+
+    class Meta(AbstractMappingSerializer.Meta):
+        model = CurrencyMapping
 
     def __init__(self, *args, **kwargs):
         super(CurrencyMappingSerializer, self).__init__(*args, **kwargs)
 
+        # from poms.currencies.serializers import CurrencyViewSerializer
+        # self.fields['currency_object'] = CurrencyViewSerializer(source='currency', read_only=True)
+
+    def get_content_object_view_serializer(self):
         from poms.currencies.serializers import CurrencyViewSerializer
-        self.fields['currency_object'] = CurrencyViewSerializer(source='currency', read_only=True)
+        return CurrencyViewSerializer
 
 
-class InstrumentTypeMappingSerializer(serializers.ModelSerializer):
-    master_user = MasterUserField()
-    provider_object = ProviderClassSerializer(source='provider', read_only=True)
-    instrument_type = InstrumentTypeField()
-    instrument_type_object = serializers.PrimaryKeyRelatedField(source='instrument_type', read_only=True)
+class InstrumentTypeMappingSerializer(AbstractMappingSerializer):
+    content_object = InstrumentTypeField()
 
-    class Meta:
+    class Meta(AbstractMappingSerializer.Meta):
         model = InstrumentTypeMapping
-        fields = [
-            'id', 'master_user', 'provider', 'provider_object', 'value', 'instrument_type',
-            'instrument_type_object',
-        ]
-        validators = [
-            UniqueTogetherValidator(
-                queryset=InstrumentTypeMapping.objects.all(),
-                fields=('master_user', 'provider', 'value'),
-                message=ugettext_lazy('The fields provider and value must make a unique set.')
-            )
-        ]
 
     def __init__(self, *args, **kwargs):
         super(InstrumentTypeMappingSerializer, self).__init__(*args, **kwargs)
 
+    def get_content_object_view_serializer(self):
         from poms.instruments.serializers import InstrumentTypeViewSerializer
-        self.fields['instrument_type_object'] = InstrumentTypeViewSerializer(source='instrument_type', read_only=True)
+        return InstrumentTypeViewSerializer
 
 
-class InstrumentAttributeValueMappingSerializer(serializers.ModelSerializer):
-    master_user = MasterUserField()
-    provider_object = ProviderClassSerializer(source='provider', read_only=True)
-    attribute_type = GenericAttributeTypeField()
-    attribute_type_object = serializers.PrimaryKeyRelatedField(source='attribute_type', read_only=True)
+class InstrumentAttributeValueMappingSerializer(AbstractMappingSerializer):
+    content_object = GenericAttributeTypeField()
     classifier = GenericClassifierField(allow_empty=True, allow_null=True)
-    classifier_object = serializers.PrimaryKeyRelatedField(source='classifier', read_only=True)
 
-    class Meta:
+    class Meta(AbstractMappingSerializer.Meta):
         model = InstrumentAttributeValueMapping
-        fields = [
-            'id', 'master_user', 'provider', 'provider_object', 'value',
-            'attribute_type', 'attribute_type_object', 'value_string', 'value_float', 'value_date',
-            'classifier', 'classifier_object',
-        ]
-        validators = [
-            UniqueTogetherValidator(
-                queryset=InstrumentAttributeValueMapping.objects.all(),
-                fields=('master_user', 'provider', 'value'),
-                message=ugettext_lazy('The fields provider and value must make a unique set.')
-            )
+        fields = AbstractMappingSerializer.Meta.fields + [
+            'value_string', 'value_float', 'value_date', 'classifier',
         ]
 
     def __init__(self, *args, **kwargs):
         super(InstrumentAttributeValueMappingSerializer, self).__init__(*args, **kwargs)
 
-        from poms.obj_attrs.serializers import GenericAttributeTypeViewSerializer, GenericClassifierViewSerializer
-        self.fields['attribute_type_object'] = GenericAttributeTypeViewSerializer(source='attribute_type',
-                                                                                  read_only=True)
+        from poms.obj_attrs.serializers import GenericClassifierViewSerializer
         self.fields['classifier_object'] = GenericClassifierViewSerializer(source='classifier', read_only=True)
 
+    def get_content_object_view_serializer(self):
+        from poms.obj_attrs.serializers import GenericAttributeTypeViewSerializer
+        return GenericAttributeTypeViewSerializer
+
     def validate(self, attrs):
-        attribute_type = attrs.get('attribute_type', None)
-        if attribute_type:
-            if attribute_type.content_type_id != ContentType.objects.get_for_model(Instrument).id:
-                self.fields['attribute_type'].fail('does_not_exist', pk_value=attribute_type.id)
+        content_object = attrs.get('content_object', None)
+        if content_object:
+            if content_object.content_type_id != ContentType.objects.get_for_model(Instrument).id:
+                self.fields['content_object'].fail('does_not_exist', pk_value=content_object.id)
 
         classifier = attrs.get('classifier', None)
         if classifier:
-            if classifier.attribute_type_id != attribute_type.id:
+            if classifier.attribute_type_id != content_object.id:
                 raise serializers.ValidationError({'classifier': 'Invalid classifier'})
         return attrs
 
 
-class AccrualCalculationModelMappingSerializer(serializers.ModelSerializer):
-    master_user = MasterUserField()
-    provider_object = ProviderClassSerializer(source='provider', read_only=True)
-    accrual_calculation_model_object = serializers.PrimaryKeyRelatedField(source='accrual_calculation_model',
-                                                                          read_only=True)
+class AccrualCalculationModelMappingSerializer(AbstractMappingSerializer):
+    content_object = serializers.PrimaryKeyRelatedField(queryset=AccrualCalculationModel.objects.all())
 
-    class Meta:
+    class Meta(AbstractMappingSerializer.Meta):
         model = AccrualCalculationModelMapping
-        fields = [
-            'id', 'master_user', 'provider', 'provider_object', 'value', 'accrual_calculation_model',
-            'accrual_calculation_model_object',
-        ]
-        validators = [
-            UniqueTogetherValidator(
-                queryset=AccrualCalculationModelMapping.objects.all(),
-                fields=('master_user', 'provider', 'value'),
-                message=ugettext_lazy('The fields provider and value must make a unique set.')
-            )
-        ]
 
     def __init__(self, *args, **kwargs):
         super(AccrualCalculationModelMappingSerializer, self).__init__(*args, **kwargs)
 
+    def get_content_object_view_serializer(self):
         from poms.instruments.serializers import AccrualCalculationModelSerializer
-        self.fields['accrual_calculation_model_object'] = AccrualCalculationModelSerializer(
-            source='accrual_calculation_model', read_only=True)
+        return AccrualCalculationModelSerializer
 
 
-class PeriodicityMappingSerializer(serializers.ModelSerializer):
-    master_user = MasterUserField()
-    provider_object = ProviderClassSerializer(source='provider', read_only=True)
-    periodicity_object = serializers.PrimaryKeyRelatedField(source='periodicity', read_only=True)
+class PeriodicityMappingSerializer(AbstractMappingSerializer):
+    content_object = serializers.PrimaryKeyRelatedField(queryset=Periodicity.objects.all())
 
-    class Meta:
+    class Meta(AbstractMappingSerializer.Meta):
         model = PeriodicityMapping
-        fields = [
-            'id', 'master_user', 'provider', 'provider_object', 'value', 'periodicity', 'periodicity_object',
-        ]
-        validators = [
-            UniqueTogetherValidator(
-                queryset=PeriodicityMapping.objects.all(),
-                fields=('master_user', 'provider', 'value'),
-                message=ugettext_lazy('The fields provider and value must make a unique set.')
-            )
-        ]
 
     def __init__(self, *args, **kwargs):
         super(PeriodicityMappingSerializer, self).__init__(*args, **kwargs)
 
+    def get_content_object_view_serializer(self):
         from poms.instruments.serializers import PeriodicitySerializer
-        self.fields['periodicity_object'] = PeriodicitySerializer(source='periodicity', read_only=True)
+        return PeriodicitySerializer
+
+
+class AccountMappingSerializer(AbstractMappingSerializer):
+    content_object = AccountField()
+
+    class Meta(AbstractMappingSerializer.Meta):
+        model = AccountMapping
+
+    def __init__(self, *args, **kwargs):
+        super(AccountMappingSerializer, self).__init__(*args, **kwargs)
+
+    def get_content_object_view_serializer(self):
+        from poms.accounts.serializers import AccountViewSerializer
+        return AccountViewSerializer
+
+
+class InstrumentMappingSerializer(AbstractMappingSerializer):
+    content_object = InstrumentField()
+
+    class Meta(AbstractMappingSerializer.Meta):
+        model = InstrumentMapping
+
+    def __init__(self, *args, **kwargs):
+        super(InstrumentMappingSerializer, self).__init__(*args, **kwargs)
+
+    def get_content_object_view_serializer(self):
+        from poms.instruments.serializers import InstrumentViewSerializer
+        return InstrumentViewSerializer
+
+
+class CounterpartyMappingSerializer(AbstractMappingSerializer):
+    content_object = CounterpartyField()
+
+    class Meta(AbstractMappingSerializer.Meta):
+        model = CounterpartyMapping
+
+    def __init__(self, *args, **kwargs):
+        super(CounterpartyMappingSerializer, self).__init__(*args, **kwargs)
+
+    def get_content_object_view_serializer(self):
+        from poms.counterparties.serializers import CounterpartyViewSerializer
+        return CounterpartyViewSerializer
+
+
+class ResponsibleMappingSerializer(AbstractMappingSerializer):
+    content_object = ResponsibleField()
+
+    class Meta(AbstractMappingSerializer.Meta):
+        model = ResponsibleMapping
+
+    def __init__(self, *args, **kwargs):
+        super(ResponsibleMappingSerializer, self).__init__(*args, **kwargs)
+
+    def get_content_object_view_serializer(self):
+        from poms.counterparties.serializers import ResponsibleViewSerializer
+        return ResponsibleViewSerializer
+
+
+class PortfolioMappingSerializer(AbstractMappingSerializer):
+    content_object = PortfolioField()
+
+    class Meta(AbstractMappingSerializer.Meta):
+        model = PortfolioMapping
+
+    def __init__(self, *args, **kwargs):
+        super(PortfolioMappingSerializer, self).__init__(*args, **kwargs)
+
+    def get_content_object_view_serializer(self):
+        from poms.portfolios.serializers import PortfolioViewSerializer
+        return PortfolioViewSerializer
+
+
+class Strategy1MappingSerializer(AbstractMappingSerializer):
+    content_object = Strategy1Field()
+
+    class Meta(AbstractMappingSerializer.Meta):
+        model = Strategy1Mapping
+
+    def __init__(self, *args, **kwargs):
+        super(Strategy1MappingSerializer, self).__init__(*args, **kwargs)
+
+    def get_content_object_view_serializer(self):
+        from poms.strategies.serializers import Strategy1ViewSerializer
+        return Strategy1ViewSerializer
+
+
+class Strategy2MappingSerializer(AbstractMappingSerializer):
+    content_object = Strategy2Field()
+
+    class Meta(AbstractMappingSerializer.Meta):
+        model = Strategy2Mapping
+
+    def __init__(self, *args, **kwargs):
+        super(Strategy2MappingSerializer, self).__init__(*args, **kwargs)
+
+    def get_content_object_view_serializer(self):
+        from poms.strategies.serializers import Strategy2ViewSerializer
+        return Strategy2ViewSerializer
+
+
+class Strategy3MappingSerializer(AbstractMappingSerializer):
+    content_object = Strategy3Field()
+
+    class Meta(AbstractMappingSerializer.Meta):
+        model = Strategy3Mapping
+
+    def __init__(self, *args, **kwargs):
+        super(Strategy3MappingSerializer, self).__init__(*args, **kwargs)
+
+    def get_content_object_view_serializer(self):
+        from poms.strategies.serializers import Strategy3ViewSerializer
+        return Strategy3ViewSerializer
+
+
+class DailyPricingModelMappingSerializer(AbstractMappingSerializer):
+    content_object = serializers.PrimaryKeyRelatedField(queryset=DailyPricingModel.objects.all())
+
+    class Meta(AbstractMappingSerializer.Meta):
+        model = DailyPricingModelMapping
+
+    def __init__(self, *args, **kwargs):
+        super(DailyPricingModelMappingSerializer, self).__init__(*args, **kwargs)
+
+    def get_content_object_view_serializer(self):
+        from poms.instruments.serializers import DailyPricingModelSerializer
+        return DailyPricingModelSerializer
+
+
+class PaymentSizeDetailMappingSerializer(AbstractMappingSerializer):
+    content_object = serializers.PrimaryKeyRelatedField(queryset=PaymentSizeDetail.objects.all())
+
+    class Meta(AbstractMappingSerializer.Meta):
+        model = PaymentSizeDetailMapping
+
+    def __init__(self, *args, **kwargs):
+        super(PaymentSizeDetailMappingSerializer, self).__init__(*args, **kwargs)
+
+    def get_content_object_view_serializer(self):
+        from poms.instruments.serializers import PaymentSizeDetailSerializer
+        return PaymentSizeDetailSerializer
+
+
+class PriceDownloadSchemeMappingSerializer(AbstractMappingSerializer):
+    content_object = PriceDownloadSchemeField()
+
+    class Meta(AbstractMappingSerializer.Meta):
+        model = PriceDownloadSchemeMapping
+
+    def __init__(self, *args, **kwargs):
+        super(PriceDownloadSchemeMappingSerializer, self).__init__(*args, **kwargs)
+
+    def get_content_object_view_serializer(self):
+        return PriceDownloadSchemeViewSerializer
+
+
+# ----
 
 
 class TaskSerializer(serializers.ModelSerializer):

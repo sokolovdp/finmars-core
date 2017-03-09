@@ -2,32 +2,46 @@ from __future__ import unicode_literals, print_function
 
 import django_filters
 from django.core.exceptions import ObjectDoesNotExist
-from django.db import transaction
 from django.db.models import Prefetch
 from rest_framework.exceptions import MethodNotAllowed
 from rest_framework.filters import FilterSet
 from rest_framework.response import Response
 
+from poms.accounts.models import Account
 from poms.common.filters import CharFilter, ModelExtWithPermissionMultipleChoiceFilter, NoOpFilter, \
     ModelExtMultipleChoiceFilter
 from poms.common.views import AbstractViewSet, AbstractModelViewSet, AbstractReadOnlyModelViewSet, \
     AbstractClassModelViewSet
+from poms.counterparties.models import Counterparty, Responsible
 from poms.currencies.models import Currency
-from poms.instruments.models import InstrumentType, AccrualCalculationModel, Periodicity
+from poms.instruments.models import InstrumentType, AccrualCalculationModel, Periodicity, Instrument, PaymentSizeDetail
 from poms.integrations.filters import TaskFilter, InstrumentAttributeValueMappingObjectPermissionFilter, \
-    InstrumentTypeMappingObjectPermissionFilter
+    InstrumentTypeMappingObjectPermissionFilter, AccountMappingObjectPermissionFilter, \
+    InstrumentMappingObjectPermissionFilter, CounterpartyMappingObjectPermissionFilter, \
+    ResponsibleMappingObjectPermissionFilter, PortfolioMappingObjectPermissionFilter, \
+    Strategy1MappingObjectPermissionFilter, Strategy2MappingObjectPermissionFilter, \
+    Strategy3MappingObjectPermissionFilter
 from poms.integrations.models import ImportConfig, Task, InstrumentDownloadScheme, ProviderClass, \
     FactorScheduleDownloadMethod, AccrualScheduleDownloadMethod, PriceDownloadScheme, CurrencyMapping, \
     InstrumentTypeMapping, InstrumentAttributeValueMapping, AccrualCalculationModelMapping, PeriodicityMapping, \
-    PricingAutomatedSchedule, InstrumentDownloadSchemeAttribute
+    PricingAutomatedSchedule, InstrumentDownloadSchemeAttribute, AccountMapping, InstrumentMapping, CounterpartyMapping, \
+    ResponsibleMapping, PortfolioMapping, Strategy1Mapping, Strategy2Mapping, Strategy3Mapping, \
+    DailyPricingModelMapping, \
+    PaymentSizeDetailMapping, PriceDownloadSchemeMapping
 from poms.integrations.serializers import ImportConfigSerializer, TaskSerializer, ImportInstrumentSerializer, \
     ImportPricingSerializer, InstrumentDownloadSchemeSerializer, ProviderClassSerializer, \
     FactorScheduleDownloadMethodSerializer, AccrualScheduleDownloadMethodSerializer, PriceDownloadSchemeSerializer, \
     CurrencyMappingSerializer, InstrumentTypeMappingSerializer, InstrumentAttributeValueMappingSerializer, \
     AccrualCalculationModelMappingSerializer, PeriodicityMappingSerializer, PricingAutomatedScheduleSerializer, \
-    AbstractFileImportSerializer, ComplexTransactionFileImportSerializer
+    AbstractFileImportSerializer, ComplexTransactionFileImportSerializer, AccountMappingSerializer, \
+    InstrumentMappingSerializer, CounterpartyMappingSerializer, ResponsibleMappingSerializer, \
+    PortfolioMappingSerializer, \
+    Strategy1MappingSerializer, Strategy2MappingSerializer, Strategy3MappingSerializer, \
+    DailyPricingModelMappingSerializer, PaymentSizeDetailMappingSerializer, PriceDownloadSchemeMappingSerializer
 from poms.obj_attrs.models import GenericAttributeType
 from poms.obj_perms.utils import get_permissions_prefetch_lookups
+from poms.portfolios.models import Portfolio
+from poms.strategies.models import Strategy1, Strategy2, Strategy3
 from poms.users.filters import OwnerByMasterUserFilter
 from poms.users.models import Member
 from poms.users.permissions import SuperUserOrReadOnly, SuperUserOnly
@@ -134,168 +148,479 @@ class PriceDownloadSchemeViewSet(AbstractModelViewSet):
     ]
 
 
-class CurrencyMappingFilterSet(FilterSet):
+# ---------
+
+
+# class CurrencyMappingFilterSet(FilterSet):
+#     id = NoOpFilter()
+#     provider = django_filters.ModelMultipleChoiceFilter(queryset=ProviderClass.objects)
+#     value = CharFilter()
+#     currency = ModelExtMultipleChoiceFilter(model=Currency)
+#
+#     class Meta:
+#         model = CurrencyMapping
+#         fields = []
+#
+#
+# class CurrencyMappingViewSet(AbstractModelViewSet):
+#     queryset = CurrencyMapping.objects.select_related(
+#         'master_user',
+#         'provider',
+#         'currency'
+#     )
+#     serializer_class = CurrencyMappingSerializer
+#     permission_classes = AbstractModelViewSet.permission_classes + [
+#         SuperUserOrReadOnly,
+#     ]
+#     filter_backends = AbstractModelViewSet.filter_backends + [
+#         OwnerByMasterUserFilter,
+#     ]
+#     filter_class = CurrencyMappingFilterSet
+#     ordering_fields = [
+#         'provider', 'provider__name',
+#         'value',
+#         'currency', 'currency__user_code', 'currency__name', 'currency__short_name', 'currency__public_name',
+#     ]
+
+
+# class InstrumentTypeMappingFilterSet(FilterSet):
+#     id = NoOpFilter()
+#     provider = django_filters.ModelMultipleChoiceFilter(queryset=ProviderClass.objects)
+#     value = CharFilter()
+#     instrument_type = ModelExtWithPermissionMultipleChoiceFilter(model=InstrumentType)
+#
+#     class Meta:
+#         model = InstrumentTypeMapping
+#         fields = []
+#
+#
+# class InstrumentTypeMappingViewSet(AbstractModelViewSet):
+#     queryset = InstrumentTypeMapping.objects.select_related(
+#         'master_user',
+#         'provider',
+#         'instrument_type'
+#     )
+#     serializer_class = InstrumentTypeMappingSerializer
+#     # permission_classes = AbstractModelViewSet.permission_classes + [
+#     #     SuperUserOrReadOnly,
+#     # ]
+#     filter_backends = AbstractModelViewSet.filter_backends + [
+#         OwnerByMasterUserFilter,
+#         InstrumentTypeMappingObjectPermissionFilter,
+#     ]
+#     filter_class = InstrumentTypeMappingFilterSet
+#     ordering_fields = [
+#         'value',
+#         'instrument_type', 'instrument_type__user_code', 'instrument_type__name', 'instrument_type__short_name',
+#         'instrument_type__public_name',
+#     ]
+#
+#
+# class InstrumentAttributeValueMappingFilterSet(FilterSet):
+#     id = NoOpFilter()
+#     provider = django_filters.ModelMultipleChoiceFilter(queryset=ProviderClass.objects)
+#     value = CharFilter()
+#     attribute_type = ModelExtWithPermissionMultipleChoiceFilter(model=GenericAttributeType)
+#
+#     class Meta:
+#         model = InstrumentAttributeValueMapping
+#         fields = []
+#
+#
+# class InstrumentAttributeValueMappingViewSet(AbstractModelViewSet):
+#     queryset = InstrumentAttributeValueMapping.objects.select_related(
+#         'master_user',
+#         'provider',
+#         'attribute_type',
+#         'classifier'
+#     )
+#     serializer_class = InstrumentAttributeValueMappingSerializer
+#     # permission_classes = AbstractModelViewSet.permission_classes + [
+#     #     SuperUserOrReadOnly,
+#     # ]
+#     filter_backends = AbstractModelViewSet.filter_backends + [
+#         OwnerByMasterUserFilter,
+#         InstrumentAttributeValueMappingObjectPermissionFilter,
+#     ]
+#     filter_class = InstrumentAttributeValueMappingFilterSet
+#     ordering_fields = [
+#         'provider', 'provider__name',
+#         'value',
+#         'attribute_type', 'attribute_type__user_code', 'attribute_type__name', 'attribute_type__short_name',
+#         'attribute_type__public_name',
+#     ]
+#
+#
+# class AccrualCalculationModelMappingFilterSet(FilterSet):
+#     id = NoOpFilter()
+#     provider = django_filters.ModelMultipleChoiceFilter(queryset=ProviderClass.objects)
+#     value = CharFilter()
+#     accrual_calculation_model = django_filters.ModelMultipleChoiceFilter(queryset=AccrualCalculationModel.objects)
+#
+#     class Meta:
+#         model = AccrualCalculationModelMapping
+#         fields = []
+#
+#
+# class AccrualCalculationModelMappingViewSet(AbstractModelViewSet):
+#     queryset = AccrualCalculationModelMapping.objects.select_related(
+#         'master_user',
+#         'provider',
+#         'accrual_calculation_model'
+#     )
+#     serializer_class = AccrualCalculationModelMappingSerializer
+#     # permission_classes = AbstractModelViewSet.permission_classes + [
+#     #     SuperUserOrReadOnly,
+#     # ]
+#     filter_backends = AbstractModelViewSet.filter_backends + [
+#         OwnerByMasterUserFilter,
+#     ]
+#     filter_class = AccrualCalculationModelMappingFilterSet
+#     ordering_fields = [
+#         'provider', 'provider__name',
+#         'value',
+#         'accrual_calculation_model', 'accrual_calculation_model__name'
+#     ]
+#
+#
+# class PeriodicityMappingFilterSet(FilterSet):
+#     id = NoOpFilter()
+#     provider = django_filters.ModelMultipleChoiceFilter(queryset=ProviderClass.objects)
+#     value = CharFilter()
+#     periodicity = django_filters.ModelMultipleChoiceFilter(queryset=Periodicity.objects)
+#
+#     class Meta:
+#         model = PeriodicityMapping
+#         fields = []
+#
+#
+# class PeriodicityMappingViewSet(AbstractModelViewSet):
+#     queryset = PeriodicityMapping.objects.select_related(
+#         'master_user',
+#         'provider',
+#         'periodicity'
+#     )
+#     serializer_class = PeriodicityMappingSerializer
+#     # permission_classes = AbstractModelViewSet.permission_classes + [
+#     #     SuperUserOrReadOnly,
+#     # ]
+#     filter_backends = AbstractModelViewSet.filter_backends + [
+#         OwnerByMasterUserFilter,
+#     ]
+#     filter_class = PeriodicityMappingFilterSet
+#     ordering_fields = [
+#         'provider', 'provider__name',
+#         'value',
+#         'periodicity', 'periodicity__name',
+#     ]
+
+
+class AbstractMappingFilterSet(FilterSet):
     id = NoOpFilter()
     provider = django_filters.ModelMultipleChoiceFilter(queryset=ProviderClass.objects)
     value = CharFilter()
-    currency = ModelExtMultipleChoiceFilter(model=Currency)
 
     class Meta:
-        model = CurrencyMapping
         fields = []
 
 
-class CurrencyMappingViewSet(AbstractModelViewSet):
-    queryset = CurrencyMapping.objects.select_related(
-        'master_user',
-        'provider',
-        'currency'
-    )
-    serializer_class = CurrencyMappingSerializer
+class AbstractMappingViewSet(AbstractModelViewSet):
+    queryset = None
+    serializer_class = None
     permission_classes = AbstractModelViewSet.permission_classes + [
         SuperUserOrReadOnly,
     ]
     filter_backends = AbstractModelViewSet.filter_backends + [
         OwnerByMasterUserFilter,
     ]
-    filter_class = CurrencyMappingFilterSet
+    filter_class = None
+    base_ordering_fields = ['provider', 'provider__name', 'value', 'content_object', ]
     ordering_fields = [
-        'provider', 'provider__name',
+        'provider',
+        'provider__name',
         'value',
-        'currency', 'currency__user_code', 'currency__name', 'currency__short_name', 'currency__public_name',
+        'content_object',
+        'content_object__user_code',
+        'content_object__name',
+        'content_object__short_name',
+        'content_object__public_name',
     ]
 
 
-class InstrumentTypeMappingFilterSet(FilterSet):
-    id = NoOpFilter()
-    provider = django_filters.ModelMultipleChoiceFilter(queryset=ProviderClass.objects)
-    value = CharFilter()
-    instrument_type = ModelExtWithPermissionMultipleChoiceFilter(model=InstrumentType)
+class CurrencyMappingFilterSet(AbstractMappingFilterSet):
+    content_object = ModelExtMultipleChoiceFilter(model=Currency)
 
-    class Meta:
+    class Meta(AbstractMappingFilterSet.Meta):
+        model = CurrencyMapping
+
+
+class CurrencyMappingViewSet(AbstractMappingViewSet):
+    queryset = CurrencyMapping.objects.select_related(
+        'master_user', 'provider', 'content_object'
+    )
+    serializer_class = CurrencyMappingSerializer
+    filter_class = CurrencyMappingFilterSet
+
+
+class InstrumentTypeMappingFilterSet(AbstractMappingFilterSet):
+    content_object = ModelExtWithPermissionMultipleChoiceFilter(model=InstrumentType)
+
+    class Meta(AbstractMappingFilterSet.Meta):
         model = InstrumentTypeMapping
-        fields = []
 
 
-class InstrumentTypeMappingViewSet(AbstractModelViewSet):
+class InstrumentTypeMappingViewSet(AbstractMappingViewSet):
     queryset = InstrumentTypeMapping.objects.select_related(
-        'master_user',
-        'provider',
-        'instrument_type'
+        'master_user', 'provider', 'content_object'
     )
     serializer_class = InstrumentTypeMappingSerializer
-    # permission_classes = AbstractModelViewSet.permission_classes + [
-    #     SuperUserOrReadOnly,
-    # ]
-    filter_backends = AbstractModelViewSet.filter_backends + [
-        OwnerByMasterUserFilter,
+    filter_backends = AbstractMappingViewSet.filter_backends + [
         InstrumentTypeMappingObjectPermissionFilter,
     ]
     filter_class = InstrumentTypeMappingFilterSet
-    ordering_fields = [
-        'value',
-        'instrument_type', 'instrument_type__user_code', 'instrument_type__name', 'instrument_type__short_name',
-        'instrument_type__public_name',
-    ]
 
 
-class InstrumentAttributeValueMappingFilterSet(FilterSet):
-    id = NoOpFilter()
-    provider = django_filters.ModelMultipleChoiceFilter(queryset=ProviderClass.objects)
-    value = CharFilter()
-    attribute_type = ModelExtWithPermissionMultipleChoiceFilter(model=GenericAttributeType)
+class InstrumentAttributeValueMappingFilterSet(AbstractMappingFilterSet):
+    content_object = ModelExtWithPermissionMultipleChoiceFilter(model=GenericAttributeType)
 
-    class Meta:
+    class Meta(AbstractMappingFilterSet.Meta):
         model = InstrumentAttributeValueMapping
-        fields = []
 
 
-class InstrumentAttributeValueMappingViewSet(AbstractModelViewSet):
+class InstrumentAttributeValueMappingViewSet(AbstractMappingViewSet):
     queryset = InstrumentAttributeValueMapping.objects.select_related(
-        'master_user',
-        'provider',
-        'attribute_type',
-        'classifier'
+        'master_user', 'provider', 'content_object', 'classifier'
     )
     serializer_class = InstrumentAttributeValueMappingSerializer
-    # permission_classes = AbstractModelViewSet.permission_classes + [
-    #     SuperUserOrReadOnly,
-    # ]
-    filter_backends = AbstractModelViewSet.filter_backends + [
-        OwnerByMasterUserFilter,
+    filter_backends = AbstractMappingViewSet.filter_backends + [
         InstrumentAttributeValueMappingObjectPermissionFilter,
     ]
     filter_class = InstrumentAttributeValueMappingFilterSet
-    ordering_fields = [
-        'provider', 'provider__name',
-        'value',
-        'attribute_type', 'attribute_type__user_code', 'attribute_type__name', 'attribute_type__short_name',
-        'attribute_type__public_name',
-    ]
 
 
-class AccrualCalculationModelMappingFilterSet(FilterSet):
-    id = NoOpFilter()
-    provider = django_filters.ModelMultipleChoiceFilter(queryset=ProviderClass.objects)
-    value = CharFilter()
-    accrual_calculation_model = django_filters.ModelMultipleChoiceFilter(queryset=AccrualCalculationModel.objects)
+class AccrualCalculationModelMappingFilterSet(AbstractMappingFilterSet):
+    content_object = django_filters.ModelMultipleChoiceFilter(queryset=AccrualCalculationModel.objects)
 
-    class Meta:
+    class Meta(AbstractMappingFilterSet.Meta):
         model = AccrualCalculationModelMapping
-        fields = []
 
 
-class AccrualCalculationModelMappingViewSet(AbstractModelViewSet):
+class AccrualCalculationModelMappingViewSet(AbstractMappingViewSet):
     queryset = AccrualCalculationModelMapping.objects.select_related(
-        'master_user',
-        'provider',
-        'accrual_calculation_model'
+        'master_user', 'provider', 'content_object'
     )
     serializer_class = AccrualCalculationModelMappingSerializer
-    # permission_classes = AbstractModelViewSet.permission_classes + [
-    #     SuperUserOrReadOnly,
-    # ]
-    filter_backends = AbstractModelViewSet.filter_backends + [
-        OwnerByMasterUserFilter,
-    ]
     filter_class = AccrualCalculationModelMappingFilterSet
-    ordering_fields = [
-        'provider', 'provider__name',
-        'value',
-        'accrual_calculation_model', 'accrual_calculation_model__name'
-    ]
 
 
-class PeriodicityMappingFilterSet(FilterSet):
-    id = NoOpFilter()
-    provider = django_filters.ModelMultipleChoiceFilter(queryset=ProviderClass.objects)
-    value = CharFilter()
-    periodicity = django_filters.ModelMultipleChoiceFilter(queryset=Periodicity.objects)
+class PeriodicityMappingFilterSet(AbstractMappingFilterSet):
+    content_object = django_filters.ModelMultipleChoiceFilter(queryset=Periodicity.objects)
 
-    class Meta:
+    class Meta(AbstractMappingFilterSet.Meta):
         model = PeriodicityMapping
-        fields = []
 
 
-class PeriodicityMappingViewSet(AbstractModelViewSet):
+class PeriodicityMappingViewSet(AbstractMappingViewSet):
     queryset = PeriodicityMapping.objects.select_related(
-        'master_user',
-        'provider',
-        'periodicity'
+        'master_user', 'provider', 'content_object'
     )
     serializer_class = PeriodicityMappingSerializer
-    # permission_classes = AbstractModelViewSet.permission_classes + [
-    #     SuperUserOrReadOnly,
-    # ]
-    filter_backends = AbstractModelViewSet.filter_backends + [
-        OwnerByMasterUserFilter,
-    ]
     filter_class = PeriodicityMappingFilterSet
-    ordering_fields = [
-        'provider', 'provider__name',
-        'value',
-        'periodicity', 'periodicity__name',
+
+
+class AccountMappingFilterSet(AbstractMappingFilterSet):
+    content_object = ModelExtWithPermissionMultipleChoiceFilter(model=Account)
+
+    class Meta(AbstractMappingFilterSet.Meta):
+        model = AccountMapping
+
+
+class AccountMappingViewSet(AbstractMappingViewSet):
+    queryset = AccountMapping.objects.select_related(
+        'master_user', 'provider', 'content_object'
+    )
+    serializer_class = AccountMappingSerializer
+    filter_backends = AbstractMappingViewSet.filter_backends + [
+        AccountMappingObjectPermissionFilter,
     ]
+    filter_class = AccountMappingFilterSet
+
+
+class InstrumentMappingFilterSet(AbstractMappingFilterSet):
+    content_object = ModelExtWithPermissionMultipleChoiceFilter(model=Instrument)
+
+    class Meta(AbstractMappingFilterSet.Meta):
+        model = InstrumentMapping
+
+
+class InstrumentMappingViewSet(AbstractMappingViewSet):
+    queryset = InstrumentMapping.objects.select_related(
+        'master_user', 'provider', 'content_object'
+    )
+    serializer_class = InstrumentMappingSerializer
+    filter_backends = AbstractMappingViewSet.filter_backends + [
+        InstrumentMappingObjectPermissionFilter,
+    ]
+    filter_class = InstrumentMappingFilterSet
+
+
+class CounterpartyMappingFilterSet(AbstractMappingFilterSet):
+    content_object = ModelExtWithPermissionMultipleChoiceFilter(model=Counterparty)
+
+    class Meta(AbstractMappingFilterSet.Meta):
+        model = CounterpartyMapping
+
+
+class CounterpartyMappingViewSet(AbstractMappingViewSet):
+    queryset = CounterpartyMapping.objects.select_related(
+        'master_user', 'provider', 'content_object'
+    )
+    serializer_class = CounterpartyMappingSerializer
+    filter_backends = AbstractMappingViewSet.filter_backends + [
+        CounterpartyMappingObjectPermissionFilter,
+    ]
+    filter_class = CounterpartyMappingFilterSet
+
+
+class ResponsibleMappingFilterSet(AbstractMappingFilterSet):
+    content_object = ModelExtWithPermissionMultipleChoiceFilter(model=Responsible)
+
+    class Meta(AbstractMappingFilterSet.Meta):
+        model = ResponsibleMapping
+
+
+class ResponsibleMappingViewSet(AbstractMappingViewSet):
+    queryset = ResponsibleMapping.objects.select_related(
+        'master_user', 'provider', 'content_object'
+    )
+    serializer_class = ResponsibleMappingSerializer
+    filter_backends = AbstractMappingViewSet.filter_backends + [
+        ResponsibleMappingObjectPermissionFilter,
+    ]
+    filter_class = ResponsibleMappingFilterSet
+
+
+class PortfolioMappingFilterSet(AbstractMappingFilterSet):
+    content_object = ModelExtWithPermissionMultipleChoiceFilter(model=Portfolio)
+
+    class Meta(AbstractMappingFilterSet.Meta):
+        model = PortfolioMapping
+
+
+class PortfolioMappingViewSet(AbstractMappingViewSet):
+    queryset = PortfolioMapping.objects.select_related(
+        'master_user', 'provider', 'content_object'
+    )
+    serializer_class = PortfolioMappingSerializer
+    filter_backends = AbstractMappingViewSet.filter_backends + [
+        PortfolioMappingObjectPermissionFilter,
+    ]
+    filter_class = PortfolioMappingFilterSet
+
+
+class Strategy1MappingFilterSet(AbstractMappingFilterSet):
+    content_object = ModelExtWithPermissionMultipleChoiceFilter(model=Strategy1)
+
+    class Meta(AbstractMappingFilterSet.Meta):
+        model = Strategy1Mapping
+
+
+class Strategy1MappingViewSet(AbstractMappingViewSet):
+    queryset = Strategy1Mapping.objects.select_related(
+        'master_user', 'provider', 'content_object'
+    )
+    serializer_class = Strategy1MappingSerializer
+    filter_backends = AbstractMappingViewSet.filter_backends + [
+        Strategy1MappingObjectPermissionFilter,
+    ]
+    filter_class = Strategy1MappingFilterSet
+
+
+class Strategy2MappingFilterSet(AbstractMappingFilterSet):
+    content_object = ModelExtWithPermissionMultipleChoiceFilter(model=Strategy2)
+
+    class Meta(AbstractMappingFilterSet.Meta):
+        model = Strategy2Mapping
+
+
+class Strategy2MappingViewSet(AbstractMappingViewSet):
+    queryset = Strategy2Mapping.objects.select_related(
+        'master_user', 'provider', 'content_object'
+    )
+    serializer_class = Strategy2MappingSerializer
+    filter_backends = AbstractMappingViewSet.filter_backends + [
+        Strategy2MappingObjectPermissionFilter,
+    ]
+    filter_class = Strategy2MappingFilterSet
+
+
+class Strategy3MappingFilterSet(AbstractMappingFilterSet):
+    content_object = ModelExtWithPermissionMultipleChoiceFilter(model=Strategy3)
+
+    class Meta(AbstractMappingFilterSet.Meta):
+        model = Strategy3Mapping
+
+
+class Strategy3MappingViewSet(AbstractMappingViewSet):
+    queryset = Strategy3Mapping.objects.select_related(
+        'master_user', 'provider', 'content_object'
+    )
+    serializer_class = Strategy3MappingSerializer
+    filter_backends = AbstractMappingViewSet.filter_backends + [
+        Strategy3MappingObjectPermissionFilter,
+    ]
+    filter_class = Strategy3MappingFilterSet
+
+
+class DailyPricingModelMappingFilterSet(AbstractMappingFilterSet):
+    content_object = django_filters.ModelMultipleChoiceFilter(queryset=DailyPricingModelMapping.objects)
+
+    class Meta(AbstractMappingFilterSet.Meta):
+        model = DailyPricingModelMapping
+
+
+class DailyPricingModelMappingViewSet(AbstractMappingViewSet):
+    queryset = DailyPricingModelMapping.objects.select_related(
+        'master_user', 'provider', 'content_object'
+    )
+    serializer_class = DailyPricingModelMappingSerializer
+    filter_class = DailyPricingModelMappingFilterSet
+
+
+class PaymentSizeDetailMappingFilterSet(AbstractMappingFilterSet):
+    content_object = django_filters.ModelMultipleChoiceFilter(queryset=PaymentSizeDetail.objects)
+
+    class Meta(AbstractMappingFilterSet.Meta):
+        model = PaymentSizeDetailMapping
+
+
+class PaymentSizeDetailMappingViewSet(AbstractMappingViewSet):
+    queryset = PaymentSizeDetailMapping.objects.select_related(
+        'master_user', 'provider', 'content_object'
+    )
+    serializer_class = PaymentSizeDetailMappingSerializer
+    filter_class = PaymentSizeDetailMappingFilterSet
+
+
+class PriceDownloadSchemeMappingFilterSet(AbstractMappingFilterSet):
+    content_object = ModelExtMultipleChoiceFilter(model=PriceDownloadScheme, field_name='scheme_name')
+
+    class Meta(AbstractMappingFilterSet.Meta):
+        model = PriceDownloadSchemeMapping
+
+
+class PriceDownloadSchemeMappingViewSet(AbstractMappingViewSet):
+    queryset = PriceDownloadSchemeMapping.objects.select_related(
+        'master_user', 'provider', 'content_object'
+    )
+    serializer_class = PriceDownloadSchemeMappingSerializer
+    filter_class = PriceDownloadSchemeMappingFilterSet
+    ordering_fields = AbstractMappingViewSet.base_ordering_fields + [
+        'content_object__scheme_name',
+    ]
+
+
+# ---------
 
 
 class TaskFilterSet(FilterSet):
