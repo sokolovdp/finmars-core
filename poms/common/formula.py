@@ -1120,10 +1120,10 @@ def _get_supported_models_serializer_class():
     from poms.strategies.serializers import Strategy1Serializer, Strategy2Serializer, Strategy3Serializer
     from poms.integrations.models import PriceDownloadScheme
     from poms.integrations.serializers import PriceDownloadSchemeSerializer
-    from poms.transactions.models import Transaction
-    from poms.transactions.serializers import TransactionTextRenderSerializer
+    from poms.transactions.models import Transaction, ComplexTransaction
+    from poms.transactions.serializers import TransactionTextRenderSerializer, ComplexTransactionEvalSerializer
     from poms.reports.builders import ReportItem
-    from poms.reports.serializers import ReportItemDetailRendererSerializer, TransactionReportItemSerializer, \
+    from poms.reports.serializers import ReportItemEvalSerializer, TransactionReportItemSerializer, \
         CashFlowProjectionReportItemSerializer
     from poms.reports.cash_flow_projection import TransactionReportItem, CashFlowProjectionReportItem
     return {
@@ -1140,7 +1140,8 @@ def _get_supported_models_serializer_class():
         PaymentSizeDetail: PaymentSizeDetailSerializer,
         PriceDownloadScheme: PriceDownloadSchemeSerializer,
         Transaction: TransactionTextRenderSerializer,
-        ReportItem: ReportItemDetailRendererSerializer,
+        ComplexTransaction: ComplexTransactionEvalSerializer,
+        ReportItem: ReportItemEvalSerializer,
         TransactionReportItem: TransactionReportItemSerializer,
         CashFlowProjectionReportItem: CashFlowProjectionReportItemSerializer,
     }
@@ -1162,7 +1163,7 @@ def get_model_data_ext(instance, many=False, context=None, hide_fields=None):
     try:
         serializer_class = _supported_models_serializer_class[model]
     except KeyError:
-        raise InvalidExpression()
+        raise InvalidExpression("'%s' can't serialize" % model)
     return get_model_data(instance, serializer_class, many=many, context=context, hide_fields=hide_fields)
 
 

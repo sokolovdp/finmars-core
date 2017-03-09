@@ -642,11 +642,11 @@ class ReportItemSerializer(serializers.Serializer):
         return None
 
 
-class ReportItemDetailRendererSerializer(ReportItemSerializer):
+class ReportItemEvalSerializer(ReportItemSerializer):
     def __init__(self, *args, **kwargs):
-        kwargs.setdefault('read_only', True)
+        # kwargs.setdefault('read_only', True)
 
-        super(ReportItemDetailRendererSerializer, self).__init__(*args, **kwargs)
+        super(ReportItemEvalSerializer, self).__init__(*args, **kwargs)
         self.fields.pop('detail')
 
 

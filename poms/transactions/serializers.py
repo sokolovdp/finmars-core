@@ -971,6 +971,12 @@ class ComplexTransactionSerializer(ComplexTransactionMixin, ModelWithAttributesS
         ]
 
 
+class ComplexTransactionEvalSerializer(ComplexTransactionSerializer):
+    def __init__(self, *args, **kwargs):
+        super(ComplexTransactionEvalSerializer, self).__init__(*args, **kwargs)
+        self.fields.pop('text')
+
+
 class ComplexTransactionViewSerializer(ComplexTransactionMixin, serializers.ModelSerializer):
     text = serializers.SerializerMethodField()
 
