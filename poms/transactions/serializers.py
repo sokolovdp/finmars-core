@@ -1202,9 +1202,9 @@ class TransactionTypeProcessSerializer(serializers.Serializer):
                     self._save_if_need(instrument)
                     if fake_id:
                         instruments_map[fake_id] = instrument
+                self._save_inputs(instance)
                 if instance.transactions:
                     self._save_if_need(instance.complex_transaction)
-                    self._save_inputs(instance)
                     for transaction in instance.transactions:
                         if transaction.instrument_id in instruments_map:
                             transaction.instrument = instruments_map[transaction.instrument_id]
@@ -1224,10 +1224,10 @@ class TransactionTypeProcessSerializer(serializers.Serializer):
                         if fake_id:
                             instruments_map[fake_id] = instrument
 
+                self._save_inputs(instance)
                 transactions_data = validated_data.get('transactions', None)
                 if transactions_data:
                     self._save_if_need(instance.complex_transaction)
-                    self._save_inputs(instance)
                     for transaction_data in transactions_data:
                         transaction = Transaction(master_user=instance.transaction_type.master_user)
                         transaction_data.pop('id', None)
