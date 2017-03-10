@@ -27,7 +27,7 @@ from poms.strategies.fields import Strategy1Field, Strategy2Field, Strategy3Fiel
 from poms.strategies.models import Strategy1, Strategy2, Strategy3
 from poms.tags.serializers import ModelWithTagSerializer
 from poms.transactions.fields import TransactionTypeInputContentTypeField, \
-    TransactionTypeGroupField
+    TransactionTypeGroupField, ReadOnlyContentTypeField
 from poms.transactions.models import TransactionClass, Transaction, TransactionType, TransactionTypeAction, \
     TransactionTypeActionTransaction, TransactionTypeActionInstrument, TransactionTypeInput, TransactionTypeGroup, \
     ComplexTransaction, EventClass, NotificationClass, ComplexTransactionInput
@@ -229,6 +229,17 @@ class TransactionTypeInputSerializer(serializers.ModelSerializer):
                     if attr != target_attr:
                         data[attr] = None
         return data
+
+
+class TransactionTypeInputViewSerializer(serializers.ModelSerializer):
+    content_type = ReadOnlyContentTypeField()
+
+    class Meta:
+        model = TransactionTypeInput
+        fields = [
+            'id', 'name', 'verbose_name', 'value_type', 'content_type', 'order',
+        ]
+        read_only_fields = fields
 
 
 class TransactionTypeActionInstrumentSerializer(serializers.ModelSerializer):

@@ -776,55 +776,70 @@ class PricingAutomatedSchedule(models.Model):
 # ----------------------------------------
 
 
-class ComplexTransactionFileImportScheme(models.Model):
+class ComplexTransactionImportScheme(models.Model):
     master_user = models.ForeignKey('users.MasterUser', verbose_name=ugettext_lazy('master user'))
-    scheme_name = models.CharField(max_length=255, verbose_name=ugettext_lazy('name'))
-    type_expr = models.CharField(max_length=255, verbose_name=ugettext_lazy('type expressions'))
+    scheme_name = models.CharField(max_length=255, verbose_name=ugettext_lazy('scheme name'))
+    rule_expr = models.CharField(max_length=1000, verbose_name=ugettext_lazy('rule expressions'))
 
     class Meta:
-        abstract = True
-        verbose_name = ugettext_lazy('complex transaction file import scheme')
-        verbose_name_plural = ugettext_lazy('complex transaction file import schemes')
-        unique_together = [
-            ['master_user', 'scheme_name']
-        ]
+        verbose_name = ugettext_lazy('complex transaction import scheme')
+        verbose_name_plural = ugettext_lazy('complex transaction import schemes')
 
     def __str__(self):
         return self.scheme_name
 
 
-class ComplexTransactionFileImportSchemeType(models.Model):
-    scheme = models.ForeignKey(ComplexTransactionFileImportScheme, verbose_name=ugettext_lazy('scheme'))
-    user_code = models.CharField(max_length=255, blank=True, default='', verbose_name=ugettext_lazy('user code'))
-    transaction_type = models.ForeignKey('transactions.TransactionType', verbose_name=ugettext_lazy('transaction type'))
+class ComplexTransactionImportSchemeInput(models.Model):
+    scheme = models.ForeignKey(ComplexTransactionImportScheme, related_name='inputs',
+                               verbose_name=ugettext_lazy('scheme'))
+    # order = models.SmallIntegerField(default=0)
+    name = models.CharField(max_length=255)
+    column = models.SmallIntegerField()
 
     class Meta:
-        abstract = True
-        verbose_name = ugettext_lazy('complex transaction file import scheme type')
-        verbose_name_plural = ugettext_lazy('complex transaction file import scheme types')
-        unique_together = [
-            ['scheme', 'transaction_type'],
-            ['scheme', 'user_code'],
-        ]
+        verbose_name = ugettext_lazy('complex transaction import scheme input')
+        verbose_name_plural = ugettext_lazy('complex transaction import scheme inputs')
+        # ordering = ['order']
+        order_with_respect_to = 'scheme'
 
     def __str__(self):
-        return '%s-%s' % (self.scheme, self.transaction_type,)
+        return self.name
 
 
-class ComplexTransactionFileImportField(models.Model):
-    type0 = models.ForeignKey(ComplexTransactionFileImportSchemeType, verbose_name=ugettext_lazy('type'))
-    name = models.CharField(max_length=255, verbose_name=ugettext_lazy('name'))
-    # input = models.ForeignKey('transactions.TransactionTypeInput', verbose_name=ugettext_lazy('transaction type input'))
-    value_expr = models.CharField(max_length=2000, verbose_name=ugettext_lazy('value expression'))
+class ComplexTransactionImportSchemeRule(models.Model):
+    scheme = models.ForeignKey(ComplexTransactionImportScheme, related_name='rules',
+                               verbose_name=ugettext_lazy('scheme'))
+    # order = models.SmallIntegerField(default=0)
+    value = models.CharField(max_length=255, blank=True, default='', verbose_name=ugettext_lazy('mapping value'))
+    transaction_type = models.ForeignKey('transactions.TransactionType', on_delete=models.CASCADE,
+                                         verbose_name=ugettext_lazy('transaction type'))
 
     class Meta:
-        abstract = True
-        verbose_name = ugettext_lazy('complex transaction file import scheme type field')
-        verbose_name_plural = ugettext_lazy('complex transaction file import scheme type fields')
-        unique_together = [
-            ['type0', 'name'],
-            # ['object0', 'input'],
-        ]
+        verbose_name = ugettext_lazy('complex transaction import scheme rule')
+        verbose_name_plural = ugettext_lazy('complex transaction import scheme rules')
+        # ordering = ['order']
+        order_with_respect_to = 'scheme'
 
     def __str__(self):
-        return '%s-%s' % (self.type0, self.name,)
+        return self.value
+
+
+class ComplexTransactionImportSchemeField(models.Model):
+    # for simpler admin
+    # scheme = models.ForeignKey(ComplexTransactionImportScheme, verbose_name=ugettext_lazy('scheme'))
+    rule = models.ForeignKey(ComplexTransactionImportSchemeRule, related_name='fields',
+                             verbose_name=ugettext_lazy('rule'))
+    # order = models.SmallIntegerField(default=0)
+    # name = models.CharField(max_length=255, verbose_name=ugettext_lazy('name'))
+    transaction_type_input = models.ForeignKey('transactions.TransactionTypeInput', on_delete=models.CASCADE,
+                                               verbose_name=ugettext_lazy('transaction type input'))
+    value_expr = models.CharField(max_length=1000, verbose_name=ugettext_lazy('value expression'))
+
+    class Meta:
+        verbose_name = ugettext_lazy('complex transaction import scheme field')
+        verbose_name_plural = ugettext_lazy('complex transaction import scheme fields')
+        # ordering = ['order']
+        order_with_respect_to = 'rule'
+
+    def __str__(self):
+        return '%s - %s' % (self.rule, self.transaction_type_input,)

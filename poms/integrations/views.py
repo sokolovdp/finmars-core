@@ -27,7 +27,7 @@ from poms.integrations.models import ImportConfig, Task, InstrumentDownloadSchem
     PricingAutomatedSchedule, InstrumentDownloadSchemeAttribute, AccountMapping, InstrumentMapping, CounterpartyMapping, \
     ResponsibleMapping, PortfolioMapping, Strategy1Mapping, Strategy2Mapping, Strategy3Mapping, \
     DailyPricingModelMapping, \
-    PaymentSizeDetailMapping, PriceDownloadSchemeMapping
+    PaymentSizeDetailMapping, PriceDownloadSchemeMapping, ComplexTransactionImportScheme
 from poms.integrations.serializers import ImportConfigSerializer, TaskSerializer, ImportInstrumentSerializer, \
     ImportPricingSerializer, InstrumentDownloadSchemeSerializer, ProviderClassSerializer, \
     FactorScheduleDownloadMethodSerializer, AccrualScheduleDownloadMethodSerializer, PriceDownloadSchemeSerializer, \
@@ -37,7 +37,8 @@ from poms.integrations.serializers import ImportConfigSerializer, TaskSerializer
     InstrumentMappingSerializer, CounterpartyMappingSerializer, ResponsibleMappingSerializer, \
     PortfolioMappingSerializer, \
     Strategy1MappingSerializer, Strategy2MappingSerializer, Strategy3MappingSerializer, \
-    DailyPricingModelMappingSerializer, PaymentSizeDetailMappingSerializer, PriceDownloadSchemeMappingSerializer
+    DailyPricingModelMappingSerializer, PaymentSizeDetailMappingSerializer, PriceDownloadSchemeMappingSerializer, \
+    ComplexTransactionImportSchemeSerializer
 from poms.obj_attrs.models import GenericAttributeType
 from poms.obj_perms.utils import get_permissions_prefetch_lookups
 from poms.portfolios.models import Portfolio
@@ -694,6 +695,38 @@ class ImportPricingViewSet(AbstractViewSet):
 
 
 # ----------------------------------------
+
+
+
+class ComplexTransactionImportSchemeFilterSet(FilterSet):
+    id = NoOpFilter()
+    provider = django_filters.ModelMultipleChoiceFilter(queryset=ProviderClass.objects)
+    scheme_name = CharFilter()
+
+    class Meta:
+        model = ComplexTransactionImportScheme
+        fields = []
+
+class ComplexTransactionImportSchemeViewSet(AbstractModelViewSet):
+    queryset = ComplexTransactionImportScheme.objects.select_related(
+    ).prefetch_related(
+        'inputs',
+        'rules',
+        'rules__transaction_type',
+        'rules__fields',
+        'rules__fields__transaction_type_input',
+        *get_permissions_prefetch_lookups(
+            ('rules__transaction_type', GenericAttributeType),
+        )
+    )
+    serializer_class = ComplexTransactionImportSchemeSerializer
+    filter_backends = AbstractModelViewSet.filter_backends + [
+        OwnerByMasterUserFilter,
+    ]
+    filter_class = ComplexTransactionImportSchemeFilterSet
+    ordering_fields = [
+        'scheme_name',
+    ]
 
 
 # class TransactionFileImportSchemeFilterSet(FilterSet):
