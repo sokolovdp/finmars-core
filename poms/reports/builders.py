@@ -2616,7 +2616,7 @@ class ReportBuilder(object):
 
         return queryset
 
-    def sort_transactions(self, transactions):
+    def sort_transactions(self):
         def _trn_key(t):
 
             d = None
@@ -2637,7 +2637,8 @@ class ReportBuilder(object):
                 t.pk if t.pk is not None else sys.maxsize,
             )
 
-        return sorted(transactions, key=_trn_key)
+        self._transactions = sorted(self._transactions, key=_trn_key)
+        return self._transactions
 
     @property
     def pricing_provider(self):
