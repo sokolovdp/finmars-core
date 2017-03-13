@@ -312,48 +312,52 @@ class PriceDownloadScheme(models.Model):
         return self._get_fields('currency_fxrate')
 
 
+# -------
+
+
 class AbstractMapping(models.Model):
     master_user = models.ForeignKey('users.MasterUser', verbose_name=ugettext_lazy('master user'))
     provider = models.ForeignKey(ProviderClass, verbose_name=ugettext_lazy('provider'))
-    value = models.CharField(max_length=255, verbose_name=ugettext_lazy('value'))
+    value = models.CharField(max_length=255, blank=True, default='', verbose_name=ugettext_lazy('value'))
 
     class Meta:
         abstract = True
         ordering = ['value']
 
+    def __str__(self):
+        return '%s / %s -> %s' % (self.provider, self.value, self.content_object)
+
 
 class CurrencyMapping(AbstractMapping):
-    currency = models.ForeignKey('currencies.Currency', verbose_name=ugettext_lazy('currency'))
+    content_object = models.ForeignKey('currencies.Currency', verbose_name=ugettext_lazy('currency'))
 
     class Meta(AbstractMapping.Meta):
         verbose_name = ugettext_lazy('currency mapping')
         verbose_name_plural = ugettext_lazy('currency mappings')
         unique_together = [
             ['master_user', 'provider', 'value'],
-            # ['master_user', 'provider', 'currency'],
         ]
 
     def __str__(self):
-        return '%s / %s -> %s' % (self.provider, self.value, self.currency)
+        return '%s / %s -> %s' % (self.provider, self.value, self.content_object)
 
 
 class InstrumentTypeMapping(AbstractMapping):
-    instrument_type = models.ForeignKey('instruments.InstrumentType', verbose_name=ugettext_lazy('instrument type'))
+    content_object = models.ForeignKey('instruments.InstrumentType', verbose_name=ugettext_lazy('instrument type'))
 
     class Meta(AbstractMapping.Meta):
         verbose_name = ugettext_lazy('instrument type mapping')
         verbose_name_plural = ugettext_lazy('instrument type mappings')
         unique_together = [
             ['master_user', 'provider', 'value'],
-            # ['master_user', 'provider', 'instrument_type'],
         ]
 
     def __str__(self):
-        return '%s / %s -> %s' % (self.provider, self.value, self.instrument_type)
+        return '%s / %s -> %s' % (self.provider, self.value, self.content_object)
 
 
 class InstrumentAttributeValueMapping(AbstractMapping):
-    attribute_type = models.ForeignKey('obj_attrs.GenericAttributeType', on_delete=models.PROTECT,
+    content_object = models.ForeignKey('obj_attrs.GenericAttributeType', on_delete=models.PROTECT,
                                        verbose_name=ugettext_lazy('attribute type'))
     value_string = models.CharField(max_length=255, default='', blank=True,
                                     verbose_name=ugettext_lazy('value (String)'))
@@ -367,32 +371,30 @@ class InstrumentAttributeValueMapping(AbstractMapping):
         verbose_name_plural = ugettext_lazy('instrument attribute value mappings')
         unique_together = [
             ['master_user', 'provider', 'value'],
-            # ['master_user', 'provider', 'attribute_type'],
         ]
 
     def __str__(self):
-        value = self.attribute_type.get_value(self)
-        return '%s / %s -> %s / %s' % (self.provider, self.value, self.attribute_type, value)
+        value = self.content_object.get_value(self)
+        return '%s / %s -> %s / %s' % (self.provider, self.value, self.content_object, value)
 
 
 class AccrualCalculationModelMapping(AbstractMapping):
-    accrual_calculation_model = models.ForeignKey('instruments.AccrualCalculationModel',
-                                                  verbose_name=ugettext_lazy('accrual calculation model'))
+    content_object = models.ForeignKey('instruments.AccrualCalculationModel',
+                                       verbose_name=ugettext_lazy('accrual calculation model'))
 
     class Meta(AbstractMapping.Meta):
         verbose_name = ugettext_lazy('accrual calculation model mapping')
         verbose_name_plural = ugettext_lazy('accrual calculation model  mappings')
         unique_together = [
             ['master_user', 'provider', 'value'],
-            # ['master_user', 'provider', 'accrual_calculation_model'],
         ]
 
     def __str__(self):
-        return '%s / %s -> %s' % (self.provider, self.value, self.accrual_calculation_model)
+        return '%s / %s -> %s' % (self.provider, self.value, self.content_object)
 
 
 class PeriodicityMapping(AbstractMapping):
-    periodicity = models.ForeignKey('instruments.Periodicity', verbose_name=ugettext_lazy('periodicity'))
+    content_object = models.ForeignKey('instruments.Periodicity', verbose_name=ugettext_lazy('periodicity'))
 
     class Meta(AbstractMapping.Meta):
         verbose_name = ugettext_lazy('periodicity mapping')
@@ -403,7 +405,167 @@ class PeriodicityMapping(AbstractMapping):
         ]
 
     def __str__(self):
-        return '%s / %s -> %s' % (self.provider, self.value, self.periodicity)
+        return '%s / %s -> %s' % (self.provider, self.value, self.content_object)
+
+
+class AccountMapping(AbstractMapping):
+    content_object = models.ForeignKey('accounts.Account', verbose_name=ugettext_lazy('account'))
+
+    class Meta(AbstractMapping.Meta):
+        verbose_name = ugettext_lazy('account mapping')
+        verbose_name_plural = ugettext_lazy('account mappings')
+        unique_together = [
+            ['master_user', 'provider', 'value'],
+        ]
+
+    def __str__(self):
+        return '%s / %s -> %s' % (self.provider, self.value, self.content_object)
+
+
+class InstrumentMapping(AbstractMapping):
+    content_object = models.ForeignKey('instruments.Instrument', verbose_name=ugettext_lazy('instrument'))
+
+    class Meta(AbstractMapping.Meta):
+        verbose_name = ugettext_lazy('instrument mapping')
+        verbose_name_plural = ugettext_lazy('instrument mappings')
+        unique_together = [
+            ['master_user', 'provider', 'value'],
+        ]
+
+    def __str__(self):
+        return '%s / %s -> %s' % (self.provider, self.value, self.content_object)
+
+
+class CounterpartyMapping(AbstractMapping):
+    content_object = models.ForeignKey('counterparties.Counterparty', verbose_name=ugettext_lazy('counterparty'))
+
+    class Meta(AbstractMapping.Meta):
+        verbose_name = ugettext_lazy('counterparty mapping')
+        verbose_name_plural = ugettext_lazy('counterparty mappings')
+        unique_together = [
+            ['master_user', 'provider', 'value'],
+        ]
+
+    def __str__(self):
+        return '%s / %s -> %s' % (self.provider, self.value, self.content_object)
+
+
+class ResponsibleMapping(AbstractMapping):
+    content_object = models.ForeignKey('counterparties.Responsible', verbose_name=ugettext_lazy('responsible'))
+
+    class Meta(AbstractMapping.Meta):
+        verbose_name = ugettext_lazy('responsible mapping')
+        verbose_name_plural = ugettext_lazy('responsible mappings')
+        unique_together = [
+            ['master_user', 'provider', 'value'],
+        ]
+
+    def __str__(self):
+        return '%s / %s -> %s' % (self.provider, self.value, self.content_object)
+
+
+class PortfolioMapping(AbstractMapping):
+    content_object = models.ForeignKey('portfolios.Portfolio', verbose_name=ugettext_lazy('portfolio'))
+
+    class Meta(AbstractMapping.Meta):
+        verbose_name = ugettext_lazy('portfolio mapping')
+        verbose_name_plural = ugettext_lazy('portfolio mappings')
+        unique_together = [
+            ['master_user', 'provider', 'value'],
+        ]
+
+    def __str__(self):
+        return '%s / %s -> %s' % (self.provider, self.value, self.content_object)
+
+
+class Strategy1Mapping(AbstractMapping):
+    content_object = models.ForeignKey('strategies.Strategy1', verbose_name=ugettext_lazy('strategy1'))
+
+    class Meta(AbstractMapping.Meta):
+        verbose_name = ugettext_lazy('strategy1 mapping')
+        verbose_name_plural = ugettext_lazy('strategy1 mappings')
+        unique_together = [
+            ['master_user', 'provider', 'value'],
+        ]
+
+    def __str__(self):
+        return '%s / %s -> %s' % (self.provider, self.value, self.content_object)
+
+
+class Strategy2Mapping(AbstractMapping):
+    content_object = models.ForeignKey('strategies.Strategy2', verbose_name=ugettext_lazy('strategy2'))
+
+    class Meta(AbstractMapping.Meta):
+        verbose_name = ugettext_lazy('strategy2 mapping')
+        verbose_name_plural = ugettext_lazy('strategy2 mappings')
+        unique_together = [
+            ['master_user', 'provider', 'value'],
+        ]
+
+    def __str__(self):
+        return '%s / %s -> %s' % (self.provider, self.value, self.content_object)
+
+
+class Strategy3Mapping(AbstractMapping):
+    content_object = models.ForeignKey('strategies.Strategy3', verbose_name=ugettext_lazy('strategy3'))
+
+    class Meta(AbstractMapping.Meta):
+        verbose_name = ugettext_lazy('strategy3 mapping')
+        verbose_name_plural = ugettext_lazy('strategy3 mappings')
+        unique_together = [
+            ['master_user', 'provider', 'value'],
+        ]
+
+    def __str__(self):
+        return '%s / %s -> %s' % (self.provider, self.value, self.content_object)
+
+
+class DailyPricingModelMapping(AbstractMapping):
+    content_object = models.ForeignKey('instruments.DailyPricingModel',
+                                       verbose_name=ugettext_lazy('daily pricing model'))
+
+    class Meta(AbstractMapping.Meta):
+        verbose_name = ugettext_lazy('daily pricing model mapping')
+        verbose_name_plural = ugettext_lazy('daily pricing model mappings')
+        unique_together = [
+            ['master_user', 'provider', 'value'],
+        ]
+
+    def __str__(self):
+        return '%s / %s -> %s' % (self.provider, self.value, self.content_object)
+
+
+class PaymentSizeDetailMapping(AbstractMapping):
+    content_object = models.ForeignKey('instruments.PaymentSizeDetail',
+                                       verbose_name=ugettext_lazy('payment size detail'))
+
+    class Meta(AbstractMapping.Meta):
+        verbose_name = ugettext_lazy('payment size detail mapping')
+        verbose_name_plural = ugettext_lazy('payment size detail model mappings')
+        unique_together = [
+            ['master_user', 'provider', 'value'],
+        ]
+
+    def __str__(self):
+        return '%s / %s -> %s' % (self.provider, self.value, self.content_object)
+
+
+class PriceDownloadSchemeMapping(AbstractMapping):
+    content_object = models.ForeignKey('integrations.PriceDownloadScheme',
+                                       verbose_name=ugettext_lazy('price download scheme'))
+
+    class Meta(AbstractMapping.Meta):
+        verbose_name = ugettext_lazy('price download scheme mapping')
+        verbose_name_plural = ugettext_lazy('price download scheme mappings')
+        unique_together = [
+            ['master_user', 'provider', 'value'],
+        ]
+
+    def __str__(self):
+        return '%s / %s -> %s' % (self.provider, self.value, self.content_object)
+
+
+# -------
 
 
 @python_2_unicode_compatible
@@ -614,55 +776,70 @@ class PricingAutomatedSchedule(models.Model):
 # ----------------------------------------
 
 
-class ComplexTransactionFileImportScheme(models.Model):
+class ComplexTransactionImportScheme(models.Model):
     master_user = models.ForeignKey('users.MasterUser', verbose_name=ugettext_lazy('master user'))
-    scheme_name = models.CharField(max_length=255, verbose_name=ugettext_lazy('name'))
-    type_expr = models.CharField(max_length=255, verbose_name=ugettext_lazy('type expressions'))
+    scheme_name = models.CharField(max_length=255, verbose_name=ugettext_lazy('scheme name'))
+    rule_expr = models.CharField(max_length=1000, verbose_name=ugettext_lazy('rule expressions'))
 
     class Meta:
-        abstract = True
-        verbose_name = ugettext_lazy('complex transaction file import scheme')
-        verbose_name_plural = ugettext_lazy('complex transaction file import schemes')
-        unique_together = [
-            ['master_user', 'scheme_name']
-        ]
+        verbose_name = ugettext_lazy('complex transaction import scheme')
+        verbose_name_plural = ugettext_lazy('complex transaction import schemes')
 
     def __str__(self):
         return self.scheme_name
 
 
-class ComplexTransactionFileImportSchemeType(models.Model):
-    scheme = models.ForeignKey(ComplexTransactionFileImportScheme, verbose_name=ugettext_lazy('scheme'))
-    user_code = models.CharField(max_length=255, blank=True, default='', verbose_name=ugettext_lazy('user code'))
-    transaction_type = models.ForeignKey('transactions.TransactionType', verbose_name=ugettext_lazy('transaction type'))
+class ComplexTransactionImportSchemeInput(models.Model):
+    scheme = models.ForeignKey(ComplexTransactionImportScheme, related_name='inputs',
+                               verbose_name=ugettext_lazy('scheme'))
+    # order = models.SmallIntegerField(default=0)
+    name = models.CharField(max_length=255)
+    column = models.SmallIntegerField()
 
     class Meta:
-        abstract = True
-        verbose_name = ugettext_lazy('complex transaction file import scheme type')
-        verbose_name_plural = ugettext_lazy('complex transaction file import scheme types')
-        unique_together = [
-            ['scheme', 'transaction_type'],
-            ['scheme', 'user_code'],
-        ]
+        verbose_name = ugettext_lazy('complex transaction import scheme input')
+        verbose_name_plural = ugettext_lazy('complex transaction import scheme inputs')
+        # ordering = ['order']
+        order_with_respect_to = 'scheme'
 
     def __str__(self):
-        return '%s-%s' % (self.scheme, self.transaction_type,)
+        return self.name
 
 
-class ComplexTransactionFileImportField(models.Model):
-    type0 = models.ForeignKey(ComplexTransactionFileImportSchemeType, verbose_name=ugettext_lazy('type'))
-    name = models.CharField(max_length=255, verbose_name=ugettext_lazy('name'))
-    # input = models.ForeignKey('transactions.TransactionTypeInput', verbose_name=ugettext_lazy('transaction type input'))
-    value_expr = models.CharField(max_length=2000, verbose_name=ugettext_lazy('value expression'))
+class ComplexTransactionImportSchemeRule(models.Model):
+    scheme = models.ForeignKey(ComplexTransactionImportScheme, related_name='rules',
+                               verbose_name=ugettext_lazy('scheme'))
+    # order = models.SmallIntegerField(default=0)
+    value = models.CharField(max_length=255, blank=True, default='', verbose_name=ugettext_lazy('mapping value'))
+    transaction_type = models.ForeignKey('transactions.TransactionType', on_delete=models.CASCADE,
+                                         verbose_name=ugettext_lazy('transaction type'))
 
     class Meta:
-        abstract = True
-        verbose_name = ugettext_lazy('complex transaction file import scheme type field')
-        verbose_name_plural = ugettext_lazy('complex transaction file import scheme type fields')
-        unique_together = [
-            ['type0', 'name'],
-            # ['object0', 'input'],
-        ]
+        verbose_name = ugettext_lazy('complex transaction import scheme rule')
+        verbose_name_plural = ugettext_lazy('complex transaction import scheme rules')
+        # ordering = ['order']
+        order_with_respect_to = 'scheme'
 
     def __str__(self):
-        return '%s-%s' % (self.type0, self.name,)
+        return self.value
+
+
+class ComplexTransactionImportSchemeField(models.Model):
+    # for simpler admin
+    # scheme = models.ForeignKey(ComplexTransactionImportScheme, verbose_name=ugettext_lazy('scheme'))
+    rule = models.ForeignKey(ComplexTransactionImportSchemeRule, related_name='fields',
+                             verbose_name=ugettext_lazy('rule'))
+    # order = models.SmallIntegerField(default=0)
+    # name = models.CharField(max_length=255, verbose_name=ugettext_lazy('name'))
+    transaction_type_input = models.ForeignKey('transactions.TransactionTypeInput', on_delete=models.CASCADE,
+                                               verbose_name=ugettext_lazy('transaction type input'))
+    value_expr = models.CharField(max_length=1000, verbose_name=ugettext_lazy('value expression'))
+
+    class Meta:
+        verbose_name = ugettext_lazy('complex transaction import scheme field')
+        verbose_name_plural = ugettext_lazy('complex transaction import scheme fields')
+        # ordering = ['order']
+        order_with_respect_to = 'rule'
+
+    def __str__(self):
+        return '%s - %s' % (self.rule, self.transaction_type_input,)

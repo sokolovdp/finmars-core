@@ -3,7 +3,8 @@ from __future__ import unicode_literals
 from rest_framework.relations import PrimaryKeyRelatedField
 
 from poms.common.fields import PrimaryKeyRelatedFilteredField
-from poms.integrations.models import PriceDownloadScheme, ProviderClass, InstrumentDownloadScheme
+from poms.integrations.models import PriceDownloadScheme, ProviderClass, InstrumentDownloadScheme, \
+    ComplexTransactionImportScheme
 from poms.users.filters import OwnerByMasterUserFilter
 
 
@@ -28,4 +29,9 @@ class PriceDownloadSchemeField(PrimaryKeyRelatedFilteredField):
 
 class InstrumentDownloadSchemeField(PrimaryKeyRelatedFilteredField):
     queryset = InstrumentDownloadScheme.objects
+    filter_backends = [OwnerByMasterUserFilter]
+
+
+class ComplexTransactionImportSchemeRestField(PrimaryKeyRelatedFilteredField):
+    queryset = ComplexTransactionImportScheme.objects
     filter_backends = [OwnerByMasterUserFilter]

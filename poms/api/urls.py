@@ -161,6 +161,17 @@ router.register(r'import/instrument-type-mapping', integrations.InstrumentTypeMa
 router.register(r'import/instrument-attribute-value-mapping', integrations.InstrumentAttributeValueMappingViewSet)
 router.register(r'import/accrual-calculation-model-mapping', integrations.AccrualCalculationModelMappingViewSet)
 router.register(r'import/periodicity-mapping', integrations.PeriodicityMappingViewSet)
+router.register(r'import/account-mapping', integrations.AccountMappingViewSet)
+router.register(r'import/instrument-mapping', integrations.InstrumentMappingViewSet)
+router.register(r'import/counterparty-mapping', integrations.CounterpartyMappingViewSet)
+router.register(r'import/responsible-mapping', integrations.ResponsibleMappingViewSet)
+router.register(r'import/portfolio-mapping', integrations.PortfolioMappingViewSet)
+router.register(r'import/strategy1-mapping', integrations.Strategy1MappingViewSet)
+router.register(r'import/strategy2-mapping', integrations.Strategy2MappingViewSet)
+router.register(r'import/strategy3-mapping', integrations.Strategy3MappingViewSet)
+router.register(r'import/daily-pricing-model-mapping', integrations.DailyPricingModelMappingViewSet)
+router.register(r'import/payment-size-detail-mapping', integrations.PaymentSizeDetailMappingViewSet)
+router.register(r'import/price-download-scheme-mapping', integrations.PriceDownloadSchemeMappingViewSet)
 
 router.register(r'import/instrument', integrations.ImportInstrumentViewSet, 'importinstrument')
 router.register(r'import/pricing', integrations.ImportPricingViewSet, 'importpricing')
@@ -168,8 +179,9 @@ router.register(r'import/pricing-automated-schedule', integrations.PricingAutoma
 
 router.register(r'import/task', integrations.TaskViewSet)
 
-router.register(r'import/file/complex-transaction', integrations.ComplexTransactionFileImportViewSet,
-                'complextransactionfileimport')
+router.register(r'import/complex-transaction-import-scheme', integrations.ComplexTransactionImportSchemeViewSet)
+router.register(r'import/complex-transaction-csv-file-import', integrations.ComplexTransactionCsvFileImportViewSet,
+                'complextransactioncsvfileimport')
 
 router.register(r'utils/expression', api.ExpressionViewSet, 'expression')
 

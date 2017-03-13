@@ -8,13 +8,12 @@ from poms.http_sessions.models import Session
 
 
 class SessionSerializer(serializers.ModelSerializer):
-    url = serializers.HyperlinkedIdentityField(lookup_field='id', view_name='session-detail')
     is_current = serializers.SerializerMethodField()
     user_location = serializers.SerializerMethodField()
 
     class Meta:
         model = Session
-        fields = ('id', 'is_current', 'user_ip', 'user_agent', 'human_user_agent', 'user_location',)
+        fields = ['id', 'is_current', 'user_ip', 'user_agent', 'human_user_agent', 'user_location',]
 
     def get_is_current(self, instance):
         request = self.context['request']

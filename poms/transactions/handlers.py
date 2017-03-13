@@ -423,8 +423,8 @@ class TransactionTypeProcess(object):
                 self.transactions_errors.append(errors)
 
         self.has_errors = bool(self.instruments_errors) or \
-                          bool(self.complex_transaction_errors) or \
-                          bool(self.transactions_errors)
+                          any(bool(e) for e in self.complex_transaction_errors) or \
+                          any(bool(e) for e in self.transactions_errors)
 
     def _set_val(self, errors, values, default_value, target, target_attr_name, source, source_attr_name):
         value = getattr(source, source_attr_name)

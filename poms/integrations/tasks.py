@@ -1,9 +1,11 @@
 from __future__ import unicode_literals, print_function
 
+import csv
 import logging
 import time
 from collections import defaultdict
 from datetime import timedelta
+from tempfile import NamedTemporaryFile
 
 from celery import shared_task, chord
 from celery.exceptions import TimeoutError, MaxRetriesExceededError
@@ -15,6 +17,7 @@ from django.core.mail import send_mail as django_send_mail, send_mass_mail as dj
 from django.db import transaction
 from django.db.models import Q
 from django.utils import timezone
+from django.utils.translation import ugettext
 
 from poms.audit.models import AuthLogEntry
 from poms.common import formula
@@ -93,22 +96,6 @@ def mail_managers(subject, message):
         'subject': subject,
         'message': message,
     })
-
-
-@shared_task(name='integrations.file_import_delete', ignore_result=True)
-def file_import_delete_async(path):
-    _l.debug('file_import_delete_async: path=%s', path)
-    import_file_storage.delete(path)
-
-
-def schedule_file_import_delete(path, countdown=None):
-    if countdown == 0:
-        file_import_delete_async(path=path)
-    else:
-        if not getattr(settings, 'CELERY_TASK_ALWAYS_EAGER', False):
-            countdown = countdown or 600
-            _l.debug('schedule_file_import_delete: path=%s, countdown=%s', path, countdown)
-            file_import_delete_async.apply_async(kwargs={'path': path}, countdown=countdown)
 
 
 @shared_task(name='integrations.auth_log_statistics', ignore_result=True)
@@ -902,3 +889,55 @@ def download_pricing_auto_scheduler(self):
                      master_user.id, s.next_run_at)
         download_pricing_auto.apply_async(kwargs={'master_user_id': master_user.id})
     _l.debug('finished')
+
+
+# @shared_task(name='integrations.file_import_delete', ignore_result=True)
+# def file_import_delete_async(path):
+#     _l.debug('file_import_delete_async: path=%s', path)
+#     import_file_storage.delete(path)
+#
+#
+# def schedule_file_import_delete(path, countdown=None):
+#     if countdown == 0:
+#         file_import_delete_async(path=path)
+#     else:
+#         if not getattr(settings, 'CELERY_TASK_ALWAYS_EAGER', False):
+#             countdown = countdown or 600
+#             _l.debug('schedule_file_import_delete: path=%s, countdown=%s', path, countdown)
+#             file_import_delete_async.apply_async(kwargs={'path': path}, countdown=countdown)
+
+
+@shared_task(name='integrations.complex_transaction_csv_file_import')
+def complex_transaction_csv_file_import(instance):
+    _l.debug('complex_transaction_file_import: %s', instance)
+
+    instance.error_rows = []
+    try:
+        pass
+        # with import_file_storage.open(instance.file_path, 'rb') as f:
+        #     with NamedTemporaryFile() as tmpf:
+        #         for chunk in f.chunks():
+        #             tmpf.write(chunk)
+        #         tmpf.flush()
+        #         with open(tmpf.name, mode='rt', encoding=encoding) as cf:
+        #             if format == 'csv':
+        #                 with transaction.atomic():
+        #                     try:
+        #                         for row_index, row in enumerate(csv.reader(cf, delimiter=delimiter, quotechar=quotechar)):
+        #                             if (row_index == 0 and skip_first_line) or not row:
+        #                                 continue
+        #                             processed_rows.append(row)
+        #                     finally:
+        #                         transaction.set_rollback(True)
+    except csv.Error:
+        instance.error_message = ugettext("Invalid file format or file already deleted.")
+    except (FileNotFoundError, IOError):
+        instance.error_message = ugettext("Invalid file format or file already deleted.")
+    except:
+        instance.error_message = ugettext("Invalid file format or file already deleted.")
+    finally:
+        import_file_storage.delete(instance.file_path)
+
+    instance.error = bool(instance.error_message) or bool(instance.error_rows)
+
+    return instance

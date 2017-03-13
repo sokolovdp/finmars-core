@@ -8,10 +8,13 @@ from django.utils.translation import ugettext_lazy
 
 from poms.common.admin import ClassModelAdmin, AbstractModelAdmin
 from poms.integrations.models import Task, ImportConfig, ProviderClass, CurrencyMapping, \
-    InstrumentTypeMapping, InstrumentAttributeValueMapping, FactorScheduleDownloadMethod, AccrualScheduleDownloadMethod, \
+    InstrumentTypeMapping, FactorScheduleDownloadMethod, AccrualScheduleDownloadMethod, \
     InstrumentDownloadScheme, InstrumentDownloadSchemeInput, InstrumentDownloadSchemeAttribute, PriceDownloadScheme, \
-    AccrualCalculationModelMapping, PeriodicityMapping, PricingAutomatedSchedule, ComplexTransactionFileImportScheme, \
-    ComplexTransactionFileImportField, ComplexTransactionFileImportSchemeType
+    AccrualCalculationModelMapping, PeriodicityMapping, PricingAutomatedSchedule, AccountMapping, InstrumentMapping, \
+    CounterpartyMapping, ResponsibleMapping, PortfolioMapping, Strategy1Mapping, Strategy2Mapping, Strategy3Mapping, \
+    DailyPricingModelMapping, PaymentSizeDetailMapping, PriceDownloadSchemeMapping, InstrumentAttributeValueMapping, \
+    ComplexTransactionImportScheme, ComplexTransactionImportSchemeField, ComplexTransactionImportSchemeInput, \
+    ComplexTransactionImportSchemeRule
 
 admin.site.register(ProviderClass, ClassModelAdmin)
 admin.site.register(FactorScheduleDownloadMethod, ClassModelAdmin)
@@ -115,73 +118,111 @@ class PriceDownloadSchemeAdmin(AbstractModelAdmin):
 admin.site.register(PriceDownloadScheme, PriceDownloadSchemeAdmin)
 
 
-class CurrencyMappingAdmin(AbstractModelAdmin):
-    model = CurrencyMapping
+# -------
+
+
+class AbstractMappingAdmin(AbstractModelAdmin):
     master_user_path = 'master_user'
-    list_display = ['id', 'master_user', 'provider', 'value', 'currency']
-    list_select_related = ['master_user', 'provider', 'currency']
-    raw_id_fields = ['master_user', 'currency']
-    ordering = ['master_user', 'provider', 'value']
+    list_display = ['id', 'master_user', 'provider', 'value', 'content_object', ]
+    list_select_related = ['master_user', 'provider', 'content_object', ]
+    raw_id_fields = ['master_user', 'content_object', ]
+    ordering = ['master_user', 'content_object', 'value', ]
+    search_fields = ['value', ]
 
 
-admin.site.register(CurrencyMapping, CurrencyMappingAdmin)
+class InstrumentAttributeValueMappingAdmin(AbstractMappingAdmin):
+    list_display = AbstractMappingAdmin.list_display + ['value_string', 'value_float', 'value_date', 'classifier']
+    list_select_related = AbstractMappingAdmin.list_select_related + ['classifier']
+    raw_id_fields = AbstractMappingAdmin.raw_id_fields + ['classifier']
 
 
-class InstrumentTypeMappingAdmin(AbstractModelAdmin):
-    model = InstrumentTypeMapping
-    master_user_path = 'master_user'
-    list_display = ['id', 'master_user', 'provider', 'value', 'instrument_type']
-    list_select_related = ['master_user', 'provider', 'instrument_type']
-    raw_id_fields = ['master_user', 'instrument_type']
-    ordering = ['master_user', 'provider', 'value']
-
-
-admin.site.register(InstrumentTypeMapping, InstrumentTypeMappingAdmin)
-
-
-class AccrualCalculationModelMappingAdmin(AbstractModelAdmin):
-    model = AccrualCalculationModelMapping
-    master_user_path = 'master_user'
-    list_display = ['id', 'master_user', 'provider', 'value', 'accrual_calculation_model']
-    list_select_related = ['master_user', 'accrual_calculation_model', 'provider']
-    list_filter = ['accrual_calculation_model']
-    raw_id_fields = ['master_user']
-    ordering = ['master_user', 'provider', 'value']
-
-
-admin.site.register(AccrualCalculationModelMapping, AccrualCalculationModelMappingAdmin)
-
-
-class PeriodicityMappingAdmin(AbstractModelAdmin):
-    model = PeriodicityMapping
-    master_user_path = 'master_user'
-    list_display = ['id', 'master_user', 'provider', 'value', 'periodicity']
-    list_select_related = ['master_user', 'provider', 'periodicity']
-    list_filter = ['periodicity']
-    raw_id_fields = ['master_user']
-    ordering = ['master_user', 'provider', 'value']
-
-
-admin.site.register(PeriodicityMapping, PeriodicityMappingAdmin)
-
-
-class InstrumentAttributeValueMappingAdmin(AbstractModelAdmin):
-    model = InstrumentAttributeValueMapping
-    master_user_path = 'master_user'
-    list_display = ['id', 'master_user', 'provider', 'value', 'attribute_type', 'value_string', 'value_float',
-                    'value_date', 'classifier']
-    list_select_related = ['attribute_type__master_user', 'attribute_type', 'classifier', 'provider']
-    raw_id_fields = ['master_user', 'attribute_type', 'classifier']
-    ordering = ['master_user', 'provider', 'value']
-
-    def master_user(self, obj):
-        return obj.attribute_type.master_user
-
-    master_user.admin_order_field = 'attribute_type__master_user__name'
-
-
+admin.site.register(CurrencyMapping, AbstractMappingAdmin)
+admin.site.register(InstrumentTypeMapping, AbstractMappingAdmin)
+admin.site.register(AccrualCalculationModelMapping, AbstractMappingAdmin)
 admin.site.register(InstrumentAttributeValueMapping, InstrumentAttributeValueMappingAdmin)
+admin.site.register(PeriodicityMapping, AbstractMappingAdmin)
+admin.site.register(AccountMapping, AbstractMappingAdmin)
+admin.site.register(InstrumentMapping, AbstractMappingAdmin)
+admin.site.register(CounterpartyMapping, AbstractMappingAdmin)
+admin.site.register(ResponsibleMapping, AbstractMappingAdmin)
+admin.site.register(PortfolioMapping, AbstractMappingAdmin)
+admin.site.register(Strategy1Mapping, AbstractMappingAdmin)
+admin.site.register(Strategy2Mapping, AbstractMappingAdmin)
+admin.site.register(Strategy3Mapping, AbstractMappingAdmin)
+admin.site.register(DailyPricingModelMapping, AbstractMappingAdmin)
+admin.site.register(PaymentSizeDetailMapping, AbstractMappingAdmin)
+admin.site.register(PriceDownloadSchemeMapping, AbstractMappingAdmin)
 
+
+# class CurrencyMappingAdmin(AbstractModelAdmin):
+#     model = CurrencyMapping
+#     master_user_path = 'master_user'
+#     list_display = ['id', 'master_user', 'provider', 'value', 'currency']
+#     list_select_related = ['master_user', 'provider', 'currency']
+#     raw_id_fields = ['master_user', 'currency']
+#     ordering = ['master_user', 'provider', 'value']
+#
+#
+# admin.site.register(CurrencyMapping, CurrencyMappingAdmin)
+#
+#
+# class InstrumentTypeMappingAdmin(AbstractModelAdmin):
+#     model = InstrumentTypeMapping
+#     master_user_path = 'master_user'
+#     list_display = ['id', 'master_user', 'provider', 'value', 'instrument_type']
+#     list_select_related = ['master_user', 'provider', 'instrument_type']
+#     raw_id_fields = ['master_user', 'instrument_type']
+#     ordering = ['master_user', 'provider', 'value']
+#
+#
+# admin.site.register(InstrumentTypeMapping, InstrumentTypeMappingAdmin)
+#
+#
+# class AccrualCalculationModelMappingAdmin(AbstractModelAdmin):
+#     model = AccrualCalculationModelMapping
+#     master_user_path = 'master_user'
+#     list_display = ['id', 'master_user', 'provider', 'value', 'accrual_calculation_model']
+#     list_select_related = ['master_user', 'accrual_calculation_model', 'provider']
+#     list_filter = ['accrual_calculation_model']
+#     raw_id_fields = ['master_user']
+#     ordering = ['master_user', 'provider', 'value']
+#
+#
+# admin.site.register(AccrualCalculationModelMapping, AccrualCalculationModelMappingAdmin)
+#
+#
+# class PeriodicityMappingAdmin(AbstractModelAdmin):
+#     model = PeriodicityMapping
+#     master_user_path = 'master_user'
+#     list_display = ['id', 'master_user', 'provider', 'value', 'periodicity']
+#     list_select_related = ['master_user', 'provider', 'periodicity']
+#     list_filter = ['periodicity']
+#     raw_id_fields = ['master_user']
+#     ordering = ['master_user', 'provider', 'value']
+#
+#
+# admin.site.register(PeriodicityMapping, PeriodicityMappingAdmin)
+#
+#
+# class InstrumentAttributeValueMappingAdmin(AbstractModelAdmin):
+#     model = InstrumentAttributeValueMapping
+#     master_user_path = 'master_user'
+#     list_display = ['id', 'master_user', 'provider', 'value', 'attribute_type', 'value_string', 'value_float',
+#                     'value_date', 'classifier']
+#     list_select_related = ['attribute_type__master_user', 'attribute_type', 'classifier', 'provider']
+#     raw_id_fields = ['master_user', 'attribute_type', 'classifier']
+#     ordering = ['master_user', 'provider', 'value']
+#
+#     def master_user(self, obj):
+#         return obj.attribute_type.master_user
+#
+#     master_user.admin_order_field = 'attribute_type__master_user__name'
+#
+#
+# admin.site.register(InstrumentAttributeValueMapping, InstrumentAttributeValueMappingAdmin)
+
+
+# -------
 
 class TaskAdmin(AbstractModelAdmin):
     model = Task
@@ -240,35 +281,47 @@ admin.site.register(PricingAutomatedSchedule, PricingAutomatedScheduleAdmin)
 # --------
 
 
-# class ComplexTransactionFileImportSchemeAdmin(AbstractModelAdmin):
-#     model = ComplexTransactionFileImportScheme
-#     master_user_path = 'master_user'
-#     list_display = ['id', 'master_user', 'scheme_name']
-#     list_select_related = ['master_user', ]
-#     search_fields = ['id', 'scheme_name', ]
-#     raw_id_fields = ['master_user']
-#     save_as = True
-#
-#
-# admin.site.register(ComplexTransactionFileImportScheme, ComplexTransactionFileImportSchemeAdmin)
-#
-#
-# class ComplexTransactionFileImportFieldInline(admin.TabularInline):
-#     model = ComplexTransactionFileImportField
-#     extra = 0
-#
-#
-# class ComplexTransactionFileImportSchemeTypeAdmin(AbstractModelAdmin):
-#     model = ComplexTransactionFileImportSchemeType
+class ComplexTransactionImportSchemeInputInline(admin.TabularInline):
+    model = ComplexTransactionImportSchemeInput
+    extra = 0
+
+
+class ComplexTransactionImportSchemeRuleInline(admin.TabularInline):
+    model = ComplexTransactionImportSchemeRule
+    raw_id_fields = ['transaction_type']
+    show_change_link = True
+    extra = 0
+
+
+class ComplexTransactionImportSchemeFieldInline(admin.TabularInline):
+    model = ComplexTransactionImportSchemeField
+    raw_id_fields = ['rule', 'transaction_type_input']
+    extra = 0
+
+
+class ComplexTransactionImportSchemeAdmin(AbstractModelAdmin):
+    model = ComplexTransactionImportScheme
+    master_user_path = 'master_user'
+    list_display = ['id', 'master_user', 'scheme_name']
+    list_select_related = ['master_user', ]
+    search_fields = ['id', 'scheme_name', ]
+    raw_id_fields = ['master_user']
+    save_as = True
+    inlines = [
+        ComplexTransactionImportSchemeInputInline, ComplexTransactionImportSchemeRuleInline,
+    ]
+
+
+admin.site.register(ComplexTransactionImportScheme, ComplexTransactionImportSchemeAdmin)
+
+
+# class ComplexTransactionImportSchemeInputdmin(AbstractModelAdmin):
+#     model = ComplexTransactionImportSchemeInput
 #     master_user_path = 'scheme__master_user'
-#     list_display = ['id', 'master_user', 'scheme', 'transaction_type', 'user_code']
-#     list_select_related = ['scheme', 'scheme__master_user', 'transaction_type']
+#     list_display = ['id', 'master_user', 'scheme', 'name']
+#     list_select_related = ['scheme', 'scheme__master_user', ]
 #     search_fields = ['id', 'scheme__scheme_name', ]
-#     raw_id_fields = ['scheme', 'transaction_type']
-#     inlines = [
-#         ComplexTransactionFileImportFieldInline,
-#     ]
-#     save_as = True
+#     raw_id_fields = ['scheme', ]
 #
 #     def master_user(self, obj):
 #         return obj.scheme.master_user
@@ -276,5 +329,46 @@ admin.site.register(PricingAutomatedSchedule, PricingAutomatedScheduleAdmin)
 #     master_user.admin_order_field = 'scheme__master_user'
 #
 #
-# admin.site.register(ComplexTransactionFileImportSchemeType, ComplexTransactionFileImportSchemeTypeAdmin)
+# admin.site.register(ComplexTransactionImportSchemeInput, ComplexTransactionImportSchemeInputdmin)
 
+
+class ComplexTransactionImportSchemeRuledmin(AbstractModelAdmin):
+    model = ComplexTransactionImportSchemeRule
+    master_user_path = 'scheme__master_user'
+    list_display = ['id', 'master_user', 'scheme', 'value', 'transaction_type']
+    list_select_related = ['scheme', 'scheme__master_user', ]
+    search_fields = ['id', 'scheme__scheme_name', ]
+    raw_id_fields = ['scheme', 'transaction_type']
+    inlines = [
+        ComplexTransactionImportSchemeFieldInline,
+    ]
+
+    def master_user(self, obj):
+        return obj.scheme.master_user
+
+    master_user.admin_order_field = 'scheme__master_user'
+
+
+admin.site.register(ComplexTransactionImportSchemeRule, ComplexTransactionImportSchemeRuledmin)
+
+
+# class ComplexTransactionImportSchemeFieldAdmin(AbstractModelAdmin):
+#     model = ComplexTransactionImportSchemeField
+#     master_user_path = 'rule__scheme__master_user'
+#     list_display = ['id', 'master_user', 'scheme', 'rule', 'input']
+#     list_select_related = ['rule', 'rule__scheme', 'rule__scheme__master_user', ]
+#     search_fields = ['id', 'rule__scheme__scheme_name', ]
+#     raw_id_fields = ['scheme', 'rule', ]
+#
+#     def master_user(self, obj):
+#         return obj.rule.scheme.master_user
+#
+#     master_user.admin_order_field = 'rule__scheme__master_user'
+#
+#     def scheme(self, obj):
+#         return obj.rule.scheme
+#
+#     scheme.admin_order_field = 'rule__scheme'
+#
+#
+# admin.site.register(ComplexTransactionImportSchemeField, ComplexTransactionImportSchemeFieldAdmin)

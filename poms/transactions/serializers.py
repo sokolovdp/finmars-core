@@ -27,7 +27,7 @@ from poms.strategies.fields import Strategy1Field, Strategy2Field, Strategy3Fiel
 from poms.strategies.models import Strategy1, Strategy2, Strategy3
 from poms.tags.serializers import ModelWithTagSerializer
 from poms.transactions.fields import TransactionTypeInputContentTypeField, \
-    TransactionTypeGroupField
+    TransactionTypeGroupField, ReadOnlyContentTypeField
 from poms.transactions.models import TransactionClass, Transaction, TransactionType, TransactionTypeAction, \
     TransactionTypeActionTransaction, TransactionTypeActionInstrument, TransactionTypeInput, TransactionTypeGroup, \
     ComplexTransaction, EventClass, NotificationClass, ComplexTransactionInput
@@ -229,6 +229,17 @@ class TransactionTypeInputSerializer(serializers.ModelSerializer):
                     if attr != target_attr:
                         data[attr] = None
         return data
+
+
+class TransactionTypeInputViewSerializer(serializers.ModelSerializer):
+    content_type = ReadOnlyContentTypeField()
+
+    class Meta:
+        model = TransactionTypeInput
+        fields = [
+            'id', 'name', 'verbose_name', 'value_type', 'content_type', 'order',
+        ]
+        read_only_fields = fields
 
 
 class TransactionTypeActionInstrumentSerializer(serializers.ModelSerializer):
@@ -971,6 +982,12 @@ class ComplexTransactionSerializer(ComplexTransactionMixin, ModelWithAttributesS
         ]
 
 
+class ComplexTransactionEvalSerializer(ComplexTransactionSerializer):
+    def __init__(self, *args, **kwargs):
+        super(ComplexTransactionEvalSerializer, self).__init__(*args, **kwargs)
+        self.fields.pop('text')
+
+
 class ComplexTransactionViewSerializer(ComplexTransactionMixin, serializers.ModelSerializer):
     text = serializers.SerializerMethodField()
 
@@ -1185,9 +1202,9 @@ class TransactionTypeProcessSerializer(serializers.Serializer):
                     self._save_if_need(instrument)
                     if fake_id:
                         instruments_map[fake_id] = instrument
+                self._save_inputs(instance)
                 if instance.transactions:
                     self._save_if_need(instance.complex_transaction)
-                    self._save_inputs(instance)
                     for transaction in instance.transactions:
                         if transaction.instrument_id in instruments_map:
                             transaction.instrument = instruments_map[transaction.instrument_id]
@@ -1207,10 +1224,10 @@ class TransactionTypeProcessSerializer(serializers.Serializer):
                         if fake_id:
                             instruments_map[fake_id] = instrument
 
+                self._save_inputs(instance)
                 transactions_data = validated_data.get('transactions', None)
                 if transactions_data:
                     self._save_if_need(instance.complex_transaction)
-                    self._save_inputs(instance)
                     for transaction_data in transactions_data:
                         transaction = Transaction(master_user=instance.transaction_type.master_user)
                         transaction_data.pop('id', None)

@@ -69,18 +69,18 @@ def calc_cash_for_contract_for_difference(transaction, instrument, portfolio, ac
                pricing_policy=None)
     rb = ReportBuilder(instance=r)
 
-    transactions = rb.get_transactions()
+    rb._load_transactions()
     if transaction:
-        add_this = transaction.id is None or not any(transaction.pk == t.pk for t in transactions)
+        add_this = transaction.id is None or not any(transaction.pk == t.pk for t in rb._transactions)
         if add_this:
-            transactions.append(VirtualTransaction(report=rb.instance, pricing_provider=rb.pricing_provider,
+            rb._transactions.append(VirtualTransaction(report=rb.instance, pricing_provider=rb.pricing_provider,
                                                    fx_rate_provider=rb.fx_rate_provider, trn=transaction))
-            transactions = rb.sort_transactions(transactions)
+            rb.sort_transactions()
 
-    rb.calc_fifo_multipliers(transactions)
+    rb._calc_fifo_multipliers()
 
     if settings.DEV:
-        VirtualTransaction.dumps(transactions)
+        VirtualTransaction.dumps(rb._transactions)
 
     processed = set()
 
@@ -88,7 +88,7 @@ def calc_cash_for_contract_for_difference(transaction, instrument, portfolio, ac
     vt_this = 0
     vt_newer = 1
     vt_state = vt_older
-    for vt in transactions:
+    for vt in rb._transactions:
         vt.cash += vt.overheads
         for vt_to, delta in vt.fifo_closed_by:
             if vt_to.lid not in processed:
@@ -120,6 +120,6 @@ def calc_cash_for_contract_for_difference(transaction, instrument, portfolio, ac
             pass
 
     if settings.DEV:
-        VirtualTransaction.dumps(transactions)
+        VirtualTransaction.dumps(rb._transactions)
 
-    return [vt.trn for vt in transactions]
+    return [vt.trn for vt in rb._transactions]
