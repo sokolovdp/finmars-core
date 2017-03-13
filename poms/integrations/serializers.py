@@ -1319,10 +1319,10 @@ class ComplexTransactionCsvFileImport:
 
         self.scheme = scheme
         self.file_path = file_path
-        self.skip_first_line = skip_first_line
-        self.delimiter = delimiter
-        self.quotechar = quotechar
-        self.encoding = encoding
+        self.skip_first_line = bool(skip_first_line)
+        self.delimiter = delimiter or ','
+        self.quotechar = quotechar or '"'
+        self.encoding = encoding or 'utf-8'
 
         self.error = error
         self.error_message = error_message
