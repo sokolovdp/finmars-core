@@ -1,6 +1,8 @@
 from __future__ import unicode_literals
 
 from django.core.exceptions import ObjectDoesNotExist
+from django.db import transaction as db_transaction
+
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 from rest_framework.fields import empty
@@ -1245,7 +1247,7 @@ class TransactionTypeProcessSerializer(serializers.Serializer):
 
         instance.complex_transaction._fake_transactions = instance.transactions
 
-        if instance.transactions:
+        if not instance.has_errors and instance.transactions:
             for trn in instance.transactions:
                 trn.calc_cash_by_formulas()
 
@@ -1267,6 +1269,9 @@ class TransactionTypeProcessSerializer(serializers.Serializer):
                     trn.allocation_balance_id = instr_map[trn.allocation_balance_id]
                 if trn.allocation_pl_id in instr_map:
                     trn.allocation_pl_id = instr_map[trn.allocation_pl_id]
+
+        if instance.has_errors:
+            db_transaction.set_rollback(True)
 
         return instance
 

@@ -435,8 +435,8 @@ class TransactionTypeProcess(object):
                           any(bool(e) for e in self.complex_transaction_errors) or \
                           any(bool(e) for e in self.transactions_errors)
 
-        if self.store and self.has_errors:
-            db_transaction.set_rollback(True)
+        # if self.store and self.has_errors:
+        #     db_transaction.set_rollback(True)
 
     def _set_val(self, errors, values, default_value, target, target_attr_name, source, source_attr_name):
         value = getattr(source, source_attr_name)
