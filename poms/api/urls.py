@@ -180,8 +180,8 @@ router.register(r'import/pricing-automated-schedule', integrations.PricingAutoma
 router.register(r'import/task', integrations.TaskViewSet)
 
 router.register(r'import/complex-transaction-import-scheme', integrations.ComplexTransactionImportSchemeViewSet)
-router.register(r'import/complex-transaction-file-import', integrations.ComplexTransactionFileImportViewSet,
-                'complextransactionfileimport')
+router.register(r'import/complex-transaction-csv-file-import', integrations.ComplexTransactionCsvFileImportViewSet,
+                'complextransactioncsvfileimport')
 
 router.register(r'utils/expression', api.ExpressionViewSet, 'expression')
 

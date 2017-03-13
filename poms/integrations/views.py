@@ -33,7 +33,7 @@ from poms.integrations.serializers import ImportConfigSerializer, TaskSerializer
     FactorScheduleDownloadMethodSerializer, AccrualScheduleDownloadMethodSerializer, PriceDownloadSchemeSerializer, \
     CurrencyMappingSerializer, InstrumentTypeMappingSerializer, InstrumentAttributeValueMappingSerializer, \
     AccrualCalculationModelMappingSerializer, PeriodicityMappingSerializer, PricingAutomatedScheduleSerializer, \
-    ComplexTransactionFileImportSerializer, AccountMappingSerializer, \
+    ComplexTransactionCsvFileImportSerializer, AccountMappingSerializer, \
     InstrumentMappingSerializer, CounterpartyMappingSerializer, ResponsibleMappingSerializer, \
     PortfolioMappingSerializer, \
     Strategy1MappingSerializer, Strategy2MappingSerializer, Strategy3MappingSerializer, \
@@ -776,6 +776,6 @@ class ComplexTransactionImportSchemeViewSet(AbstractModelViewSet):
 #     serializer_class = ComplexTransactionFileImportSerializer
 
 
-class ComplexTransactionFileImportViewSet(AbstractAsyncViewSet):
-    serializer_class = ComplexTransactionFileImportSerializer
+class ComplexTransactionCsvFileImportViewSet(AbstractAsyncViewSet):
+    serializer_class = ComplexTransactionCsvFileImportSerializer
     celery_task = complex_transaction_csv_file_import

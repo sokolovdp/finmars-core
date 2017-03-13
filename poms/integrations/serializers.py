@@ -1307,7 +1307,7 @@ class ComplexTransactionImportSchemeSerializer(serializers.ModelSerializer):
         rule.fields.exclude(pk__in=pk_set).delete()
 
 
-class ComplexTransactionFileImport:
+class ComplexTransactionCsvFileImport:
     def __init__(self, task_id=None, task_status=None, master_user=None, member=None,
                  scheme=None, file_path=None, skip_first_line=None, delimiter=None, quotechar=None, encoding=None,
                  error=None, error_message=None, error_rows=None):
@@ -1332,7 +1332,7 @@ class ComplexTransactionFileImport:
         return '%s-%s:%s' % (getattr(self.master_user, 'id', None), getattr(self.member, 'id', None), self.file_path)
 
 
-class ComplexTransactionFileImportSerializer(serializers.Serializer):
+class ComplexTransactionCsvFileImportSerializer(serializers.Serializer):
     task_id = serializers.CharField(allow_null=True, allow_blank=True, required=False)
     task_status = serializers.ReadOnlyField()
 
@@ -1353,7 +1353,9 @@ class ComplexTransactionFileImportSerializer(serializers.Serializer):
     scheme_object = ComplexTransactionImportSchemeSerializer(source='scheme', read_only=True)
 
     def create(self, validated_data):
-        if not validated_data.get('task_id', None):
+        if validated_data.get('task_id', None):
+            validated_data.pop('file', None)
+        else:
             file = validated_data.pop('file', None)
             if file:
                 master_user = validated_data['master_user']
@@ -1363,7 +1365,7 @@ class ComplexTransactionFileImportSerializer(serializers.Serializer):
                 validated_data['file_path'] = file_path
             else:
                 raise serializers.ValidationError({'file': ugettext('Required field.')})
-        return ComplexTransactionFileImport(**validated_data)
+        return ComplexTransactionCsvFileImport(**validated_data)
 
     def _get_path(self, owner, file_name):
         return '%s/%s.dat' % (owner.pk, file_name)
