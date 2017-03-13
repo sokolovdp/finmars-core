@@ -1072,10 +1072,13 @@ def complex_transaction_csv_file_import(instance):
                             transaction.set_rollback(True)
     except csv.Error:
         instance.error_message = ugettext("Invalid file format or file already deleted.")
+        _l.debug('Bad file', exc_info=True)
     except (FileNotFoundError, IOError):
         instance.error_message = ugettext("Invalid file format or file already deleted.")
+        _l.debug('Bad file', exc_info=True)
     except:
         instance.error_message = ugettext("Invalid file format or file already deleted.")
+        _l.debug('Bad file', exc_info=True)
     finally:
         import_file_storage.delete(instance.file_path)
 
