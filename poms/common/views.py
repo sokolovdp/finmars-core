@@ -2,12 +2,16 @@ from __future__ import unicode_literals
 
 from collections import OrderedDict
 
+from celery.result import AsyncResult
 from django.conf import settings
+from django.core.signing import TimestampSigner
 from django.db import transaction
 from django.utils import timezone
-from rest_framework import permissions
+from rest_framework import permissions, status
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.filters import DjangoFilterBackend, OrderingFilter
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet, ReadOnlyModelViewSet, ViewSet
 
@@ -110,3 +114,38 @@ class AbstractClassModelViewSet(AbstractReadOnlyModelViewSet):
     ordering_fields = ['name']
     filter_fields = ['system_code', 'name']
     pagination_class = None
+
+
+class AbstractAsyncViewSet(AbstractViewSet):
+    serializer_class = None
+    celery_task = None
+
+    def get_serializer_context(self):
+        context = super(AbstractAsyncViewSet, self).get_serializer_context()
+        context['show_object_permissions'] = False
+        return context
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        instance = serializer.save()
+        task_id = instance.task_id
+
+        signer = TimestampSigner()
+
+        if task_id:
+            res = AsyncResult(signer.unsign(task_id))
+            if res.ready():
+                instance = res.result
+            if instance.master_user.id != self.request.user.master_user.id:
+                raise PermissionDenied()
+            instance.task_id = task_id
+            instance.task_status = res.status
+            serializer = self.get_serializer(instance=instance, many=False)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        else:
+            res = self.celery_task.apply_async(kwargs={'instance': instance})
+            instance.task_id = signer.sign('%s' % res.id)
+            instance.task_status = res.status
+            serializer = self.get_serializer(instance=instance, many=False)
+            return Response(serializer.data, status=status.HTTP_200_OK)

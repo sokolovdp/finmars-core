@@ -11,7 +11,7 @@ from poms.accounts.models import Account
 from poms.common.filters import CharFilter, ModelExtWithPermissionMultipleChoiceFilter, NoOpFilter, \
     ModelExtMultipleChoiceFilter
 from poms.common.views import AbstractViewSet, AbstractModelViewSet, AbstractReadOnlyModelViewSet, \
-    AbstractClassModelViewSet
+    AbstractClassModelViewSet, AbstractAsyncViewSet
 from poms.counterparties.models import Counterparty, Responsible
 from poms.currencies.models import Currency
 from poms.instruments.models import InstrumentType, AccrualCalculationModel, Periodicity, Instrument, PaymentSizeDetail
@@ -33,12 +33,13 @@ from poms.integrations.serializers import ImportConfigSerializer, TaskSerializer
     FactorScheduleDownloadMethodSerializer, AccrualScheduleDownloadMethodSerializer, PriceDownloadSchemeSerializer, \
     CurrencyMappingSerializer, InstrumentTypeMappingSerializer, InstrumentAttributeValueMappingSerializer, \
     AccrualCalculationModelMappingSerializer, PeriodicityMappingSerializer, PricingAutomatedScheduleSerializer, \
-    AbstractFileImportSerializer, ComplexTransactionFileImportSerializer, AccountMappingSerializer, \
+    ComplexTransactionFileImportSerializer, AccountMappingSerializer, \
     InstrumentMappingSerializer, CounterpartyMappingSerializer, ResponsibleMappingSerializer, \
     PortfolioMappingSerializer, \
     Strategy1MappingSerializer, Strategy2MappingSerializer, Strategy3MappingSerializer, \
     DailyPricingModelMappingSerializer, PaymentSizeDetailMappingSerializer, PriceDownloadSchemeMappingSerializer, \
     ComplexTransactionImportSchemeSerializer
+from poms.integrations.tasks import complex_transaction_csv_file_import
 from poms.obj_attrs.models import GenericAttributeType
 from poms.obj_perms.utils import get_permissions_prefetch_lookups
 from poms.portfolios.models import Portfolio
@@ -707,6 +708,7 @@ class ComplexTransactionImportSchemeFilterSet(FilterSet):
         model = ComplexTransactionImportScheme
         fields = []
 
+
 class ComplexTransactionImportSchemeViewSet(AbstractModelViewSet):
     queryset = ComplexTransactionImportScheme.objects.select_related(
     ).prefetch_related(
@@ -760,15 +762,20 @@ class ComplexTransactionImportSchemeViewSet(AbstractModelViewSet):
 
 
 
-class AbstractFileImportViewSet(AbstractViewSet):
-    serializer_class = AbstractFileImportSerializer
+# class AbstractFileImportViewSet(AbstractViewSet):
+#     serializer_class = AbstractFileImportSerializer
+#
+#     def create(self, request, *args, **kwargs):
+#         serializer = self.get_serializer(data=request.data)
+#         serializer.is_valid(raise_exception=True)
+#         serializer.save()
+#         return Response(serializer.data)
+#
+#
+# class ComplexTransactionFileImportViewSet(AbstractFileImportViewSet):
+#     serializer_class = ComplexTransactionFileImportSerializer
 
-    def create(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response(serializer.data)
 
-
-class ComplexTransactionFileImportViewSet(AbstractFileImportViewSet):
+class ComplexTransactionFileImportViewSet(AbstractAsyncViewSet):
     serializer_class = ComplexTransactionFileImportSerializer
+    celery_task = complex_transaction_csv_file_import
