@@ -1058,8 +1058,13 @@ def complex_transaction_csv_file_import(instance):
                         }
                     )
                     tt_process.process()
-                finally:
+                except:
                     transaction.set_rollback(True)
+                    _l.debug("can't process transaction type", exc_info=True)
+                    continue
+                finally:
+                    if settings.DEBUG:
+                        transaction.set_rollback(True)
 
     instance.error_rows = []
     try:
