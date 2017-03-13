@@ -1310,7 +1310,7 @@ class ComplexTransactionImportSchemeSerializer(serializers.ModelSerializer):
 class ComplexTransactionCsvFileImport:
     def __init__(self, task_id=None, task_status=None, master_user=None, member=None,
                  scheme=None, file_path=None, skip_first_line=None, delimiter=None, quotechar=None, encoding=None,
-                 error=None, error_message=None, error_rows=None):
+                 error_handling=None, error=None, error_message=None, error_row_index=None, error_rows=None):
         self.task_id = task_id
         self.task_status = task_status
 
@@ -1324,12 +1324,22 @@ class ComplexTransactionCsvFileImport:
         self.quotechar = quotechar or '"'
         self.encoding = encoding or 'utf-8'
 
+        self.error_handling = error_handling or 'continue'
         self.error = error
         self.error_message = error_message
+        self.error_row_index = error_row_index
         self.error_rows = error_rows
 
     def __str__(self):
         return '%s-%s:%s' % (getattr(self.master_user, 'id', None), getattr(self.member, 'id', None), self.file_path)
+
+    @property
+    def break_on_error(self):
+        return self.error_handling == 'break'
+
+    @property
+    def continue_on_error(self):
+        return self.error_handling == 'continue'
 
 
 class ComplexTransactionCsvFileImportSerializer(serializers.Serializer):
@@ -1346,8 +1356,14 @@ class ComplexTransactionCsvFileImportSerializer(serializers.Serializer):
     quotechar = serializers.CharField(max_length=1, required=False, initial='"', default='"')
     encoding = serializers.CharField(max_length=20, required=False, initial='utf-8', default='utf-8')
 
+    error_handling = serializers.ChoiceField(
+        choices=[('break', 'Break on first error'), ('continue', 'Try continue')],
+        required=False, initial='continue', default='continue'
+    )
+
     error = serializers.ReadOnlyField()
     error_message = serializers.ReadOnlyField()
+    error_row_index = serializers.ReadOnlyField()
     error_rows = serializers.ReadOnlyField()
 
     scheme_object = ComplexTransactionImportSchemeSerializer(source='scheme', read_only=True)
