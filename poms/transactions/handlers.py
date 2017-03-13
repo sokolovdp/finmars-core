@@ -1,3 +1,4 @@
+import logging
 from datetime import date
 
 from django.core.exceptions import ObjectDoesNotExist
@@ -15,6 +16,8 @@ from poms.obj_perms.utils import assign_perms3
 from poms.portfolios.models import Portfolio
 from poms.strategies.models import Strategy1, Strategy2, Strategy3
 from poms.transactions.models import ComplexTransaction, TransactionTypeInput, Transaction
+
+_l = logging.getLogger('poms.transactions')
 
 
 class TransactionTypeProcess(object):
@@ -155,6 +158,8 @@ class TransactionTypeProcess(object):
             self.values[i.name] = value
 
     def process(self):
+        _l.info('process: %s, values=%s', self.transaction_type, self.values)
+
         master_user = self.transaction_type.master_user
         object_permissions = self.transaction_type.object_permissions.select_related('permission').all()
         daily_pricing_model = DailyPricingModel.objects.get(pk=DailyPricingModel.SKIP)
@@ -169,6 +174,7 @@ class TransactionTypeProcess(object):
                 action_instrument = None
 
             if action_instrument:
+                _l.info('process instrument: %s', action_instrument)
                 errors = {}
                 try:
                     user_code = formula.safe_eval(action_instrument.user_code, names=self.values, now=self._now,
@@ -285,6 +291,7 @@ class TransactionTypeProcess(object):
                 action_transaction = None
 
             if action_transaction:
+                _l.info('process transaction: %s', action_transaction)
                 errors = {}
                 transaction = Transaction(master_user=master_user)
                 transaction.complex_transaction = self.complex_transaction

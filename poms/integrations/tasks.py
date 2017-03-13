@@ -37,6 +37,7 @@ from poms.integrations.storage import import_file_storage
 from poms.portfolios.models import Portfolio
 from poms.reports.builders import Report, ReportItem, ReportBuilder
 from poms.strategies.models import Strategy1, Strategy2, Strategy3
+from poms.transactions.handlers import TransactionTypeProcess
 from poms.users.models import MasterUser
 
 _l = logging.getLogger('poms.integrations')
@@ -1045,6 +1046,16 @@ def complex_transaction_csv_file_import(instance):
                 }
                 instance.error_rows.append(error_rows)
                 continue
+
+            tt_process = TransactionTypeProcess(
+                transaction_type=rule.transaction_type,
+                default_values=fields,
+                context={
+                    'master_user': instance.master_user,
+                    'member': instance.member,
+                }
+            )
+            tt_process.process()
 
     instance.error_rows = []
     try:
