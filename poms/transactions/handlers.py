@@ -52,6 +52,9 @@ class TransactionTypeProcess(object):
         # if complex_transaction_date is not None:
         #     self.complex_transaction.date = complex_transaction_date
 
+        self._now = now or date_now()
+        self._context = context
+
         if values is None:
             self._set_values()
         else:
@@ -70,8 +73,6 @@ class TransactionTypeProcess(object):
         self.next_fake_id = fake_id_gen or self._next_fake_id_default
         self.next_transaction_order = transaction_order_gen or self._next_transaction_order_default
 
-        self._now = now or date_now()
-        self._context = context
 
     def _next_fake_id_default(self):
         self._id_seq -= 1
@@ -158,7 +159,7 @@ class TransactionTypeProcess(object):
             self.values[i.name] = value
 
     def process(self):
-        _l.info('process: %s, values=%s', self.transaction_type, self.values)
+        _l.debug('process: %s, values=%s', self.transaction_type, self.values)
 
         master_user = self.transaction_type.master_user
         object_permissions = self.transaction_type.object_permissions.select_related('permission').all()
@@ -174,7 +175,7 @@ class TransactionTypeProcess(object):
                 action_instrument = None
 
             if action_instrument:
-                _l.info('process instrument: %s', action_instrument)
+                _l.debug('process instrument: %s', action_instrument)
                 errors = {}
                 try:
                     user_code = formula.safe_eval(action_instrument.user_code, names=self.values, now=self._now,
@@ -291,7 +292,7 @@ class TransactionTypeProcess(object):
                 action_transaction = None
 
             if action_transaction:
-                _l.info('process transaction: %s', action_transaction)
+                _l.debug('process transaction: %s', action_transaction)
                 errors = {}
                 transaction = Transaction(master_user=master_user)
                 transaction.complex_transaction = self.complex_transaction
