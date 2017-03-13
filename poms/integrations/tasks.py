@@ -1047,15 +1047,19 @@ def complex_transaction_csv_file_import(instance):
                 instance.error_rows.append(error_rows)
                 continue
 
-            tt_process = TransactionTypeProcess(
-                transaction_type=rule.transaction_type,
-                default_values=fields,
-                context={
-                    'master_user': instance.master_user,
-                    'member': instance.member,
-                }
-            )
-            tt_process.process()
+            with transaction.atomic():
+                try:
+                    tt_process = TransactionTypeProcess(
+                        transaction_type=rule.transaction_type,
+                        default_values=fields,
+                        context={
+                            'master_user': instance.master_user,
+                            'member': instance.member,
+                        }
+                    )
+                    tt_process.process()
+                finally:
+                    transaction.set_rollback(True)
 
     instance.error_rows = []
     try:
@@ -1065,11 +1069,7 @@ def complex_transaction_csv_file_import(instance):
                     tmpf.write(chunk)
                 tmpf.flush()
                 with open(tmpf.name, mode='rt', encoding=instance.encoding) as cf:
-                    with transaction.atomic():
-                        try:
-                            _process_csv_file(cf)
-                        finally:
-                            transaction.set_rollback(True)
+                    _process_csv_file(cf)
     except csv.Error:
         instance.error_message = ugettext("Invalid file format or file already deleted.")
         _l.debug('Bad file', exc_info=True)
