@@ -88,7 +88,7 @@ class AbstractProvider(object):
                 master_user=master_user, provider=provider, value=value)
         except CurrencyMapping.DoesNotExist:
             return None
-        return obj.currency
+        return obj.content_object
 
     def get_instrument_type(self, master_user, provider, value):
         # if not value:
@@ -100,7 +100,7 @@ class AbstractProvider(object):
                 master_user=master_user, provider=provider, value=value)
         except InstrumentTypeMapping.DoesNotExist:
             return None
-        return obj.instrument_type
+        return obj.content_object
 
     def get_instrument_attribute_value(self, master_user, provider, attribute_type, value):
         # if not value:
@@ -109,7 +109,7 @@ class AbstractProvider(object):
             value = ''
         try:
             obj = InstrumentAttributeValueMapping.objects.select_related('content_object', 'classifier').get(
-                master_user=master_user, provider=provider, attribute_type=attribute_type, value=value)
+                master_user=master_user, provider=provider, content_object=attribute_type, value=value)
         except InstrumentAttributeValueMapping.DoesNotExist:
             return None
         return obj.value_string, obj.value_float, obj.value_date, obj.classifier
@@ -124,7 +124,7 @@ class AbstractProvider(object):
                 master_user=master_user, provider=provider, value=value)
         except AccrualCalculationModelMapping.DoesNotExist:
             return None
-        return obj.accrual_calculation_model
+        return obj.content_object
 
     def get_periodicity(self, master_user, provider, value):
         # if not value:
@@ -136,7 +136,7 @@ class AbstractProvider(object):
                 master_user=master_user, provider=provider, value=value)
         except PeriodicityMapping.DoesNotExist:
             return None
-        return obj.periodicity
+        return obj.content_object
 
     def create_instrument(self, instrument_download_scheme, values):
         errors = {}
