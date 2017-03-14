@@ -435,6 +435,10 @@ class TransactionTypeProcess(object):
                           any(bool(e) for e in self.complex_transaction_errors) or \
                           any(bool(e) for e in self.transactions_errors)
 
+        if not self.has_errors and self.transactions:
+            for trn in self.transactions:
+                trn.calc_cash_by_formulas()
+
         # if self.store and self.has_errors:
         #     db_transaction.set_rollback(True)
 

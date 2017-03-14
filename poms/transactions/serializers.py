@@ -2,7 +2,6 @@ from __future__ import unicode_literals
 
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import transaction as db_transaction
-
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 from rest_framework.fields import empty
@@ -1118,17 +1117,17 @@ class PhantomTransactionSerializer(TransactionSerializer):
         self.fields.pop('attributes')
 
 
-class TransactionTypeComplexTransactionSerializer(serializers.ModelSerializer):
-    date = serializers.DateField(required=False, allow_null=True)
-    code = serializers.IntegerField(default=0, initial=0, min_value=0, required=False)
-    status = serializers.ChoiceField(default=ComplexTransaction.PRODUCTION, initial=ComplexTransaction.PRODUCTION,
-                                     required=False, choices=ComplexTransaction.STATUS_CHOICES)
-
-    class Meta:
-        model = ComplexTransaction
-        fields = [
-            'id', 'date', 'status', 'code',
-        ]
+# class TransactionTypeComplexTransactionSerializer(serializers.ModelSerializer):
+#     date = serializers.DateField(required=False, allow_null=True)
+#     code = serializers.IntegerField(default=0, initial=0, min_value=0, required=False)
+#     status = serializers.ChoiceField(default=ComplexTransaction.PRODUCTION, initial=ComplexTransaction.PRODUCTION,
+#                                      required=False, choices=ComplexTransaction.STATUS_CHOICES)
+#
+#     class Meta:
+#         model = ComplexTransaction
+#         fields = [
+#             'id', 'date', 'status', 'code',
+#         ]
 
 
 class TransactionTypeProcessSerializer(serializers.Serializer):
@@ -1155,9 +1154,8 @@ class TransactionTypeProcessSerializer(serializers.Serializer):
         self.fields['complex_transaction_errors'] = serializers.ReadOnlyField()
         self.fields['transactions_errors'] = serializers.ReadOnlyField()
         self.fields['instruments'] = InstrumentSerializer(many=True, read_only=False, required=False, allow_null=True)
-        self.fields['complex_transaction'] = TransactionTypeComplexTransactionSerializer(read_only=False,
-                                                                                         required=False,
-                                                                                         allow_null=True)
+        self.fields['complex_transaction'] = ComplexTransactionSerializer(read_only=False, required=False,
+                                                                          allow_null=True)
         self.fields['transactions'] = PhantomTransactionSerializer(many=True, required=False, allow_null=True)
 
         self.fields['book_transaction_layout'] = serializers.SerializerMethodField()
@@ -1248,9 +1246,9 @@ class TransactionTypeProcessSerializer(serializers.Serializer):
 
             instance.complex_transaction._fake_transactions = instance.transactions
 
-            if not instance.has_errors and instance.transactions:
-                for trn in instance.transactions:
-                    trn.calc_cash_by_formulas()
+            # if not instance.has_errors and instance.transactions:
+            #     for trn in instance.transactions:
+            #         trn.calc_cash_by_formulas()
 
             if not instance.store:
                 instance.complex_transaction.id = instance.next_fake_id()
