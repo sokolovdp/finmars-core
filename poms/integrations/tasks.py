@@ -1066,7 +1066,6 @@ def complex_transaction_csv_file_import(instance):
                     tt_process = TransactionTypeProcess(
                         transaction_type=rule.transaction_type,
                         default_values=fields,
-                        store=True,
                         context={
                             'master_user': instance.master_user,
                             'member': instance.member,

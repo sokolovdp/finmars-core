@@ -268,8 +268,7 @@ def process_events(master_users=None):
                     action = next((a for a in generated_event.event_schedule.actions.all() if a.is_book_automatic),
                                   None)
                     if action:
-                        ttp = GeneratedEventProcess(generated_event=generated_event, action=action, calculate=True,
-                                                    store=True, context=context)
+                        ttp = GeneratedEventProcess(generated_event=generated_event, action=action, context=context)
                         ttp.process()
                         generated_event.processed(None, action, ttp.complex_transaction)
                     else:

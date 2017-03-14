@@ -25,7 +25,7 @@ class TransactionTypeProcess(object):
     # if store is false then operations must be rollback outside, for example in view...
 
     def __init__(self, transaction_type=None, default_values=None,
-                 values=None, calculate=True, store=False, has_errors=False,
+                 values=None, has_errors=False,
                  instruments=None, instruments_errors=None,
                  complex_transaction=None, complex_transaction_status=None, complex_transaction_errors=None,
                  transactions=None, transactions_errors=None,
@@ -35,9 +35,6 @@ class TransactionTypeProcess(object):
         self.transaction_type = transaction_type
 
         self.default_values = default_values or {}
-
-        self.calculate = bool(calculate) if calculate is not None else False
-        self.store = bool(store) if store is not None else False
 
         # self.expressions = expressions or {}
         # self.expressions_error = None
@@ -73,7 +70,6 @@ class TransactionTypeProcess(object):
 
         self.next_fake_id = fake_id_gen or self._next_fake_id_default
         self.next_transaction_order = transaction_order_gen or self._next_transaction_order_default
-
 
     def _next_fake_id_default(self):
         self._id_seq -= 1
@@ -260,31 +256,21 @@ class TransactionTypeProcess(object):
                               source=action_instrument, source_attr_name='maturity_price')
 
                 instrument.save()
-                if self.store:
-                    self._instrument_assign_permission(instrument, object_permissions)
-                # if self.store:
-                #     instrument.save()
-                #     self._instrument_assign_permission(instrument, object_permissions)
-                # else:
-                #     instrument.id = self.next_fake_id()
+                self._instrument_assign_permission(instrument, object_permissions)
 
                 instrument_map[action.id] = instrument
                 self.instruments.append(instrument)
                 self.instruments_errors.append(errors)
 
-        if self.complex_transaction.id is None:
-            errors = {}
-            if self.complex_transaction.date is None:
-                self._set_val(errors=errors, values=self.values, default_value=self._now,
-                              target=self.complex_transaction, target_attr_name='date',
-                              source=self.transaction_type, source_attr_name='date_expr')
-            self.complex_transaction_errors.append(errors)
-
+        # complex_transaction
+        complex_transaction_errors = {}
+        if self.complex_transaction.date is None:
+            self._set_val(errors=complex_transaction_errors, values=self.values, default_value=self._now,
+                          target=self.complex_transaction, target_attr_name='date',
+                          source=self.transaction_type, source_attr_name='date_expr')
+            self.complex_transaction_errors.append(complex_transaction_errors)
             self.complex_transaction.save()
-            # if self.store:
-            #     self.complex_transaction.save()
-            # else:
-            #     self.complex_transaction.id = self.next_fake_id()
+        self.complex_transaction.transactions.all().delete()
 
         for order, action in enumerate(actions):
             try:
@@ -423,10 +409,6 @@ class TransactionTypeProcess(object):
 
                 transaction.transaction_date = min(transaction.accounting_date, transaction.cash_date)
                 transaction.save()
-                # if self.store:
-                #     transaction.save()
-                # else:
-                #     transaction.id = self.next_fake_id()
 
                 self.transactions.append(transaction)
                 self.transactions_errors.append(errors)
@@ -438,9 +420,6 @@ class TransactionTypeProcess(object):
         if not self.has_errors and self.transactions:
             for trn in self.transactions:
                 trn.calc_cash_by_formulas()
-
-        # if self.store and self.has_errors:
-        #     db_transaction.set_rollback(True)
 
     def _set_val(self, errors, values, default_value, target, target_attr_name, source, source_attr_name):
         value = getattr(source, source_attr_name)

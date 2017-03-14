@@ -371,7 +371,7 @@ class TransactionTypeViewSet(AbstractWithObjectPermissionViewSet):
                 serializer.save()
                 return Response(serializer.data)
             finally:
-                if not instance.store:
+                if instance.has_errors:
                     transaction.set_rollback(True)
 
 
@@ -978,5 +978,5 @@ class ComplexTransactionViewSet(AbstractModelViewSet):
                 serializer.save()
                 return Response(serializer.data)
             finally:
-                if not instance.store:
+                if instance.has_errors:
                     transaction.set_rollback(True)

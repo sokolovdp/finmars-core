@@ -510,13 +510,13 @@ class GeneratedEventViewSet(UpdateModelMixinExt, AbstractReadOnlyModelViewSet):
                 serializer.is_valid(raise_exception=True)
                 serializer.save()
 
-                if instance.store:
+                if not instance.has_errors:
                     generated_event.processed(self.request.user.member, action, instance.complex_transaction)
                     generated_event.save()
 
                 return Response(serializer.data)
             finally:
-                if not instance.store:
+                if instance.has_errors:
                     transaction.set_rollback(True)
 
     @detail_route(methods=['put'], url_path='ignore')
