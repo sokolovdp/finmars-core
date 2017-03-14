@@ -1,3 +1,4 @@
+import logging
 from datetime import date
 
 from django.core.exceptions import ObjectDoesNotExist
@@ -17,12 +18,14 @@ from poms.portfolios.models import Portfolio
 from poms.strategies.models import Strategy1, Strategy2, Strategy3
 from poms.transactions.models import ComplexTransaction, TransactionTypeInput, Transaction
 
+_l = logging.getLogger('poms.transactions')
+
 
 class TransactionTypeProcess(object):
     # if store is false then operations must be rollback outside, for example in view...
 
     def __init__(self, transaction_type=None, default_values=None,
-                 values=None, calculate=True, store=False, has_errors=False,
+                 values=None, has_errors=False,
                  instruments=None, instruments_errors=None,
                  complex_transaction=None, complex_transaction_status=None, complex_transaction_errors=None,
                  transactions=None, transactions_errors=None,
@@ -32,9 +35,6 @@ class TransactionTypeProcess(object):
         self.transaction_type = transaction_type
 
         self.default_values = default_values or {}
-
-        self.calculate = bool(calculate) if calculate is not None else False
-        self.store = bool(store) if store is not None else False
 
         # self.expressions = expressions or {}
         # self.expressions_error = None
@@ -49,6 +49,9 @@ class TransactionTypeProcess(object):
             self.complex_transaction.status = complex_transaction_status
         # if complex_transaction_date is not None:
         #     self.complex_transaction.date = complex_transaction_date
+
+        self._now = now or date_now()
+        self._context = context
 
         if values is None:
             self._set_values()
@@ -67,9 +70,6 @@ class TransactionTypeProcess(object):
 
         self.next_fake_id = fake_id_gen or self._next_fake_id_default
         self.next_transaction_order = transaction_order_gen or self._next_transaction_order_default
-
-        self._now = now or date_now()
-        self._context = context
 
     def _next_fake_id_default(self):
         self._id_seq -= 1
@@ -156,6 +156,8 @@ class TransactionTypeProcess(object):
             self.values[i.name] = value
 
     def process(self):
+        _l.debug('process: %s, values=%s', self.transaction_type, self.values)
+
         master_user = self.transaction_type.master_user
         object_permissions = self.transaction_type.object_permissions.select_related('permission').all()
         daily_pricing_model = DailyPricingModel.objects.get(pk=DailyPricingModel.SKIP)
@@ -170,6 +172,7 @@ class TransactionTypeProcess(object):
                 action_instrument = None
 
             if action_instrument:
+                _l.debug('process instrument: %s', action_instrument)
                 errors = {}
                 try:
                     user_code = formula.safe_eval(action_instrument.user_code, names=self.values, now=self._now,
@@ -253,31 +256,21 @@ class TransactionTypeProcess(object):
                               source=action_instrument, source_attr_name='maturity_price')
 
                 instrument.save()
-                if self.store:
-                    self._instrument_assign_permission(instrument, object_permissions)
-                # if self.store:
-                #     instrument.save()
-                #     self._instrument_assign_permission(instrument, object_permissions)
-                # else:
-                #     instrument.id = self.next_fake_id()
+                self._instrument_assign_permission(instrument, object_permissions)
 
                 instrument_map[action.id] = instrument
                 self.instruments.append(instrument)
                 self.instruments_errors.append(errors)
 
-        if self.complex_transaction.id is None:
-            errors = {}
-            if self.complex_transaction.date is None:
-                self._set_val(errors=errors, values=self.values, default_value=self._now,
-                              target=self.complex_transaction, target_attr_name='date',
-                              source=self.transaction_type, source_attr_name='date_expr')
-            self.complex_transaction_errors.append(errors)
-
+        # complex_transaction
+        complex_transaction_errors = {}
+        if self.complex_transaction.date is None:
+            self._set_val(errors=complex_transaction_errors, values=self.values, default_value=self._now,
+                          target=self.complex_transaction, target_attr_name='date',
+                          source=self.transaction_type, source_attr_name='date_expr')
+            self.complex_transaction_errors.append(complex_transaction_errors)
             self.complex_transaction.save()
-            # if self.store:
-            #     self.complex_transaction.save()
-            # else:
-            #     self.complex_transaction.id = self.next_fake_id()
+        self.complex_transaction.transactions.all().delete()
 
         for order, action in enumerate(actions):
             try:
@@ -286,6 +279,7 @@ class TransactionTypeProcess(object):
                 action_transaction = None
 
             if action_transaction:
+                _l.debug('process transaction: %s', action_transaction)
                 errors = {}
                 transaction = Transaction(master_user=master_user)
                 transaction.complex_transaction = self.complex_transaction
@@ -415,10 +409,6 @@ class TransactionTypeProcess(object):
 
                 transaction.transaction_date = min(transaction.accounting_date, transaction.cash_date)
                 transaction.save()
-                # if self.store:
-                #     transaction.save()
-                # else:
-                #     transaction.id = self.next_fake_id()
 
                 self.transactions.append(transaction)
                 self.transactions_errors.append(errors)
@@ -427,8 +417,9 @@ class TransactionTypeProcess(object):
                           any(bool(e) for e in self.complex_transaction_errors) or \
                           any(bool(e) for e in self.transactions_errors)
 
-        # if self.store and self.has_errors:
-        #     db_transaction.set_rollback(True)
+        if not self.has_errors and self.transactions:
+            for trn in self.transactions:
+                trn.calc_cash_by_formulas()
 
     def _set_val(self, errors, values, default_value, target, target_attr_name, source, source_attr_name):
         value = getattr(source, source_attr_name)

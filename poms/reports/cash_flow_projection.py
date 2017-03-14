@@ -988,9 +988,6 @@ class CashFlowProjectionReportBuilder(TransactionReportBuilder):
                                 gep = GeneratedEventProcess(
                                     generated_event=e,
                                     action=a,
-                                    calculate=True,
-                                    store=True,
-                                    # complex_transaction_date=now,
                                     fake_id_gen=self._fake_id_gen,
                                     transaction_order_gen=self._trn_order_gen,
                                     now=now

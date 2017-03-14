@@ -9,6 +9,7 @@ import time
 from collections import OrderedDict
 
 from dateutil import relativedelta
+from django.conf import settings
 from django.utils import numberformat
 from django.utils.functional import Promise, SimpleLazyObject
 
@@ -707,6 +708,8 @@ class SimpleEval2(object):
             raise InvalidExpression(e)
 
     def check_time(self):
+        if settings.DEBUG:
+            return
         self.tik_time = time.time()
         if self.tik_time - self.start_time > self.max_time:
             raise InvalidExpression("Execution exceeded time limit, max runtime is %s" % self.max_time)
@@ -744,7 +747,7 @@ class SimpleEval2(object):
             if key in self._table:
                 val = self._table[key]
             else:
-                val = get_model_data_ext(val, many=False, context=self.context)
+                val = get_model_data_ext(val, context=self.context)
                 self._table[key] = val
             return val
             # return val
@@ -1088,15 +1091,19 @@ def value_prepare(orig):
     return _value(orig)
 
 
-def get_model_data(val, serializer_class, many=False, context=None, hide_fields=None):
+def get_model_data(instance, object_class, serializer_class, many=False, context=None, hide_fields=None):
     def _dumps():
-        serializer = serializer_class(instance=val, many=many, context=context)
+        serializer = serializer_class(instance=instance, many=many, context=context)
         if hide_fields:
             for f in hide_fields:
                 serializer.fields.pop(f)
         data = serializer.data
         data = value_prepare(data)
-        data['object_class'] = str(val.__class__.__name__)
+        if isinstance(data, (list, tuple)):
+            for o in data:
+                o['object_class'] = object_class
+        else:
+            data['object_class'] = object_class
         # import json
         # print(json.dumps(data, indent=2))
         return data
@@ -1150,21 +1157,37 @@ def _get_supported_models_serializer_class():
 _supported_models_serializer_class = SimpleLazyObject(_get_supported_models_serializer_class)
 
 
-def get_model_data_ext(instance, many=False, context=None, hide_fields=None):
-    if many:
+def get_model_data_ext(instance, context=None, hide_fields=None):
+    from django.db.models import QuerySet, Manager
+    from django.db.models.manager import BaseManager
+
+    if instance is None:
+        return None
+
+    many = False
+    if isinstance(instance, (list, tuple)):
         if not instance:
             return []
+        many = True
         model = instance[0].__class__
+    elif isinstance(instance, (QuerySet, Manager, BaseManager)):
+        if not instance:
+            return []
+        many = True
+        model = instance.model
+        instance = instance.all()
     else:
         if not instance:
             return None
         model = instance.__class__
+    object_class = str(model.__name__)
 
     try:
         serializer_class = _supported_models_serializer_class[model]
     except KeyError:
         raise InvalidExpression("'%s' can't serialize" % model)
-    return get_model_data(instance, serializer_class, many=many, context=context, hide_fields=hide_fields)
+    return get_model_data(instance=instance, object_class=object_class, serializer_class=serializer_class, many=many,
+                          context=context, hide_fields=hide_fields)
 
 
 HELP = """
@@ -1801,7 +1824,6 @@ accrual_NL_365_NO_EOM(date(2000, 1, 1), date(2000, 1, 25))
         # _l.info('102: %s', safe_eval('date_range("2000-11-21", [[None,"2001-01-01",30,"o1"],["2001-01-01","2002-01-01",timedelta(months=1, day=31),"o2"]], "o3")'))
 
         # _l.info('1: %s', safe_eval('format_date2("2001-12-12", "yyyy/MM/dd")'))
-
 
 
     group_test()

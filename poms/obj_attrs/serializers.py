@@ -547,10 +547,14 @@ class GenericAttributeSerializer(serializers.ModelSerializer):
     def validate(self, attrs):
         attrs = super(GenericAttributeSerializer, self).validate(attrs)
 
-        root_model_content_type = ContentType.objects.get_for_model(self.root.Meta.model)
+        parent = self.parent
+        if isinstance(parent, ListSerializer):
+            parent = parent.parent
+        owner_model_content_type = ContentType.objects.get_for_model(parent.Meta.model)
+        # root_model_content_type = ContentType.objects.get_for_model(self.root.Meta.model)
 
         attribute_type = attrs['attribute_type']
-        if attribute_type.content_type_id != root_model_content_type.id:
+        if attribute_type.content_type_id != owner_model_content_type.id:
             # raise ValidationError({
             #     'attribute_type':
             # })

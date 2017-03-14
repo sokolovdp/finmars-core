@@ -1,8 +1,8 @@
 from __future__ import unicode_literals
 
-from django.core.exceptions import ObjectDoesNotExist
-from django.db import transaction as db_transaction
+import datetime
 
+from django.core.exceptions import ObjectDoesNotExist
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 from rest_framework.fields import empty
@@ -1118,17 +1118,15 @@ class PhantomTransactionSerializer(TransactionSerializer):
         self.fields.pop('attributes')
 
 
-class TransactionTypeComplexTransactionSerializer(serializers.ModelSerializer):
+class TransactionTypeComplexTransactionSerializer(ComplexTransactionSerializer):
     date = serializers.DateField(required=False, allow_null=True)
     code = serializers.IntegerField(default=0, initial=0, min_value=0, required=False)
     status = serializers.ChoiceField(default=ComplexTransaction.PRODUCTION, initial=ComplexTransaction.PRODUCTION,
                                      required=False, choices=ComplexTransaction.STATUS_CHOICES)
 
-    class Meta:
-        model = ComplexTransaction
-        fields = [
-            'id', 'date', 'status', 'code',
-        ]
+    def __init__(self, *args, **kwargs):
+        super(TransactionTypeComplexTransactionSerializer, self).__init__(*args, **kwargs)
+        self.fields['is_deleted'].read_only = True
 
 
 class TransactionTypeProcessSerializer(serializers.Serializer):
@@ -1140,8 +1138,8 @@ class TransactionTypeProcessSerializer(serializers.Serializer):
         context['instance'] = self.instance
 
         self.fields['transaction_type'] = serializers.PrimaryKeyRelatedField(read_only=True)
-        self.fields['calculate'] = serializers.BooleanField(default=False, required=False)
-        self.fields['store'] = serializers.BooleanField(default=False, required=False)
+        # self.fields['calculate'] = serializers.BooleanField(default=False, required=False)
+        # self.fields['store'] = serializers.BooleanField(default=False, required=False)
 
         # self.fields['expressions'] = serializers.DictField(
         #     child=serializers.CharField(allow_null=False, allow_blank=False), allow_null=True, required=False)
@@ -1155,10 +1153,9 @@ class TransactionTypeProcessSerializer(serializers.Serializer):
         self.fields['complex_transaction_errors'] = serializers.ReadOnlyField()
         self.fields['transactions_errors'] = serializers.ReadOnlyField()
         self.fields['instruments'] = InstrumentSerializer(many=True, read_only=False, required=False, allow_null=True)
-        self.fields['complex_transaction'] = TransactionTypeComplexTransactionSerializer(read_only=False,
-                                                                                         required=False,
-                                                                                         allow_null=True)
-        self.fields['transactions'] = PhantomTransactionSerializer(many=True, required=False, allow_null=True)
+        self.fields['complex_transaction'] = TransactionTypeComplexTransactionSerializer(
+            read_only=False, required=False, allow_null=True)
+        # self.fields['transactions'] = PhantomTransactionSerializer(many=True, required=False, allow_null=True)
 
         self.fields['book_transaction_layout'] = serializers.SerializerMethodField()
 
@@ -1169,110 +1166,122 @@ class TransactionTypeProcessSerializer(serializers.Serializer):
         return validated_data
 
     def update(self, instance, validated_data):
-        with db_transaction.atomic():
-            for key, value in validated_data.items():
-                if key == 'complex_transaction':
-                    if self.instance.complex_transaction:
-                        ctrn = self.instance.complex_transaction
-                    else:
-                        ctrn = ComplexTransaction(transaction_type=instance.transaction_type)
-                    ctrn.code = value.get('code', None)
-                    if ctrn.code is None:
-                        ctrn.code = 0
-                    ctrn.status = value.get('status', None)
-                    if ctrn.status is None:
-                        ctrn.status = ComplexTransaction.PRODUCTION
-                    instance.complex_transaction = ctrn
-                else:
-                    setattr(instance, key, value)
+        for key, value in validated_data.items():
+            if key not in ['complex_transaction', ]:
+                setattr(instance, key, value)
 
-            # for key, value in list(instance.values.items()):
-            #     name = instance.get_input_name(key)
-            #     instance.values[name] = value
+        ctrn_values = validated_data.get('complex_transaction', None)
+        if ctrn_values:
+            ctrn_ser = ComplexTransactionSerializer(instance=instance.complex_transaction, context=self.context)
+            ctrn_values = ctrn_values.copy()
 
-            # instance.process_expressions()
+            is_date_was_empty = False
+            if not ctrn_values.get('date', None):
+                ctrn_values['date'] = datetime.date.min
+                is_date_was_empty = True
 
-            if instance.store and instance.complex_transaction.id is not None and instance.complex_transaction.id > 0:
-                instance.complex_transaction.transactions.all().delete()
-
-            if instance.calculate:
-                instance.process()
-
-                if instance.store and not instance.has_errors:
-                    instruments_map = {}
-                    for instrument in instance.instruments:
-                        fake_id = instrument.id
-                        self._save_if_need(instrument)
-                        if fake_id:
-                            instruments_map[fake_id] = instrument
-                    self._save_inputs(instance)
-                    if instance.transactions:
-                        self._save_if_need(instance.complex_transaction)
-                        for transaction in instance.transactions:
-                            if transaction.instrument_id in instruments_map:
-                                transaction.instrument = instruments_map[transaction.instrument_id]
-                            self._save_if_need(transaction)
+            if instance.complex_transaction:
+                ctrn = ctrn_ser.update(ctrn_ser.instance, ctrn_values)
             else:
-                if instance.store:
-                    instruments_map = {}
-                    instruments_data = validated_data.get('instruments', None)
-                    if instruments_data:
-                        for instrument_data in instruments_data:
-                            fake_id = instrument_data.pop('id', None)
-                            instrument = Instrument(master_user=instance.transaction_type.master_user)
-                            for attr, value in instrument_data.items():
-                                setattr(instrument, attr, value)
-                            instrument.save()
-                            instance.instruments.append(instrument)
-                            if fake_id:
-                                instruments_map[fake_id] = instrument
+                ctrn = ctrn_ser.create(ctrn_values)
 
-                    self._save_inputs(instance)
-                    transactions_data = validated_data.get('transactions', None)
-                    if transactions_data:
-                        self._save_if_need(instance.complex_transaction)
-                        for transaction_data in transactions_data:
-                            transaction = Transaction(master_user=instance.transaction_type.master_user)
-                            transaction_data.pop('id', None)
-                            for attr, value in transaction_data.items():
-                                if attr == 'instrument':
-                                    value = value.id
-                                    if value in instruments_map:
-                                        value = instruments_map[value]
-                                    else:
-                                        value = None
-                                setattr(transaction, attr, value)
-                            transaction.complex_transaction = instance.complex_transaction
-                            transaction.save()
-                            instance.transactions.append(transaction)
+            if is_date_was_empty:
+                ctrn.date = None
 
-            instance.complex_transaction._fake_transactions = instance.transactions
+            #
+            # if self.instance.complex_transaction:
+            #     ctrn = self.instance.complex_transaction
+            # else:
+            #     ctrn = ComplexTransaction(transaction_type=instance.transaction_type)
+            # ctrn.code = ctrn_values.get('code', ctrn.code)
+            # ctrn.status = ctrn_values.get('status', ComplexTransaction.PRODUCTION)
+            instance.complex_transaction = ctrn
 
-            if not instance.has_errors and instance.transactions:
-                for trn in instance.transactions:
-                    trn.calc_cash_by_formulas()
+        # for key, value in list(instance.values.items()):
+        #     name = instance.get_input_name(key)
+        #     instance.values[name] = value
 
-            if not instance.store:
-                instance.complex_transaction.id = instance.next_fake_id()
-                instr_map = {}
-                for instr in instance.instruments:
-                    pk = instance.next_fake_id()
-                    instr_map[instr.pk] = pk
-                    instr.pk = pk
-                for trn in instance.transactions:
-                    pk = instance.next_fake_id()
-                    trn.pk = pk
-                    if trn.instrument_id in instr_map:
-                        trn.instrument_id = instr_map[trn.instrument_id]
-                    if trn.linked_instrument_id in instr_map:
-                        trn.linked_instrument_id = instr_map[trn.linked_instrument_id]
-                    if trn.allocation_balance_id in instr_map:
-                        trn.allocation_balance_id = instr_map[trn.allocation_balance_id]
-                    if trn.allocation_pl_id in instr_map:
-                        trn.allocation_pl_id = instr_map[trn.allocation_pl_id]
+        # instance.process_expressions()
 
-            if instance.has_errors:
-                db_transaction.set_rollback(True)
+        # instance.complex_transaction.transactions.all().delete()
+
+        instance.process()
+
+        # if instance.calculate:
+        #     instance.process()
+        #
+        #     if instance.store and not instance.has_errors:
+        #         instruments_map = {}
+        #         for instrument in instance.instruments:
+        #             fake_id = instrument.id
+        #             self._save_if_need(instrument)
+        #             if fake_id:
+        #                 instruments_map[fake_id] = instrument
+        #         self._save_inputs(instance)
+        #         if instance.transactions:
+        #             self._save_if_need(instance.complex_transaction)
+        #             for transaction in instance.transactions:
+        #                 if transaction.instrument_id in instruments_map:
+        #                     transaction.instrument = instruments_map[transaction.instrument_id]
+        #                 self._save_if_need(transaction)
+        # else:
+        #     if instance.store:
+        #         instruments_map = {}
+        #         instruments_data = validated_data.get('instruments', None)
+        #         if instruments_data:
+        #             for instrument_data in instruments_data:
+        #                 fake_id = instrument_data.pop('id', None)
+        #                 instrument = Instrument(master_user=instance.transaction_type.master_user)
+        #                 for attr, value in instrument_data.items():
+        #                     setattr(instrument, attr, value)
+        #                 instrument.save()
+        #                 instance.instruments.append(instrument)
+        #                 if fake_id:
+        #                     instruments_map[fake_id] = instrument
+        #
+        #         self._save_inputs(instance)
+        #         transactions_data = validated_data.get('transactions', None)
+        #         if transactions_data:
+        #             self._save_if_need(instance.complex_transaction)
+        #             for transaction_data in transactions_data:
+        #                 transaction = Transaction(master_user=instance.transaction_type.master_user)
+        #                 transaction_data.pop('id', None)
+        #                 for attr, value in transaction_data.items():
+        #                     if attr == 'instrument':
+        #                         value = value.id
+        #                         if value in instruments_map:
+        #                             value = instruments_map[value]
+        #                         else:
+        #                             value = None
+        #                     setattr(transaction, attr, value)
+        #                 transaction.complex_transaction = instance.complex_transaction
+        #                 transaction.save()
+        #                 instance.transactions.append(transaction)
+        #
+        # instance.complex_transaction._fake_transactions = instance.transactions
+
+        # if not instance.has_errors and instance.transactions:
+        #     for trn in instance.transactions:
+        #         trn.calc_cash_by_formulas()
+
+        # if not instance.store:
+        #     instance.complex_transaction.id = instance.next_fake_id()
+        #     instr_map = {}
+        #     for instr in instance.instruments:
+        #         pk = instance.next_fake_id()
+        #         instr_map[instr.pk] = pk
+        #         instr.pk = pk
+        #     for trn in instance.transactions:
+        #         pk = instance.next_fake_id()
+        #         trn.pk = pk
+        #         if trn.instrument_id in instr_map:
+        #             trn.instrument_id = instr_map[trn.instrument_id]
+        #         if trn.linked_instrument_id in instr_map:
+        #             trn.linked_instrument_id = instr_map[trn.linked_instrument_id]
+        #         if trn.allocation_balance_id in instr_map:
+        #             trn.allocation_balance_id = instr_map[trn.allocation_balance_id]
+        #         if trn.allocation_pl_id in instr_map:
+        #             trn.allocation_pl_id = instr_map[trn.allocation_pl_id]
 
         return instance
 
