@@ -272,11 +272,12 @@ class TransactionTypeAdmin(AbstractModelAdmin):
         # UserObjectPermissionInline,
         # GroupObjectPermissionInline,
     ]
+    save_as = True
 
-    def get_inline_instances(self, request, obj=None):
-        if obj:
-            return super(TransactionTypeAdmin, self).get_inline_instances(request, obj)
-        return []
+    # def get_inline_instances(self, request, obj=None):
+    #     if obj:
+    #         return super(TransactionTypeAdmin, self).get_inline_instances(request, obj)
+    #     return []
 
     # def get_readonly_fields(self, request, obj=None):
     #     fields = super(TransactionTypeAdmin, self).get_readonly_fields(request, obj)
