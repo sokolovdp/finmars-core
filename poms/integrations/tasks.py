@@ -995,8 +995,8 @@ def complex_transaction_csv_file_import(instance):
             for i in scheme_inputs:
                 try:
                     inputs[i.name] = row[i.column]
-                except (IndexError, KeyError, ValueError) as e:
-                    _l.debug('can\'t process input: %s|%s -> %s', i.name, i.column, e)
+                except:
+                    _l.info('can\'t process input: %s|%s', i.name, i.column, exc_info=True)
                     inputs_error.append(i)
             _l.debug('inputs: error=%s, values=%s', [i.name for i in inputs_error], inputs)
             if inputs_error:
@@ -1004,26 +1004,38 @@ def complex_transaction_csv_file_import(instance):
                     'inputs': ', '.join(i.name for i in inputs_error)
                 }
                 instance.error_rows.append(error_rows)
-                continue
+                if instance.break_on_error:
+                    instance.error_row_index = row_index
+                    return
+                else:
+                    continue
 
             try:
                 rule_value = formula.safe_eval(scheme.rule_expr, names=inputs)
-            except formula.InvalidExpression as e:
-                _l.debug('can\'t process rule expression: -> %s', e)
+            except:
+                _l.info('can\'t process rule expression', exc_info=True)
                 error_rows['error_message'] = ugettext('Can\'t eval rule expression')
                 instance.error_rows.append(error_rows)
-                continue
+                if instance.break_on_error:
+                    instance.error_row_index = row_index
+                    return
+                else:
+                    continue
             _l.debug('rule value: %s', rule_value)
 
             try:
                 rule = scheme_rules[rule_value]
-            except KeyError as e:
-                _l.debug('rule does not find: %s - > %s', rule_value, e)
+            except:
+                _l.info('rule does not find: %s', rule_value, exc_info=True)
                 error_rows['error_message'] = ugettext('Can\'t find transaction type by "%(value)s"') % {
                     'value': rule_value
                 }
                 instance.error_rows.append(error_rows)
-                continue
+                if instance.break_on_error:
+                    instance.error_row_index = row_index
+                    return
+                else:
+                    continue
             _l.debug('founded rule: %s -> %s', rule, rule.transaction_type)
 
             fields = {}
@@ -1033,25 +1045,28 @@ def complex_transaction_csv_file_import(instance):
                     field_value = formula.safe_eval(field.value_expr, names=inputs)
                     field_value = _convert_value(field, field_value)
                     fields[field.transaction_type_input.name] = field_value
-                except Exception as e:
-                    _l.debug('can\'t process field: %s|%s -> %s', field.transaction_type_input.name,
-                             field.transaction_type_input.pk, e)
+                except:
+                    _l.info('can\'t process field: %s|%s', field.transaction_type_input.name,
+                            field.transaction_type_input.pk, exc_info=True)
                     fields_error.append(field)
-                    continue
-
             _l.debug('fields (step 1): error=%s, values=%s', fields_error, fields)
             if fields_error:
                 error_rows['error_message'] = ugettext('Can\'t process fields: %(fields)s') % {
                     'fields': ', '.join(f.transaction_type_input.name for f in fields_error)
                 }
                 instance.error_rows.append(error_rows)
-                continue
+                if instance.break_on_error:
+                    instance.error_row_index = row_index
+                    return
+                else:
+                    continue
 
             with transaction.atomic():
                 try:
                     tt_process = TransactionTypeProcess(
                         transaction_type=rule.transaction_type,
                         default_values=fields,
+                        store=True,
                         context={
                             'master_user': instance.master_user,
                             'member': instance.member,
@@ -1059,9 +1074,13 @@ def complex_transaction_csv_file_import(instance):
                     )
                     tt_process.process()
                 except:
+                    _l.info("can't process transaction type", exc_info=True)
                     transaction.set_rollback(True)
-                    _l.debug("can't process transaction type", exc_info=True)
-                    continue
+                    if instance.break_on_error:
+                        instance.error_row_index = row_index
+                        return
+                    else:
+                        continue
                 finally:
                     if settings.DEBUG:
                         transaction.set_rollback(True)
@@ -1075,18 +1094,18 @@ def complex_transaction_csv_file_import(instance):
                 tmpf.flush()
                 with open(tmpf.name, mode='rt', encoding=instance.encoding) as cf:
                     _process_csv_file(cf)
-    except csv.Error:
-        instance.error_message = ugettext("Invalid file format or file already deleted.")
-        _l.debug('Bad file', exc_info=True)
-    except (FileNotFoundError, IOError):
-        instance.error_message = ugettext("Invalid file format or file already deleted.")
-        _l.debug('Bad file', exc_info=True)
+    # except csv.Error:
+    #     _l.info('Can\'t process file', exc_info=True)
+    #     instance.error_message = ugettext("Invalid file format or file already deleted.")
+    # except (FileNotFoundError, IOError):
+    #     _l.info('Can\'t process file', exc_info=True)
+    #     instance.error_message = ugettext("Invalid file format or file already deleted.")
     except:
+        _l.info('Can\'t process file', exc_info=True)
         instance.error_message = ugettext("Invalid file format or file already deleted.")
-        _l.debug('Bad file', exc_info=True)
     finally:
         import_file_storage.delete(instance.file_path)
 
-    instance.error = bool(instance.error_message) or bool(instance.error_rows)
+    instance.error = bool(instance.error_message) or (instance.error_row_index is not None) or bool(instance.error_rows)
 
     return instance
