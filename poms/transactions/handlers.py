@@ -2,9 +2,8 @@ import logging
 from datetime import date
 
 from django.core.exceptions import ObjectDoesNotExist
-from django.utils.translation import ugettext_lazy, ugettext
-from django.db import transaction as db_transaction, DatabaseError, IntegrityError
-from django.db import models
+from django.db import DatabaseError, IntegrityError
+from django.utils.translation import ugettext
 
 from poms.accounts.models import Account
 from poms.common import formula
@@ -259,9 +258,10 @@ class TransactionTypeProcess(object):
                 try:
                     instrument.save()
                 except (ValueError, TypeError, IntegrityError):
-                    errors['non_field_errors'] = ugettext('Invalid instrument action fields (please, use type convertion).')
+                    self._add_err_msg(errors, 'non_field_errors',
+                                      ugettext('Invalid instrument action fields (please, use type convertion).'))
                 except DatabaseError:
-                    errors['non_field_errors'] = ugettext('General DB error.')
+                    self._add_err_msg(errors, 'non_field_errors', ugettext('General DB error.'))
                 else:
                     self._instrument_assign_permission(instrument, object_permissions)
                     instrument_map[action.id] = instrument
@@ -418,9 +418,10 @@ class TransactionTypeProcess(object):
                     transaction.transaction_date = min(transaction.accounting_date, transaction.cash_date)
                     transaction.save()
                 except (ValueError, TypeError, IntegrityError):
-                    errors['non_field_errors'] = ugettext('Invalid transaction action fields (please, use type convertion).')
+                    self._add_err_msg(errors, 'non_field_errors',
+                                      ugettext('Invalid transaction action fields (please, use type convertion).'))
                 except DatabaseError:
-                    errors['non_field_errors'] = ugettext('General DB error.')
+                    self._add_err_msg(errors, 'non_field_errors', ugettext('General DB error.'))
                 else:
                     self.transactions.append(transaction)
                 finally:
@@ -473,10 +474,13 @@ class TransactionTypeProcess(object):
         msg = ugettext('Invalid expression "%(expression)s".') % {
             'expression': expression,
         }
-        msgs = errors.get(attr_name, None) or []
+        return self._add_err_msg(errors, attr_name, msg)
+
+    def _add_err_msg(self, errors, key, msg):
+        msgs = errors.get(key, None) or []
         if msg not in msgs:
-            msgs += [msg]
-            errors[attr_name] = msgs
+            msgs.append(msg)
+            errors[key] = msgs
         return msgs
 
         # def process_expressions(self):
