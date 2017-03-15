@@ -611,12 +611,25 @@ class BloombergDataProvider(AbstractProvider):
         self._response_is_valid(response, pending=True)
         if self._data_is_ready(response):
             result = {}
+            try:
+                fields = response.fields[0]
+            except (AttributeError, KeyError, IndexError):
+                _l.debug('< result=%s', result)
+                return result
             for instrument in response.instrumentDatas[0]:
+                try:
+                    instrument_date = instrument.date
+                except (IndexError, KeyError, AttributeError):
+                    continue
                 instrument_fields = {
-                    'DATE': instrument.date,
+                    'DATE': instrument_date,
                 }
-                for i, field in enumerate(response.fields[0]):
-                    instrument_fields[field] = instrument.data[i]._value
+                for i, field in enumerate(fields):
+                    try:
+                        value = instrument.data[i]._value
+                    except (IndexError, KeyError, AttributeError):
+                        continue
+                    instrument_fields[field] = value
 
                 if instrument.instrument.id in result:
                     result[instrument.instrument.id].append(instrument_fields)
