@@ -1,1 +1,1 @@
-celery -A poms_app worker -B --loglevel=DEBUG
+celery worker --app poms_app --pool solo --beat --loglevel=DEBUG
