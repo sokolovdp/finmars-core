@@ -2,8 +2,9 @@ import logging
 from datetime import date
 
 from django.core.exceptions import ObjectDoesNotExist
-from django.utils.translation import ugettext_lazy
-from django.db import transaction as db_transaction
+from django.utils.translation import ugettext_lazy, ugettext
+from django.db import transaction as db_transaction, DatabaseError, IntegrityError
+from django.db import models
 
 from poms.accounts.models import Account
 from poms.common import formula
@@ -255,12 +256,18 @@ class TransactionTypeProcess(object):
                               target=instrument, target_attr_name='maturity_price',
                               source=action_instrument, source_attr_name='maturity_price')
 
-                instrument.save()
-                self._instrument_assign_permission(instrument, object_permissions)
-
-                instrument_map[action.id] = instrument
-                self.instruments.append(instrument)
-                self.instruments_errors.append(errors)
+                try:
+                    instrument.save()
+                except (ValueError, TypeError, IntegrityError):
+                    errors['non_field_errors'] = ugettext('Invalid instrument action fields (please, use type convertion).')
+                except DatabaseError:
+                    errors['non_field_errors'] = ugettext('General DB error.')
+                else:
+                    self._instrument_assign_permission(instrument, object_permissions)
+                    instrument_map[action.id] = instrument
+                    self.instruments.append(instrument)
+                finally:
+                    self.instruments_errors.append(errors)
 
         # complex_transaction
         complex_transaction_errors = {}
@@ -407,11 +414,17 @@ class TransactionTypeProcess(object):
                 if transaction.cash_date is None:
                     transaction.cash_date = self._now
 
-                transaction.transaction_date = min(transaction.accounting_date, transaction.cash_date)
-                transaction.save()
-
-                self.transactions.append(transaction)
-                self.transactions_errors.append(errors)
+                try:
+                    transaction.transaction_date = min(transaction.accounting_date, transaction.cash_date)
+                    transaction.save()
+                except (ValueError, TypeError, IntegrityError):
+                    errors['non_field_errors'] = ugettext('Invalid transaction action fields (please, use type convertion).')
+                except DatabaseError:
+                    errors['non_field_errors'] = ugettext('General DB error.')
+                else:
+                    self.transactions.append(transaction)
+                finally:
+                    self.transactions_errors.append(errors)
 
         self.has_errors = bool(self.instruments_errors) or \
                           any(bool(e) for e in self.complex_transaction_errors) or \
@@ -457,7 +470,7 @@ class TransactionTypeProcess(object):
         assign_perms3(instr, perms)
 
     def _set_eval_error(self, errors, attr_name, expression, exc=None):
-        msg = ugettext_lazy('Invalid expression "%(expression)s".') % {
+        msg = ugettext('Invalid expression "%(expression)s".') % {
             'expression': expression,
         }
         msgs = errors.get(attr_name, None) or []
