@@ -1206,6 +1206,7 @@ class TransactionTypeProcessSerializer(serializers.Serializer):
         # instance.complex_transaction.transactions.all().delete()
 
         instance.process()
+        self._save_inputs(instance)
 
         # if instance.calculate:
         #     instance.process()
@@ -1285,10 +1286,10 @@ class TransactionTypeProcessSerializer(serializers.Serializer):
 
         return instance
 
-    def _save_if_need(self, obj):
-        if obj.id is None or obj.id < 0:
-            obj.id = None
-            obj.save()
+    # def _save_if_need(self, obj):
+    #     if obj.id is None or obj.id < 0:
+    #         obj.id = None
+    #         obj.save()
 
     def _save_inputs(self, instance):
         instance.complex_transaction.inputs.all().delete()
