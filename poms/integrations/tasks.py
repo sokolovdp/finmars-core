@@ -384,7 +384,7 @@ def download_pricing_async(self, task_id):
             instruments_always.add(i.id)
             if i.pricing_currency_id:
                 currencies_always.add(i.pricing_currency_id)
-            if i.instr.accrued_currency_id:
+            if i.accrued_currency_id:
                 currencies_always.add(i.accrued_currency_id)
 
     for i in currencies:
@@ -444,11 +444,11 @@ def download_pricing_async(self, task_id):
     _l.debug('instruments_by_formula: %s', instruments_by_formula)
 
     currencies_by_scheme = defaultdict(list)
-    for i in currencies:
-        if i.daily_pricing_model_id in [DailyPricingModel.PROVIDER_ALWAYS, DailyPricingModel.PROVIDER_IF_OPEN]:
-            if i.price_download_scheme_id and i.reference_for_pricing:
-                currencies_by_scheme[i.price_download_scheme.id].append(i)
-                price_download_schemes[i.price_download_scheme.id] = i.price_download_scheme
+    for c in currencies:
+        if c.daily_pricing_model_id in [DailyPricingModel.PROVIDER_ALWAYS, DailyPricingModel.PROVIDER_IF_OPEN]:
+            if c.price_download_scheme_id and c.reference_for_pricing:
+                currencies_by_scheme[c.price_download_scheme.id].append(c)
+                price_download_schemes[c.price_download_scheme.id] = c.price_download_scheme
     _l.debug('currencies_by_scheme: %s', currencies_by_scheme)
 
     # sub_tasks = []
