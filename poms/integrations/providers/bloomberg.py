@@ -230,7 +230,7 @@ class BloombergDataProvider(AbstractProvider):
             sleep(settings.BLOOMBERG_RETRY_DELAY)
             _l.debug('|  attempt=%s', attempt)
             result = response_func(response_id)
-            if result:
+            if result is not None:
                 _l.debug('|<')
                 return result
         _l.debug('|< failed')

@@ -5,7 +5,7 @@ import env_ai
 
 django.setup()
 
-from poms.integrations.providers.bloomberg import get_certs_from_file, FakeBloombergDataProvider
+from poms.integrations.providers.bloomberg import get_certs_from_file, FakeBloombergDataProvider, BloombergDataProvider
 
 import logging
 import os
@@ -150,6 +150,8 @@ def test_pricing_history(b):
 
     instrument1 = 'XS1076436218 @BGN Corp'
     instrument2 = 'CH0246198037 @BGN Corp'
+    # instrument1 = 'XS1076436218 Corp'
+    # instrument2 = 'CH0246198037 Corp'
     fields = ["PX_ASK", "PX_BID", "PX_CLOSE", ]
 
     response = b.get_pricing_history_sync(instruments=[instrument1, instrument2],
