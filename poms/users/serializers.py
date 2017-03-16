@@ -300,7 +300,7 @@ class MemberSerializer(serializers.ModelSerializer):
     # url = serializers.HyperlinkedIdentityField(view_name='member-detail')
     master_user = MasterUserField()
     is_current = serializers.SerializerMethodField()
-    join_date = DateTimeTzAwareField()
+    join_date = DateTimeTzAwareField(read_only=True)
     groups = GroupField(many=True, required=False)
     groups_object = serializers.PrimaryKeyRelatedField(source='groups', read_only=True, many=True)
 
