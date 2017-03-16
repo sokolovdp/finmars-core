@@ -177,7 +177,7 @@ class BloombergDataProvider(AbstractProvider):
                 "SOAPAction": ""
             }
             self._soap_client = Client(self._wsdl, headers=headers, transport=transport)
-            _l.info('soap client: %s', self._soap_client)
+            # _l.info('soap client: %s', self._soap_client)
         return self._soap_client
 
     def _response_is_valid(self, response, pending=False, raise_exception=True):
