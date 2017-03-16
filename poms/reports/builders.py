@@ -626,12 +626,15 @@ class VirtualTransaction(_Base):
             except ArithmeticError:
                 self.remaining_pos_size_percent = 0.0
 
-            future_accrual_payments = self.instr.get_future_accrual_payments(
-                d0=self.acc_date,
-                v0=self.trade_price,
-                principal_ccy_fx=self.instr_pricing_ccy_cur_fx,
-                accrual_ccy_fx=self.instr_accrued_ccy_cur_fx
-            )
+            try:
+                future_accrual_payments = self.instr.get_future_accrual_payments(
+                    d0=self.acc_date,
+                    v0=self.trade_price,
+                    principal_ccy_fx=self.instr_pricing_ccy_cur_fx,
+                    accrual_ccy_fx=self.instr_accrued_ccy_cur_fx
+                )
+            except (ValueError, TypeError):
+                future_accrual_payments = False
             self.ytm = f_xirr(future_accrual_payments)
 
             # data = [(self.report.report_date, self.market_value_res)]
@@ -1693,12 +1696,15 @@ class ReportItem(_Base):
                 # Для записка итеративного алгоритма, для x0 из accrued schedule
                 # берем на текущую дату - (accrued_size * accrued_multiplier)/(price * price_multiplier).
                 _l.debug('> future_accrual_payments: instr=%s', self.instr.id)
-                future_accrual_payments = self.instr.get_future_accrual_payments(
-                    d0=self.report.report_date,
-                    v0=self.instr_price_cur_principal_price,
-                    principal_ccy_fx=self.instr_pricing_ccy_cur_fx,
-                    accrual_ccy_fx=self.instr_accrued_ccy_cur_fx
-                )
+                try:
+                    future_accrual_payments = self.instr.get_future_accrual_payments(
+                        d0=self.report.report_date,
+                        v0=self.instr_price_cur_principal_price,
+                        principal_ccy_fx=self.instr_pricing_ccy_cur_fx,
+                        accrual_ccy_fx=self.instr_accrued_ccy_cur_fx
+                    )
+                except (ValueError, TypeError):
+                    future_accrual_payments = False
                 _l.debug('< future_accrual_payments: %s', future_accrual_payments)
                 _l.debug('> ytm: instr=%s', self.instr.id)
                 self.ytm = f_xirr(future_accrual_payments)
