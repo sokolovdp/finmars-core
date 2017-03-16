@@ -1,5 +1,6 @@
 from __future__ import unicode_literals
 
+import logging
 from collections import OrderedDict
 
 from celery.result import AsyncResult
@@ -21,6 +22,9 @@ from poms.common.mixins import BulkModelMixin, DestroyModelFakeMixin, UpdateMode
 from poms.users.utils import get_master_user_and_member
 
 
+_l = logging.getLogger('poms.common')
+
+
 class AbstractApiView(APIView):
     def perform_authentication(self, request):
         super(AbstractApiView, self).perform_authentication(request)
@@ -30,12 +34,11 @@ class AbstractApiView(APIView):
     def initial(self, request, *args, **kwargs):
         super(AbstractApiView, self).initial(request, *args, **kwargs)
 
+        timezone.activate(settings.TIME_ZONE)
         if request.user.is_authenticated():
             master_user = request.user.master_user
             if master_user and master_user.timezone:
                 timezone.activate(master_user.timezone)
-            else:
-                timezone.activate(settings.TIME_ZONE)
 
     def dispatch(self, request, *args, **kwargs):
         if request.method.upper() in permissions.SAFE_METHODS:
@@ -137,7 +140,15 @@ class AbstractAsyncViewSet(AbstractViewSet):
             res = AsyncResult(signer.unsign(task_id))
             if res.ready():
                 instance = res.result
-            if instance.master_user.id != self.request.user.master_user.id:
+
+            _l.info('instance -> %s', instance)
+            _l.info('instance.master_user -> %s', getattr(instance, 'master_user', None))
+            _l.info('request.user -> %s', request.user)
+            _l.info('request.user.master_user -> %s', getattr(request.user, 'master_user', None))
+            _l.info('self.request.user -> %s', self.request.user)
+            _l.info('self.request.user.master_user -> %s', getattr(self.request.user, 'master_user', None))
+
+            if instance.master_user.id != request.user.master_user.id:
                 raise PermissionDenied()
             instance.task_id = task_id
             instance.task_status = res.status
