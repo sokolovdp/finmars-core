@@ -145,6 +145,7 @@ class AbstractAsyncViewSet(AbstractViewSet):
             # _l.info('0.instance.master_user -> %s', getattr(instance, 'master_user', None))
 
             if res.ready():
+                res.maybe_reraise()
                 instance = res.result
 
             # _l.info('instance -> %s', instance)
