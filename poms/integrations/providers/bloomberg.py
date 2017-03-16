@@ -177,7 +177,7 @@ class BloombergDataProvider(AbstractProvider):
                 "SOAPAction": ""
             }
             self._soap_client = Client(self._wsdl, headers=headers, transport=transport)
-            _l.info('soap client: %s', self._soap_client)
+            # _l.info('soap client: %s', self._soap_client)
         return self._soap_client
 
     def _response_is_valid(self, response, pending=False, raise_exception=True):
@@ -386,11 +386,13 @@ class BloombergDataProvider(AbstractProvider):
             "pricing": True,
             "historical": True,
         }
+        instruments = [{"instrument": self._bbg_instr(instrument)}]
 
+        _l.debug('request: instruments=%s, fields=%s, headers=%s', instruments, fields, headers)
         response = self.soap_client.service.submitGetDataRequest(
             headers=headers,
             fields=fields_data,
-            instruments=[{"instrument": self._bbg_instr(instrument)}]
+            instruments=instruments,
         )
         _l.debug('response=%s', response)
         self._response_is_valid(response)
@@ -480,7 +482,7 @@ class BloombergDataProvider(AbstractProvider):
         @return: response_id: used to get data in get_pricing_latest_get_response
         @rtype: str
         """
-        _l.debug('> get_pricing_latest_send_request: instrument=%s', instruments)
+        _l.debug('> get_pricing_latest_send_request: instrument=%s, fields=%s', instruments, fields)
 
         # fields = ['PX_YEST_BID', 'PX_YEST_ASK', 'PX_YEST_CLOSE', 'PX_CLOSE_1D', 'ACCRUED_FACTOR', 'CPN', 'SECURITY_TYP']
 
@@ -501,6 +503,7 @@ class BloombergDataProvider(AbstractProvider):
             "historical": True,
         }
 
+        _l.debug('request: instruments=%s, fields=%s, headers=%s', instruments_data, fields, headers)
         response = self.soap_client.service.submitGetDataRequest(
             headers=headers,
             fields=fields_data,
@@ -557,8 +560,8 @@ class BloombergDataProvider(AbstractProvider):
                                  response_func=self.get_pricing_latest_get_response)
 
     def get_pricing_history_send_request(self, instruments, fields, date_from, date_to):
-        _l.debug('> get_pricing_history_send_request: instrument=%s, date_from=%s, date_to=%s',
-                 instruments, date_from, date_to)
+        _l.debug('> get_pricing_history_send_request: instrument=%s, fields=%s, date_from=%s, date_to=%s',
+                 instruments, fields, date_from, date_to)
 
         if not instruments or not fields or not date_from or not date_to:
             _l.debug('< response_id=%s', None)
@@ -587,6 +590,7 @@ class BloombergDataProvider(AbstractProvider):
         for code in instruments:
             instruments_data.instrument.append(self._bbg_instr(code))
 
+        _l.debug('request: instruments=%s, fields=%s, headers=%s', instruments_data, fields, headers)
         response = self.soap_client.service.submitGetHistoryRequest(
             headers=headers,
             fields=fields_data,
