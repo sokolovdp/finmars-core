@@ -138,6 +138,12 @@ class AbstractAsyncViewSet(AbstractViewSet):
 
         if task_id:
             res = AsyncResult(signer.unsign(task_id))
+
+            _l.info('res.ready() -> %s', res.ready())
+
+            _l.info('0.instance -> %s', instance)
+            _l.info('0.instance.master_user -> %s', getattr(instance, 'master_user', None))
+
             if res.ready():
                 instance = res.result
 
