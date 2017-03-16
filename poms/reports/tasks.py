@@ -29,6 +29,9 @@ def build_report(instance):
             builder = ReportBuilder(instance=instance)
             instance = builder.build()
             return instance
+        except:
+            _l.error('build failed', exc_info=True)
+            raise
         finally:
             transaction.set_rollback(True)
             _l.debug('finished')

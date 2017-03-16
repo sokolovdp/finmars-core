@@ -231,10 +231,11 @@ REDIS_HOST = os.environ.get('REDIS_HOST', '127.0.0.1:6379')
 #     REDIS_HOST = '192.168.57.2:6379'
 
 CACHE_SERIALIZER = "django_redis.serializers.json.JSONSerializer"
+# CACHE_SERIALIZER = "django_redis.serializers.pickle.PickleSerializer"
 CACHE_COMPRESSOR = 'django_redis.compressors.identity.IdentityCompressor'
+# CACHE_COMPRESSOR = 'django_redis.compressors.zlib.ZlibCompressor'
 CACHE_SOCKET_CONNECT_TIMEOUT = 1
 CACHE_SOCKET_TIMEOUT = 1
-# CACHE_COMPRESSOR = 'django_redis.compressors.zlib.ZlibCompressor'
 
 # 1 -> celery
 # 2 -> default
@@ -281,7 +282,7 @@ CACHES = {
         "BACKEND": "django_redis.cache.RedisCache",
         "LOCATION": "redis://%s/4" % REDIS_HOST,
         'KEY_PREFIX': 'throttling',
-        'TIMEOUT': 60,
+        'TIMEOUT': 300,
         'OPTIONS': {
             'SERIALIZER': CACHE_SERIALIZER,
             'COMPRESSOR': CACHE_COMPRESSOR,
@@ -329,11 +330,11 @@ LOGGING = {
             'class': 'logging.StreamHandler',
             'formatter': 'verbose'
         },
-        'mail_admins': {
-            'level': 'ERROR',
-            'class': 'django.utils.log.AdminEmailHandler',
-            'filters': ['require_debug_false']
-        },
+        # 'mail_admins': {
+        #     'level': 'ERROR',
+        #     'class': 'django.utils.log.AdminEmailHandler',
+        #     'filters': ['require_debug_false']
+        # },
     },
     'loggers': {
         'py.warnings': {
@@ -345,11 +346,11 @@ LOGGING = {
             'handlers': ['console'],
             'propagate': False,
         },
-        'django.request': {
-            'handlers': ['console', 'mail_admins'],
-            'level': 'ERROR',
-            'propagate': False,
-        },
+        # 'django.request': {
+        #     'handlers': ['console', 'mail_admins'],
+        #     'level': 'ERROR',
+        #     'propagate': False,
+        # },
         # 'django.db': {
         #     'level': 'DEBUG',
         # },
@@ -407,8 +408,8 @@ REST_FRAMEWORK = {
     'DEFAULT_THROTTLE_RATES': {
         # 'anon': '5/second',
         # 'user': '50/second',
-        'anon': '100/hour',
-        'user': '10000/hour',
+        'anon': '20/min',
+        'user': '200/min',
     },
 
     # 'DATETIME_FORMAT': '%Y-%m-%dT%H:%M:%S %Z',

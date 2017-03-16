@@ -626,12 +626,15 @@ class VirtualTransaction(_Base):
             except ArithmeticError:
                 self.remaining_pos_size_percent = 0.0
 
-            future_accrual_payments = self.instr.get_future_accrual_payments(
-                d0=self.acc_date,
-                v0=self.trade_price,
-                principal_ccy_fx=self.instr_pricing_ccy_cur_fx,
-                accrual_ccy_fx=self.instr_accrued_ccy_cur_fx
-            )
+            try:
+                future_accrual_payments = self.instr.get_future_accrual_payments(
+                    d0=self.acc_date,
+                    v0=self.trade_price,
+                    principal_ccy_fx=self.instr_pricing_ccy_cur_fx,
+                    accrual_ccy_fx=self.instr_accrued_ccy_cur_fx
+                )
+            except (ValueError, TypeError):
+                future_accrual_payments = False
             self.ytm = f_xirr(future_accrual_payments)
 
             # data = [(self.report.report_date, self.market_value_res)]
@@ -1396,7 +1399,10 @@ class ReportItem(_Base):
             item.pos_size = trn.pos_size * (1.0 - trn.multiplier)
             item.cost_res = trn.principal_res * (1.0 - trn.multiplier)
 
-            item.pricing_ccy = trn.instr.pricing_currency
+            if trn.instr:
+                item.pricing_ccy = trn.instr.pricing_currency
+            else:
+                item.pricing_ccy = trn.report.master_user.system_currency
 
             item.gross_cost_res = trn.gross_cost_res
             item.net_cost_res = trn.net_cost_res
@@ -1690,12 +1696,15 @@ class ReportItem(_Base):
                 # Для записка итеративного алгоритма, для x0 из accrued schedule
                 # берем на текущую дату - (accrued_size * accrued_multiplier)/(price * price_multiplier).
                 _l.debug('> future_accrual_payments: instr=%s', self.instr.id)
-                future_accrual_payments = self.instr.get_future_accrual_payments(
-                    d0=self.report.report_date,
-                    v0=self.instr_price_cur_principal_price,
-                    principal_ccy_fx=self.instr_pricing_ccy_cur_fx,
-                    accrual_ccy_fx=self.instr_accrued_ccy_cur_fx
-                )
+                try:
+                    future_accrual_payments = self.instr.get_future_accrual_payments(
+                        d0=self.report.report_date,
+                        v0=self.instr_price_cur_principal_price,
+                        principal_ccy_fx=self.instr_pricing_ccy_cur_fx,
+                        accrual_ccy_fx=self.instr_accrued_ccy_cur_fx
+                    )
+                except (ValueError, TypeError):
+                    future_accrual_payments = False
                 _l.debug('< future_accrual_payments: %s', future_accrual_payments)
                 _l.debug('> ytm: instr=%s', self.instr.id)
                 self.ytm = f_xirr(future_accrual_payments)
@@ -1809,16 +1818,14 @@ class ReportItem(_Base):
                 #  = (Current Price - Gross Cost Price) / Gross Cost Price, if Time Invested in days= 1 day
                 # self.pricing()
                 try:
-                    self.daily_price_change = (
-                                                  self.instr_price_cur.principal_price - self.gross_cost_loc) / self.gross_cost_loc
+                    self.daily_price_change = (self.instr_price_cur_principal_price - self.gross_cost_loc) / self.gross_cost_loc
                 except ArithmeticError:
                     self.daily_price_change = 0.0
             else:
                 #  = (Current Price at T -  Price from Price History at T-1) / (Price from Price History at T-1) , if Time Invested > 1 day
                 price_yest = self.pricing_provider[self.instr, self.report.report_date - timedelta(days=1)]
                 try:
-                    self.daily_price_change = (
-                                                  self.instr_price_cur.principal_price - price_yest.principal_price) / price_yest.principal_price
+                    self.daily_price_change = (self.instr_price_cur_principal_price - price_yest.principal_price) / price_yest.principal_price
                 except ArithmeticError:
                     self.daily_price_change = 0.0
 
@@ -1827,8 +1834,7 @@ class ReportItem(_Base):
                 # T - report date
                 #  = (Current Price - Gross Cost Price) / Gross Cost Price, if Time Invested in days <= Day(Report Date)
                 try:
-                    self.mtd_price_change = (
-                                                self.instr_price_cur.principal_price - self.gross_cost_loc) / self.gross_cost_loc
+                    self.mtd_price_change = (self.instr_price_cur_principal_price - self.gross_cost_loc) / self.gross_cost_loc
                 except ArithmeticError:
                     self.mtd_price_change = 0.0
             else:
@@ -1836,8 +1842,7 @@ class ReportItem(_Base):
                 price_eom = self.pricing_provider[
                     self.instr, self.report.report_date - timedelta(days=self.report.report_date.day)]
                 try:
-                    self.mtd_price_change = (
-                                                self.instr_price_cur.principal_price - price_eom.principal_price) / price_eom.principal_price
+                    self.mtd_price_change = (self.instr_price_cur_principal_price - price_eom.principal_price) / price_eom.principal_price
                 except ArithmeticError:
                     self.mtd_price_change = 0.0
 
