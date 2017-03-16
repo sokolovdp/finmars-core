@@ -1170,7 +1170,12 @@ def get_model_data_ext(instance, context=None, hide_fields=None):
             return []
         many = True
         model = instance[0].__class__
-    elif isinstance(instance, (QuerySet, Manager, BaseManager)):
+    elif isinstance(instance, QuerySet):
+        if not instance:
+            return []
+        many = True
+        model = instance.model
+    elif isinstance(instance, (Manager, BaseManager)):
         if not instance:
             return []
         many = True
