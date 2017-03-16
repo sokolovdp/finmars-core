@@ -1396,7 +1396,10 @@ class ReportItem(_Base):
             item.pos_size = trn.pos_size * (1.0 - trn.multiplier)
             item.cost_res = trn.principal_res * (1.0 - trn.multiplier)
 
-            item.pricing_ccy = trn.instr.pricing_currency
+            if trn.instr:
+                item.pricing_ccy = trn.instr.pricing_currency
+            else:
+                item.pricing_ccy = trn.report.master_user.system_currency
 
             item.gross_cost_res = trn.gross_cost_res
             item.net_cost_res = trn.net_cost_res
