@@ -89,7 +89,7 @@ class GenericObjectPermissionAdmin(AbstractModelAdmin):
     model = GenericObjectPermission
     master_user_path = ('group__master_user', 'member__master_user')
     list_display = ['id', 'master_user', 'group', 'member', 'content_type', 'object_id', 'content_object', 'permission']
-    list_select_related = ['group', 'member', 'content_type', 'permission']
+    # list_select_related = []
     raw_id_fields = ['group', 'member', 'content_type', 'permission']
     list_filter = ['content_type']
     search_fields = ['object_id']
@@ -99,7 +99,14 @@ class GenericObjectPermissionAdmin(AbstractModelAdmin):
 
     def get_queryset(self, request):
         qs = super(GenericObjectPermissionAdmin, self).get_queryset(request)
-        return qs.prefetch_related('content_object')
+        return qs.select_related(
+            'group', 'group__master_user',
+            'member', 'member__master_user',
+            'permission', 'permission__content_type',
+            'content_type',
+        ).prefetch_related(
+            'content_object'
+        )
 
     def formfield_for_foreignkey(self, db_field, request=None, **kwargs):
         if db_field.name == 'permission':
