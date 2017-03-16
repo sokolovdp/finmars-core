@@ -148,16 +148,17 @@ def test_pricing_history(b):
     # instrument1 = {"code": 'XS1433454243', "industry": "Corp"}
     # instrument2 = {"code": 'USL9326VAA46', "industry": "Corp"}
 
-    instrument1 = 'XS1076436218 @BGN Corp'
-    instrument2 = 'CH0246198037 @BGN Corp'
-    # instrument1 = 'XS1076436218 Corp'
-    # instrument2 = 'CH0246198037 Corp'
-    fields = ["PX_ASK", "PX_BID", "PX_CLOSE", ]
+    # instruments = ['XS1076436218 @BGN Corp', 'CH0246198037 @BGN Corp'] # not worked
+    # instruments = ['XS1076436218 Corp', 'CH0246198037 Corp'] # worked
+    # fields = ["PX_ASK", "PX_BID", "PX_CLOSE", ]
 
-    response = b.get_pricing_history_sync(instruments=[instrument1, instrument2],
+    instruments = ['RUBUSD Curncy']
+    fields = ["PX_BID", ]
+
+    response = b.get_pricing_history_sync(instruments=instruments,
                                           fields=fields,
                                           date_from=date(year=2017, month=3, day=1),
-                                          date_to=date(year=2017, month=3, day=15))
+                                          date_to=date(year=2017, month=3, day=2))
 
     # res = {
     #     "USL9326VAA46": [
