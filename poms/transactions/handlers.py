@@ -386,12 +386,14 @@ class TransactionTypeProcess(object):
                     transaction.allocation_pl = instrument_map[action_transaction.allocation_pl_phantom_id]
 
                 self._set_val(errors=errors, values=self.values, default_value=0.0,
+                              target=transaction, target_attr_name='reference_fx_rate',
+                              source=action_transaction, source_attr_name='reference_fx_rate')
+                self._set_val(errors=errors, values=self.values, default_value=0.0,
                               target=transaction, target_attr_name='factor',
                               source=action_transaction, source_attr_name='factor')
                 self._set_val(errors=errors, values=self.values, default_value=0.0,
                               target=transaction, target_attr_name='trade_price',
                               source=action_transaction, source_attr_name='trade_price')
-
                 self._set_val(errors=errors, values=self.values, default_value=0.0,
                               target=transaction, target_attr_name='position_amount',
                               source=action_transaction, source_attr_name='position_amount')
