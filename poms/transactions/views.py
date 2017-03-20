@@ -589,7 +589,7 @@ def get_complex_transaction_queryset(select_related=True, transactions=False):
 
 
 class TransactionViewSet(AbstractModelViewSet):
-    queryset = get_transaction_queryset(complex_transaction_transactions=True)
+    queryset = get_transaction_queryset(select_related=False, complex_transaction_transactions=True)
     # queryset = Transaction.objects.select_related(
     #     'master_user',
     #     'complex_transaction',
@@ -832,7 +832,7 @@ class ComplexTransactionFilterSet(FilterSet):
 
 
 class ComplexTransactionViewSet(AbstractModelViewSet):
-    queryset = get_complex_transaction_queryset(transactions=True)
+    queryset = get_complex_transaction_queryset(select_related=False, transactions=True)
     # queryset = ComplexTransaction.objects.select_related(
     #     'transaction_type',
     #     'transaction_type__group',

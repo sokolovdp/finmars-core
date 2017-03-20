@@ -289,6 +289,11 @@ class TransactionReportBuilder:
             tc[pk] = val
         return val
 
+    def _set_attrs(self, obj):
+        if obj:
+            for a in obj.attributes.all():
+                self._set_ref(a, 'attribute_type', clazz=GenericAttributeType)
+
     def _load(self):
         from poms.obj_attrs.utils import get_attributes_prefetch
 
@@ -302,9 +307,39 @@ class TransactionReportBuilder:
                                                     complex_transaction__is_deleted=False)
         ).prefetch_related(
             'complex_transaction',
-            # 'instrument',
+            'transaction_class',
+            'instrument',
+            'transaction_currency',
+            'settlement_currency',
+            'portfolio',
+            'account_position',
+            'account_cash',
+            'account_interim',
+            'strategy1_position',
+            'strategy1_cash',
+            'strategy2_position',
+            'strategy2_cash',
+            'strategy3_position',
+            'strategy3_cash',
+            'responsible',
+            'counterparty',
+            'linked_instrument',
+            'allocation_balance',
+            'allocation_pl',
             get_attributes_prefetch(),
             get_attributes_prefetch('complex_transaction__attributes'),
+            get_attributes_prefetch('instrument__attributes'),
+            get_attributes_prefetch('transaction_currency__attributes'),
+            get_attributes_prefetch('settlement_currency__attributes'),
+            get_attributes_prefetch('portfolio__attributes'),
+            get_attributes_prefetch('account_position__attributes'),
+            get_attributes_prefetch('account_cash__attributes'),
+            get_attributes_prefetch('account_interim__attributes'),
+            get_attributes_prefetch('responsible__attributes'),
+            get_attributes_prefetch('counterparty__attributes'),
+            get_attributes_prefetch('linked_instrument__attributes'),
+            get_attributes_prefetch('allocation_balance__attributes'),
+            get_attributes_prefetch('allocation_pl__attributes'),
         ).order_by(
             'complex_transaction__date', 'complex_transaction__code', 'transaction_code'
         )
@@ -328,23 +363,28 @@ class TransactionReportBuilder:
             if t.complex_transaction:
                 self._set_ref(t.complex_transaction, 'transaction_type', clazz=TransactionType)
 
-                for a in t.complex_transaction.attributes.all():
-                    self._set_ref(a, 'attribute_type', clazz=GenericAttributeType)
+                # for a in t.complex_transaction.attributes.all():
+                #     self._set_ref(a, 'attribute_type', clazz=GenericAttributeType)
+                self._set_attrs(t.complex_transaction)
 
-                    # if not hasattr(t.complex_transaction, '_fake_transactions'):
-                    #     t.complex_transaction._fake_transactions = []
-                    # t.complex_transaction._fake_transactions.append(t)
             self._set_ref(t, 'transaction_class', clazz=TransactionClass)
             self._set_ref(t, 'instrument', clazz=Instrument)
+            self._set_attrs(t.instrument)
             # if t.instrument:
             #     self._set_ref(t.instrument, 'pricing_currency', clazz=Currency)
             #     self._set_ref(t.instrument, 'accrued_currency', clazz=Currency)
             self._set_ref(t, 'transaction_currency', clazz=Currency)
+            self._set_attrs(t.transaction_currency)
             self._set_ref(t, 'settlement_currency', clazz=Currency)
+            self._set_attrs(t.settlement_currency)
             self._set_ref(t, 'portfolio', clazz=Portfolio)
+            self._set_attrs(t.portfolio)
             self._set_ref(t, 'account_position', clazz=Account)
+            self._set_attrs(t.account_position)
             self._set_ref(t, 'account_cash', clazz=Account)
+            self._set_attrs(t.account_cash)
             self._set_ref(t, 'account_interim', clazz=Account)
+            self._set_attrs(t.account_interim)
             self._set_ref(t, 'strategy1_position', clazz=Strategy1)
             self._set_ref(t, 'strategy1_cash', clazz=Strategy1)
             self._set_ref(t, 'strategy2_position', clazz=Strategy2)
@@ -352,14 +392,21 @@ class TransactionReportBuilder:
             self._set_ref(t, 'strategy3_position', clazz=Strategy3)
             self._set_ref(t, 'strategy3_cash', clazz=Strategy3)
             self._set_ref(t, 'responsible', clazz=Responsible)
+            self._set_attrs(t.responsible)
             self._set_ref(t, 'counterparty', clazz=Counterparty)
+            self._set_attrs(t.counterparty)
             self._set_ref(t, 'linked_instrument', clazz=Instrument)
+            self._set_attrs(t.linked_instrument)
             self._set_ref(t, 'allocation_balance', clazz=Instrument)
+            self._set_attrs(t.allocation_balance)
             self._set_ref(t, 'allocation_pl', clazz=Instrument)
-            if t.id > 0:
-                for a in t.attributes.all():
-                    self._set_ref(a, 'attribute_type', clazz=GenericAttributeType)
-                    # _l.debug('< _set_trns_refs')
+            self._set_attrs(t.allocation_pl)
+
+            # if t.id > 0:
+            #     for a in t.attributes.all():
+            #         self._set_ref(a, 'attribute_type', clazz=GenericAttributeType)
+            #         # _l.debug('< _set_trns_refs')
+            self._set_attrs(t)
 
     def _set_items_refs(self, items):
         for t in items:
