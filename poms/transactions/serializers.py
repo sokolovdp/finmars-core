@@ -924,7 +924,18 @@ class TransactionTextRenderSerializer(TransactionSerializer):
         self.fields.pop('complex_transaction_object')
 
 
+class ComplexTransactionTransactionSerializer(TransactionSerializer):
+    def __init__(self, *args, **kwargs):
+        super(ComplexTransactionTransactionSerializer, self).__init__(*args, **kwargs)
+        self.fields.pop('complex_transaction')
+        self.fields.pop('complex_transaction_object')
+
+
 class ComplexTransactionMixin:
+    # def __init__(self, *args, **kwargs):
+    #     super(ComplexTransactionMixin, self).__init__(*args, **kwargs)
+    #     self.fields['transactions_object2'] = TransactionSerializer(source='transactions', many=True, read_only=True)
+
     def get_text(self, obj):
         # return ''
         if hasattr(obj, '_fake_transactions'):
@@ -957,6 +968,25 @@ class ComplexTransactionMixin:
                     obj._cached_text = ''
             return obj._cached_text
 
+    # def to_representation(self, instance):
+    #     data = super(ComplexTransactionMixin, self).to_representation(instance)
+    #     if 'text' in self.fields:
+    #         if instance.transaction_type.display_expr:
+    #             names = {
+    #                 'complex_transaction': data,
+    #                 'transactions': data.get('transactions', None),
+    #             }
+    #             try:
+    #                 instance._cached_text = formula.safe_eval(instance.transaction_type.display_expr, names=names,
+    #                                                           context=self.context)
+    #             except formula.InvalidExpression:
+    #                 instance._cached_text = '<InvalidExpression>'
+    #         else:
+    #             instance._cached_text = ''
+    #         data['text'] = instance._cached_text
+    #         pass
+    #     return data
+
 
 class ComplexTransactionSerializer(ComplexTransactionMixin, ModelWithAttributesSerializer):
     text = serializers.SerializerMethodField()
@@ -968,7 +998,8 @@ class ComplexTransactionSerializer(ComplexTransactionMixin, ModelWithAttributesS
 
         self.fields['transaction_type_object'] = TransactionTypeViewSerializer(source='transaction_type',
                                                                                read_only=True)
-        self.fields['transactions_object'] = TransactionSerializer(source='transactions', many=True, read_only=True)
+        self.fields['transactions_object'] = ComplexTransactionTransactionSerializer(source='transactions', many=True,
+                                                                                     read_only=True)
 
     class Meta:
         model = ComplexTransaction
