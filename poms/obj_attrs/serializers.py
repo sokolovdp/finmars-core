@@ -356,6 +356,15 @@ class GenericClassifierSerializer(serializers.ModelSerializer):
         fields = ['id', 'name', 'level', 'children', ]
 
 
+class GenericClassifierWithoutChildrenSerializer(serializers.ModelSerializer):
+    id = serializers.IntegerField(read_only=False, required=False, allow_null=True)
+    parent = serializers.PrimaryKeyRelatedField(read_only=True)
+
+    class Meta:
+        model = GenericClassifier
+        fields = ['id', 'name', 'level', 'parent', ]
+
+
 class GenericClassifierNodeSerializer(serializers.ModelSerializer):
     id = serializers.IntegerField(read_only=False, required=False, allow_null=True)
     attribute_type = serializers.PrimaryKeyRelatedField(read_only=True)
@@ -404,11 +413,12 @@ class GenericAttributeTypeSerializer(ModelWithObjectPermissionSerializer, ModelW
     master_user = MasterUserField()
     is_hidden = GenericAttributeTypeOptionIsHiddenField()
     classifiers = GenericClassifierSerializer(required=False, allow_null=True, many=True)
+    classifiers_flat = GenericClassifierWithoutChildrenSerializer(source='classifiers', read_only=True, many=True)
 
     class Meta:
         model = GenericAttributeType
         fields = ['id', 'master_user', 'user_code', 'name', 'short_name', 'public_name', 'notes',
-                  'value_type', 'order', 'is_hidden', 'classifiers']
+                  'value_type', 'order', 'is_hidden', 'classifiers', 'classifiers_flat']
 
     def __init__(self, *args, **kwargs):
         show_classifiers = kwargs.pop('show_classifiers', False)
@@ -416,6 +426,7 @@ class GenericAttributeTypeSerializer(ModelWithObjectPermissionSerializer, ModelW
         super(GenericAttributeTypeSerializer, self).__init__(*args, **kwargs)
         if not show_classifiers:
             self.fields.pop('classifiers', None)
+            self.fields.pop('classifiers_flat', None)
         if read_only_value_type:
             self.fields['value_type'].read_only = True
 
