@@ -972,9 +972,11 @@ class ComplexTransactionMixin:
     #     data = super(ComplexTransactionMixin, self).to_representation(instance)
     #     if 'text' in self.fields:
     #         if instance.transaction_type.display_expr:
+    #             transactions = data.get('transactions_object', None)
+    #             transactions = formula.value_prepare(transactions)
     #             names = {
     #                 'complex_transaction': data,
-    #                 'transactions': data.get('transactions', None),
+    #                 'transactions': transactions,
     #             }
     #             try:
     #                 instance._cached_text = formula.safe_eval(instance.transaction_type.display_expr, names=names,
@@ -1023,13 +1025,26 @@ class ComplexTransactionEvalSerializer(ComplexTransactionSerializer):
 
 class ComplexTransactionViewSerializer(ComplexTransactionMixin, serializers.ModelSerializer):
     text = serializers.SerializerMethodField()
+    transaction_type = serializers.PrimaryKeyRelatedField(read_only=True)
 
     class Meta:
         model = ComplexTransaction
         fields = [
-            'id', 'date', 'status', 'code', 'text'
+            'id', 'date', 'status', 'code', 'text', 'transaction_type',
         ]
 
+    def __init__(self, *args, **kwargs):
+        super(ComplexTransactionViewSerializer, self).__init__(*args, **kwargs)
+        self.fields['transaction_type_object'] = TransactionTypeViewSerializer(source='transaction_type',
+                                                                               read_only=True)
+
+        # self.fields['transactions_object'] = ComplexTransactionTransactionSerializer(source='transactions', many=True,
+        #                                                                              read_only=True)
+
+    def to_representation(self, instance):
+        data = super(ComplexTransactionViewSerializer, self).to_representation(instance)
+        data.pop('transactions_object', None)
+        return data
 
 # TransactionType processing -------------------------------------------------------------------------------------------
 
