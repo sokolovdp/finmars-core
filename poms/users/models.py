@@ -304,7 +304,8 @@ class MasterUser(models.Model):
 
             if dc_user_code != '-' and dc_user_code in ccys:
                 c = ccys[dc_user_code]
-                CurrencyMapping.objects.create(master_user=self, provider=bloomberg, value=dc_bloomberg, currency=c)
+                CurrencyMapping.objects.create(master_user=self, provider=bloomberg, value=dc_bloomberg,
+                                               content_object=c)
 
         self.system_currency = ccy_usd
         self.currency = ccy

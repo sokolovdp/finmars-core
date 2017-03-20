@@ -230,6 +230,7 @@ REDIS_HOST = os.environ.get('REDIS_HOST', '127.0.0.1:6379')
 # if DEBUG and REDIS_HOST == '127.0.0.1:6379':
 #     REDIS_HOST = '192.168.57.2:6379'
 
+CACHE_VERSION = 1
 CACHE_SERIALIZER = "django_redis.serializers.json.JSONSerializer"
 # CACHE_SERIALIZER = "django_redis.serializers.pickle.PickleSerializer"
 CACHE_COMPRESSOR = 'django_redis.compressors.identity.IdentityCompressor'
@@ -247,6 +248,7 @@ CACHES = {
         "LOCATION": "redis://%s/2" % REDIS_HOST,
         'KEY_PREFIX': 'default',
         'TIMEOUT': 300,
+        'VERSION': CACHE_VERSION,
         'OPTIONS': {
             'SERIALIZER': CACHE_SERIALIZER,
             'COMPRESSOR': CACHE_COMPRESSOR,
@@ -271,6 +273,7 @@ CACHES = {
         "LOCATION": "redis://%s/3" % REDIS_HOST,
         'KEY_PREFIX': 'http_session',
         'TIMEOUT': 3600,
+        'VERSION': CACHE_VERSION,
         'OPTIONS': {
             'SERIALIZER': CACHE_SERIALIZER,
             'COMPRESSOR': CACHE_COMPRESSOR,
@@ -283,6 +286,7 @@ CACHES = {
         "LOCATION": "redis://%s/4" % REDIS_HOST,
         'KEY_PREFIX': 'throttling',
         'TIMEOUT': 300,
+        'VERSION': CACHE_VERSION,
         'OPTIONS': {
             'SERIALIZER': CACHE_SERIALIZER,
             'COMPRESSOR': CACHE_COMPRESSOR,

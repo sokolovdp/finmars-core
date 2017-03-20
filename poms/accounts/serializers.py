@@ -29,7 +29,7 @@ class AccountTypeSerializer(ModelWithObjectPermissionSerializer, ModelWithUserCo
     # # tags_object = ReadonlyNamedModelWithObjectPermissionSerializer(source='tags', many=True)
     # tags_object = TagViewSerializer(source='tags', many=True, read_only=True)
 
-    class Meta:
+    class Meta(ModelWithObjectPermissionSerializer.Meta):
         model = AccountType
         fields = [
             'id', 'master_user', 'user_code', 'name', 'short_name', 'public_name', 'notes',
@@ -79,7 +79,7 @@ class AccountSerializer(ModelWithObjectPermissionSerializer, ModelWithAttributes
     # tags = TagField(many=True, required=False, allow_null=True)
     # tags_object = TagViewSerializer(source='tags', many=True, read_only=True)
 
-    class Meta:
+    class Meta(ModelWithObjectPermissionSerializer.Meta):
         model = Account
         fields = [
             'id', 'master_user', 'type','user_code', 'name', 'short_name', 'public_name',
