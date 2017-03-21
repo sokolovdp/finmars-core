@@ -352,6 +352,7 @@ class ReportItemCustomFieldSerializer(serializers.Serializer):
                 not custom_fields_hide_objects or field.field_name not in ('custom_field_object',))
             ]
 
+
 class ReportItemSerializer(serializers.Serializer):
     id = serializers.SerializerMethodField()
 
