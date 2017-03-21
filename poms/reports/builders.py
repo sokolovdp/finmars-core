@@ -1296,6 +1296,7 @@ class ReportItem(_Base):
     dump_columns = [
         # 'is_cloned',
         'type_code',
+        'subtype_code',
         # 'trn',
         'instr',
         'ccy',
@@ -2245,11 +2246,11 @@ class ReportItem(_Base):
                 val = getattr(self, sitem)
                 setattr(self, ditem, val)
 
-        for sitem, ditem  in self.pl_closed_fields:
-            setattr(self, sitem, 0.0)
+        for sitem, ditem in self.pl_closed_fields:
+            setattr(self, sitem, float('nan'))
 
-        for sitem, ditem  in self.pl_opened_fields:
-            setattr(self, sitem, 0.0)
+        for sitem, ditem in self.pl_opened_fields:
+            setattr(self, sitem, float('nan'))
 
 
 class Report(object):
