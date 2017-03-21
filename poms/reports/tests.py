@@ -41,74 +41,99 @@ class ReportTestCase(TestCase):
         self.pp = PricingPolicy.objects.create(master_user=self.m)
 
         self.usd = self.m.system_currency
-        self.eur, _ = Currency.objects.get_or_create(user_code='EUR', master_user=self.m, defaults={'name': 'EUR'})
-        self.chf, _ = Currency.objects.get_or_create(user_code='CHF', master_user=self.m, defaults={'name': 'CHF'})
-        self.cad, _ = Currency.objects.get_or_create(user_code='CAD', master_user=self.m, defaults={'name': 'CAD'})
-        self.mex, _ = Currency.objects.get_or_create(user_code='MEX', master_user=self.m, defaults={'name': 'MEX'})
-        self.rub, _ = Currency.objects.get_or_create(user_code='RUB', master_user=self.m, defaults={'name': 'RUB'})
-        self.gbp, _ = Currency.objects.get_or_create(user_code='GBP', master_user=self.m, defaults={'name': 'GBP'})
+        # self.eur, _ = Currency.objects.get_or_create(user_code='EUR', master_user=self.m, defaults={'name': 'EUR'})
+        # self.chf, _ = Currency.objects.get_or_create(user_code='CHF', master_user=self.m, defaults={'name': 'CHF'})
+        # self.cad, _ = Currency.objects.get_or_create(user_code='CAD', master_user=self.m, defaults={'name': 'CAD'})
+        # self.mex, _ = Currency.objects.get_or_create(user_code='MEX', master_user=self.m, defaults={'name': 'MEX'})
+        # self.rub, _ = Currency.objects.get_or_create(user_code='RUB', master_user=self.m, defaults={'name': 'RUB'})
+        # self.gbp, _ = Currency.objects.get_or_create(user_code='GBP', master_user=self.m, defaults={'name': 'GBP'})
+        self.eur = self._ccy('EUR')
+        self.chf = self._ccy('CHF')
+        self.cad = self._ccy('CAD')
+        self.mex = self._ccy('MEX')
+        self.rub = self._ccy('RUB')
+        self.gbp = self._ccy('GBP')
 
         CurrencyHistory.objects.all().delete()
         for days in range(0, 29):
             d = self._d(days)
-            CurrencyHistory.objects.create(currency=self.eur, pricing_policy=self.pp, date=d, fx_rate=1.3)
-            CurrencyHistory.objects.create(currency=self.chf, pricing_policy=self.pp, date=d, fx_rate=0.9)
-            CurrencyHistory.objects.create(currency=self.cad, pricing_policy=self.pp, date=d, fx_rate=1.2)
-            CurrencyHistory.objects.create(currency=self.mex, pricing_policy=self.pp, date=d, fx_rate=0.15)
-            CurrencyHistory.objects.create(currency=self.rub, pricing_policy=self.pp, date=d, fx_rate=1. / 75.)
-            CurrencyHistory.objects.create(currency=self.gbp, pricing_policy=self.pp, date=d, fx_rate=1.6)
+            # CurrencyHistory.objects.create(currency=self.eur, pricing_policy=self.pp, date=d, fx_rate=1.3)
+            # CurrencyHistory.objects.create(currency=self.chf, pricing_policy=self.pp, date=d, fx_rate=0.9)
+            # CurrencyHistory.objects.create(currency=self.cad, pricing_policy=self.pp, date=d, fx_rate=1.2)
+            # CurrencyHistory.objects.create(currency=self.mex, pricing_policy=self.pp, date=d, fx_rate=0.15)
+            # CurrencyHistory.objects.create(currency=self.rub, pricing_policy=self.pp, date=d, fx_rate=1.0 / 75.0)
+            # CurrencyHistory.objects.create(currency=self.gbp, pricing_policy=self.pp, date=d, fx_rate=1.6)
+            self._ccy_hist(self.eur, d, 1.3)
+            self._ccy_hist(self.chf, d, 0.9)
+            self._ccy_hist(self.cad, d, 1.2)
+            self._ccy_hist(self.mex, d, 0.15)
+            self._ccy_hist(self.rub, d, 1.0 / 75.0)
+            self._ccy_hist(self.gbp, d, 1.6)
 
         d = self._d(30)
-        CurrencyHistory.objects.create(currency=self.eur, pricing_policy=self.pp, date=d, fx_rate=1.2)
-        CurrencyHistory.objects.create(currency=self.chf, pricing_policy=self.pp, date=d, fx_rate=0.8)
-        CurrencyHistory.objects.create(currency=self.cad, pricing_policy=self.pp, date=d, fx_rate=1.1)
-        CurrencyHistory.objects.create(currency=self.mex, pricing_policy=self.pp, date=d, fx_rate=0.1)
-        CurrencyHistory.objects.create(currency=self.rub, pricing_policy=self.pp, date=d, fx_rate=1. / 100.)
-        CurrencyHistory.objects.create(currency=self.gbp, pricing_policy=self.pp, date=d, fx_rate=1.5)
+        # CurrencyHistory.objects.create(currency=self.eur, pricing_policy=self.pp, date=d, fx_rate=1.2)
+        # CurrencyHistory.objects.create(currency=self.chf, pricing_policy=self.pp, date=d, fx_rate=0.8)
+        # CurrencyHistory.objects.create(currency=self.cad, pricing_policy=self.pp, date=d, fx_rate=1.1)
+        # CurrencyHistory.objects.create(currency=self.mex, pricing_policy=self.pp, date=d, fx_rate=0.1)
+        # CurrencyHistory.objects.create(currency=self.rub, pricing_policy=self.pp, date=d, fx_rate=1.0 / 100.0)
+        # CurrencyHistory.objects.create(currency=self.gbp, pricing_policy=self.pp, date=d, fx_rate=1.5)
+        self._ccy_hist(self.eur, d, 1.2)
+        self._ccy_hist(self.chf, d, 0.8)
+        self._ccy_hist(self.cad, d, 1.1)
+        self._ccy_hist(self.mex, d, 0.1)
+        self._ccy_hist(self.rub, d, 1.0 / 100.0)
+        self._ccy_hist(self.gbp, d, 1.5)
 
-        self.bond0 = Instrument.objects.create(master_user=self.m, name="bond0, USD/USD",
-                                               instrument_type=self.m.instrument_type,
-                                               pricing_currency=self.usd, price_multiplier=1.0,
-                                               accrued_currency=self.usd, accrued_multiplier=1.0)
-        self.bond1 = Instrument.objects.create(master_user=self.m, name="bond1, CHF/CHF",
-                                               instrument_type=self.m.instrument_type,
-                                               pricing_currency=self.chf, price_multiplier=0.01,
-                                               accrued_currency=self.chf, accrued_multiplier=0.01)
-        self.bond2 = Instrument.objects.create(master_user=self.m, name="bond2, USD/USD",
-                                               instrument_type=self.m.instrument_type,
-                                               pricing_currency=self.usd, price_multiplier=0.01,
-                                               accrued_currency=self.usd, accrued_multiplier=0.01)
-        self.bond3 = Instrument.objects.create(master_user=self.m, name="bond3, USD/USD",
-                                               instrument_type=self.m.instrument_type,
-                                               pricing_currency=self.usd, price_multiplier=0.01,
-                                               accrued_currency=self.usd, accrued_multiplier=0.01)
-
-        self.stock0 = Instrument.objects.create(master_user=self.m, name="stock1, USD/RUB",
-                                                instrument_type=self.m.instrument_type,
-                                                pricing_currency=self.usd, price_multiplier=1.0,
-                                                accrued_currency=self.usd, accrued_multiplier=1.0)
-        self.stock1 = Instrument.objects.create(master_user=self.m, name="stock1, GBP/RUB",
-                                                instrument_type=self.m.instrument_type,
-                                                pricing_currency=self.gbp, price_multiplier=1.0,
-                                                accrued_currency=self.rub, accrued_multiplier=1.0)
-        self.stock2 = Instrument.objects.create(master_user=self.m, name="stock2, USD/USD",
-                                                instrument_type=self.m.instrument_type,
-                                                pricing_currency=self.usd, price_multiplier=1.0,
-                                                accrued_currency=self.usd, accrued_multiplier=1.0)
+        # self.bond0 = Instrument.objects.create(master_user=self.m, name="bond0, USD/USD",
+        #                                        instrument_type=self.m.instrument_type,
+        #                                        pricing_currency=self.usd, price_multiplier=1.0,
+        #                                        accrued_currency=self.usd, accrued_multiplier=1.0)
+        # self.bond1 = Instrument.objects.create(master_user=self.m, name="bond1, CHF/CHF",
+        #                                        instrument_type=self.m.instrument_type,
+        #                                        pricing_currency=self.chf, price_multiplier=0.01,
+        #                                        accrued_currency=self.chf, accrued_multiplier=0.01)
+        # self.bond2 = Instrument.objects.create(master_user=self.m, name="bond2, USD/USD",
+        #                                        instrument_type=self.m.instrument_type,
+        #                                        pricing_currency=self.usd, price_multiplier=0.01,
+        #                                        accrued_currency=self.usd, accrued_multiplier=0.01)
+        # self.bond3 = Instrument.objects.create(master_user=self.m, name="bond3, USD/USD",
+        #                                        instrument_type=self.m.instrument_type,
+        #                                        pricing_currency=self.usd, price_multiplier=0.01,
+        #                                        accrued_currency=self.usd, accrued_multiplier=0.01)
+        #
+        # self.stock0 = Instrument.objects.create(master_user=self.m, name="stock1, USD/RUB",
+        #                                         instrument_type=self.m.instrument_type,
+        #                                         pricing_currency=self.usd, price_multiplier=1.0,
+        #                                         accrued_currency=self.usd, accrued_multiplier=1.0)
+        # self.stock1 = Instrument.objects.create(master_user=self.m, name="stock1, GBP/RUB",
+        #                                         instrument_type=self.m.instrument_type,
+        #                                         pricing_currency=self.gbp, price_multiplier=1.0,
+        #                                         accrued_currency=self.rub, accrued_multiplier=1.0)
+        # self.stock2 = Instrument.objects.create(master_user=self.m, name="stock2, USD/USD",
+        #                                         instrument_type=self.m.instrument_type,
+        #                                         pricing_currency=self.usd, price_multiplier=1.0,
+        #                                         accrued_currency=self.usd, accrued_multiplier=1.0)
+        self.bond0 = self._instr('bond0', pricing_ccy=self.usd, price_mult=1.0, accrued_ccy=self.usd, accrued_mult=1.0)
+        self.bond1 = self._instr('bond1', pricing_ccy=self.chf, price_mult=0.01, accrued_ccy=self.chf, accrued_mult=0.01)
+        self.bond2 = self._instr('bond2', pricing_ccy=self.usd, price_mult=0.01, accrued_ccy=self.usd, accrued_mult=0.01)
+        self.bond3 = self._instr('bond3', pricing_ccy=self.usd, price_mult=0.01, accrued_ccy=self.usd, accrued_mult=0.01)
+        self.stock0 = self._instr('stock0', pricing_ccy=self.usd, price_mult=1.0, accrued_ccy=self.usd, accrued_mult=1.0)
+        self.stock1 = self._instr('stock1', pricing_ccy=self.gbp, price_mult=1.0, accrued_ccy=self.rub, accrued_mult=1.0)
+        self.stock2 = self._instr('stock2', pricing_ccy=self.usd, price_mult=1.0, accrued_ccy=self.usd, accrued_mult=1.0)
 
         PriceHistory.objects.all().delete()
         for days in range(0, 29):
             d = self._d(days)
-            PriceHistory.objects.create(instrument=self.bond0, pricing_policy=self.pp, date=d, principal_price=1.0,
-                                        accrued_price=1.0)
-            PriceHistory.objects.create(instrument=self.bond1, pricing_policy=self.pp, date=d, principal_price=20.,
-                                        accrued_price=0.5)
-            PriceHistory.objects.create(instrument=self.bond2, pricing_policy=self.pp, date=d, principal_price=20.,
-                                        accrued_price=0.5)
-            PriceHistory.objects.create(instrument=self.stock1, pricing_policy=self.pp, date=d, principal_price=1.5,
-                                        accrued_price=2.0)
-            PriceHistory.objects.create(instrument=self.stock2, pricing_policy=self.pp, date=d, principal_price=1.5,
-                                        accrued_price=2.0)
+            # PriceHistory.objects.create(instrument=self.bond0, pricing_policy=self.pp, date=d, principal_price=1.0, accrued_price=1.0)
+            # PriceHistory.objects.create(instrument=self.bond1, pricing_policy=self.pp, date=d, principal_price=20., accrued_price=0.5)
+            # PriceHistory.objects.create(instrument=self.bond2, pricing_policy=self.pp, date=d, principal_price=20., accrued_price=0.5)
+            # PriceHistory.objects.create(instrument=self.stock1, pricing_policy=self.pp, date=d, principal_price=1.5, accrued_price=2.0)
+            # PriceHistory.objects.create(instrument=self.stock2, pricing_policy=self.pp, date=d, principal_price=1.5, accrued_price=2.0)
+            self._instr_hist(self.bond0, d, 1.0, 1.0)
+            self._instr_hist(self.bond1, d, 20.0, 0.5)
+            self._instr_hist(self.bond2, d, 20.0, 0.5)
+            self._instr_hist(self.stock1, d, 1.5, 2.0)
+            self._instr_hist(self.stock2, d, 1.5, 2.0)
 
         self.at1 = AccountType.objects.create(master_user=self.m, name='at1', show_transaction_details=False)
         self.at2 = AccountType.objects.create(master_user=self.m, name='at2', show_transaction_details=False)
@@ -123,18 +148,42 @@ class ReportTestCase(TestCase):
         self.p3 = Portfolio.objects.create(master_user=self.m, name='p3')
         self.p4 = Portfolio.objects.create(master_user=self.m, name='p4')
 
-        for g_i in range(0, 10):
-            g = Strategy1Group.objects.create(master_user=self.m, name='%s' % (g_i,))
-            setattr(self, 's1_%s' % (g_i,), g)
-            for sg_i in range(0, 10):
-                sg = Strategy1Subgroup.objects.create(master_user=self.m, group=g, name='%s-%s' % (g_i, sg_i))
-                setattr(self, 's1_%s_%s' % (g_i, sg_i), sg)
-                for s_i in range(0, 10):
-                    s = Strategy1.objects.create(master_user=self.m, subgroup=sg, name='%s-%s-%s' % (g_i, sg_i, s_i))
-                    setattr(self, 's1_%s_%s_%s' % (g_i, sg_i, s_i), s)
+        self.s1_1 = Strategy1Group.objects.create(master_user=self.m, name='1')
+        self.s1_1_1 = Strategy1Subgroup.objects.create(master_user=self.m, group=self.s1_1, name='1-1')
+        self.s1_1_1_1 = Strategy1.objects.create(master_user=self.m, subgroup=self.s1_1_1, name='1-1-1')
+        self.s1_1_1_2 = Strategy1.objects.create(master_user=self.m, subgroup=self.s1_1_1, name='1-1-2')
+        self.s1_1_1_3 = Strategy1.objects.create(master_user=self.m, subgroup=self.s1_1_1, name='1-1-3')
+        self.s1_1_1_4 = Strategy1.objects.create(master_user=self.m, subgroup=self.s1_1_1, name='1-1-4')
+        self.s1_1_2 = Strategy1Subgroup.objects.create(master_user=self.m, group=self.s1_1, name='1-2')
+        self.s1_1_2_1 = Strategy1.objects.create(master_user=self.m, subgroup=self.s1_1_2, name='1-2-1')
+        self.s1_1_2_2 = Strategy1.objects.create(master_user=self.m, subgroup=self.s1_1_2, name='1-2-2')
+        self.s1_1_2_3 = Strategy1.objects.create(master_user=self.m, subgroup=self.s1_1_2, name='1-2-3')
+        self.s1_1_2_4 = Strategy1.objects.create(master_user=self.m, subgroup=self.s1_1_2, name='1-2-4')
+        self.s1_2 = Strategy1Group.objects.create(master_user=self.m, name='2')
+        self.s1_2_1 = Strategy1Subgroup.objects.create(master_user=self.m, group=self.s1_2, name='2-1')
+        self.s1_2_1_1 = Strategy1.objects.create(master_user=self.m, subgroup=self.s1_2_1, name='2-1-1')
+        self.s1_2_1_2 = Strategy1.objects.create(master_user=self.m, subgroup=self.s1_2_1, name='2-1-2')
+        self.s1_2_1_3 = Strategy1.objects.create(master_user=self.m, subgroup=self.s1_2_1, name='2-1-3')
+        self.s1_2_1_4 = Strategy1.objects.create(master_user=self.m, subgroup=self.s1_2_1, name='2-1-4')
+        self.s1_2_2 = Strategy1Subgroup.objects.create(master_user=self.m, group=self.s1_2, name='2-2')
+        self.s1_2_2_1 = Strategy1.objects.create(master_user=self.m, subgroup=self.s1_2_2, name='2-2-1')
+        self.s1_2_2_2 = Strategy1.objects.create(master_user=self.m, subgroup=self.s1_2_2, name='2-2-2')
+        self.s1_2_2_3 = Strategy1.objects.create(master_user=self.m, subgroup=self.s1_2_2, name='2-2-3')
+        self.s1_2_2_4 = Strategy1.objects.create(master_user=self.m, subgroup=self.s1_2_2, name='2-2-4')
 
-                    # from django.conf import settings
-                    # settings.DEBUG = True
+        # for g_i in range(0, 10):
+        #     g = Strategy1Group.objects.create(master_user=self.m, name='%s' % (g_i,))
+        #     setattr(self, 's1_%s' % (g_i,), g)
+        #     for sg_i in range(0, 10):
+        #         sg = Strategy1Subgroup.objects.create(master_user=self.m, group=g, name='%s-%s' % (g_i, sg_i))
+        #         setattr(self, 's1_%s_%s' % (g_i, sg_i), sg)
+        #         for s_i in range(0, 10):
+        #             s = Strategy1.objects.create(master_user=self.m, subgroup=sg, name='%s-%s-%s' % (g_i, sg_i, s_i))
+        #             setattr(self, 's1_%s_%s_%s' % (g_i, sg_i, s_i), s)
+
+        # from django.conf import settings
+        # settings.DEBUG = True
+        pass
 
     def _d(self, days=None):
         if days is None or days == 0:
@@ -189,6 +238,31 @@ class ReportTestCase(TestCase):
         if save:
             t.save()
         return t
+
+    def _ccy(self, code, attr=None):
+        val, created = Currency.objects.get_or_create(user_code=code, master_user=self.m, defaults={'name': code})
+        if attr:
+            setattr(self, attr, val)
+        return val
+
+    def _instr(self, code, instr_type=None, pricing_ccy=None, price_mult=1.0, accrued_ccy=None, accrued_mult=1.0,
+               code_fmt='%(code)s %(pricing_ccy)s/%(accrued_ccy)s'):
+        instr_type = instr_type or self.m.instrument_type
+        pricing_ccy = pricing_ccy or self.usd
+        accrued_ccy = accrued_ccy or self.usd
+        return Instrument.objects.create(
+            master_user=self.m,
+            name=code_fmt % {
+                'code': code,
+                'pricing_ccy': pricing_ccy.user_code,
+                'accrued_ccy': accrued_ccy.user_code,
+            },
+            instrument_type=instr_type,
+            pricing_currency=pricing_ccy,
+            price_multiplier=price_mult,
+            accrued_currency=accrued_ccy,
+            accrued_multiplier=accrued_mult
+        )
 
     def _instr_hist(self, instr, d, principal_price, accrued_price):
         return PriceHistory.objects.create(instrument=instr, pricing_policy=self.pp, date=d,
@@ -393,7 +467,7 @@ class ReportTestCase(TestCase):
         b.build()
         self._dump(b, 'test_balance_1')
 
-    def test_build_position_only(self):
+    def _test_build_position_only(self):
         self._t(t_class=self._cash_inflow, stl_ccy=self.usd, trn_ccy=self.usd, position=1000, fx_rate=1.0)
 
         self._t(t_class=self._buy,
