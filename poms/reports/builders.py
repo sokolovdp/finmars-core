@@ -2458,6 +2458,10 @@ class ReportBuilder(object):
         _l.debug('done')
         return self.instance
 
+    def build_pl(self, full=True):
+        self.build(full=full)
+        return self.instance
+
     @cached_property
     def _trn_cls_sell(self):
         return TransactionClass.objects.get(pk=TransactionClass.SELL)

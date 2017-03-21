@@ -2,19 +2,14 @@ from __future__ import unicode_literals
 
 import logging
 
-from celery.result import AsyncResult
-from django.core.signing import TimestampSigner
-from rest_framework import status
-from rest_framework.exceptions import PermissionDenied
 from rest_framework.filters import FilterSet
-from rest_framework.response import Response
 
 from poms.common.filters import NoOpFilter, CharFilter
-from poms.common.views import AbstractViewSet, AbstractModelViewSet, AbstractAsyncViewSet
+from poms.common.views import AbstractModelViewSet, AbstractAsyncViewSet
 from poms.reports.models import CustomField
 from poms.reports.serializers import CustomFieldSerializer, ReportSerializer, TransactionReportSerializer, \
     CashFlowProjectionReportSerializer
-from poms.reports.tasks import build_report, transaction_report, cash_flow_projection_report
+from poms.reports.tasks import balance_report, pl_report, transaction_report, cash_flow_projection_report
 from poms.users.filters import OwnerByMasterUserFilter
 
 _l = logging.getLogger('poms.reports')
@@ -119,9 +114,14 @@ class CustomFieldViewSet(AbstractModelViewSet):
 #             return Response(data, status=status.HTTP_200_OK)
 
 
-class ReportViewSet(AbstractAsyncViewSet):
+class BalanceReportViewSet(AbstractAsyncViewSet):
     serializer_class = ReportSerializer
-    celery_task = build_report
+    celery_task = balance_report
+
+
+class PLReportViewSet(AbstractAsyncViewSet):
+    serializer_class = ReportSerializer
+    celery_task = pl_report
 
 
 class TransactionReportViewSet(AbstractAsyncViewSet):

@@ -131,7 +131,9 @@ router.register(r'ui/template-edit-layout', ui.TemplateEditLayoutViewSet)
 router.register(r'ui/bookmark', ui.BookmarkViewSet)
 
 router.register(r'reports/custom-field', reports.CustomFieldViewSet)
-router.register(r'reports/report', reports.ReportViewSet, "report")
+router.register(r'reports/report', reports.BalanceReportViewSet, "report")
+router.register(r'reports/balance-report', reports.BalanceReportViewSet, "balance-report")
+router.register(r'reports/pl-report', reports.PLReportViewSet, "pl-report")
 router.register(r'reports/transaction-report', reports.TransactionReportViewSet, "transaction-report")
 router.register(r'reports/cash-flow-projection-report', reports.CashFlowProjectionReportViewSet,
                 "cash-flow-projection-report")
