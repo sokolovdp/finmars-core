@@ -1635,7 +1635,7 @@ class ReportItem(_Base):
                     _l.debug('> instr_accrual_accrued_price: instr=%s', self.instr.id)
                     self.instr_accrual_accrued_price = self.instr.get_accrued_price(self.report.report_date,
                                                                                     accrual=self.instr_accrual)
-                    _l.debug('< instr_accrual_accrued_price: %s', self.instr_accrual_accrued_price )
+                    _l.debug('< instr_accrual_accrued_price: %s', self.instr_accrual_accrued_price)
             else:
                 self.instr_principal_res = 0.0
                 self.instr_accrued_res = 0.0
@@ -1818,14 +1818,16 @@ class ReportItem(_Base):
                 #  = (Current Price - Gross Cost Price) / Gross Cost Price, if Time Invested in days= 1 day
                 # self.pricing()
                 try:
-                    self.daily_price_change = (self.instr_price_cur_principal_price - self.gross_cost_loc) / self.gross_cost_loc
+                    self.daily_price_change = (
+                                              self.instr_price_cur_principal_price - self.gross_cost_loc) / self.gross_cost_loc
                 except ArithmeticError:
                     self.daily_price_change = 0.0
             else:
                 #  = (Current Price at T -  Price from Price History at T-1) / (Price from Price History at T-1) , if Time Invested > 1 day
                 price_yest = self.pricing_provider[self.instr, self.report.report_date - timedelta(days=1)]
                 try:
-                    self.daily_price_change = (self.instr_price_cur_principal_price - price_yest.principal_price) / price_yest.principal_price
+                    self.daily_price_change = (
+                                              self.instr_price_cur_principal_price - price_yest.principal_price) / price_yest.principal_price
                 except ArithmeticError:
                     self.daily_price_change = 0.0
 
@@ -1834,7 +1836,8 @@ class ReportItem(_Base):
                 # T - report date
                 #  = (Current Price - Gross Cost Price) / Gross Cost Price, if Time Invested in days <= Day(Report Date)
                 try:
-                    self.mtd_price_change = (self.instr_price_cur_principal_price - self.gross_cost_loc) / self.gross_cost_loc
+                    self.mtd_price_change = (
+                                            self.instr_price_cur_principal_price - self.gross_cost_loc) / self.gross_cost_loc
                 except ArithmeticError:
                     self.mtd_price_change = 0.0
             else:
@@ -1842,7 +1845,8 @@ class ReportItem(_Base):
                 price_eom = self.pricing_provider[
                     self.instr, self.report.report_date - timedelta(days=self.report.report_date.day)]
                 try:
-                    self.mtd_price_change = (self.instr_price_cur_principal_price - price_eom.principal_price) / price_eom.principal_price
+                    self.mtd_price_change = (
+                                            self.instr_price_cur_principal_price - price_eom.principal_price) / price_eom.principal_price
                 except ArithmeticError:
                     self.mtd_price_change = 0.0
 
@@ -2460,6 +2464,13 @@ class ReportBuilder(object):
 
     def build_pl(self, full=True):
         self.build(full=full)
+
+        items = []
+        for oitem in self.instance.items:
+            nitem = oitem.clone()
+            items.append(nitem)
+
+        self.instance.items = items
         return self.instance
 
     @cached_property
@@ -2528,19 +2539,46 @@ class ReportBuilder(object):
             'linked_instrument',
             # 'linked_instrument__instrument_type',
             # 'linked_instrument__instrument_type__instrument_class',
+            # 'linked_instrument__pricing_currency',
+            # 'linked_instrument__accrued_currency',
+            # 'linked_instrument__accrual_calculation_schedules',
+            # 'linked_instrument__accrual_calculation_schedules__accrual_calculation_model',
+            # 'linked_instrument__accrual_calculation_schedules__periodicity',
             'allocation_balance',
             # 'allocation_balance__instrument_type',
             # 'allocation_balance__instrument_type__instrument_class',
+            # 'allocation_balance__pricing_currency',
+            # 'allocation_balance__accrued_currency',
+            # 'allocation_balance__accrual_calculation_schedules',
+            # 'allocation_balance__accrual_calculation_schedules__accrual_calculation_model',
+            # 'allocation_balance__accrual_calculation_schedules__periodicity',
             'allocation_pl',
             # 'allocation_pl__instrument_type',
             # 'allocation_pl__instrument_type__instrument_class',
-            # get_attributes_prefetch_by_path('portfolio__attributes'),
-            # get_attributes_prefetch_by_path('instrument__attributes'),
-            # get_attributes_prefetch_by_path('account_cash__attributes'),
-            # get_attributes_prefetch_by_path('account_position__attributes'),
-            # get_attributes_prefetch_by_path('account_interim__attributes'),
-            # get_attributes_prefetch_by_path('transaction_currency__attributes'),
-            # get_attributes_prefetch_by_path('settlement_currency__attributes'),
+            # 'allocation_pl__pricing_currency',
+            # 'allocation_pl__accrued_currency',
+            # 'allocation_pl__accrual_calculation_schedules',
+            # 'allocation_pl__accrual_calculation_schedules__accrual_calculation_model',
+            # 'allocation_pl__accrual_calculation_schedules__periodicity',
+
+            # get_attributes_prefetch(path='portfolio__attributes'),
+            # get_attributes_prefetch(path='instrument__attributes'),
+            # get_attributes_prefetch(path='instrument__pricing_currency__attributes'),
+            # get_attributes_prefetch(path='instrument__accrued_currency__attributes'),
+            # get_attributes_prefetch(path='account_cash__attributes'),
+            # get_attributes_prefetch(path='account_position__attributes'),
+            # get_attributes_prefetch(path='account_interim__attributes'),
+            # get_attributes_prefetch(path='transaction_currency__attributes'),
+            # get_attributes_prefetch(path='settlement_currency__attributes'),
+            # get_attributes_prefetch(path='linked_instrument__attributes'),
+            # get_attributes_prefetch(path='linked_instrument__pricing_currency__attributes'),
+            # get_attributes_prefetch(path='linked_instrument__accrued_currency__attributes'),
+            # get_attributes_prefetch(path='allocation_balance__attributes'),
+            # get_attributes_prefetch(path='allocation_balance__pricing_currency__attributes'),
+            # get_attributes_prefetch(path='allocation_balance__accrued_currency__attributes'),
+            # get_attributes_prefetch(path='allocation_pl__attributes'),
+            # get_attributes_prefetch(path='allocation_pl__pricing_currency__attributes'),
+            # get_attributes_prefetch(path='allocation_pl__accrued_currency__attributes'),
             # *get_permissions_prefetch_lookups(
             #     ('portfolio', Portfolio),
             #     ('instrument', Instrument),
@@ -3348,14 +3386,23 @@ class ReportBuilder(object):
         for i in self.instance.items:
             if i.instr:
                 instrs.add(i.instr.id)
+                if i.instr.pricing_currency_id:
+                    ccys.add(i.instr.pricing_currency_id)
+                if i.instr.accrued_currency_id:
+                    ccys.add(i.instr.accrued_currency_id)
+
             if i.ccy:
                 ccys.add(i.ccy.id)
             if i.trn_ccy:
                 ccys.add(i.trn_ccy.id)
+            if i.pricing_ccy:
+                ccys.add(i.pricing_ccy.id)
+
             if i.prtfl:
                 prtfls.add(i.prtfl.id)
             if i.acc:
                 accs.add(i.acc.id)
+
             if i.str1:
                 strs1.add(i.str1.id)
             if i.str2:
@@ -3370,9 +3417,19 @@ class ReportBuilder(object):
 
             if i.alloc_bl:
                 instrs.add(i.alloc_bl.id)
+                if i.alloc_bl.pricing_currency_id:
+                    ccys.add(i.alloc_bl.pricing_currency_id)
+                if i.alloc_bl.accrued_currency_id:
+                    ccys.add(i.alloc_bl.accrued_currency_id)
+
             if i.alloc_pl:
                 instrs.add(i.alloc_pl.id)
+                if i.alloc_pl.pricing_currency_id:
+                    ccys.add(i.alloc_pl.pricing_currency_id)
+                if i.alloc_pl.accrued_currency_id:
+                    ccys.add(i.alloc_pl.accrued_currency_id)
 
+        _l.debug('instrs' + '-' * 79)
         instrs = Instrument.objects.filter(master_user=self.instance.master_user).prefetch_related(
             'master_user', 'instrument_type', 'instrument_type__instrument_class',
             'pricing_currency', 'accrued_currency', 'payment_size_detail', 'daily_pricing_model',
@@ -3384,11 +3441,17 @@ class ReportBuilder(object):
                 ('instrument_type', InstrumentType),
             )
         ).in_bulk(instrs)
+        _l.debug('instrs: %s', sorted(instrs.keys()))
+
+        _l.debug('ccys' + '-' * 79)
         ccys = Currency.objects.filter(master_user=self.instance.master_user).prefetch_related(
             'master_user', 'daily_pricing_model', 'price_download_scheme', 'price_download_scheme__provider',
             get_attributes_prefetch(),
             get_tag_prefetch()
         ).in_bulk(ccys)
+        _l.debug('ccys: %s', sorted(ccys.keys()))
+
+        _l.debug('prtfls' + '-' * 79)
         prtfls = Portfolio.objects.filter(master_user=self.instance.master_user).prefetch_related(
             'master_user',
             get_attributes_prefetch(),
@@ -3397,6 +3460,9 @@ class ReportBuilder(object):
                 (None, Portfolio),
             )
         ).in_bulk(prtfls)
+        _l.debug('prtfls: %s', sorted(prtfls.keys()))
+
+        _l.debug('accs' + '-' * 79)
         accs = Account.objects.filter(master_user=self.instance.master_user).prefetch_related(
             'master_user', 'type',
             get_attributes_prefetch(),
@@ -3406,6 +3472,9 @@ class ReportBuilder(object):
                 ('type', AccountType),
             )
         ).in_bulk(accs)
+        _l.debug('accs: %s', sorted(accs.keys()))
+
+        _l.debug('strs1' + '-' * 79)
         strs1 = Strategy1.objects.filter(master_user=self.instance.master_user).prefetch_related(
             'master_user', 'subgroup', 'subgroup__group',
             get_tag_prefetch(),
@@ -3415,6 +3484,9 @@ class ReportBuilder(object):
                 ('subgroup__group', Strategy1Group),
             )
         ).in_bulk(strs1)
+        _l.debug('strs1: %s', sorted(strs1.keys()))
+
+        _l.debug('strs2' + '-' * 79)
         strs2 = Strategy2.objects.filter(master_user=self.instance.master_user).prefetch_related(
             'master_user', 'subgroup', 'subgroup__group',
             get_tag_prefetch(),
@@ -3424,6 +3496,9 @@ class ReportBuilder(object):
                 ('subgroup__group', Strategy2Group),
             )
         ).in_bulk(strs2)
+        _l.debug('strs2: %s', sorted(strs2.keys()))
+
+        _l.debug('strs3' + '-' * 79)
         strs3 = Strategy3.objects.filter(master_user=self.instance.master_user).prefetch_related(
             'master_user', 'subgroup', 'subgroup__group',
             get_tag_prefetch(),
@@ -3433,18 +3508,28 @@ class ReportBuilder(object):
                 ('subgroup__group', Strategy3Group),
             )
         ).in_bulk(strs3)
+        _l.debug('strs3: %s', sorted(strs3.keys()))
 
         for i in self.instance.items:
             if i.instr:
                 i.instr = instrs[i.instr.id]
+                if i.instr.pricing_currency_id:
+                    i.instr.pricing_currency = ccys[i.instr.pricing_currency_id]
+                if i.instr.accrued_currency_id:
+                    i.instr.accrued_currency = ccys[i.instr.accrued_currency_id]
+
             if i.ccy:
                 i.ccy = ccys[i.ccy.id]
             if i.trn_ccy:
                 i.trn_ccy = ccys[i.trn_ccy.id]
+            if i.pricing_ccy:
+                i.pricing_ccy = ccys[i.pricing_ccy.id]
+
             if i.prtfl:
                 i.prtfl = prtfls[i.prtfl.id]
             if i.acc:
                 i.acc = accs[i.acc.id]
+
             if i.str1:
                 i.str1 = strs1[i.str1.id]
             if i.str2:
@@ -3459,5 +3544,14 @@ class ReportBuilder(object):
 
             if i.alloc_bl:
                 i.alloc_bl = instrs[i.alloc_bl.id]
+                if i.alloc_bl.pricing_currency_id:
+                    i.alloc_bl.pricing_currency = ccys[i.alloc_bl.pricing_currency_id]
+                if i.alloc_bl.accrued_currency_id:
+                    i.alloc_bl.accrued_currency = ccys[i.alloc_bl.accrued_currency_id]
+
             if i.alloc_pl:
                 i.alloc_pl = instrs[i.alloc_pl.id]
+                if i.alloc_pl.pricing_currency_id:
+                    i.alloc_pl.pricing_currency = ccys[i.alloc_pl.pricing_currency_id]
+                if i.alloc_pl.accrued_currency_id:
+                    i.alloc_pl.accrued_currency = ccys[i.alloc_pl.accrued_currency_id]
