@@ -3,6 +3,7 @@ from __future__ import unicode_literals
 from django.conf import settings
 from django.contrib.auth import get_user_model, authenticate
 from django.contrib.auth.models import User
+from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import PermissionDenied
 from django.utils import translation
 from django.utils.translation import ugettext_lazy
@@ -69,18 +70,18 @@ class UserRegisterSerializer(serializers.Serializer):
         return validated_data
 
 
-class PasswordChangeSerializer(serializers.Serializer):
-    password = serializers.CharField(required=True, max_length=128, style={'input_type': 'password'})
-    new_password = serializers.CharField(required=True, max_length=128, style={'input_type': 'password'})
-
-    def create(self, validated_data):
-        user = get_user_from_context(self.context)
-        password = validated_data['password']
-        if user.check_password(password):
-            new_password = validated_data['new_password']
-            user.set_password(new_password)
-            return validated_data
-        raise PermissionDenied(ugettext_lazy('Invalid password'))
+# class PasswordChangeSerializer(serializers.Serializer):
+#     password = serializers.CharField(required=True, max_length=128, style={'input_type': 'password'})
+#     new_password = serializers.CharField(required=True, max_length=128, style={'input_type': 'password'})
+#
+#     def create(self, validated_data):
+#         user = get_user_from_context(self.context)
+#         password = validated_data['password']
+#         if user.check_password(password):
+#             new_password = validated_data['new_password']
+#             user.set_password(new_password)
+#             return validated_data
+#         raise PermissionDenied(ugettext_lazy('Invalid password'))
 
 
 class UserProfileSerializer(serializers.ModelSerializer):
@@ -135,13 +136,24 @@ class UserSetPasswordSerializer(serializers.Serializer):
 
     def validate(self, attrs):
         user = get_user_from_context(self.context)
-        if not user.check_password(attrs['password']):
-            raise serializers.ValidationError({'password': 'bad password'})
+        password = attrs['password']
+        new_password = attrs['new_password']
+
+        if not user.check_password(password):
+            raise serializers.ValidationError({'password': ugettext_lazy('bad password')})
+
+        try:
+            validate_password(new_password, user)
+        except serializers.DjangoValidationError as e:
+            raise serializers.ValidationError({'new_password': e.messages})
+
         return attrs
 
     def create(self, validated_data):
         user = get_user_from_context(self.context)
-        user.set_password(validated_data['new_password'])
+        new_password = validated_data['new_password']
+        user.set_password(new_password)
+        # user.save()
         return validated_data
 
     def update(self, instance, validated_data):
