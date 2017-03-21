@@ -1001,7 +1001,19 @@ class ReportItem(_Base):
         # (TYPE_INVESTED_SUMMARY, 'Invested summary'),
     )
 
-    type = None
+    SUBTYPE_UNKNOWN = 0
+    SUBTYPE_TOTAL = 1
+    SUBTYPE_OPENED = 2
+    SUBTYPE_CLOSED = 2
+    SUBTYPE_CHOICES = (
+        (SUBTYPE_UNKNOWN, ugettext_lazy('Unknown')),
+        (SUBTYPE_TOTAL, ugettext_lazy('Total')),
+        (SUBTYPE_OPENED, ugettext_lazy('Opened')),
+        (SUBTYPE_CLOSED, ugettext_lazy('Closed')),
+    )
+
+    type = TYPE_UNKNOWN
+    subtype = SUBTYPE_UNKNOWN
     trn = None
 
     instr = None
@@ -1947,6 +1959,29 @@ class ReportItem(_Base):
         #
         # elif self.type == ReportItem.TYPE_INVESTED_SUMMARY:
         #     return 'INV_SUMMARY'
+
+        return 'ERR'
+
+    @property
+    def subtype_name(self):
+        for i, n in ReportItem.SUBTYPE_CHOICES:
+            if i == self.subtype:
+                return n
+        return 'ERR'
+
+    @property
+    def subtype_code(self):
+        if self.subtype == ReportItem.SUBTYPE_UNKNOWN:
+            return 'UNKNOWN'
+
+        elif self.subtype == ReportItem.SUBTYPE_TOTAL:
+            return 'TOTAL'
+
+        elif self.subtype == ReportItem.SUBTYPE_OPENED:
+            return 'OPENED'
+
+        elif self.subtype == ReportItem.SUBTYPE_CLOSED:
+            return 'CLOSED'
 
         return 'ERR'
 
