@@ -1,7 +1,7 @@
 from __future__ import unicode_literals
 
 from django.conf import settings
-from django.contrib.auth import get_user_model, authenticate
+from django.contrib.auth import get_user_model, authenticate, update_session_auth_hash
 from django.contrib.auth.models import User
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import PermissionDenied
@@ -153,6 +153,7 @@ class UserSetPasswordSerializer(serializers.Serializer):
         user = get_user_from_context(self.context)
         user.set_password(validated_data['new_password'])
         user.save(update_fields=['password'])
+        update_session_auth_hash(self.context['request'], user)
         return validated_data
 
     def update(self, instance, validated_data):
