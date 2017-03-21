@@ -1003,13 +1003,13 @@ class ReportItem(_Base):
 
     SUBTYPE_UNKNOWN = 0
     SUBTYPE_TOTAL = 1
-    SUBTYPE_OPENED = 2
     SUBTYPE_CLOSED = 2
+    SUBTYPE_OPENED = 3
     SUBTYPE_CHOICES = (
         (SUBTYPE_UNKNOWN, ugettext_lazy('Unknown')),
         (SUBTYPE_TOTAL, ugettext_lazy('Total')),
-        (SUBTYPE_OPENED, ugettext_lazy('Opened')),
         (SUBTYPE_CLOSED, ugettext_lazy('Closed')),
+        (SUBTYPE_OPENED, ugettext_lazy('Opened')),
     )
 
     type = TYPE_UNKNOWN
@@ -1191,6 +1191,107 @@ class ReportItem(_Base):
     carry_fixed_opened_loc = 0.0
     overheads_fixed_opened_loc = 0.0
     total_fixed_opened_loc = 0.0
+
+    pl_total_fields = [
+        # full ----------------------------------------------------
+        ('principal_res', None),
+        ('carry_res', None),
+        ('overheads_res', None),
+        ('total_res', None),
+
+        ('principal_loc', None),
+        ('carry_loc', None),
+        ('overheads_loc', None),
+        ('total_loc', None),
+
+        # fx ----------------------------------------------------
+        ('principal_fx_res', None),
+        ('carry_fx_res', None),
+        ('overheads_fx_res', None),
+        ('total_fx_res', None),
+
+        ('principal_fx_loc', None),
+        ('carry_fx_loc', None),
+        ('overheads_fx_loc', None),
+        ('total_fx_loc', None),
+        # fixed ----------------------------------------------------
+        ('principal_fixed_res', None),
+        ('carry_fixed_res', None),
+        ('overheads_fixed_res', None),
+        ('total_fixed_res', None),
+
+        ('principal_fixed_loc', None),
+        ('carry_fixed_loc', None),
+        ('overheads_fixed_loc', None),
+        ('total_fixed_loc', None),
+    ]
+    pl_closed_fields = [
+        # full / closed ----------------------------------------------------
+        ('principal_closed_res', None),
+        ('carry_closed_res', None),
+        ('overheads_closed_res', None),
+        ('total_closed_res', None),
+
+        ('principal_closed_loc', None),
+        ('carry_closed_loc', None),
+        ('overheads_closed_loc', None),
+        ('total_closed_loc', None),
+
+        # fx / closed ----------------------------------------------------
+        ('principal_fx_closed_res', None),
+        ('carry_fx_closed_res', None),
+        ('overheads_fx_closed_res', None),
+        ('total_fx_closed_res', None),
+
+        ('principal_fx_closed_loc', None),
+        ('carry_fx_closed_loc', None),
+        ('overheads_fx_closed_loc', None),
+        ('total_fx_closed_loc', None),
+        # fixed / closed ----------------------------------------------------
+        ('principal_fixed_closed_res', None),
+        ('carry_fixed_closed_res', None),
+        ('overheads_fixed_closed_res', None),
+        ('total_fixed_closed_res', None),
+
+        ('principal_fixed_closed_loc', None),
+        ('carry_fixed_closed_loc', None),
+        ('overheads_fixed_closed_loc', None),
+        ('total_fixed_closed_loc', None),
+    ]
+    pl_opened_fields = [
+        # full / opened ----------------------------------------------------
+        ('principal_opened_res', None),
+        ('carry_opened_res', None),
+        ('overheads_opened_res', None),
+        ('total_opened_res', None),
+
+        ('principal_opened_loc', None),
+        ('carry_opened_loc', None),
+        ('overheads_opened_loc', None),
+        ('total_opened_loc', None),
+
+        # fx / opened ----------------------------------------------------
+        ('principal_fx_opened_res', None),
+        ('carry_fx_opened_res', None),
+        ('overheads_fx_opened_res', None),
+        ('total_fx_opened_res', None),
+
+        ('principal_fx_opened_loc', None),
+        ('carry_fx_opened_loc', None),
+        ('overheads_fx_opened_loc', None),
+        ('total_fx_opened_loc', None),
+
+        # fixed / opened ----------------------------------------------------
+        ('principal_fixed_opened_res', None),
+        ('carry_fixed_opened_res', None),
+        ('overheads_fixed_opened_res', None),
+        ('total_fixed_opened_res', None),
+
+        ('principal_fixed_opened_loc', None),
+        ('carry_fixed_opened_loc', None),
+        ('overheads_fixed_opened_loc', None),
+        ('total_fixed_opened_loc', None),
+    ]
 
     dump_columns = [
         # 'is_cloned',
@@ -1831,7 +1932,7 @@ class ReportItem(_Base):
                 # self.pricing()
                 try:
                     self.daily_price_change = (
-                                              self.instr_price_cur_principal_price - self.gross_cost_loc) / self.gross_cost_loc
+                                                  self.instr_price_cur_principal_price - self.gross_cost_loc) / self.gross_cost_loc
                 except ArithmeticError:
                     self.daily_price_change = 0.0
             else:
@@ -1839,7 +1940,7 @@ class ReportItem(_Base):
                 price_yest = self.pricing_provider[self.instr, self.report.report_date - timedelta(days=1)]
                 try:
                     self.daily_price_change = (
-                                              self.instr_price_cur_principal_price - price_yest.principal_price) / price_yest.principal_price
+                                                  self.instr_price_cur_principal_price - price_yest.principal_price) / price_yest.principal_price
                 except ArithmeticError:
                     self.daily_price_change = 0.0
 
@@ -1849,7 +1950,7 @@ class ReportItem(_Base):
                 #  = (Current Price - Gross Cost Price) / Gross Cost Price, if Time Invested in days <= Day(Report Date)
                 try:
                     self.mtd_price_change = (
-                                            self.instr_price_cur_principal_price - self.gross_cost_loc) / self.gross_cost_loc
+                                                self.instr_price_cur_principal_price - self.gross_cost_loc) / self.gross_cost_loc
                 except ArithmeticError:
                     self.mtd_price_change = 0.0
             else:
@@ -1858,7 +1959,7 @@ class ReportItem(_Base):
                     self.instr, self.report.report_date - timedelta(days=self.report.report_date.day)]
                 try:
                     self.mtd_price_change = (
-                                            self.instr_price_cur_principal_price - price_eom.principal_price) / price_eom.principal_price
+                                                self.instr_price_cur_principal_price - price_eom.principal_price) / price_eom.principal_price
                 except ArithmeticError:
                     self.mtd_price_change = 0.0
 
@@ -1977,11 +2078,11 @@ class ReportItem(_Base):
         elif self.subtype == ReportItem.SUBTYPE_TOTAL:
             return 'TOTAL'
 
-        elif self.subtype == ReportItem.SUBTYPE_OPENED:
-            return 'OPENED'
-
         elif self.subtype == ReportItem.SUBTYPE_CLOSED:
             return 'CLOSED'
+
+        elif self.subtype == ReportItem.SUBTYPE_OPENED:
+            return 'OPENED'
 
         return 'ERR'
 
@@ -2125,6 +2226,30 @@ class ReportItem(_Base):
                 'value': value
             })
         self.custom_fields = res
+
+    def overwrite_pl_fields_by_subtype(self):
+        if self.subtype == ReportItem.SUBTYPE_TOTAL:
+            pass
+
+        elif self.subtype == ReportItem.SUBTYPE_CLOSED:
+            for sitem, ditem in self.pl_closed_fields:
+                if ditem is None:
+                    ditem = str(sitem).replace('closed_', '')
+                val = getattr(self, sitem)
+                setattr(self, ditem, val)
+
+        elif self.subtype == ReportItem.SUBTYPE_OPENED:
+            for sitem, ditem in self.pl_opened_fields:
+                if ditem is None:
+                    ditem = str(sitem).replace('opene_', '')
+                val = getattr(self, sitem)
+                setattr(self, ditem, val)
+
+        for sitem, ditem  in self.pl_closed_fields:
+            setattr(self, sitem, 0.0)
+
+        for sitem, ditem  in self.pl_opened_fields:
+            setattr(self, sitem, 0.0)
 
 
 class Report(object):
@@ -2502,8 +2627,24 @@ class ReportBuilder(object):
 
         items = []
         for oitem in self.instance.items:
-            nitem = oitem.clone()
-            items.append(nitem)
+            if oitem.type in [ReportItem.TYPE_INSTRUMENT]:
+                nitem = oitem.clone()
+                nitem.subtype = ReportItem.SUBTYPE_TOTAL
+                nitem.overwrite_pl_fields_by_subtype()
+                items.append(nitem)
+
+                nitem = oitem.clone()
+                nitem.subtype = ReportItem.SUBTYPE_CLOSED
+                nitem.overwrite_pl_fields_by_subtype()
+                items.append(nitem)
+
+                nitem = oitem.clone()
+                nitem.subtype = ReportItem.SUBTYPE_OPENED
+                nitem.overwrite_pl_fields_by_subtype()
+                items.append(nitem)
+
+            else:
+                items.append(oitem)
 
         self.instance.items = items
         return self.instance
