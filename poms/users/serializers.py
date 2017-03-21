@@ -151,9 +151,8 @@ class UserSetPasswordSerializer(serializers.Serializer):
 
     def create(self, validated_data):
         user = get_user_from_context(self.context)
-        new_password = validated_data['new_password']
-        user.set_password(new_password)
-        # user.save()
+        user.set_password(validated_data['new_password'])
+        user.save(update_fields=['password'])
         return validated_data
 
     def update(self, instance, validated_data):
