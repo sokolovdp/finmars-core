@@ -352,12 +352,17 @@ class ReportItemCustomFieldSerializer(serializers.Serializer):
                 not custom_fields_hide_objects or field.field_name not in ('custom_field_object',))
             ]
 
+
 class ReportItemSerializer(serializers.Serializer):
     id = serializers.SerializerMethodField()
 
     item_type = serializers.ChoiceField(source='type', choices=ReportItem.TYPE_CHOICES, read_only=True)
     item_type_code = serializers.CharField(source='type_code', read_only=True)
     item_type_name = serializers.CharField(source='type_name', read_only=True)
+
+    item_subtype = serializers.ChoiceField(source='subtype', choices=ReportItem.TYPE_CHOICES, read_only=True)
+    item_subtype_code = serializers.CharField(source='subtype_code', read_only=True)
+    item_subtype_name = serializers.CharField(source='subtype_name', read_only=True)
 
     user_code = serializers.CharField(read_only=True)
     name = serializers.CharField(read_only=True)

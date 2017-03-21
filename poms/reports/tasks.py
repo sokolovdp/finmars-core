@@ -21,49 +21,65 @@ class FakeRequest:
         self.user.master_user = master_user
 
 
-@shared_task(name='reports.build_report', expires=30)
-def build_report(instance):
-    _l.debug('build_report: %s', instance)
+@shared_task(name='reports.balance_report', expires=30)
+def balance_report(instance):
+    _l.debug('balance_report: %s', instance)
     with transaction.atomic():
         try:
             builder = ReportBuilder(instance=instance)
             instance = builder.build()
             return instance
         except:
-            _l.error('build failed', exc_info=True)
+            _l.error('balance report failed', exc_info=True)
             raise
         finally:
             transaction.set_rollback(True)
             _l.debug('finished')
 
 
-def _json_cb(data, master_user, member, serializer_class):
-    _l.debug('_json_cb: >')
+@shared_task(name='reports.pl_report', expires=30)
+def pl_report(instance):
+    _l.debug('pl_report: %s', instance)
+    with transaction.atomic():
+        try:
+            builder = ReportBuilder(instance=instance)
+            instance = builder.build_pl()
+            return instance
+        except:
+            _l.error('pl report failed', exc_info=True)
+            raise
+        finally:
+            transaction.set_rollback(True)
+            _l.debug('finished')
 
-    master_user = MasterUser.objects.get(id=master_user)
-    member = Member.objects.get(id=member)
 
-    with translation.override(None), timezone.override(None):
-        ser = serializer_class(data=data, context={
-            'request': FakeRequest(master_user, member),
-            'master_user': master_user,
-            'member': member,
-        })
-        ser.is_valid(raise_exception=True)
-        instance = ser.save()
-
-        instance = transaction_report(instance)
-
-        ser = serializer_class(instance=instance, context={
-            # 'request': FakeRequest(master_user, member),
-            'master_user': master_user,
-            'member': member,
-        })
-        res_data = ser.data
-
-    _l.debug('_json_cb: <')
-
-    return res_data
+# def _json_cb(data, master_user, member, serializer_class):
+#     _l.debug('_json_cb: >')
+#
+#     master_user = MasterUser.objects.get(id=master_user)
+#     member = Member.objects.get(id=member)
+#
+#     with translation.override(None), timezone.override(None):
+#         ser = serializer_class(data=data, context={
+#             'request': FakeRequest(master_user, member),
+#             'master_user': master_user,
+#             'member': member,
+#         })
+#         ser.is_valid(raise_exception=True)
+#         instance = ser.save()
+#
+#         instance = transaction_report(instance)
+#
+#         ser = serializer_class(instance=instance, context={
+#             # 'request': FakeRequest(master_user, member),
+#             'master_user': master_user,
+#             'member': member,
+#         })
+#         res_data = ser.data
+#
+#     _l.debug('_json_cb: <')
+#
+#     return res_data
 
 
 @shared_task(name='reports.transaction_report', expires=30)
@@ -79,15 +95,15 @@ def transaction_report(instance):
             _l.debug('transaction_report: <')
 
 
-@shared_task(name='reports.transaction_report_json', expires=30)
-def transaction_report_json(data, master_user, member):
-    _l.debug('transaction_report_json: >')
-
-    from poms.reports.serializers import TransactionReportSerializer
-    res_data = _json_cb(data=data, master_user=master_user, member=member, serializer_class=TransactionReportSerializer)
-
-    _l.debug('transaction_report_json: <')
-    return res_data
+# @shared_task(name='reports.transaction_report_json', expires=30)
+# def transaction_report_json(data, master_user, member):
+#     _l.debug('transaction_report_json: >')
+#
+#     from poms.reports.serializers import TransactionReportSerializer
+#     res_data = _json_cb(data=data, master_user=master_user, member=member, serializer_class=TransactionReportSerializer)
+#
+#     _l.debug('transaction_report_json: <')
+#     return res_data
 
 
 @shared_task(name='reports.cash_flow_projection_report', expires=30)

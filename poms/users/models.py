@@ -440,7 +440,7 @@ class Member(FakeDeletableModel):
     def fake_delete(self):
         self.user = None
         self.is_deleted = True
-        self.save(update_fields=['user', 'is_deleted'])
+        self.save()
 
     @property
     def is_superuser(self):

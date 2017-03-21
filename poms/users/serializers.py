@@ -1,14 +1,16 @@
 from __future__ import unicode_literals
 
 from django.conf import settings
-from django.contrib.auth import get_user_model, authenticate
+from django.contrib.auth import get_user_model, authenticate, update_session_auth_hash
 from django.contrib.auth.models import User
+from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import PermissionDenied
 from django.utils import translation
 from django.utils.translation import ugettext_lazy
 from rest_framework import serializers
 from rest_framework.authtoken.serializers import AuthTokenSerializer
 from rest_framework.fields import empty
+from rest_framework.validators import UniqueValidator
 
 from poms.accounts.fields import AccountTypeField, AccountField
 from poms.chats.fields import ThreadGroupField
@@ -68,18 +70,18 @@ class UserRegisterSerializer(serializers.Serializer):
         return validated_data
 
 
-class PasswordChangeSerializer(serializers.Serializer):
-    password = serializers.CharField(required=True, max_length=128, style={'input_type': 'password'})
-    new_password = serializers.CharField(required=True, max_length=128, style={'input_type': 'password'})
-
-    def create(self, validated_data):
-        user = get_user_from_context(self.context)
-        password = validated_data['password']
-        if user.check_password(password):
-            new_password = validated_data['new_password']
-            user.set_password(new_password)
-            return validated_data
-        raise PermissionDenied(ugettext_lazy('Invalid password'))
+# class PasswordChangeSerializer(serializers.Serializer):
+#     password = serializers.CharField(required=True, max_length=128, style={'input_type': 'password'})
+#     new_password = serializers.CharField(required=True, max_length=128, style={'input_type': 'password'})
+#
+#     def create(self, validated_data):
+#         user = get_user_from_context(self.context)
+#         password = validated_data['password']
+#         if user.check_password(password):
+#             new_password = validated_data['new_password']
+#             user.set_password(new_password)
+#             return validated_data
+#         raise PermissionDenied(ugettext_lazy('Invalid password'))
 
 
 class UserProfileSerializer(serializers.ModelSerializer):
@@ -134,13 +136,24 @@ class UserSetPasswordSerializer(serializers.Serializer):
 
     def validate(self, attrs):
         user = get_user_from_context(self.context)
-        if not user.check_password(attrs['password']):
-            raise serializers.ValidationError({'password': 'bad password'})
+        password = attrs['password']
+        new_password = attrs['new_password']
+
+        if not user.check_password(password):
+            raise serializers.ValidationError({'password': ugettext_lazy('bad password')})
+
+        try:
+            validate_password(new_password, user)
+        except serializers.DjangoValidationError as e:
+            raise serializers.ValidationError({'new_password': e.messages})
+
         return attrs
 
     def create(self, validated_data):
         user = get_user_from_context(self.context)
         user.set_password(validated_data['new_password'])
+        user.save(update_fields=['password'])
+        update_session_auth_hash(self.context['request'], user)
         return validated_data
 
     def update(self, instance, validated_data):
@@ -299,6 +312,8 @@ class MasterUserSetCurrentSerializer(serializers.Serializer):
 class MemberSerializer(serializers.ModelSerializer):
     # url = serializers.HyperlinkedIdentityField(view_name='member-detail')
     master_user = MasterUserField()
+    username = serializers.CharField(read_only=True)
+    # username = serializers.SlugRelatedField(queryset=User.objects.all(), slug_field='username')
     is_current = serializers.SerializerMethodField()
     join_date = DateTimeTzAwareField(read_only=True)
     groups = GroupField(many=True, required=False)
@@ -308,21 +323,54 @@ class MemberSerializer(serializers.ModelSerializer):
         model = Member
         fields = [
             'id', 'master_user', 'join_date', 'is_owner', 'is_admin', 'is_superuser', 'is_current',
-            'is_deleted', 'username', 'first_name', 'last_name', 'display_name', 'email', 'groups', 'groups_object'
+            'is_deleted', 'username', 'first_name', 'last_name', 'display_name', 'groups', 'groups_object'
         ]
         read_only_fields = [
             'master_user', 'join_date', 'is_owner', 'is_superuser', 'is_current', 'is_deleted',
-            'username', 'first_name', 'last_name', 'display_name', 'email',
+            'username', 'first_name', 'last_name', 'display_name',
         ]
 
     def __init__(self, *args, **kwargs):
         super(MemberSerializer, self).__init__(*args, **kwargs)
-
         self.fields['groups_object'] = GroupViewSerializer(source='groups', many=True, read_only=True)
+        if self.instance:
+            self.fields['username'].read_only = True
+        else:
+            self.fields['username'].read_only = False
+            self.fields['username'].required = True
 
     def get_is_current(self, obj):
         member = get_member_from_context(self.context)
         return obj.id == member.id
+
+    def validate(self, attrs):
+        if not self.instance:
+            master_user = attrs['master_user']
+            username = attrs['username']
+            # serializers.CharField(read_only=True).field_name
+            # try:
+            #     ub = UniqueValidator(queryset=Member.objects.filter(master_user=master_user))
+            #     ub.set_context(self.fields['username'])
+            #     ub(username)
+            # except serializers.ValidationError as e:
+            #     raise serializers.ValidationError({'username': e.detail})
+
+            if Member.objects.filter(master_user=master_user, user__isnull=False, username=username).exists():
+                raise serializers.ValidationError({'username': UniqueValidator.message})
+            if not User.objects.filter(username=username).exists():
+                message = serializers.SlugRelatedField.default_error_messages['does_not_exist'].format(
+                    slug_name=self.fields['username'].field_name, value=username)
+                raise serializers.ValidationError({'username': message})
+        return attrs
+
+    def create(self, validated_data):
+        username = validated_data.pop('username')
+        validated_data['user'] = User.objects.get(username=username)
+        return super(MemberSerializer, self).create(validated_data)
+
+    def update(self, instance, validated_data):
+        validated_data.pop('username', None)
+        return super(MemberSerializer, self).update(instance, validated_data)
 
 
 class MemberViewSerializer(serializers.ModelSerializer):

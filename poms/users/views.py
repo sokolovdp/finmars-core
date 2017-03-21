@@ -299,9 +299,6 @@ class MemberViewSet(AbstractModelViewSet):
             return self.request.user.member
         return super(MemberViewSet, self).get_object()
 
-    def create(self, request, *args, **kwargs):
-        raise PermissionDenied()
-
 
 class GroupFilterSet(FilterSet):
     id = NoOpFilter()
