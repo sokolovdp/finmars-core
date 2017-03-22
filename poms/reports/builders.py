@@ -63,13 +63,18 @@ class _Base:
         return row
 
     @classmethod
-    def sdumps(cls, items, columns=None, in_csv=False):
+    def sdumps(cls, items, columns=None, filter=None, in_csv=False):
         if _l.isEnabledFor(logging.DEBUG):
             if columns is None:
                 columns = cls.dump_columns
 
             data = []
             for item in items:
+                if filter and callable(filter):
+                    if filter(item):
+                        pass
+                    else:
+                        continue
                 data.append(item.dump_values(columns=columns))
             if in_csv:
                 si = StringIO()
@@ -81,8 +86,8 @@ class _Base:
             return sprint_table(data, columns)
 
     @classmethod
-    def dumps(cls, items, columns=None):
-        _l.debug('\n%s', cls.sdumps(items, columns=columns))
+    def dumps(cls, items, columns=None, trn_filter=None, in_csv=None):
+        _l.debug('\n%s', cls.sdumps(items, columns=columns,filter=filter, in_csv=in_csv))
 
 
 class VirtualTransaction(_Base):
