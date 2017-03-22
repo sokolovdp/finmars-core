@@ -4,7 +4,6 @@ from django.conf import settings
 from django.contrib.auth import get_user_model, authenticate, update_session_auth_hash
 from django.contrib.auth.models import User
 from django.contrib.auth.password_validation import validate_password
-from django.core.exceptions import PermissionDenied
 from django.utils import translation
 from django.utils.translation import ugettext_lazy
 from rest_framework import serializers
@@ -22,6 +21,7 @@ from poms.instruments.fields import InstrumentTypeField, InstrumentField
 from poms.portfolios.fields import PortfolioField
 from poms.strategies.fields import Strategy1Field, Strategy2Field, Strategy3Field, Strategy1SubgroupField, \
     Strategy1GroupField, Strategy2GroupField, Strategy2SubgroupField, Strategy3GroupField, Strategy3SubgroupField
+from poms.ui.models import ListLayout, EditLayout
 from poms.users.fields import MasterUserField, MemberField, GroupField
 from poms.users.models import MasterUser, UserProfile, Group, Member, TIMEZONE_CHOICES
 from poms.users.utils import get_user_from_context, get_master_user_from_context, get_member_from_context
@@ -364,9 +364,25 @@ class MemberSerializer(serializers.ModelSerializer):
         return attrs
 
     def create(self, validated_data):
+        master_user = validated_data['master_user']
         username = validated_data.pop('username')
         validated_data['user'] = User.objects.get(username=username)
-        return super(MemberSerializer, self).create(validated_data)
+        member = super(MemberSerializer, self).create(validated_data)
+
+        owner = Member.objects.filter(master_user=master_user, is_owner=True).first()
+
+        mll = []
+        for oll in ListLayout.objects.filter(member=owner):
+            mll.append(ListLayout(member=member, content_type_id=oll.content_type_id, name=oll.name,
+                                  is_default=oll.is_default, json_data=oll.json_data))
+        ListLayout.objects.bulk_create(mll)
+
+        ell = []
+        for oel in EditLayout.objects.filter(member=owner):
+            ell.append(EditLayout(member=member, content_type_id=oel.content_type_id, json_data=oel.json_data))
+        EditLayout.objects.bulk_create(ell)
+
+        return member
 
     def update(self, instance, validated_data):
         validated_data.pop('username', None)
