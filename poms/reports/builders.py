@@ -2,11 +2,13 @@
 from __future__ import unicode_literals, division
 
 import copy
+import csv
 import logging
 import sys
 import uuid
 from collections import Counter, defaultdict
 from datetime import timedelta, date
+from io import StringIO
 from itertools import groupby
 
 from django.conf import settings
@@ -61,7 +63,7 @@ class _Base:
         return row
 
     @classmethod
-    def dumps(cls, items, columns=None):
+    def sdumps(cls, items, columns=None, in_csv=False):
         if _l.isEnabledFor(logging.DEBUG):
             if columns is None:
                 columns = cls.dump_columns
@@ -69,8 +71,18 @@ class _Base:
             data = []
             for item in items:
                 data.append(item.dump_values(columns=columns))
-            _l.debug('\n%s', sprint_table(data, columns))
-            # print(sprint_table(data, columns))
+            if in_csv:
+                si = StringIO()
+                cw = csv.writer(si)
+                cw.writerow(columns)
+                for r in data:
+                    cw.writerow(r)
+                return si.getvalue()
+            return sprint_table(data, columns)
+
+    @classmethod
+    def dumps(cls, items, columns=None):
+        _l.debug('\n%s', cls.sdumps(items, columns=columns))
 
 
 class VirtualTransaction(_Base):
@@ -912,10 +924,10 @@ class VirtualTransaction(_Base):
         t1.str3_cash = self.str3_cash
 
         t1.pos_size = self.pos_size * t1_pos_sign
-        t1.cash = self.pos_size * t1_pos_sign
-        t1.principal = self.pos_size * t1_cash_sign
-        t1.carry = self.pos_size * t1_cash_sign
-        t1.overheads = self.pos_size * t1_cash_sign
+        t1.cash = self.cash * t1_pos_sign
+        t1.principal = self.principal * t1_cash_sign
+        t1.carry = self.carry * t1_cash_sign
+        t1.overheads = self.overheads * t1_cash_sign
         t1.calc()
 
         # t2
@@ -932,10 +944,10 @@ class VirtualTransaction(_Base):
         t2.str3_cash = self.str3_cash
 
         t2.pos_size = -t1.pos_size
-        t2.cash = -t1.pos_size
-        t2.principal = -t1.pos_size
-        t2.carry = -t1.pos_size
-        t2.overheads = -t1.pos_size
+        t2.cash = -t1.cash
+        t2.principal = -t1.principal
+        t2.carry = -t1.carry
+        t2.overheads = -t1.overheads
         t2.calc()
         return t1, t2
 
