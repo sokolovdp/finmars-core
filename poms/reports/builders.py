@@ -923,11 +923,11 @@ class VirtualTransaction(_Base):
         t1.str3_pos = self.str3_pos
         t1.str3_cash = self.str3_pos
 
-        t1.pos_size = self.pos_size * t1_pos_sign
-        t1.cash = self.cash * t1_pos_sign
-        t1.principal = self.principal * t1_cash_sign
-        t1.carry = self.carry * t1_cash_sign
-        t1.overheads = self.overheads * t1_cash_sign
+        t1.pos_size = abs(self.pos_size) * t1_pos_sign
+        t1.cash = abs(self.cash) * t1_cash_sign
+        t1.principal = abs(self.principal) * t1_cash_sign
+        t1.carry = abs(self.carry) * t1_cash_sign
+        t1.overheads = abs(self.overheads) * t1_cash_sign
         t1.calc()
 
         # t2
@@ -2980,16 +2980,16 @@ class ReportBuilder(object):
                 trn.is_hidden = True
                 # split TRANSFER to sell/buy or buy/sell
                 if trn.pos_size >= 0:
-                    trn1, trn2 = trn.transfer_clone(self._trn_cls_sell, self._trn_cls_buy)
+                    trn1, trn2 = trn.transfer_clone(self._trn_cls_sell, self._trn_cls_buy, t1_pos_sign=1.0, t1_cash_sign=-1.0)
                 else:
-                    trn1, trn2 = trn.transfer_clone(self._trn_cls_buy, self._trn_cls_sell)
+                    trn1, trn2 = trn.transfer_clone(self._trn_cls_buy, self._trn_cls_sell, t1_pos_sign=-1.0, t1_cash_sign=1.0)
                 res.append(trn1)
                 res.append(trn2)
 
             elif trn.trn_cls.id == TransactionClass.FX_TRANSFER:
                 trn.is_hidden = True
 
-                trn1, trn2 = trn.transfer_clone(self._trn_cls_fx_trade, self._trn_cls_fx_trade)
+                trn1, trn2 = trn.transfer_clone(self._trn_cls_fx_trade, self._trn_cls_fx_trade, t1_pos_sign=1.0, t1_cash_sign=-1.0)
                 res.append(trn1)
                 res.append(trn2)
 
