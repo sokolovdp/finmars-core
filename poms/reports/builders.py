@@ -958,8 +958,11 @@ class VirtualTransaction(_Base):
         t1.is_mismatch = False
         t1.trn_ccy = self.trn_ccy
         t1.stl_ccy = self.trn_ccy
-        t1.principal = self.pos_size
+        # t1.pos_size = self.pos_size
         t1.cash = self.pos_size
+        t1.principal = self.pos_size
+        t1.carry = 0.0
+        t1.overheads = 0.0
         t1.ref_fx = 1.0
         t1.pricing()
         t1.calc()
@@ -971,8 +974,10 @@ class VirtualTransaction(_Base):
         t2.trn_ccy = self.trn_ccy
         t2.stl_ccy = self.stl_ccy
         t2.pos_size = self.principal
-        t2.cash = self.principal
-        t2.principal = self.principal
+        # t2.cash = self.cash
+        # t2.principal = self.principal
+        # t2.carry = self.carry
+        # t2.overheads = self.overheads
         try:
             t2.ref_fx = abs(self.pos_size / self.principal)
         except ArithmeticError:
