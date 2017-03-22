@@ -914,14 +914,14 @@ class VirtualTransaction(_Base):
         t1 = self.clone()
         t1.is_mismatch = False
         t1.trn_cls = t1_cls
-        t1.acc_pos = self.acc_cash
-        t1.acc_cash = self.acc_cash
-        t1.str1_pos = self.str1_cash
-        t1.str1_cash = self.str1_cash
-        t1.str2_pos = self.str2_cash
-        t1.str2_cash = self.str2_cash
-        t1.str3_pos = self.str2_cash
-        t1.str3_cash = self.str3_cash
+        t1.acc_pos = self.acc_pos
+        t1.acc_cash = self.acc_pos
+        t1.str1_pos = self.str1_pos
+        t1.str1_cash = self.str1_pos
+        t1.str2_pos = self.str2_pos
+        t1.str2_cash = self.str2_pos
+        t1.str3_pos = self.str3_pos
+        t1.str3_cash = self.str3_pos
 
         t1.pos_size = self.pos_size * t1_pos_sign
         t1.cash = self.cash * t1_pos_sign
@@ -940,7 +940,7 @@ class VirtualTransaction(_Base):
         t2.str1_cash = self.str1_cash
         t2.str2_pos = self.str2_cash
         t2.str2_cash = self.str2_cash
-        t2.str3_pos = self.str2_cash
+        t2.str3_pos = self.str3_cash
         t2.str3_cash = self.str3_cash
 
         t2.pos_size = -t1.pos_size
