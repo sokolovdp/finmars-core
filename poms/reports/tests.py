@@ -92,58 +92,58 @@ class ReportTestCase(TestCase):
         'instr_principal_res',
         'instr_accrued',
         'instr_accrued_res',
-        # 'gross_cost_res',
-        # 'net_cost_res',
-        # 'principal_invested_res',
-        # 'amount_invested_res',
-        # 'remaining_pos_size',
-        # 'remaining_pos_size_percent',
-        # 'ytm',
-        # 'time_invested_days',
-        # 'time_invested',
-        # 'weighted_ytm',
-        # 'weighted_time_invested_days',
-        # 'weighted_time_invested',
-        # 'cash_res',
-        # 'total',
-        # 'principal_res',
-        # 'carry_res',
-        # 'overheads_res',
-        # 'total_res',
-        # 'principal_closed_res',
-        # 'carry_closed_res',
-        # 'overheads_closed_res',
-        # 'total_closed_res',
-        # 'principal_opened_res',
-        # 'carry_opened_res',
-        # 'overheads_opened_res',
-        # 'total_opened_res',
-        # 'pl_fx_mul',
-        # 'principal_fx_res',
-        # 'carry_fx_res',
-        # 'overheads_fx_res',
-        # 'total_fx_res',
-        # 'principal_fx_closed_res',
-        # 'carry_fx_closed_res',
-        # 'overheads_fx_closed_res',
-        # 'total_fx_closed_res',
-        # 'principal_fx_opened_res',
-        # 'carry_fx_opened_res',
-        # 'overheads_fx_opened_res',
-        # 'total_fx_opened_res',
-        # 'pl_fixed_mul',
-        # 'principal_fixed_res',
-        # 'carry_fixed_res',
-        # 'overheads_fixed_res',
-        # 'total_fixed_res',
-        # 'principal_fixed_closed_res',
-        # 'carry_fixed_closed_res',
-        # 'overheads_fixed_closed_res',
-        # 'total_fixed_closed_res',
-        # 'principal_fixed_opened_res',
-        # 'carry_fixed_opened_res',
-        # 'overheads_fixed_opened_res',
-        # 'total_fixed_opened_res',
+        'gross_cost_res',
+        'net_cost_res',
+        'principal_invested_res',
+        'amount_invested_res',
+        'remaining_pos_size',
+        'remaining_pos_size_percent',
+        'ytm',
+        'time_invested_days',
+        'time_invested',
+        'weighted_ytm',
+        'weighted_time_invested_days',
+        'weighted_time_invested',
+        'cash_res',
+        'total',
+        'principal_res',
+        'carry_res',
+        'overheads_res',
+        'total_res',
+        'principal_closed_res',
+        'carry_closed_res',
+        'overheads_closed_res',
+        'total_closed_res',
+        'principal_opened_res',
+        'carry_opened_res',
+        'overheads_opened_res',
+        'total_opened_res',
+        'pl_fx_mul',
+        'principal_fx_res',
+        'carry_fx_res',
+        'overheads_fx_res',
+        'total_fx_res',
+        'principal_fx_closed_res',
+        'carry_fx_closed_res',
+        'overheads_fx_closed_res',
+        'total_fx_closed_res',
+        'principal_fx_opened_res',
+        'carry_fx_opened_res',
+        'overheads_fx_opened_res',
+        'total_fx_opened_res',
+        'pl_fixed_mul',
+        'principal_fixed_res',
+        'carry_fixed_res',
+        'overheads_fixed_res',
+        'total_fixed_res',
+        'principal_fixed_closed_res',
+        'carry_fixed_closed_res',
+        'overheads_fixed_closed_res',
+        'total_fixed_closed_res',
+        'principal_fixed_opened_res',
+        'carry_fixed_opened_res',
+        'overheads_fixed_opened_res',
+        'total_fixed_opened_res',
     ]
 
     TRN_COLS_MINI = [
@@ -189,30 +189,30 @@ class ReportTestCase(TestCase):
         'notes',
         # 'case',
         # 'report_ccy_cur',
-        # 'report_ccy_cur_fx',
+        'report_ccy_cur_fx',
         # 'report_ccy_cash_hist',
-        # 'report_ccy_cash_hist_fx',
+        'report_ccy_cash_hist_fx',
         # 'report_ccy_acc_hist',
-        # 'report_ccy_acc_hist_fx',
+        'report_ccy_acc_hist_fx',
         # 'instr_price_cur',
-        # 'instr_price_cur_principal_price',
-        # 'instr_price_cur_accrued_price',
+        'instr_price_cur_principal_price',
+        'instr_price_cur_accrued_price',
         # 'instr_pricing_ccy_cur',
-        # 'instr_pricing_ccy_cur_fx',
+        'instr_pricing_ccy_cur_fx',
         # 'instr_accrued_ccy_cur',
-        # 'instr_accrued_ccy_cur_fx',
+        'instr_accrued_ccy_cur_fx',
         # 'trn_ccy_cash_hist',
-        # 'trn_ccy_cash_hist_fx',
+        'trn_ccy_cash_hist_fx',
         # 'trn_ccy_acc_hist',
-        # 'trn_ccy_acc_hist_fx',
+        'trn_ccy_acc_hist_fx',
         # 'trn_ccy_cur',
-        # 'trn_ccy_cur_fx',
+        'trn_ccy_cur_fx',
         # 'stl_ccy_cash_hist',
-        # 'stl_ccy_cash_hist_fx',
+        'stl_ccy_cash_hist_fx',
         # 'stl_ccy_acc_hist',
-        # 'stl_ccy_acc_hist_fx',
+        'stl_ccy_acc_hist_fx',
         # 'stl_ccy_cur',
-        # 'stl_ccy_cur_fx',
+        'stl_ccy_cur_fx',
         # 'mismatch',
         # 'instr_principal',
         # 'instr_principal_res',
@@ -295,18 +295,18 @@ class ReportTestCase(TestCase):
         'mismatch_acc',
         'alloc_bl',
         'alloc_pl',
-        'report_ccy_cur',
+        # 'report_ccy_cur',
         'report_ccy_cur_fx',
-        'instr_price_cur',
+        # 'instr_price_cur',
         'instr_price_cur_principal_price',
         'instr_price_cur_accrued_price',
-        'instr_pricing_ccy_cur',
+        # 'instr_pricing_ccy_cur',
         'instr_pricing_ccy_cur_fx',
-        'instr_accrued_ccy_cur',
+        # 'instr_accrued_ccy_cur',
         'instr_accrued_ccy_cur_fx',
-        'ccy_cur',
+        # 'ccy_cur',
         'ccy_cur_fx',
-        'pricing_ccy_cur',
+        # 'pricing_ccy_cur',
         'pricing_ccy_cur_fx',
         'instr_principal_res',
         'instr_accrued_res',
@@ -436,18 +436,18 @@ class ReportTestCase(TestCase):
         'pos_size',
         'market_value_res',
         # 'report_ccy_cur',
-        # 'report_ccy_cur_fx',
+        'report_ccy_cur_fx',
         # 'instr_price_cur',
-        # 'instr_price_cur_principal_price',
-        # 'instr_price_cur_accrued_price',
+        'instr_price_cur_principal_price',
+        'instr_price_cur_accrued_price',
         # 'instr_pricing_ccy_cur',
-        # 'instr_pricing_ccy_cur_fx',
+        'instr_pricing_ccy_cur_fx',
         # 'instr_accrued_ccy_cur',
-        # 'instr_accrued_ccy_cur_fx',
+        'instr_accrued_ccy_cur_fx',
         # 'ccy_cur',
-        # 'ccy_cur_fx',
+        'ccy_cur_fx',
         # 'pricing_ccy_cur',
-        # 'pricing_ccy_cur_fx',
+        'pricing_ccy_cur_fx',
         # 'instr_principal_res',
         # 'instr_accrued_res',
         # 'exposure_res',
@@ -764,7 +764,7 @@ class ReportTestCase(TestCase):
            acc_date=None, acc_date_days=None, cash_date=None, cash_date_days=None, days=-1,
            acc_pos=None, acc_cash=None, acc_interim=None, fx_rate=None,
            s1_pos=None, s1_cash=None, s2_pos=None, s2_cash=None, s3_pos=None, s3_cash=None,
-           link_instr=None, alloc_bl=None, alloc_pl=None,
+           link_instr=None, alloc_bl=None, alloc_pl=None, notes=None,
            save=True):
 
         if stl_ccy is None:
@@ -815,8 +815,12 @@ class ReportTestCase(TestCase):
         t.linked_instrument = link_instr or self.m.instrument
         t.allocation_balance = alloc_bl or self.m.instrument
         t.allocation_pl = alloc_pl or self.m.instrument
+
+        t.notes = notes
+
         if save:
             t.save()
+
         return t
 
     def _t_cash_in(self, **kwargs):
@@ -902,34 +906,31 @@ class ReportTestCase(TestCase):
     def _sdump(self, builder, name, show_trns=True, show_items=True, trn_cols=None, item_cols=None,
                trn_filter=None, in_csv=False):
         if show_trns or show_items:
-            s = '\n------------------\nReport: %s\n' % (
+            s = 'Report: %s\n' % (
                 name,
             )
             if show_trns:
                 trn_cols = trn_cols or self.TRN_COLS
-                s += '------------------\nTransactions: \n%s\n' % (
+                s += '\nTransactions: \n%s\n' % (
                     VirtualTransaction.sdumps(builder.instance.transactions, columns=trn_cols, filter=trn_filter,
                                               in_csv=in_csv)
                 )
 
             if show_items:
                 item_cols = item_cols or self.ITEM_COLS
-                s += '------------------\nItems: \n%s\n' % (
+                s += '\nItems: \n%s\n' % (
                     ReportItem.sdumps(builder.instance.items, columns=item_cols, in_csv=in_csv)
                 )
-            s += '------------------'
             return s
         return None
 
     def _dump(self, *args, **kwargs):
         for r in self._sdump(*args, **kwargs).splitlines():
             _l.info(r)
-        # _l.info(self._sdump(*args, **kwargs))
+            # _l.info(self._sdump(*args, **kwargs))
 
-    def _sdump_hist(self, name, days=None, ccys=True, instrs=True, in_csv=False):
-        s = '\n------------------\nInstrument and Currency pricing: %s\n' % (
-            name,
-        )
+    def _sdump_hist(self, days=None, ccys=True, instrs=True, in_csv=False):
+        s = ''
         if days:
             days = (
                 self._d(days[0]) if days[0] is not None else date.min,
@@ -941,8 +942,8 @@ class ReportTestCase(TestCase):
                 ccys_hists = ccys_hists.filter(currency__in=ccys)
             if days:
                 ccys_hists = ccys_hists.filter(date__range=days)
-            s += '------------------\nCurrency: \n%s\n' % (
-                VirtualTransaction.sdumps(ccys_hists, columns=['id', 'currency', 'date', 'fx_rate'], in_csv=False)
+            s += '\nCurrency FX-Rates: \n%s\n' % (
+                VirtualTransaction.sdumps(ccys_hists, columns=['id', 'currency', 'date', 'fx_rate'], in_csv=in_csv)
             )
 
         if instrs:
@@ -951,7 +952,7 @@ class ReportTestCase(TestCase):
                 instrs_price_hists = instrs_price_hists.filter(instrument__in=instrs)
             if days:
                 instrs_price_hists = instrs_price_hists.filter(date__range=days)
-            s += '------------------\nInstrument: \n%s\n' % (
+            s += '\nInstrument pricing: \n%s\n' % (
                 VirtualTransaction.sdumps(instrs_price_hists,
                                           columns=['id', 'instrument', 'date', 'principal_price', 'accrued_price'],
                                           in_csv=in_csv)
@@ -961,10 +962,12 @@ class ReportTestCase(TestCase):
     def _dump_hist(self, *args, **kwargs):
         for r in self._sdump_hist(*args, **kwargs).splitlines():
             _l.info(r)
-        # _l.info(self._sdump_hist(*args, **kwargs))
+            # _l.info(self._sdump_hist(*args, **kwargs))
 
-    def _simple_run(self, name, result=None, trns=False, trn_cols=None, item_cols=None, trn_dump_all=False,
-                    in_csv=False, **kwargs):
+    def _simple_run(self, name, result=None, trns=False, trn_cols=None, item_cols=None,
+                    trn_dump_all=True, in_csv=False, **kwargs):
+        _l.info('')
+        _l.info('')
         _l.info('*' * 79)
 
         kwargs.setdefault('pricing_policy', self.pp)
@@ -984,10 +987,14 @@ class ReportTestCase(TestCase):
                 s.append('%s/%s' % (t.transaction_class.name.lower(), t.position_size_with_sign))
             name += ' - ' + ', '.join(s)
 
-        if item_cols is None:
-            item_cols = self.ITEM_COLS_ALL if trn_dump_all else None
         if trn_cols is None:
             trn_cols = self.TRN_COLS_ALL if trn_dump_all else self.TRN_COLS_MINI
+        if item_cols is None:
+            item_cols = self.ITEM_COLS_ALL if trn_dump_all else None
+
+        if in_csv:
+            trn_cols = self.TRN_COLS_MINI
+            item_cols = self.ITEM_COLS_ALL
 
         def trn_filter(t):
             if trn_dump_all:
@@ -1011,16 +1018,16 @@ class ReportTestCase(TestCase):
                      stl_ccy=self.usd, principal=20., carry=0., overheads=0.,
                      days=3)
 
-        self._simple_run('test_buy_sell', report_date=self._d(14))
+        self._simple_run('buy_sell', report_date=self._d(14))
 
     def test_cash_in_out(self):
         self._t_cash_in(trn_ccy=self.eur, stl_ccy=self.eur, position=1000, fx_rate=1.3)
         self._t_cash_out(trn_ccy=self.usd, stl_ccy=self.usd, position=-1000, days=1, fx_rate=1.0)
 
-        self._simple_run('test_cash_in_out', report_date=self._d(14))
-        self._dump_hist('', days=(self._d(12), self._d(15)),
-                        ccys=(self.eur, self.usd,),
-                        instrs=False)
+        self._simple_run('cash_in_out', report_date=self._d(14))
+        # self._dump_hist(days=(self._d(12), self._d(15)),
+        #                 ccys=(self.eur, self.usd,),
+        #                 instrs=False)
 
     def test_fx_trade(self):
         self._ccy_hist(self.gbp, self._d(101), 1.45)
@@ -1043,10 +1050,10 @@ class ReportTestCase(TestCase):
                         stl_ccy=self.rub, principal=-140,
                         acc_date_days=101, cash_date_days=101)
 
-        self._simple_run('test_fx_trade', trns=True, report_currency=self.cad, report_date=self._d(104))
-        self._dump_hist('', days=(self._d(100), self._d(105)),
-                        ccys=(self.gbp, self.chf, self.cad, self.rub),
-                        instrs=False)
+        self._simple_run('fx_trade', trns=True, report_currency=self.cad, report_date=self._d(104))
+        # self._dump_hist(days=(self._d(100), self._d(105)),
+        #                 ccys=(self.gbp, self.chf, self.cad, self.rub),
+        #                 instrs=False)
 
     def test_instrument_pl(self):
         self._t_instr_pl(instr=self.stock1, position=0.,
@@ -1057,7 +1064,7 @@ class ReportTestCase(TestCase):
                          stl_ccy=self.chf, principal=0., carry=20., overheads=0.,
                          acc_date_days=8, cash_date_days=8)
 
-        self._simple_run('test_instrument_pl', report_currency=self.cad, report_date=self._d(14))
+        self._simple_run('instrument_pl', report_currency=self.cad, report_date=self._d(14))
 
     def test_transaction_pl(self):
         self._t_trn_pl(stl_ccy=self.rub, principal=0., carry=-900., overheads=-100.,
@@ -1066,26 +1073,26 @@ class ReportTestCase(TestCase):
         self._t_trn_pl(stl_ccy=self.rub, principal=0., carry=-900., overheads=-100.,
                        acc_date_days=2, cash_date_days=2)
 
-        self._simple_run('test_transaction_pl', report_currency=self.cad, report_date=self._d(14))
+        self._simple_run('transaction_pl', report_currency=self.cad, report_date=self._d(14))
 
     def test_transfer(self):
         self._t_transfer(instr=self.bond0, position=-10.0,
                          acc_pos=self.a1_1, acc_cash=self.a1_2,
-                         days=1)
+                         days=1, notes='trfsr2')
         self._t_transfer(instr=self.bond0, position=-10.0,
                          acc_pos=self.a1_1, acc_cash=self.a2_3,
-                         days=2)
+                         days=2, notes='trfsr2')
 
-        self._simple_run('test_transfer', report_currency=self.cad, report_date=self._d(14))
+        self._simple_run('transfer', report_currency=self.cad, report_date=self._d(14))
 
     def test_fx_transfer(self):
         self._t_fx_transfer(trn_ccy=self.eur, position=-10.,
                             acc_pos=self.a1_1, acc_cash=self.a1_2,
-                            days=1)
+                            days=1, notes='trfsr2')
         self._t_fx_transfer(trn_ccy=self.gbp, position=-10.,
                             acc_pos=self.a1_1, acc_cash=self.a2_3,
-                            days=2)
-        self._simple_run('test_fx_transfer', report_currency=self.cad, report_date=self._d(14))
+                            days=2, notes='trfsr2')
+        self._simple_run('fx_transfer', report_currency=self.cad, report_date=self._d(14))
 
     # ------------------------------------------------------------------------------------------------------------------
 
