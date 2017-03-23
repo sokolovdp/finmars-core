@@ -1570,12 +1570,16 @@ class ReportItem(_Base):
             item.ccy = ccy
             item.trn_ccy = trn_ccy
 
+            item.pricing_ccy = trn.report.master_user.system_currency
+
         elif item.type == ReportItem.TYPE_CASH_IN_OUT:
             item.acc = acc or trn.acc_cash
             item.str1 = str1 or trn.str1_cash
             item.str2 = str2 or trn.str2_cash
             item.str3 = str3 or trn.str3_cash
             item.ccy = ccy
+
+            item.pricing_ccy = trn.report.master_user.system_currency
 
         elif item.type == ReportItem.TYPE_TRANSACTION_PL:
             item.acc = acc or trn.acc_cash

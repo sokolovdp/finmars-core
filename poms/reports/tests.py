@@ -1081,7 +1081,7 @@ class ReportTestCase(TestCase):
 
         self._simple_run('instrument_pl', report_currency=self.cad, report_date=self._d(14))
 
-    def test_transaction_pl(self):
+    def _test_transaction_pl(self):
         self._t_trn_pl(stl_ccy=self.rub, principal=0., carry=-900., overheads=-100.,
                        days=1, notes='tpl1')
 
@@ -1111,7 +1111,7 @@ class ReportTestCase(TestCase):
 
     # ------------------------------------------------------------------------------------------------------------------
 
-    def _test_IGNORE_INDEPENDENT(self):
+    def test_IGNORE_INDEPENDENT(self):
         self._t_buy(instr=self.bond0, position=5,
                     stl_ccy=self.usd, principal=-10., carry=-0., overheads=-0.,
                     days=1,
@@ -1226,46 +1226,53 @@ class ReportTestCase(TestCase):
                        s2_pos=self.s2_1_1_2, s2_cash=self.s2_1_1_2,
                        s3_pos=self.s3_1_1_2, s3_cash=self.s3_1_1_2)
 
-        self._simple_run('IGNORE: all', report_currency=self.cad, report_date=self._d(14),
+        self._simple_run('IGNORE - all', report_currency=self.cad, report_date=self._d(14),
                          portfolio_mode=Report.MODE_IGNORE,
                          account_mode=Report.MODE_IGNORE,
                          strategy1_mode=Report.MODE_IGNORE,
                          strategy2_mode=Report.MODE_IGNORE,
                          strategy3_mode=Report.MODE_IGNORE)
 
-        self._simple_run('INDEPENDENT: portfolio', report_currency=self.cad, report_date=self._d(14),
+        self._simple_run('INDEPENDENT - portfolio', report_currency=self.cad, report_date=self._d(14),
                          portfolio_mode=Report.MODE_INDEPENDENT,
                          account_mode=Report.MODE_IGNORE,
                          strategy1_mode=Report.MODE_IGNORE,
                          strategy2_mode=Report.MODE_IGNORE,
                          strategy3_mode=Report.MODE_IGNORE)
 
-        self._simple_run('INDEPENDENT: account', report_currency=self.cad, report_date=self._d(14),
+        self._simple_run('INDEPENDENT - account', report_currency=self.cad, report_date=self._d(14),
                          portfolio_mode=Report.MODE_IGNORE,
                          account_mode=Report.MODE_INDEPENDENT,
                          strategy1_mode=Report.MODE_IGNORE,
                          strategy2_mode=Report.MODE_IGNORE,
                          strategy3_mode=Report.MODE_IGNORE)
 
-        self._simple_run('INDEPENDENT: strategy1', report_currency=self.cad, report_date=self._d(14),
+        self._simple_run('INDEPENDENT - strategy1', report_currency=self.cad, report_date=self._d(14),
                          portfolio_mode=Report.MODE_IGNORE,
                          account_mode=Report.MODE_IGNORE,
                          strategy1_mode=Report.MODE_INDEPENDENT,
                          strategy2_mode=Report.MODE_IGNORE,
                          strategy3_mode=Report.MODE_IGNORE)
 
-        self._simple_run('INDEPENDENT: strategy2', report_currency=self.cad, report_date=self._d(14),
+        self._simple_run('INDEPENDENT - strategy2', report_currency=self.cad, report_date=self._d(14),
                          portfolio_mode=Report.MODE_IGNORE,
                          account_mode=Report.MODE_IGNORE,
                          strategy1_mode=Report.MODE_IGNORE,
                          strategy2_mode=Report.MODE_INDEPENDENT,
                          strategy3_mode=Report.MODE_IGNORE)
 
-        self._simple_run('INDEPENDENT: strategy3', report_currency=self.cad, report_date=self._d(14),
+        self._simple_run('INDEPENDENT - strategy3', report_currency=self.cad, report_date=self._d(14),
                          portfolio_mode=Report.MODE_IGNORE,
                          account_mode=Report.MODE_IGNORE,
                          strategy1_mode=Report.MODE_IGNORE,
                          strategy2_mode=Report.MODE_IGNORE,
+                         strategy3_mode=Report.MODE_INDEPENDENT)
+
+        self._simple_run('INDEPENDENT - all', report_currency=self.cad, report_date=self._d(14),
+                         portfolio_mode=Report.MODE_INDEPENDENT,
+                         account_mode=Report.MODE_INDEPENDENT,
+                         strategy1_mode=Report.MODE_INDEPENDENT,
+                         strategy2_mode=Report.MODE_INDEPENDENT,
                          strategy3_mode=Report.MODE_INDEPENDENT)
 
     # ------------------------------------------------------------------------------------------------------------------
