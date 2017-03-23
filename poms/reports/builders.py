@@ -3212,8 +3212,8 @@ class ReportBuilder(object):
 
             elif trn.trn_cls.id in [TransactionClass.CASH_INFLOW, TransactionClass.CASH_OUTFLOW]:
                 self._add_cash(trn, val=trn.cash, ccy=trn.stl_ccy,
-                               acc=trn.acc_pos, str1=trn.str1_pos, str2=trn.str2_pos,
-                               str3=trn.str3_pos)
+                               acc=trn.acc_cash, str1=trn.str1_cash, str2=trn.str2_cash,
+                               str3=trn.str3_cash)
 
                 # P&L
                 item = ReportItem.from_trn(self.instance, self.pricing_provider, self.fx_rate_provider,
