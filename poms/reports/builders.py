@@ -2,11 +2,13 @@
 from __future__ import unicode_literals, division
 
 import copy
+import csv
 import logging
 import sys
 import uuid
 from collections import Counter, defaultdict
 from datetime import timedelta, date
+from io import StringIO
 from itertools import groupby
 
 from django.conf import settings
@@ -52,25 +54,41 @@ class _Base:
         ret.is_cloned = True
         return ret
 
-    def dump_values(self, columns=None):
+    @classmethod
+    def dump_values(cls, obj, columns=None):
         if columns is None:
-            columns = self.dump_columns
+            columns = cls.dump_columns
         row = []
         for f in columns:
-            row.append(getattr(self, f))
+            row.append(getattr(obj, f))
         return row
 
     @classmethod
-    def dumps(cls, items, columns=None):
-        if _l.isEnabledFor(logging.DEBUG):
-            if columns is None:
-                columns = cls.dump_columns
+    def sdumps(cls, items, columns=None, filter=None, in_csv=False):
+        if columns is None:
+            columns = cls.dump_columns
 
-            data = []
-            for item in items:
-                data.append(item.dump_values(columns=columns))
-            _l.debug('\n%s', sprint_table(data, columns))
-            # print(sprint_table(data, columns))
+        data = []
+        for item in items:
+            if filter and callable(filter):
+                if filter(item):
+                    pass
+                else:
+                    continue
+            data.append(cls.dump_values(item, columns=columns))
+
+        if in_csv:
+            si = StringIO()
+            cw = csv.writer(si)
+            cw.writerow(columns)
+            for r in data:
+                cw.writerow(r)
+            return si.getvalue()
+        return sprint_table(data, columns)
+
+    @classmethod
+    def dumps(cls, items, columns=None, trn_filter=None, in_csv=None):
+        _l.debug('\n%s', cls.sdumps(items, columns=columns,filter=filter, in_csv=in_csv))
 
 
 class VirtualTransaction(_Base):
@@ -901,26 +919,28 @@ class VirtualTransaction(_Base):
         # t1
         t1 = self.clone()
         t1.is_mismatch = False
+        t1.is_hidden = False
         t1.trn_cls = t1_cls
-        t1.acc_pos = self.acc_cash
-        t1.acc_cash = self.acc_cash
-        t1.str1_pos = self.str1_cash
-        t1.str1_cash = self.str1_cash
-        t1.str2_pos = self.str2_cash
-        t1.str2_cash = self.str2_cash
-        t1.str3_pos = self.str2_cash
-        t1.str3_cash = self.str3_cash
+        t1.acc_pos = self.acc_pos
+        t1.acc_cash = self.acc_pos
+        t1.str1_pos = self.str1_pos
+        t1.str1_cash = self.str1_pos
+        t1.str2_pos = self.str2_pos
+        t1.str2_cash = self.str2_pos
+        t1.str3_pos = self.str3_pos
+        t1.str3_cash = self.str3_pos
 
-        t1.pos_size = self.pos_size * t1_pos_sign
-        t1.cash = self.pos_size * t1_pos_sign
-        t1.principal = self.pos_size * t1_cash_sign
-        t1.carry = self.pos_size * t1_cash_sign
-        t1.overheads = self.pos_size * t1_cash_sign
+        t1.pos_size = abs(self.pos_size) * t1_pos_sign
+        t1.cash = abs(self.cash) * t1_cash_sign
+        t1.principal = abs(self.principal) * t1_cash_sign
+        t1.carry = abs(self.carry) * t1_cash_sign
+        t1.overheads = abs(self.overheads) * t1_cash_sign
         t1.calc()
 
         # t2
         t2 = self.clone()
         t2.is_mismatch = False
+        t2.is_hidden = False
         t2.trn_cls = t2_cls
         t2.acc_pos = self.acc_cash
         t2.acc_cash = self.acc_cash
@@ -928,14 +948,14 @@ class VirtualTransaction(_Base):
         t2.str1_cash = self.str1_cash
         t2.str2_pos = self.str2_cash
         t2.str2_cash = self.str2_cash
-        t2.str3_pos = self.str2_cash
+        t2.str3_pos = self.str3_cash
         t2.str3_cash = self.str3_cash
 
         t2.pos_size = -t1.pos_size
-        t2.cash = -t1.pos_size
-        t2.principal = -t1.pos_size
-        t2.carry = -t1.pos_size
-        t2.overheads = -t1.pos_size
+        t2.cash = -t1.cash
+        t2.principal = -t1.principal
+        t2.carry = -t1.carry
+        t2.overheads = -t1.overheads
         t2.calc()
         return t1, t2
 
@@ -946,8 +966,11 @@ class VirtualTransaction(_Base):
         t1.is_mismatch = False
         t1.trn_ccy = self.trn_ccy
         t1.stl_ccy = self.trn_ccy
-        t1.principal = self.pos_size
+        # t1.pos_size = self.pos_size
         t1.cash = self.pos_size
+        t1.principal = self.pos_size
+        t1.carry = 0.0
+        t1.overheads = 0.0
         t1.ref_fx = 1.0
         t1.pricing()
         t1.calc()
@@ -959,8 +982,10 @@ class VirtualTransaction(_Base):
         t2.trn_ccy = self.trn_ccy
         t2.stl_ccy = self.stl_ccy
         t2.pos_size = self.principal
-        t2.cash = self.principal
-        t2.principal = self.principal
+        # t2.cash = self.cash
+        # t2.principal = self.principal
+        # t2.carry = self.carry
+        # t2.overheads = self.overheads
         try:
             t2.ref_fx = abs(self.pos_size / self.principal)
         except ArithmeticError:
@@ -1296,6 +1321,7 @@ class ReportItem(_Base):
     dump_columns = [
         # 'is_cloned',
         'type_code',
+        'subtype_code',
         # 'trn',
         'instr',
         'ccy',
@@ -2245,11 +2271,11 @@ class ReportItem(_Base):
                 val = getattr(self, sitem)
                 setattr(self, ditem, val)
 
-        for sitem, ditem  in self.pl_closed_fields:
-            setattr(self, sitem, 0.0)
+        for sitem, ditem in self.pl_closed_fields:
+            setattr(self, sitem, float('nan'))
 
-        for sitem, ditem  in self.pl_opened_fields:
-            setattr(self, sitem, 0.0)
+        for sitem, ditem in self.pl_opened_fields:
+            setattr(self, sitem, float('nan'))
 
 
 class Report(object):
@@ -2967,16 +2993,16 @@ class ReportBuilder(object):
                 trn.is_hidden = True
                 # split TRANSFER to sell/buy or buy/sell
                 if trn.pos_size >= 0:
-                    trn1, trn2 = trn.transfer_clone(self._trn_cls_sell, self._trn_cls_buy)
+                    trn1, trn2 = trn.transfer_clone(self._trn_cls_sell, self._trn_cls_buy, t1_pos_sign=1.0, t1_cash_sign=-1.0)
                 else:
-                    trn1, trn2 = trn.transfer_clone(self._trn_cls_buy, self._trn_cls_sell)
+                    trn1, trn2 = trn.transfer_clone(self._trn_cls_buy, self._trn_cls_sell, t1_pos_sign=-1.0, t1_cash_sign=1.0)
                 res.append(trn1)
                 res.append(trn2)
 
             elif trn.trn_cls.id == TransactionClass.FX_TRANSFER:
                 trn.is_hidden = True
 
-                trn1, trn2 = trn.transfer_clone(self._trn_cls_fx_trade, self._trn_cls_fx_trade)
+                trn1, trn2 = trn.transfer_clone(self._trn_cls_fx_trade, self._trn_cls_fx_trade, t1_pos_sign=1.0, t1_cash_sign=-1.0)
                 res.append(trn1)
                 res.append(trn2)
 
@@ -3189,8 +3215,8 @@ class ReportBuilder(object):
 
             elif trn.trn_cls.id in [TransactionClass.CASH_INFLOW, TransactionClass.CASH_OUTFLOW]:
                 self._add_cash(trn, val=trn.cash, ccy=trn.stl_ccy,
-                               acc=trn.acc_pos, str1=trn.str1_pos, str2=trn.str2_pos,
-                               str3=trn.str3_pos)
+                               acc=trn.acc_cash, str1=trn.str1_cash, str2=trn.str2_cash,
+                               str3=trn.str3_cash)
 
                 # P&L
                 item = ReportItem.from_trn(self.instance, self.pricing_provider, self.fx_rate_provider,
@@ -3207,8 +3233,8 @@ class ReportBuilder(object):
                 self._add_cash(trn, val=trn.cash, ccy=trn.stl_ccy)
 
                 item = ReportItem.from_trn(self.instance, self.pricing_provider, self.fx_rate_provider,
-                                           ReportItem.TYPE_TRANSACTION_PL, trn, acc=trn.acc_pos,
-                                           str1=trn.str1_pos, str2=trn.str2_pos, str3=trn.str3_pos)
+                                           ReportItem.TYPE_TRANSACTION_PL, trn, acc=trn.acc_cash,
+                                           str1=trn.str1_cash, str2=trn.str2_cash, str3=trn.str3_cash)
                 self._items.append(item)
 
             elif trn.trn_cls.id == TransactionClass.FX_TRADE:
