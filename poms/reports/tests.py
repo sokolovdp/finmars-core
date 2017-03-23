@@ -1018,7 +1018,8 @@ class ReportTestCase(TestCase):
                      stl_ccy=self.usd, principal=20., carry=0., overheads=0.,
                      days=3)
 
-        self._simple_run('buy_sell', report_date=self._d(14))
+        self._simple_run('buy_sell - avco', report_date=self._d(14), cost_method=self._avco)
+        self._simple_run('buy_sell - fifo', report_date=self._d(14), cost_method=self._fifo)
 
     def test_cash_in_out(self):
         self._t_cash_in(trn_ccy=self.eur, stl_ccy=self.eur, position=1000, fx_rate=1.3)
