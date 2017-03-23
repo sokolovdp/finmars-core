@@ -54,36 +54,37 @@ class _Base:
         ret.is_cloned = True
         return ret
 
-    def dump_values(self, columns=None):
+    @classmethod
+    def dump_values(cls, obj, columns=None):
         if columns is None:
-            columns = self.dump_columns
+            columns = cls.dump_columns
         row = []
         for f in columns:
-            row.append(getattr(self, f))
+            row.append(getattr(obj, f))
         return row
 
     @classmethod
     def sdumps(cls, items, columns=None, filter=None, in_csv=False):
-        if _l.isEnabledFor(logging.DEBUG):
-            if columns is None:
-                columns = cls.dump_columns
+        if columns is None:
+            columns = cls.dump_columns
 
-            data = []
-            for item in items:
-                if filter and callable(filter):
-                    if filter(item):
-                        pass
-                    else:
-                        continue
-                data.append(item.dump_values(columns=columns))
-            if in_csv:
-                si = StringIO()
-                cw = csv.writer(si)
-                cw.writerow(columns)
-                for r in data:
-                    cw.writerow(r)
-                return si.getvalue()
-            return sprint_table(data, columns)
+        data = []
+        for item in items:
+            if filter and callable(filter):
+                if filter(item):
+                    pass
+                else:
+                    continue
+            data.append(cls.dump_values(item, columns=columns))
+
+        if in_csv:
+            si = StringIO()
+            cw = csv.writer(si)
+            cw.writerow(columns)
+            for r in data:
+                cw.writerow(r)
+            return si.getvalue()
+        return sprint_table(data, columns)
 
     @classmethod
     def dumps(cls, items, columns=None, trn_filter=None, in_csv=None):
@@ -918,6 +919,7 @@ class VirtualTransaction(_Base):
         # t1
         t1 = self.clone()
         t1.is_mismatch = False
+        t1.is_hidden = False
         t1.trn_cls = t1_cls
         t1.acc_pos = self.acc_pos
         t1.acc_cash = self.acc_pos
@@ -938,6 +940,7 @@ class VirtualTransaction(_Base):
         # t2
         t2 = self.clone()
         t2.is_mismatch = False
+        t2.is_hidden = False
         t2.trn_cls = t2_cls
         t2.acc_pos = self.acc_cash
         t2.acc_cash = self.acc_cash
