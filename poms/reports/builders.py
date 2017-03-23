@@ -1578,6 +1578,14 @@ class ReportItem(_Base):
             item.ccy = ccy
 
         elif item.type == ReportItem.TYPE_TRANSACTION_PL:
+            item.acc = acc or trn.acc_cash
+            item.str1 = str1 or trn.str1_cash
+            item.str2 = str2 or trn.str2_cash
+            item.str3 = str3 or trn.str3_cash
+            item.ccy = ccy or trn.trn_ccy
+
+            item.pricing_ccy = trn.report.master_user.system_currency
+
             # item.principal_res = trn.principal_res
             # item.carry_res = trn.carry_res
             # item.overheads_res = trn.overheads_res
