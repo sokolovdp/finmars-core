@@ -1119,22 +1119,22 @@ class ReportTestCase(TestCase):
         trns = [
             self._buy,
             self._sell,
-            # self._cash_inflow,
-            # self._cash_outflow,
-            # self._fx_tade,
-            # self._instrument_pl,
-            # self._transaction_pl,
-            # self._transfer,
-            # self._fx_transfer,
+            self._cash_inflow,
+            self._cash_outflow,
+            self._fx_tade,
+            self._instrument_pl,
+            self._transaction_pl,
+            self._transfer,
+            self._fx_transfer,
         ]
         fields = [
             'ignore',
-            # 'portfolio',
-            # 'account',
+            'portfolio',
+            'account',
             'strategy1',
-            # 'strategy2',
-            # 'strategy3',
-            # 'all',
+            'strategy2',
+            'strategy3',
+            'all',
             # 'full',
         ]
 
@@ -1312,7 +1312,11 @@ class ReportTestCase(TestCase):
             modes = [Report.MODE_IGNORE, Report.MODE_INDEPENDENT, Report.MODE_INTERDEPENDENT]
             mode_names = ['IGNORE', 'INDEPENDENT', 'INTERDEPENDENT']
             for portfolio_index, portfolio_mode in enumerate(modes):
+                if portfolio_mode in [Report.MODE_INTERDEPENDENT]:
+                    continue
                 for account_index, account_mode in enumerate(modes):
+                    if account_mode in [Report.MODE_INTERDEPENDENT]:
+                        continue
                     for strategy1_index, strategy1_mode in enumerate(modes):
                         for strategy2_index, strategy2_mode in enumerate(modes):
                             for strategy3_index, strategy3_mode in enumerate(modes):
