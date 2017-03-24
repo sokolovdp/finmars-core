@@ -714,11 +714,13 @@ class ReportTestCase(TestCase):
         self.s2_1_1 = Strategy2Subgroup.objects.create(master_user=self.m, group=self.s2_1, name='1-1')
         self.s2_1_1_1 = Strategy2.objects.create(master_user=self.m, subgroup=self.s2_1_1, name='1-1-1')
         self.s2_1_1_2 = Strategy2.objects.create(master_user=self.m, subgroup=self.s2_1_1, name='1-1-2')
+        self.s2_1_1_3 = Strategy2.objects.create(master_user=self.m, subgroup=self.s2_1_1, name='1-1-3')
 
         self.s3_1 = Strategy3Group.objects.create(master_user=self.m, name='1')
         self.s3_1_1 = Strategy3Subgroup.objects.create(master_user=self.m, group=self.s3_1, name='1-1')
         self.s3_1_1_1 = Strategy3.objects.create(master_user=self.m, subgroup=self.s3_1_1, name='1-1-1')
         self.s3_1_1_2 = Strategy3.objects.create(master_user=self.m, subgroup=self.s3_1_1, name='1-1-2')
+        self.s3_1_1_3 = Strategy3.objects.create(master_user=self.m, subgroup=self.s3_1_1, name='1-1-3')
 
         # for g_i in range(0, 10):
         #     g = Strategy1Group.objects.create(master_user=self.m, name='%s' % (g_i,))
@@ -1126,10 +1128,10 @@ class ReportTestCase(TestCase):
             # self._fx_transfer,
         ]
         fields = [
-            # 'ignore',
-            'portfolio',
+            'ignore',
+            # 'portfolio',
             # 'account',
-            # 'strategy1',
+            'strategy1',
             # 'strategy2',
             # 'strategy3',
             # 'all',
@@ -1137,13 +1139,13 @@ class ReportTestCase(TestCase):
         ]
 
         if self._buy in trns:
-            self._t_buy(days=1, instr=self.bond0, position=5,
+            self._t_buy(days=1, instr=self.bond0, position=10,
                         stl_ccy=self.usd, principal=-10., carry=-0., overheads=-0.,
                         p=self.p1, acc_pos=self.a1_1, acc_cash=self.a1_1, acc_interim=self.a1_1,
                         s1_pos=self.s1_1_1_1, s1_cash=self.s1_1_1_1,
                         s2_pos=self.s2_1_1_1, s2_cash=self.s2_1_1_1,
                         s3_pos=self.s3_1_1_1, s3_cash=self.s3_1_1_1)
-            self._t_buy(days=1, instr=self.bond0, position=5,
+            self._t_buy(days=1, instr=self.bond0, position=10,
                         stl_ccy=self.usd, principal=-10., carry=-0., overheads=-0.,
                         p=self.p2, acc_pos=self.a1_2, acc_cash=self.a1_2, acc_interim=self.a1_2,
                         s1_pos=self.s1_1_1_2, s1_cash=self.s1_1_1_2,
@@ -1160,9 +1162,9 @@ class ReportTestCase(TestCase):
             self._t_sell(days=1, instr=self.bond0, position=-5,
                          stl_ccy=self.usd, principal=10., carry=0., overheads=-0.,
                          p=self.p2, acc_pos=self.a1_2, acc_cash=self.a1_2, acc_interim=self.a1_2,
-                         s1_pos=self.s1_1_1_2, s1_cash=self.s1_1_1_2,
-                         s2_pos=self.s2_1_1_2, s2_cash=self.s2_1_1_2,
-                         s3_pos=self.s3_1_1_2, s3_cash=self.s3_1_1_2)
+                         s1_pos=self.s1_1_1_3, s1_cash=self.s1_1_1_3,
+                         s2_pos=self.s2_1_1_3, s2_cash=self.s2_1_1_3,
+                         s3_pos=self.s3_1_1_3, s3_cash=self.s3_1_1_3)
 
         if self._cash_inflow in trns:
             self._t_cash_in(days=1, trn_ccy=self.eur, stl_ccy=self.eur, position=1000, fx_rate=1.3,
@@ -1233,7 +1235,7 @@ class ReportTestCase(TestCase):
                            notes='trnpl2')
 
         if 'ignore' in fields:
-            self._simple_run('IGNORE - all', report_currency=self.cad, report_date=self._d(14),
+            self._simple_run('mode - IGNORE - all', report_currency=self.cad, report_date=self._d(14),
                              portfolio_mode=Report.MODE_IGNORE,
                              account_mode=Report.MODE_IGNORE,
                              strategy1_mode=Report.MODE_IGNORE,
@@ -1241,7 +1243,7 @@ class ReportTestCase(TestCase):
                              strategy3_mode=Report.MODE_IGNORE)
 
         if 'portfolio' in fields:
-            self._simple_run('INDEPENDENT - portfolio', report_currency=self.cad, report_date=self._d(14),
+            self._simple_run('mode - INDEPENDENT - portfolio', report_currency=self.cad, report_date=self._d(14),
                              portfolio_mode=Report.MODE_INDEPENDENT,
                              account_mode=Report.MODE_IGNORE,
                              strategy1_mode=Report.MODE_IGNORE,
@@ -1249,7 +1251,7 @@ class ReportTestCase(TestCase):
                              strategy3_mode=Report.MODE_IGNORE)
 
         if 'account' in fields:
-            self._simple_run('INDEPENDENT - account', report_currency=self.cad, report_date=self._d(14),
+            self._simple_run('mode - INDEPENDENT - account', report_currency=self.cad, report_date=self._d(14),
                              portfolio_mode=Report.MODE_IGNORE,
                              account_mode=Report.MODE_INDEPENDENT,
                              strategy1_mode=Report.MODE_IGNORE,
@@ -1257,13 +1259,13 @@ class ReportTestCase(TestCase):
                              strategy3_mode=Report.MODE_IGNORE)
 
         if 'strategy1' in fields:
-            self._simple_run('INDEPENDENT - strategy1', report_currency=self.cad, report_date=self._d(14),
+            self._simple_run('mode - INDEPENDENT - strategy1', report_currency=self.cad, report_date=self._d(14),
                              portfolio_mode=Report.MODE_IGNORE,
                              account_mode=Report.MODE_IGNORE,
                              strategy1_mode=Report.MODE_INDEPENDENT,
                              strategy2_mode=Report.MODE_IGNORE,
                              strategy3_mode=Report.MODE_IGNORE)
-            self._simple_run('INTERDEPENDENT - strategy1', report_currency=self.cad, report_date=self._d(14),
+            self._simple_run('mode - INTERDEPENDENT - strategy1', report_currency=self.cad, report_date=self._d(14),
                              portfolio_mode=Report.MODE_IGNORE,
                              account_mode=Report.MODE_IGNORE,
                              strategy1_mode=Report.MODE_INTERDEPENDENT,
@@ -1271,13 +1273,13 @@ class ReportTestCase(TestCase):
                              strategy3_mode=Report.MODE_IGNORE)
 
         if 'strategy2' in fields:
-            self._simple_run('INDEPENDENT - strategy2', report_currency=self.cad, report_date=self._d(14),
+            self._simple_run('mode - INDEPENDENT - strategy2', report_currency=self.cad, report_date=self._d(14),
                              portfolio_mode=Report.MODE_IGNORE,
                              account_mode=Report.MODE_IGNORE,
                              strategy1_mode=Report.MODE_IGNORE,
                              strategy2_mode=Report.MODE_INDEPENDENT,
                              strategy3_mode=Report.MODE_IGNORE)
-            self._simple_run('INTERDEPENDENT - strategy2', report_currency=self.cad, report_date=self._d(14),
+            self._simple_run('mode - INTERDEPENDENT - strategy2', report_currency=self.cad, report_date=self._d(14),
                              portfolio_mode=Report.MODE_IGNORE,
                              account_mode=Report.MODE_IGNORE,
                              strategy1_mode=Report.MODE_IGNORE,
@@ -1285,13 +1287,13 @@ class ReportTestCase(TestCase):
                              strategy3_mode=Report.MODE_IGNORE)
 
         if 'strategy3' in fields:
-            self._simple_run('INDEPENDENT - strategy3', report_currency=self.cad, report_date=self._d(14),
+            self._simple_run('mode - INDEPENDENT - strategy3', report_currency=self.cad, report_date=self._d(14),
                              portfolio_mode=Report.MODE_IGNORE,
                              account_mode=Report.MODE_IGNORE,
                              strategy1_mode=Report.MODE_IGNORE,
                              strategy2_mode=Report.MODE_IGNORE,
                              strategy3_mode=Report.MODE_INDEPENDENT)
-            self._simple_run('INTERDEPENDENT - strategy3', report_currency=self.cad, report_date=self._d(14),
+            self._simple_run('mode - INTERDEPENDENT - strategy3', report_currency=self.cad, report_date=self._d(14),
                              portfolio_mode=Report.MODE_IGNORE,
                              account_mode=Report.MODE_IGNORE,
                              strategy1_mode=Report.MODE_IGNORE,
@@ -1299,7 +1301,7 @@ class ReportTestCase(TestCase):
                              strategy3_mode=Report.MODE_INTERDEPENDENT)
 
         if 'all' in fields:
-            self._simple_run('INDEPENDENT - all', report_currency=self.cad, report_date=self._d(14),
+            self._simple_run('mode - INDEPENDENT - all', report_currency=self.cad, report_date=self._d(14),
                              portfolio_mode=Report.MODE_INDEPENDENT,
                              account_mode=Report.MODE_INDEPENDENT,
                              strategy1_mode=Report.MODE_INDEPENDENT,
