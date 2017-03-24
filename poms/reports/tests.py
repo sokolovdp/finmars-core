@@ -1113,17 +1113,27 @@ class ReportTestCase(TestCase):
 
     # ------------------------------------------------------------------------------------------------------------------
 
-    def _test_modes(self):
+    def test_modes(self):
         trns = [
             self._buy,
             self._sell,
-            self._cash_inflow,
-            self._cash_outflow,
-            self._fx_tade,
-            self._instrument_pl,
-            self._transaction_pl,
-            self._transfer,
-            self._fx_transfer,
+            # self._cash_inflow,
+            # self._cash_outflow,
+            # self._fx_tade,
+            # self._instrument_pl,
+            # self._transaction_pl,
+            # self._transfer,
+            # self._fx_transfer,
+        ]
+        fields = [
+            # 'ignore',
+            'portfolio',
+            # 'account',
+            # 'strategy1',
+            # 'strategy2',
+            # 'strategy3',
+            # 'all',
+            # 'full',
         ]
 
         if self._buy in trns:
@@ -1222,100 +1232,108 @@ class ReportTestCase(TestCase):
                            s3_pos=self.s3_1_1_2, s3_cash=self.s3_1_1_2,
                            notes='trnpl2')
 
-        self._simple_run('IGNORE - all', report_currency=self.cad, report_date=self._d(14),
-                         portfolio_mode=Report.MODE_IGNORE,
-                         account_mode=Report.MODE_IGNORE,
-                         strategy1_mode=Report.MODE_IGNORE,
-                         strategy2_mode=Report.MODE_IGNORE,
-                         strategy3_mode=Report.MODE_IGNORE)
+        if 'ignore' in fields:
+            self._simple_run('IGNORE - all', report_currency=self.cad, report_date=self._d(14),
+                             portfolio_mode=Report.MODE_IGNORE,
+                             account_mode=Report.MODE_IGNORE,
+                             strategy1_mode=Report.MODE_IGNORE,
+                             strategy2_mode=Report.MODE_IGNORE,
+                             strategy3_mode=Report.MODE_IGNORE)
 
-        self._simple_run('INDEPENDENT - portfolio', report_currency=self.cad, report_date=self._d(14),
-                         portfolio_mode=Report.MODE_INDEPENDENT,
-                         account_mode=Report.MODE_IGNORE,
-                         strategy1_mode=Report.MODE_IGNORE,
-                         strategy2_mode=Report.MODE_IGNORE,
-                         strategy3_mode=Report.MODE_IGNORE)
+        if 'portfolio' in fields:
+            self._simple_run('INDEPENDENT - portfolio', report_currency=self.cad, report_date=self._d(14),
+                             portfolio_mode=Report.MODE_INDEPENDENT,
+                             account_mode=Report.MODE_IGNORE,
+                             strategy1_mode=Report.MODE_IGNORE,
+                             strategy2_mode=Report.MODE_IGNORE,
+                             strategy3_mode=Report.MODE_IGNORE)
 
-        self._simple_run('INDEPENDENT - account', report_currency=self.cad, report_date=self._d(14),
-                         portfolio_mode=Report.MODE_IGNORE,
-                         account_mode=Report.MODE_INDEPENDENT,
-                         strategy1_mode=Report.MODE_IGNORE,
-                         strategy2_mode=Report.MODE_IGNORE,
-                         strategy3_mode=Report.MODE_IGNORE)
+        if 'account' in fields:
+            self._simple_run('INDEPENDENT - account', report_currency=self.cad, report_date=self._d(14),
+                             portfolio_mode=Report.MODE_IGNORE,
+                             account_mode=Report.MODE_INDEPENDENT,
+                             strategy1_mode=Report.MODE_IGNORE,
+                             strategy2_mode=Report.MODE_IGNORE,
+                             strategy3_mode=Report.MODE_IGNORE)
 
-        self._simple_run('INDEPENDENT - strategy1', report_currency=self.cad, report_date=self._d(14),
-                         portfolio_mode=Report.MODE_IGNORE,
-                         account_mode=Report.MODE_IGNORE,
-                         strategy1_mode=Report.MODE_INDEPENDENT,
-                         strategy2_mode=Report.MODE_IGNORE,
-                         strategy3_mode=Report.MODE_IGNORE)
-        self._simple_run('INTERDEPENDENT - strategy1', report_currency=self.cad, report_date=self._d(14),
-                         portfolio_mode=Report.MODE_IGNORE,
-                         account_mode=Report.MODE_IGNORE,
-                         strategy1_mode=Report.MODE_INTERDEPENDENT,
-                         strategy2_mode=Report.MODE_IGNORE,
-                         strategy3_mode=Report.MODE_IGNORE)
+        if 'strategy1' in fields:
+            self._simple_run('INDEPENDENT - strategy1', report_currency=self.cad, report_date=self._d(14),
+                             portfolio_mode=Report.MODE_IGNORE,
+                             account_mode=Report.MODE_IGNORE,
+                             strategy1_mode=Report.MODE_INDEPENDENT,
+                             strategy2_mode=Report.MODE_IGNORE,
+                             strategy3_mode=Report.MODE_IGNORE)
+            self._simple_run('INTERDEPENDENT - strategy1', report_currency=self.cad, report_date=self._d(14),
+                             portfolio_mode=Report.MODE_IGNORE,
+                             account_mode=Report.MODE_IGNORE,
+                             strategy1_mode=Report.MODE_INTERDEPENDENT,
+                             strategy2_mode=Report.MODE_IGNORE,
+                             strategy3_mode=Report.MODE_IGNORE)
 
-        self._simple_run('INDEPENDENT - strategy2', report_currency=self.cad, report_date=self._d(14),
-                         portfolio_mode=Report.MODE_IGNORE,
-                         account_mode=Report.MODE_IGNORE,
-                         strategy1_mode=Report.MODE_IGNORE,
-                         strategy2_mode=Report.MODE_INDEPENDENT,
-                         strategy3_mode=Report.MODE_IGNORE)
-        self._simple_run('INTERDEPENDENT - strategy2', report_currency=self.cad, report_date=self._d(14),
-                         portfolio_mode=Report.MODE_IGNORE,
-                         account_mode=Report.MODE_IGNORE,
-                         strategy1_mode=Report.MODE_IGNORE,
-                         strategy2_mode=Report.MODE_INTERDEPENDENT,
-                         strategy3_mode=Report.MODE_IGNORE)
+        if 'strategy2' in fields:
+            self._simple_run('INDEPENDENT - strategy2', report_currency=self.cad, report_date=self._d(14),
+                             portfolio_mode=Report.MODE_IGNORE,
+                             account_mode=Report.MODE_IGNORE,
+                             strategy1_mode=Report.MODE_IGNORE,
+                             strategy2_mode=Report.MODE_INDEPENDENT,
+                             strategy3_mode=Report.MODE_IGNORE)
+            self._simple_run('INTERDEPENDENT - strategy2', report_currency=self.cad, report_date=self._d(14),
+                             portfolio_mode=Report.MODE_IGNORE,
+                             account_mode=Report.MODE_IGNORE,
+                             strategy1_mode=Report.MODE_IGNORE,
+                             strategy2_mode=Report.MODE_INTERDEPENDENT,
+                             strategy3_mode=Report.MODE_IGNORE)
 
-        self._simple_run('INDEPENDENT - strategy3', report_currency=self.cad, report_date=self._d(14),
-                         portfolio_mode=Report.MODE_IGNORE,
-                         account_mode=Report.MODE_IGNORE,
-                         strategy1_mode=Report.MODE_IGNORE,
-                         strategy2_mode=Report.MODE_IGNORE,
-                         strategy3_mode=Report.MODE_INDEPENDENT)
-        self._simple_run('INTERDEPENDENT - strategy3', report_currency=self.cad, report_date=self._d(14),
-                         portfolio_mode=Report.MODE_IGNORE,
-                         account_mode=Report.MODE_IGNORE,
-                         strategy1_mode=Report.MODE_IGNORE,
-                         strategy2_mode=Report.MODE_IGNORE,
-                         strategy3_mode=Report.MODE_INTERDEPENDENT)
+        if 'strategy3' in fields:
+            self._simple_run('INDEPENDENT - strategy3', report_currency=self.cad, report_date=self._d(14),
+                             portfolio_mode=Report.MODE_IGNORE,
+                             account_mode=Report.MODE_IGNORE,
+                             strategy1_mode=Report.MODE_IGNORE,
+                             strategy2_mode=Report.MODE_IGNORE,
+                             strategy3_mode=Report.MODE_INDEPENDENT)
+            self._simple_run('INTERDEPENDENT - strategy3', report_currency=self.cad, report_date=self._d(14),
+                             portfolio_mode=Report.MODE_IGNORE,
+                             account_mode=Report.MODE_IGNORE,
+                             strategy1_mode=Report.MODE_IGNORE,
+                             strategy2_mode=Report.MODE_IGNORE,
+                             strategy3_mode=Report.MODE_INTERDEPENDENT)
 
-        self._simple_run('INDEPENDENT - all', report_currency=self.cad, report_date=self._d(14),
-                         portfolio_mode=Report.MODE_INDEPENDENT,
-                         account_mode=Report.MODE_INDEPENDENT,
-                         strategy1_mode=Report.MODE_INDEPENDENT,
-                         strategy2_mode=Report.MODE_INDEPENDENT,
-                         strategy3_mode=Report.MODE_INDEPENDENT)
+        if 'all' in fields:
+            self._simple_run('INDEPENDENT - all', report_currency=self.cad, report_date=self._d(14),
+                             portfolio_mode=Report.MODE_INDEPENDENT,
+                             account_mode=Report.MODE_INDEPENDENT,
+                             strategy1_mode=Report.MODE_INDEPENDENT,
+                             strategy2_mode=Report.MODE_INDEPENDENT,
+                             strategy3_mode=Report.MODE_INDEPENDENT)
 
-        # modes = [Report.MODE_IGNORE, Report.MODE_INDEPENDENT, Report.MODE_INTERDEPENDENT]
-        # mode_names = ['IGNORE', 'INDEPENDENT', 'INTERDEPENDENT']
-        # for portfolio_index, portfolio_mode in enumerate(modes):
-        #     for account_index, account_mode in enumerate(modes):
-        #         for strategy1_index, strategy1_mode in enumerate(modes):
-        #             for strategy2_index, strategy2_mode in enumerate(modes):
-        #                 for strategy3_index, strategy3_mode in enumerate(modes):
-        #                     name = 'modes - portfolio=%s, account=%s, strategy1=%s, strategy2=%s, strategy3=%s' % (
-        #                         mode_names[portfolio_index],
-        #                         mode_names[account_index],
-        #                         mode_names[strategy1_index],
-        #                         mode_names[strategy2_index],
-        #                         mode_names[strategy3_index],
-        #                     )
-        #                     self._simple_run(
-        #                         name,
-        #                         report_currency=self.cad,
-        #                         report_date=self._d(14),
-        #                         portfolio_mode=portfolio_mode,
-        #                         account_mode=account_mode,
-        #                         strategy1_mode=strategy1_mode,
-        #                         strategy2_mode=strategy2_mode,
-        #                         strategy3_mode=strategy3_mode
-        #                     )
+        if 'full' in fields:
+            modes = [Report.MODE_IGNORE, Report.MODE_INDEPENDENT, Report.MODE_INTERDEPENDENT]
+            mode_names = ['IGNORE', 'INDEPENDENT', 'INTERDEPENDENT']
+            for portfolio_index, portfolio_mode in enumerate(modes):
+                for account_index, account_mode in enumerate(modes):
+                    for strategy1_index, strategy1_mode in enumerate(modes):
+                        for strategy2_index, strategy2_mode in enumerate(modes):
+                            for strategy3_index, strategy3_mode in enumerate(modes):
+                                name = 'modes - portfolio=%s, account=%s, strategy1=%s, strategy2=%s, strategy3=%s' % (
+                                    mode_names[portfolio_index],
+                                    mode_names[account_index],
+                                    mode_names[strategy1_index],
+                                    mode_names[strategy2_index],
+                                    mode_names[strategy3_index],
+                                )
+                                self._simple_run(
+                                    name,
+                                    report_currency=self.cad,
+                                    report_date=self._d(14),
+                                    portfolio_mode=portfolio_mode,
+                                    account_mode=account_mode,
+                                    strategy1_mode=strategy1_mode,
+                                    strategy2_mode=strategy2_mode,
+                                    strategy3_mode=strategy3_mode
+                                )
         pass
 
-    def test_allocations(self):
+    def _test_allocations(self):
         # settings.DEBUG = True
 
         self._t_buy(instr=self.bond0, position=5,
