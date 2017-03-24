@@ -88,7 +88,7 @@ class _Base:
 
     @classmethod
     def dumps(cls, items, columns=None, trn_filter=None, in_csv=None):
-        _l.debug('\n%s', cls.sdumps(items, columns=columns,filter=filter, in_csv=in_csv))
+        _l.debug('\n%s', cls.sdumps(items, columns=columns, filter=filter, in_csv=in_csv))
 
 
 class VirtualTransaction(_Base):
@@ -3005,16 +3005,19 @@ class ReportBuilder(object):
                 trn.is_hidden = True
                 # split TRANSFER to sell/buy or buy/sell
                 if trn.pos_size >= 0:
-                    trn1, trn2 = trn.transfer_clone(self._trn_cls_sell, self._trn_cls_buy, t1_pos_sign=1.0, t1_cash_sign=-1.0)
+                    trn1, trn2 = trn.transfer_clone(self._trn_cls_sell, self._trn_cls_buy,
+                                                    t1_pos_sign=1.0, t1_cash_sign=-1.0)
                 else:
-                    trn1, trn2 = trn.transfer_clone(self._trn_cls_buy, self._trn_cls_sell, t1_pos_sign=-1.0, t1_cash_sign=1.0)
+                    trn1, trn2 = trn.transfer_clone(self._trn_cls_buy, self._trn_cls_sell,
+                                                    t1_pos_sign=-1.0, t1_cash_sign=1.0)
                 res.append(trn1)
                 res.append(trn2)
 
             elif trn.trn_cls.id == TransactionClass.FX_TRANSFER:
                 trn.is_hidden = True
 
-                trn1, trn2 = trn.transfer_clone(self._trn_cls_fx_trade, self._trn_cls_fx_trade, t1_pos_sign=1.0, t1_cash_sign=-1.0)
+                trn1, trn2 = trn.transfer_clone(self._trn_cls_fx_trade, self._trn_cls_fx_trade,
+                                                t1_pos_sign=1.0, t1_cash_sign=-1.0)
                 res.append(trn1)
                 res.append(trn2)
 
