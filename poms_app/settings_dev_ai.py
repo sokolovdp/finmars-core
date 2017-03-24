@@ -23,7 +23,7 @@ if 'redisboard' not in INSTALLED_APPS:
 LOGGING['formatters']['verbose']['format'] = '[%(levelname)1.1s %(asctime)s %(name)s %(module)s:%(lineno)d] %(message)s'
 # LOGGING['formatters']['verbose']['format'] = '%(message)s'
 # LOGGING['loggers']['django.db'] = {'level': 'DEBUG'}
-LOGGING['loggers']['poms']['level'] = 'INFO'
+LOGGING['loggers']['poms']['level'] = 'DEBUG'
 
 SECRET_KEY = 's#)m^ug%_jr0dtko#83_55rd_we&xu#f9p#!1gh@k&$=5&3e67'
 
@@ -62,8 +62,7 @@ CELERY_WORKER_CONCURRENCY = 1
 CELERY_TASK_ALWAYS_EAGER = True
 CELERY_TASK_EAGER_PROPAGATES = True
 # CELERY_WORKER_LOG_FORMAT = LOGGING['formatters']['verbose']['format']
-CELERY_RESULT_EXPIRES = 60
-# CELERY_BEAT_SCHEDULE = {}
+# CELERY_RESULT_EXPIRES = 60
 CELERY_BEAT_SCHEDULE = {
     # 'integrations.download_pricing_auto_scheduler': {
     #     'task': 'integrations.download_pricing_auto_scheduler',
@@ -124,12 +123,11 @@ PRICING_AUTO_DOWNLOAD_DISABLED = False
 PRICING_AUTO_DOWNLOAD_MIN_TIMEDELTA = None
 
 BLOOMBERG_SANDBOX = True
-if BLOOMBERG_SANDBOX:
-    BLOOMBERG_RETRY_DELAY = 0.1
+# BLOOMBERG_RETRY_DELAY = 0.1
+BLOOMBERG_RETRY_DELAY = 5
 BLOOMBERG_SANDBOX_SEND_EMPTY = False
 BLOOMBERG_SANDBOX_SEND_FAIL = False
 BLOOMBERG_SANDBOX_WAIT_FAIL = False
-BLOOMBERG_RETRY_DELAY = 5
 
 # if REDIS_HOST:
 #     if 'cacheops' not in INSTALLED_APPS:
