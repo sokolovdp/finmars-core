@@ -23,16 +23,32 @@ _l = logging.getLogger('poms.transactions')
 
 class TransactionTypeProcess(object):
     # if store is false then operations must be rollback outside, for example in view...
+    MODE_BOOK = 'book'
+    MODE_RECALCULATE = 'recalculate'
 
-    def __init__(self, transaction_type=None, default_values=None,
-                 values=None, has_errors=False,
-                 instruments=None, instruments_errors=None,
-                 complex_transaction=None, complex_transaction_status=None, complex_transaction_errors=None,
-                 transactions=None, transactions_errors=None,
-                 fake_id_gen=None, transaction_order_gen=None,
-                 now=None, context=None):
+    def __init__(self,
+                 process_mode=None,
+                 transaction_type=None,
+                 default_values=None,
+                 values=None,
+                 recalculate_inputs=None,
+                 has_errors=False,
+                 value_errors=None,
+                 instruments=None,
+                 instruments_errors=None,
+                 complex_transaction=None,
+                 complex_transaction_status=None,
+                 complex_transaction_errors=None,
+                 transactions=None,
+                 transactions_errors=None,
+                 fake_id_gen=None,
+                 transaction_order_gen=None,
+                 now=None,
+                 context=None):
 
         self.transaction_type = transaction_type
+
+        self.process_mode = process_mode or TransactionTypeProcess.MODE_BOOK
 
         self.default_values = default_values or {}
 
@@ -58,7 +74,10 @@ class TransactionTypeProcess(object):
         else:
             self.values = values
 
+        self.recalculate_inputs = recalculate_inputs or []
+
         self.has_errors = has_errors
+        self.value_errors = value_errors or []
         self.transactions = transactions or []
         self.instruments = instruments or []
         self.instruments_errors = instruments_errors or []
@@ -70,6 +89,14 @@ class TransactionTypeProcess(object):
 
         self.next_fake_id = fake_id_gen or self._next_fake_id_default
         self.next_transaction_order = transaction_order_gen or self._next_transaction_order_default
+
+    @property
+    def is_book(self):
+        return self.process_mode == self.MODE_BOOK
+
+    @property
+    def is_recalculate(self):
+        return self.process_mode == self.MODE_RECALCULATE
 
     def _next_fake_id_default(self):
         self._id_seq -= 1
@@ -156,6 +183,8 @@ class TransactionTypeProcess(object):
             self.values[i.name] = value
 
     def process(self):
+        if self.process_mode == self.MODE_RECALCULATE:
+            return self.process_recalculate()
         _l.debug('process: %s, values=%s', self.transaction_type, self.values)
 
         master_user = self.transaction_type.master_user
@@ -429,13 +458,36 @@ class TransactionTypeProcess(object):
                 finally:
                     self.transactions_errors.append(errors)
 
-        self.has_errors = bool(self.instruments_errors) or \
-                          any(bool(e) for e in self.complex_transaction_errors) or \
-                          any(bool(e) for e in self.transactions_errors)
+        self._set_has_errors()
 
         if not self.has_errors and self.transactions:
             for trn in self.transactions:
                 trn.calc_cash_by_formulas()
+
+    def process_recalculate(self):
+        if not self.recalculate_inputs:
+            return
+
+        inputs = {i.name: i for i in self.inputs}
+
+        for name in self.recalculate_inputs:
+            inp = inputs[name]
+            if inp.can_recalculate:
+                errors = {}
+                try:
+                    res = formula.safe_eval(inp.value_expr, names=self.values, now=self._now, context=self._context)
+                    self.values[name] = res
+                except formula.InvalidExpression as e:
+                    self._set_eval_error(errors, inp.name, inp.value_expr, e)
+                    self.value_errors.append(errors)
+
+        self._set_has_errors()
+
+    def _set_has_errors(self):
+        self.has_errors = bool(self.instruments_errors) or \
+                          any(bool(e) for e in self.value_errors) or \
+                          any(bool(e) for e in self.complex_transaction_errors) or \
+                          any(bool(e) for e in self.transactions_errors)
 
     def _set_val(self, errors, values, default_value, target, target_attr_name, source, source_attr_name):
         value = getattr(source, source_attr_name)
