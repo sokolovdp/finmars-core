@@ -949,6 +949,7 @@ class VirtualTransaction(_Base):
         t1.carry = 0.0
         t1.overheads = 0.0
         t1.ref_fx = 1.0
+        t1.cash_date = self.acc_date
         t1.acc_cash = self.acc_pos
         t1.str1_cash = self.str1_pos
         t1.str2_cash = self.str2_pos
