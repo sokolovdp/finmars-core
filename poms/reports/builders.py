@@ -936,6 +936,7 @@ class VirtualTransaction(_Base):
         return t1, t2
 
     def fx_trade_clone(self):
+        # always used *_cash for groupping!
         # t1
         t1 = self.clone()
         t1.is_hidden = False
@@ -948,6 +949,10 @@ class VirtualTransaction(_Base):
         t1.carry = 0.0
         t1.overheads = 0.0
         t1.ref_fx = 1.0
+        t1.acc_cash = self.acc_pos
+        t1.str1_cash = self.str1_pos
+        t1.str2_cash = self.str2_pos
+        t1.str3_cash = self.str3_pos
         t1.pricing()
         t1.calc()
 
