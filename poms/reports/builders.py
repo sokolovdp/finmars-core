@@ -452,8 +452,9 @@ class VirtualTransaction(_Base):
 
         self.notes = overrides.get('notes', trn.notes)
 
-        # ----
+        self.set_case()
 
+    def set_case(self):
         if self.acc_date <= self.report.report_date < self.cash_date:
             self.case = 1
         elif self.cash_date <= self.report.report_date < self.acc_date:
@@ -954,6 +955,7 @@ class VirtualTransaction(_Base):
         t1.str1_cash = self.str1_pos
         t1.str2_cash = self.str2_pos
         t1.str3_cash = self.str3_pos
+        t1.set_case()
         t1.pricing()
         t1.calc()
 
@@ -974,6 +976,7 @@ class VirtualTransaction(_Base):
             t2.ref_fx = 0.0
         t2.pricing()
         t2.calc()
+
         return t1, t2
 
     # globals ----------------------------------------------------
