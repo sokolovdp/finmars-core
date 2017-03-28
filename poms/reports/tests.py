@@ -657,6 +657,8 @@ class ReportTestCase(TestCase):
                                   accrued_mult=1.0)
         self.stock2 = self._instr('stock2', pricing_ccy=self.usd, price_mult=1.0, accrued_ccy=self.usd,
                                   accrued_mult=1.0)
+        self.stock3 = self._instr('stock3', pricing_ccy=self.usd, price_mult=1.0, accrued_ccy=self.usd,
+                                  accrued_mult=1.0)
 
         PriceHistory.objects.all().delete()
         for days in range(0, 29):
@@ -712,11 +714,13 @@ class ReportTestCase(TestCase):
         self.s2_1_1 = Strategy2Subgroup.objects.create(master_user=self.m, group=self.s2_1, name='1-1')
         self.s2_1_1_1 = Strategy2.objects.create(master_user=self.m, subgroup=self.s2_1_1, name='1-1-1')
         self.s2_1_1_2 = Strategy2.objects.create(master_user=self.m, subgroup=self.s2_1_1, name='1-1-2')
+        self.s2_1_1_3 = Strategy2.objects.create(master_user=self.m, subgroup=self.s2_1_1, name='1-1-3')
 
         self.s3_1 = Strategy3Group.objects.create(master_user=self.m, name='1')
         self.s3_1_1 = Strategy3Subgroup.objects.create(master_user=self.m, group=self.s3_1, name='1-1')
         self.s3_1_1_1 = Strategy3.objects.create(master_user=self.m, subgroup=self.s3_1_1, name='1-1-1')
         self.s3_1_1_2 = Strategy3.objects.create(master_user=self.m, subgroup=self.s3_1_1, name='1-1-2')
+        self.s3_1_1_3 = Strategy3.objects.create(master_user=self.m, subgroup=self.s3_1_1, name='1-1-3')
 
         # for g_i in range(0, 10):
         #     g = Strategy1Group.objects.create(master_user=self.m, name='%s' % (g_i,))
@@ -1111,169 +1115,261 @@ class ReportTestCase(TestCase):
 
     # ------------------------------------------------------------------------------------------------------------------
 
-    def test_IGNORE_INDEPENDENT(self):
-        self._t_buy(instr=self.bond0, position=5,
-                    stl_ccy=self.usd, principal=-10., carry=-0., overheads=-0.,
-                    days=1,
-                    p=self.p1, acc_pos=self.a1_1, acc_cash=self.a1_1, acc_interim=self.a1_1,
-                    s1_pos=self.s1_1_1_1, s1_cash=self.s1_1_1_1,
-                    s2_pos=self.s2_1_1_1, s2_cash=self.s2_1_1_1,
-                    s3_pos=self.s3_1_1_1, s3_cash=self.s3_1_1_1)
-        self._t_buy(instr=self.bond0, position=5,
-                    stl_ccy=self.usd, principal=-10., carry=-0., overheads=-0.,
-                    days=1,
-                    p=self.p2, acc_pos=self.a1_2, acc_cash=self.a1_2, acc_interim=self.a1_2,
-                    s1_pos=self.s1_1_1_2, s1_cash=self.s1_1_1_2,
-                    s2_pos=self.s2_1_1_2, s2_cash=self.s2_1_1_2,
-                    s3_pos=self.s3_1_1_2, s3_cash=self.s3_1_1_2)
+    def test_modes(self):
+        trns = [
+            self._buy,
+            self._sell,
+            self._cash_inflow,
+            self._cash_outflow,
+            self._fx_tade,
+            self._instrument_pl,
+            self._transaction_pl,
+            self._transfer,
+            self._fx_transfer,
+        ]
+        fields = [
+            'ignore',
+            'portfolio',
+            'account',
+            'strategy1',
+            'strategy2',
+            'strategy3',
+            'all',
+            # 'full',
+        ]
 
-        self._t_sell(instr=self.bond01, position=-5,
-                     stl_ccy=self.usd, principal=10., carry=0., overheads=-0.,
-                     days=1,
-                     p=self.p1, acc_pos=self.a1_1, acc_cash=self.a1_1, acc_interim=self.a1_1,
-                     s1_pos=self.s1_1_1_1, s1_cash=self.s1_1_1_1,
-                     s2_pos=self.s2_1_1_1, s2_cash=self.s2_1_1_1,
-                     s3_pos=self.s3_1_1_1, s3_cash=self.s3_1_1_1)
-        self._t_sell(instr=self.bond01, position=-5,
-                     stl_ccy=self.usd, principal=10., carry=0., overheads=-0.,
-                     days=1,
-                     p=self.p2, acc_pos=self.a1_2, acc_cash=self.a1_2, acc_interim=self.a1_2,
-                     s1_pos=self.s1_1_1_2, s1_cash=self.s1_1_1_2,
-                     s2_pos=self.s2_1_1_2, s2_cash=self.s2_1_1_2,
-                     s3_pos=self.s3_1_1_2, s3_cash=self.s3_1_1_2)
-
-        self._t_cash_in(trn_ccy=self.eur, stl_ccy=self.eur, position=1000, fx_rate=1.3,
-                        days=1,
+        if self._buy in trns:
+            self._t_buy(days=1, instr=self.bond0, position=10,
+                        stl_ccy=self.usd, principal=-10., carry=-0., overheads=-0.,
                         p=self.p1, acc_pos=self.a1_1, acc_cash=self.a1_1, acc_interim=self.a1_1,
                         s1_pos=self.s1_1_1_1, s1_cash=self.s1_1_1_1,
                         s2_pos=self.s2_1_1_1, s2_cash=self.s2_1_1_1,
                         s3_pos=self.s3_1_1_1, s3_cash=self.s3_1_1_1)
-        self._t_cash_in(trn_ccy=self.eur, stl_ccy=self.eur, position=1000, fx_rate=1.3,
-                        days=1,
+            self._t_buy(days=1, instr=self.bond0, position=10,
+                        stl_ccy=self.usd, principal=-10., carry=-0., overheads=-0.,
                         p=self.p2, acc_pos=self.a1_2, acc_cash=self.a1_2, acc_interim=self.a1_2,
                         s1_pos=self.s1_1_1_2, s1_cash=self.s1_1_1_2,
                         s2_pos=self.s2_1_1_2, s2_cash=self.s2_1_1_2,
                         s3_pos=self.s3_1_1_2, s3_cash=self.s3_1_1_2)
 
-        self._t_cash_out(trn_ccy=self.usd, stl_ccy=self.usd, position=-1000, fx_rate=1.0,
-                         days=1,
+        if self._sell in trns:
+            self._t_sell(days=1, instr=self.bond0, position=-5,
+                         stl_ccy=self.usd, principal=10., carry=0., overheads=-0.,
                          p=self.p1, acc_pos=self.a1_1, acc_cash=self.a1_1, acc_interim=self.a1_1,
                          s1_pos=self.s1_1_1_1, s1_cash=self.s1_1_1_1,
                          s2_pos=self.s2_1_1_1, s2_cash=self.s2_1_1_1,
                          s3_pos=self.s3_1_1_1, s3_cash=self.s3_1_1_1)
-        self._t_cash_out(trn_ccy=self.usd, stl_ccy=self.usd, position=-1000, fx_rate=1.0,
-                         days=1,
+            self._t_sell(days=1, instr=self.bond0, position=-5,
+                         stl_ccy=self.usd, principal=10., carry=0., overheads=-0.,
                          p=self.p2, acc_pos=self.a1_2, acc_cash=self.a1_2, acc_interim=self.a1_2,
-                         s1_pos=self.s1_1_1_2, s1_cash=self.s1_1_1_2,
-                         s2_pos=self.s2_1_1_2, s2_cash=self.s2_1_1_2,
-                         s3_pos=self.s3_1_1_2, s3_cash=self.s3_1_1_2)
+                         s1_pos=self.s1_1_1_3, s1_cash=self.s1_1_1_3,
+                         s2_pos=self.s2_1_1_3, s2_cash=self.s2_1_1_3,
+                         s3_pos=self.s3_1_1_3, s3_cash=self.s3_1_1_3)
 
-        self._t_fx_tade(trn_ccy=self.gbp, position=100,
-                        stl_ccy=self.chf, principal=-140,
-                        days=1,
-                        p=self.p1, acc_pos=self.a1_1, acc_cash=self.a1_1, acc_interim=self.a1_1,
-                        s1_pos=self.s1_1_1_1, s1_cash=self.s1_1_1_1,
-                        s2_pos=self.s2_1_1_1, s2_cash=self.s2_1_1_1,
-                        s3_pos=self.s3_1_1_1, s3_cash=self.s3_1_1_1)
-        self._t_fx_tade(trn_ccy=self.gbp, position=100,
-                        stl_ccy=self.chf, principal=-140,
-                        days=1,
-                        p=self.p2, acc_pos=self.a1_2, acc_cash=self.a1_2, acc_interim=self.a1_2,
-                        s1_pos=self.s1_1_1_2, s1_cash=self.s1_1_1_2,
-                        s2_pos=self.s2_1_1_2, s2_cash=self.s2_1_1_2,
-                        s3_pos=self.s3_1_1_2, s3_cash=self.s3_1_1_2)
+        if self._cash_inflow in trns:
+            self._t_cash_in(days=1, trn_ccy=self.eur, stl_ccy=self.eur, position=1000, fx_rate=1.3,
+                            p=self.p1, acc_pos=self.a1_1, acc_cash=self.a1_1, acc_interim=self.a1_1,
+                            s1_pos=self.s1_1_1_1, s1_cash=self.s1_1_1_1,
+                            s2_pos=self.s2_1_1_1, s2_cash=self.s2_1_1_1,
+                            s3_pos=self.s3_1_1_1, s3_cash=self.s3_1_1_1)
+            self._t_cash_in(days=1, trn_ccy=self.eur, stl_ccy=self.eur, position=1000, fx_rate=1.3,
+                            p=self.p2, acc_pos=self.a1_2, acc_cash=self.a1_2, acc_interim=self.a1_2,
+                            s1_pos=self.s1_1_1_2, s1_cash=self.s1_1_1_2,
+                            s2_pos=self.s2_1_1_2, s2_cash=self.s2_1_1_2,
+                            s3_pos=self.s3_1_1_2, s3_cash=self.s3_1_1_2)
 
-        self._t_instr_pl(instr=self.stock1, position=0.,
-                         stl_ccy=self.chf, principal=0., carry=11., overheads=-1.,
-                         days=1,
-                         p=self.p1, acc_pos=self.a1_1, acc_cash=self.a1_1, acc_interim=self.a1_1,
-                         s1_pos=self.s1_1_1_1, s1_cash=self.s1_1_1_1,
-                         s2_pos=self.s2_1_1_1, s2_cash=self.s2_1_1_1,
-                         s3_pos=self.s3_1_1_1, s3_cash=self.s3_1_1_1)
-        self._t_instr_pl(instr=self.stock1, position=0.,
-                         stl_ccy=self.chf, principal=0., carry=11., overheads=-1.,
-                         days=1,
-                         p=self.p2, acc_pos=self.a1_2, acc_cash=self.a1_2, acc_interim=self.a1_2,
-                         s1_pos=self.s1_1_1_2, s1_cash=self.s1_1_1_2,
-                         s2_pos=self.s2_1_1_2, s2_cash=self.s2_1_1_2,
-                         s3_pos=self.s3_1_1_2, s3_cash=self.s3_1_1_2)
+        if self._cash_outflow in trns:
+            self._t_cash_out(days=1, trn_ccy=self.eur, stl_ccy=self.usd, position=-100, fx_rate=1.0,
+                             p=self.p1, acc_pos=self.a1_1, acc_cash=self.a1_1, acc_interim=self.a1_1,
+                             s1_pos=self.s1_1_1_1, s1_cash=self.s1_1_1_1,
+                             s2_pos=self.s2_1_1_1, s2_cash=self.s2_1_1_1,
+                             s3_pos=self.s3_1_1_1, s3_cash=self.s3_1_1_1)
+            self._t_cash_out(days=1, trn_ccy=self.eur, stl_ccy=self.usd, position=-100, fx_rate=1.0,
+                             p=self.p2, acc_pos=self.a1_2, acc_cash=self.a1_2, acc_interim=self.a1_2,
+                             s1_pos=self.s1_1_1_2, s1_cash=self.s1_1_1_2,
+                             s2_pos=self.s2_1_1_2, s2_cash=self.s2_1_1_2,
+                             s3_pos=self.s3_1_1_2, s3_cash=self.s3_1_1_2)
 
-        self._t_instr_pl(instr=self.stock1, position=0.,
-                         stl_ccy=self.chf, principal=0., carry=11., overheads=-1.,
-                         days=1,
-                         p=self.p1, acc_pos=self.a1_1, acc_cash=self.a1_1, acc_interim=self.a1_1,
-                         s1_pos=self.s1_1_1_1, s1_cash=self.s1_1_1_1,
-                         s2_pos=self.s2_1_1_1, s2_cash=self.s2_1_1_1,
-                         s3_pos=self.s3_1_1_1, s3_cash=self.s3_1_1_1)
-        self._t_instr_pl(instr=self.stock1, position=0.,
-                         stl_ccy=self.chf, principal=0., carry=11., overheads=-1.,
-                         days=1,
-                         p=self.p2, acc_pos=self.a1_2, acc_cash=self.a1_2, acc_interim=self.a1_2,
-                         s1_pos=self.s1_1_1_2, s1_cash=self.s1_1_1_2,
-                         s2_pos=self.s2_1_1_2, s2_cash=self.s2_1_1_2,
-                         s3_pos=self.s3_1_1_2, s3_cash=self.s3_1_1_2)
+        if self._fx_tade in trns:
+            self._t_fx_tade(days=1, trn_ccy=self.gbp, position=100,
+                            stl_ccy=self.chf, principal=-140,
+                            p=self.p1, acc_pos=self.a1_1, acc_cash=self.a1_1, acc_interim=self.a1_1,
+                            s1_pos=self.s1_1_1_1, s1_cash=self.s1_1_1_1,
+                            s2_pos=self.s2_1_1_1, s2_cash=self.s2_1_1_1,
+                            s3_pos=self.s3_1_1_1, s3_cash=self.s3_1_1_1,
+                            notes='fx1')
+            self._t_fx_tade(days=1, trn_ccy=self.gbp, position=100,
+                            stl_ccy=self.chf, principal=-140,
+                            p=self.p2, acc_pos=self.a1_2, acc_cash=self.a1_2, acc_interim=self.a1_2,
+                            s1_pos=self.s1_1_1_2, s1_cash=self.s1_1_1_2,
+                            s2_pos=self.s2_1_1_2, s2_cash=self.s2_1_1_2,
+                            s3_pos=self.s3_1_1_2, s3_cash=self.s3_1_1_2,
+                            notes='fx2')
 
-        self._t_trn_pl(stl_ccy=self.rub, principal=0., carry=-900., overheads=-100.,
-                       days=1,
-                       p=self.p1, acc_pos=self.a1_1, acc_cash=self.a1_1, acc_interim=self.a1_1,
-                       s1_pos=self.s1_1_1_1, s1_cash=self.s1_1_1_1,
-                       s2_pos=self.s2_1_1_1, s2_cash=self.s2_1_1_1,
-                       s3_pos=self.s3_1_1_1, s3_cash=self.s3_1_1_1)
-        self._t_trn_pl(stl_ccy=self.rub, principal=0., carry=-900., overheads=-100.,
-                       days=1,
-                       p=self.p2, acc_pos=self.a1_2, acc_cash=self.a1_2, acc_interim=self.a1_2,
-                       s1_pos=self.s1_1_1_2, s1_cash=self.s1_1_1_2,
-                       s2_pos=self.s2_1_1_2, s2_cash=self.s2_1_1_2,
-                       s3_pos=self.s3_1_1_2, s3_cash=self.s3_1_1_2)
+        if self._instrument_pl in trns:
+            self._t_instr_pl(days=1, instr=self.bond1, position=0.,
+                             stl_ccy=self.chf, principal=0., carry=11., overheads=-1.,
+                             p=self.p1, acc_pos=self.a1_1, acc_cash=self.a1_1, acc_interim=self.a1_1,
+                             s1_pos=self.s1_1_1_1, s1_cash=self.s1_1_1_1,
+                             s2_pos=self.s2_1_1_1, s2_cash=self.s2_1_1_1,
+                             s3_pos=self.s3_1_1_1, s3_cash=self.s3_1_1_1)
+            self._t_instr_pl(days=1, instr=self.bond1, position=0.,
+                             stl_ccy=self.chf, principal=0., carry=11., overheads=-1.,
+                             p=self.p2, acc_pos=self.a1_2, acc_cash=self.a1_2, acc_interim=self.a1_2,
+                             s1_pos=self.s1_1_1_2, s1_cash=self.s1_1_1_2,
+                             s2_pos=self.s2_1_1_2, s2_cash=self.s2_1_1_2,
+                             s3_pos=self.s3_1_1_2, s3_cash=self.s3_1_1_2)
 
-        self._simple_run('IGNORE - all', report_currency=self.cad, report_date=self._d(14),
-                         portfolio_mode=Report.MODE_IGNORE,
-                         account_mode=Report.MODE_IGNORE,
-                         strategy1_mode=Report.MODE_IGNORE,
-                         strategy2_mode=Report.MODE_IGNORE,
-                         strategy3_mode=Report.MODE_IGNORE)
+        if self._transaction_pl in trns:
+            self._t_trn_pl(days=1, stl_ccy=self.rub, principal=0., carry=-900., overheads=-100.,
+                           p=self.p1, acc_pos=self.a1_1, acc_cash=self.a1_1, acc_interim=self.a1_1,
+                           s1_pos=self.s1_1_1_1, s1_cash=self.s1_1_1_1,
+                           s2_pos=self.s2_1_1_1, s2_cash=self.s2_1_1_1,
+                           s3_pos=self.s3_1_1_1, s3_cash=self.s3_1_1_1,
+                           notes='trnpl1')
+            self._t_trn_pl(days=1, stl_ccy=self.rub, principal=0., carry=-900., overheads=-100.,
+                           p=self.p2, acc_pos=self.a1_2, acc_cash=self.a1_2, acc_interim=self.a1_2,
+                           s1_pos=self.s1_1_1_2, s1_cash=self.s1_1_1_2,
+                           s2_pos=self.s2_1_1_2, s2_cash=self.s2_1_1_2,
+                           s3_pos=self.s3_1_1_2, s3_cash=self.s3_1_1_2,
+                           notes='trnpl2')
 
-        self._simple_run('INDEPENDENT - portfolio', report_currency=self.cad, report_date=self._d(14),
-                         portfolio_mode=Report.MODE_INDEPENDENT,
-                         account_mode=Report.MODE_IGNORE,
-                         strategy1_mode=Report.MODE_IGNORE,
-                         strategy2_mode=Report.MODE_IGNORE,
-                         strategy3_mode=Report.MODE_IGNORE)
+        if 'ignore' in fields:
+            self._simple_run('mode - IGNORE - all', report_currency=self.cad, report_date=self._d(14),
+                             portfolio_mode=Report.MODE_IGNORE,
+                             account_mode=Report.MODE_IGNORE,
+                             strategy1_mode=Report.MODE_IGNORE,
+                             strategy2_mode=Report.MODE_IGNORE,
+                             strategy3_mode=Report.MODE_IGNORE)
 
-        self._simple_run('INDEPENDENT - account', report_currency=self.cad, report_date=self._d(14),
-                         portfolio_mode=Report.MODE_IGNORE,
-                         account_mode=Report.MODE_INDEPENDENT,
-                         strategy1_mode=Report.MODE_IGNORE,
-                         strategy2_mode=Report.MODE_IGNORE,
-                         strategy3_mode=Report.MODE_IGNORE)
+        if 'portfolio' in fields:
+            self._simple_run('mode - INDEPENDENT - portfolio', report_currency=self.cad, report_date=self._d(14),
+                             portfolio_mode=Report.MODE_INDEPENDENT,
+                             account_mode=Report.MODE_IGNORE,
+                             strategy1_mode=Report.MODE_IGNORE,
+                             strategy2_mode=Report.MODE_IGNORE,
+                             strategy3_mode=Report.MODE_IGNORE)
 
-        self._simple_run('INDEPENDENT - strategy1', report_currency=self.cad, report_date=self._d(14),
-                         portfolio_mode=Report.MODE_IGNORE,
-                         account_mode=Report.MODE_IGNORE,
-                         strategy1_mode=Report.MODE_INDEPENDENT,
-                         strategy2_mode=Report.MODE_IGNORE,
-                         strategy3_mode=Report.MODE_IGNORE)
+        if 'account' in fields:
+            self._simple_run('mode - INDEPENDENT - account', report_currency=self.cad, report_date=self._d(14),
+                             portfolio_mode=Report.MODE_IGNORE,
+                             account_mode=Report.MODE_INDEPENDENT,
+                             strategy1_mode=Report.MODE_IGNORE,
+                             strategy2_mode=Report.MODE_IGNORE,
+                             strategy3_mode=Report.MODE_IGNORE)
 
-        self._simple_run('INDEPENDENT - strategy2', report_currency=self.cad, report_date=self._d(14),
-                         portfolio_mode=Report.MODE_IGNORE,
-                         account_mode=Report.MODE_IGNORE,
-                         strategy1_mode=Report.MODE_IGNORE,
-                         strategy2_mode=Report.MODE_INDEPENDENT,
-                         strategy3_mode=Report.MODE_IGNORE)
+        if 'strategy1' in fields:
+            self._simple_run('mode - INDEPENDENT - strategy1', report_currency=self.cad, report_date=self._d(14),
+                             portfolio_mode=Report.MODE_IGNORE,
+                             account_mode=Report.MODE_IGNORE,
+                             strategy1_mode=Report.MODE_INDEPENDENT,
+                             strategy2_mode=Report.MODE_IGNORE,
+                             strategy3_mode=Report.MODE_IGNORE)
+            self._simple_run('mode - INTERDEPENDENT - strategy1', report_currency=self.cad, report_date=self._d(14),
+                             portfolio_mode=Report.MODE_IGNORE,
+                             account_mode=Report.MODE_IGNORE,
+                             strategy1_mode=Report.MODE_INTERDEPENDENT,
+                             strategy2_mode=Report.MODE_IGNORE,
+                             strategy3_mode=Report.MODE_IGNORE)
 
-        self._simple_run('INDEPENDENT - strategy3', report_currency=self.cad, report_date=self._d(14),
-                         portfolio_mode=Report.MODE_IGNORE,
-                         account_mode=Report.MODE_IGNORE,
-                         strategy1_mode=Report.MODE_IGNORE,
-                         strategy2_mode=Report.MODE_IGNORE,
-                         strategy3_mode=Report.MODE_INDEPENDENT)
+        if 'strategy2' in fields:
+            self._simple_run('mode - INDEPENDENT - strategy2', report_currency=self.cad, report_date=self._d(14),
+                             portfolio_mode=Report.MODE_IGNORE,
+                             account_mode=Report.MODE_IGNORE,
+                             strategy1_mode=Report.MODE_IGNORE,
+                             strategy2_mode=Report.MODE_INDEPENDENT,
+                             strategy3_mode=Report.MODE_IGNORE)
+            self._simple_run('mode - INTERDEPENDENT - strategy2', report_currency=self.cad, report_date=self._d(14),
+                             portfolio_mode=Report.MODE_IGNORE,
+                             account_mode=Report.MODE_IGNORE,
+                             strategy1_mode=Report.MODE_IGNORE,
+                             strategy2_mode=Report.MODE_INTERDEPENDENT,
+                             strategy3_mode=Report.MODE_IGNORE)
 
-        self._simple_run('INDEPENDENT - all', report_currency=self.cad, report_date=self._d(14),
-                         portfolio_mode=Report.MODE_INDEPENDENT,
-                         account_mode=Report.MODE_INDEPENDENT,
-                         strategy1_mode=Report.MODE_INDEPENDENT,
-                         strategy2_mode=Report.MODE_INDEPENDENT,
-                         strategy3_mode=Report.MODE_INDEPENDENT)
+        if 'strategy3' in fields:
+            self._simple_run('mode - INDEPENDENT - strategy3', report_currency=self.cad, report_date=self._d(14),
+                             portfolio_mode=Report.MODE_IGNORE,
+                             account_mode=Report.MODE_IGNORE,
+                             strategy1_mode=Report.MODE_IGNORE,
+                             strategy2_mode=Report.MODE_IGNORE,
+                             strategy3_mode=Report.MODE_INDEPENDENT)
+            self._simple_run('mode - INTERDEPENDENT - strategy3', report_currency=self.cad, report_date=self._d(14),
+                             portfolio_mode=Report.MODE_IGNORE,
+                             account_mode=Report.MODE_IGNORE,
+                             strategy1_mode=Report.MODE_IGNORE,
+                             strategy2_mode=Report.MODE_IGNORE,
+                             strategy3_mode=Report.MODE_INTERDEPENDENT)
+
+        if 'all' in fields:
+            self._simple_run('mode - INDEPENDENT - all', report_currency=self.cad, report_date=self._d(14),
+                             portfolio_mode=Report.MODE_INDEPENDENT,
+                             account_mode=Report.MODE_INDEPENDENT,
+                             strategy1_mode=Report.MODE_INDEPENDENT,
+                             strategy2_mode=Report.MODE_INDEPENDENT,
+                             strategy3_mode=Report.MODE_INDEPENDENT)
+
+        if 'full' in fields:
+            modes = [Report.MODE_IGNORE, Report.MODE_INDEPENDENT, Report.MODE_INTERDEPENDENT]
+            mode_names = ['IGNORE', 'INDEPENDENT', 'INTERDEPENDENT']
+            for portfolio_index, portfolio_mode in enumerate(modes):
+                if portfolio_mode in [Report.MODE_INTERDEPENDENT]:
+                    continue
+                for account_index, account_mode in enumerate(modes):
+                    if account_mode in [Report.MODE_INTERDEPENDENT]:
+                        continue
+                    for strategy1_index, strategy1_mode in enumerate(modes):
+                        for strategy2_index, strategy2_mode in enumerate(modes):
+                            for strategy3_index, strategy3_mode in enumerate(modes):
+                                name = 'modes - portfolio=%s, account=%s, strategy1=%s, strategy2=%s, strategy3=%s' % (
+                                    mode_names[portfolio_index],
+                                    mode_names[account_index],
+                                    mode_names[strategy1_index],
+                                    mode_names[strategy2_index],
+                                    mode_names[strategy3_index],
+                                )
+                                self._simple_run(
+                                    name,
+                                    report_currency=self.cad,
+                                    report_date=self._d(14),
+                                    portfolio_mode=portfolio_mode,
+                                    account_mode=account_mode,
+                                    strategy1_mode=strategy1_mode,
+                                    strategy2_mode=strategy2_mode,
+                                    strategy3_mode=strategy3_mode
+                                )
+        pass
+
+    def _test_allocations(self):
+        # settings.DEBUG = True
+
+        self._t_buy(instr=self.bond0, position=5,
+                    stl_ccy=self.usd, principal=-10, carry=0, overheads=0,
+                    alloc_bl=self.bond1, alloc_pl=self.stock1)
+
+        self._t_buy(instr=self.bond0, position=5,
+                    stl_ccy=self.usd, principal=-15, carry=0, overheads=0,
+                    alloc_bl=self.bond2, alloc_pl=self.stock2)
+
+        self._t_sell(instr=self.bond0, position=-5,
+                     stl_ccy=self.usd, principal=20, carry=0, overheads=0,
+                     alloc_bl=self.bond3, alloc_pl=self.stock3)
+
+        mults = [0.0, 0.5, 1.0]
+        mults_names = ['0/100', '50/50', '100/0']
+
+        for mult_index, mult in enumerate(mults):
+            name = 'allocation - %s' % (mults_names[mult_index],)
+            self._simple_run(
+                name,
+                report_currency=self.cad,
+                report_date=self._d(14),
+                portfolio_mode=Report.MODE_IGNORE,
+                account_mode=Report.MODE_IGNORE,
+                strategy1_mode=Report.MODE_IGNORE,
+                strategy2_mode=Report.MODE_IGNORE,
+                strategy3_mode=Report.MODE_IGNORE,
+                approach_multiplier=mult
+            )
 
     # ------------------------------------------------------------------------------------------------------------------
 

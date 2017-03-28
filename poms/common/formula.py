@@ -97,6 +97,10 @@ def _trunc(a):
     return int(a)
 
 
+def _abs(a):
+    return abs(a)
+
+
 def _isclose(a, b, rel_tol=1e-09, abs_tol=0.0):
     return isclose(float(a), float(b), rel_tol=float(rel_tol), abs_tol=float(abs_tol))
 
@@ -623,6 +627,7 @@ FUNCTIONS = [
     SimpleEval2Def('float', _float),
     SimpleEval2Def('round', _round),
     SimpleEval2Def('trunc', _trunc),
+    SimpleEval2Def('abs', _abs),
     SimpleEval2Def('isclose', _isclose),
     SimpleEval2Def('random', _random),
 

@@ -30,6 +30,7 @@ from poms.strategies.models import Strategy1, Strategy2, Strategy3
 from poms.tags.serializers import ModelWithTagSerializer
 from poms.transactions.fields import TransactionTypeInputContentTypeField, \
     TransactionTypeGroupField, ReadOnlyContentTypeField
+from poms.transactions.handlers import TransactionTypeProcess
 from poms.transactions.models import TransactionClass, Transaction, TransactionType, TransactionTypeAction, \
     TransactionTypeActionTransaction, TransactionTypeActionInstrument, TransactionTypeInput, TransactionTypeGroup, \
     ComplexTransaction, EventClass, NotificationClass, ComplexTransactionInput
@@ -101,8 +102,10 @@ class TransactionTypeInputSerializer(serializers.ModelSerializer):
                                      serializers.RegexValidator(regex='\A[a-zA-Z_][a-zA-Z0-9_]*\Z'),
                                  ])
     content_type = TransactionTypeInputContentTypeField(required=False, allow_null=True, allow_empty=True)
+    can_recalculate = serializers.BooleanField(read_only=True)
+    value_expr = ExpressionField(required=False, allow_null=True, allow_blank=True, default='')
     is_fill_from_context = serializers.BooleanField(default=False, initial=False, required=False)
-
+    value = ExpressionField(required=False, allow_null=True, allow_blank=True, default='')
     account = AccountField(required=False, allow_null=True)
     instrument_type = InstrumentTypeField(required=False, allow_null=True)
     instrument = InstrumentField(required=False, allow_null=True)
@@ -132,10 +135,10 @@ class TransactionTypeInputSerializer(serializers.ModelSerializer):
     class Meta:
         model = TransactionTypeInput
         fields = [
-            'id', 'name', 'verbose_name', 'value_type', 'content_type', 'order', 'is_fill_from_context', 'value',
-            'account', 'instrument_type', 'instrument', 'currency', 'counterparty', 'responsible', 'portfolio',
-            'strategy1', 'strategy2', 'strategy3', 'daily_pricing_model', 'payment_size_detail',
-            'price_download_scheme',
+            'id', 'name', 'verbose_name', 'value_type', 'content_type', 'order', 'can_recalculate', 'value_expr',
+            'is_fill_from_context', 'value', 'account', 'instrument_type', 'instrument', 'currency', 'counterparty',
+            'responsible', 'portfolio', 'strategy1', 'strategy2', 'strategy3', 'daily_pricing_model',
+            'payment_size_detail', 'price_download_scheme',
             # 'account_object',
             # 'instrument_type_object',
             # 'instrument_object',
@@ -1184,9 +1187,26 @@ class TransactionTypeProcessSerializer(serializers.Serializer):
         # self.fields['expressions_error'] = serializers.ReadOnlyField()
         # self.fields['expressions_result'] = serializers.ReadOnlyField()
 
+        self.fields['process_mode'] = serializers.ChoiceField(
+            required=False,
+            allow_null=True,
+            initial=TransactionTypeProcess.MODE_BOOK,
+            default=TransactionTypeProcess.MODE_BOOK,
+            choices=(
+                (TransactionTypeProcess.MODE_BOOK, 'Book'),
+                (TransactionTypeProcess.MODE_RECALCULATE, 'Recalculate fields values'),
+            )
+        )
+
         if self.instance:
             self.fields['values'] = TransactionTypeProcessValuesSerializer(instance=self.instance, required=False)
+
+        recalculate_inputs = [(i.name, i.verbose_name) for i in self.instance.inputs if i.can_recalculate]
+        self.fields['recalculate_inputs'] = serializers.MultipleChoiceField(required=False, allow_null=True,
+                                                                            choices=recalculate_inputs)
+
         self.fields['has_errors'] = serializers.BooleanField(read_only=True)
+        self.fields['value_errors'] = serializers.ReadOnlyField()
         self.fields['instruments_errors'] = serializers.ReadOnlyField()
         self.fields['complex_transaction_errors'] = serializers.ReadOnlyField()
         self.fields['transactions_errors'] = serializers.ReadOnlyField()
@@ -1194,6 +1214,8 @@ class TransactionTypeProcessSerializer(serializers.Serializer):
         self.fields['complex_transaction'] = TransactionTypeComplexTransactionSerializer(
             read_only=False, required=False, allow_null=True)
         # self.fields['transactions'] = PhantomTransactionSerializer(many=True, required=False, allow_null=True)
+
+        self.fields['transaction_type_object'] = TransactionTypeSerializer(source='transaction_type', read_only=True)
 
         self.fields['book_transaction_layout'] = serializers.SerializerMethodField()
 
@@ -1208,43 +1230,31 @@ class TransactionTypeProcessSerializer(serializers.Serializer):
             if key not in ['complex_transaction', ]:
                 setattr(instance, key, value)
 
-        ctrn_values = validated_data.get('complex_transaction', None)
-        if ctrn_values:
-            ctrn_ser = ComplexTransactionSerializer(instance=instance.complex_transaction, context=self.context)
-            ctrn_values = ctrn_values.copy()
+        if instance.is_book:
+            ctrn_values = validated_data.get('complex_transaction', None)
+            if ctrn_values:
+                ctrn_ser = ComplexTransactionSerializer(instance=instance.complex_transaction, context=self.context)
+                ctrn_values = ctrn_values.copy()
 
-            is_date_was_empty = False
-            if not ctrn_values.get('date', None):
-                ctrn_values['date'] = datetime.date.min
-                is_date_was_empty = True
+                is_date_was_empty = False
+                if not ctrn_values.get('date', None):
+                    ctrn_values['date'] = datetime.date.min
+                    is_date_was_empty = True
 
-            if instance.complex_transaction:
-                ctrn = ctrn_ser.update(ctrn_ser.instance, ctrn_values)
-            else:
-                ctrn = ctrn_ser.create(ctrn_values)
+                if instance.complex_transaction:
+                    ctrn = ctrn_ser.update(ctrn_ser.instance, ctrn_values)
+                else:
+                    ctrn = ctrn_ser.create(ctrn_values)
 
-            if is_date_was_empty:
-                ctrn.date = None
+                if is_date_was_empty:
+                    ctrn.date = None
 
-            #
-            # if self.instance.complex_transaction:
-            #     ctrn = self.instance.complex_transaction
-            # else:
-            #     ctrn = ComplexTransaction(transaction_type=instance.transaction_type)
-            # ctrn.code = ctrn_values.get('code', ctrn.code)
-            # ctrn.status = ctrn_values.get('status', ComplexTransaction.PRODUCTION)
-            instance.complex_transaction = ctrn
-
-        # for key, value in list(instance.values.items()):
-        #     name = instance.get_input_name(key)
-        #     instance.values[name] = value
-
-        # instance.process_expressions()
-
-        # instance.complex_transaction.transactions.all().delete()
+                instance.complex_transaction = ctrn
 
         instance.process()
-        self._save_inputs(instance)
+
+        if instance.is_book:
+            self._save_inputs(instance)
 
         # if instance.calculate:
         #     instance.process()

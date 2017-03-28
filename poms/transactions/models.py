@@ -469,10 +469,12 @@ class TransactionTypeInput(models.Model):
                                                   verbose_name=ugettext_lazy('value type'))
     content_type = models.ForeignKey(ContentType, null=True, blank=True, verbose_name=ugettext_lazy('content type'))
     order = models.IntegerField(default=0, verbose_name=ugettext_lazy('order'))
+    value_expr = models.CharField(max_length=255, null=True, blank=True, verbose_name=ugettext_lazy('value expression'),
+                                  help_text=ugettext_lazy('this is expression for recalculate value'))
 
     is_fill_from_context = models.BooleanField(default=False, verbose_name=ugettext_lazy('is fill from context'))
     value = models.CharField(max_length=255, null=True, blank=True, verbose_name=ugettext_lazy('value'),
-                             help_text=ugettext_lazy('is expression'))
+                             help_text=ugettext_lazy('this is expression for default value'))
     account = models.ForeignKey('accounts.Account', null=True, blank=True, on_delete=models.PROTECT, related_name='+',
                                 verbose_name=ugettext_lazy('account'))
     instrument_type = models.ForeignKey('instruments.InstrumentType', null=True, blank=True, on_delete=models.PROTECT,
@@ -525,6 +527,10 @@ class TransactionTypeInput(models.Model):
             self.verbose_name = self.name
         super(TransactionTypeInput, self).save(force_insert=force_insert, force_update=force_update, using=using,
                                                update_fields=update_fields)
+    @property
+    def can_recalculate(self):
+        return bool(self.value_expr) and self.value_type in [TransactionTypeInput.STRING, TransactionTypeInput.DATE,
+                                                             TransactionTypeInput.NUMBER]
 
 
 @python_2_unicode_compatible
