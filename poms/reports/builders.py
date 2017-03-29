@@ -2810,13 +2810,17 @@ class ReportBuilder(object):
                 t.multiplier = t.fifo_multiplier
                 t.closed_by = t.fifo_closed_by
 
-            if self.instance.cost_method.id == CostMethod.AVCO:
-                t.multiplier = t.avco_multiplier
-                t.closed_by = t.avco_closed_by
+            if t.trn_cls.id in [TransactionClass.TRANSACTION_PL, TransactionClass.FX_TRADE]:
+                self.multiplier = 1.0
 
-            elif self.instance.cost_method.id == CostMethod.FIFO:
-                t.multiplier = t.fifo_multiplier
-                t.closed_by = t.fifo_closed_by
+            if t.trn_cls.id in [TransactionClass.BUY, TransactionClass.SELL]:
+                if self.instance.cost_method.id == CostMethod.AVCO:
+                    t.multiplier = t.avco_multiplier
+                    t.closed_by = t.avco_closed_by
+
+                elif self.instance.cost_method.id == CostMethod.FIFO:
+                    t.multiplier = t.fifo_multiplier
+                    t.closed_by = t.fifo_closed_by
 
     def _get_trn_key(self, t):
         return (
