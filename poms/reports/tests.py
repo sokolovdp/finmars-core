@@ -1,7 +1,6 @@
 import csv
 import logging
 import os
-import tempfile
 from datetime import date, timedelta, datetime
 
 from django.conf import settings
@@ -1207,7 +1206,7 @@ class ReportTestCase(TestCase):
             # _l.info(self._sdump_hist(*args, **kwargs))
 
     def _simple_run(self, name, result=None, trns=False, trn_cols=None, item_cols=None,
-                    trn_dump_all=True, in_csv=False, csv_save=False, **kwargs):
+                    trn_dump_all=True, in_csv=False, **kwargs):
         _l.info('')
         _l.info('')
         _l.info('*' * 79)
@@ -1220,22 +1219,20 @@ class ReportTestCase(TestCase):
         b = ReportBuilder(instance=r, queryset=queryset)
         b.build()
 
-        mode_names = {
-            Report.MODE_IGNORE: 'IGNORE',
-            Report.MODE_INDEPENDENT: 'INDEPENDENT',
-            Report.MODE_INTERDEPENDENT: 'INTERDEPENDENT',
-        }
-        name_subpart = '%s%s%s'
-        name_subpart_delim = '_'
-        name_part_delim = '-'
+        # mode_names = {
+        #     Report.MODE_IGNORE: 'IGNORE_________',
+        #     Report.MODE_INDEPENDENT: 'INDEPENDENT____',
+        #     Report.MODE_INTERDEPENDENT: 'INTERDEPENDENT',
+        # }
+        name_part_delim = '_'
         name_parts = [
-            name_subpart % ('date', name_subpart_delim, r.report_date,),
-            name_subpart % ('ccy', name_subpart_delim, r.report_currency,),
-            name_subpart % ('prtfl', name_subpart_delim, mode_names[r.portfolio_mode],),
-            name_subpart % ('acc', name_subpart_delim, mode_names[r.account_mode],),
-            name_subpart % ('str1', name_subpart_delim, mode_names[r.strategy1_mode],),
-            name_subpart % ('str2', name_subpart_delim, mode_names[r.strategy2_mode],),
-            name_subpart % ('str3', name_subpart_delim, mode_names[r.strategy3_mode],),
+            '%s' % r.report_date,
+            '%s' % r.report_currency,
+            # 'prtfl_%s' % mode_names[r.portfolio_mode],
+            # 'acc_%s' % mode_names[r.account_mode],
+            # 'str1_%s' % mode_names[r.strategy1_mode],
+            # 'str2_%s' % mode_names[r.strategy2_mode],
+            # 'str3_%s' % mode_names[r.strategy3_mode],
         ]
         name1 = name_part_delim.join(name_parts)
         if name:
@@ -1267,22 +1264,91 @@ class ReportTestCase(TestCase):
                 return not t.is_cloned
 
         self._dump(b, name, trn_cols=trn_cols, item_cols=item_cols, trn_filter=trn_filter, in_csv=in_csv)
-
-        if csv_save:
-            trns_data_path = os.path.join(tempfile.gettempdir(), 'td_%s_virtual_transactions.csv' % name1)
-            _l.info('trns_data_path=%s', trns_data_path)
-            trns_data = VirtualTransaction.sdumps(b.instance.transactions, columns=trn_cols, filter=trn_filter, in_csv=True)
-            with open(trns_data_path, 'wt', encoding='utf-8') as data_file:
-                data_file.write(trns_data)
-
-            rep_data_path = os.path.join(tempfile.gettempdir(), 'td_%s_report_items.csv' % name1)
-            _l.info('rep_data_path=%s', rep_data_path)
-            rep_data = ReportItem.sdumps(b.instance.items, columns=item_cols, in_csv=True)
-            with open(rep_data_path, 'wt', encoding='utf-8') as data_file:
-                data_file.write(rep_data)
-
-
         return r
+
+    def _write_results(self, reports, ):
+        import xlsxwriter
+
+        trn_cols = self.TRN_COLS_MINI
+        item_cols = self.ITEM_COLS_ALL
+
+        def _val(val):
+            # if isinstance(val, (bool, int, float, str, date, datetime)):
+            #     return val
+            if val is None:
+                return val
+            if isinstance(val, (bool, int, float, str, datetime)):
+                return val
+            if isinstance(val, date):
+                return datetime(val.year, month=val.month, day=val.day)
+            return str(val)
+
+        # data_path = os.path.join(tempfile.gettempdir(), 'data.xlsx')
+        data_path = os.path.join('/Users', 'ailyukhin', 'tmp', 'data.xlsx')
+
+        workbook = xlsxwriter.Workbook(data_path)
+        header_fmt = workbook.add_format({'bold': True})
+        date_fmt = workbook.add_format({'num_format': 'dd-mm-yyyy'})
+        col_fmt = workbook.add_format({'bold': True, 'bg_color': '#EEEEEE'})
+        delim_fmt = workbook.add_format({'bg_color': 'gray'})
+        # num_fmt = workbook.add_format({'num_format': '#,###.###'})
+        num_fmt = None
+
+        worksheet = workbook.add_worksheet()
+
+        row = 0
+        for r in reports:
+            worksheet.set_row(row, cell_format=delim_fmt)
+            row += 1
+
+            # worksheet.write(row, 0, 'Report date:', header_fmt)
+            worksheet.merge_range(row, 0, row, 2, 'Report date:', header_fmt)
+            worksheet.write_datetime(row, 3, _val(r.report_date), date_fmt)
+            row += 1
+
+            # worksheet.write(row, 0, 'Report currency:', header_fmt)
+            worksheet.merge_range(row, 0, row, 2, 'Report currency:', header_fmt)
+            worksheet.write(row, 3, _val(r.report_currency))
+            row += 1
+
+            # worksheet.write(row, 0, 'Virtual Transactions', header_fmt)
+            worksheet.merge_range(row, 0, row, len(trn_cols), 'Virtual Transactions:', header_fmt)
+            row += 1
+            for col, name in enumerate(trn_cols):
+                worksheet.write(row, col, name, col_fmt)
+            row += 1
+            for trn in r.transactions:
+                if trn.is_cloned:
+                    continue
+                for col, val in enumerate(VirtualTransaction.dump_values(trn, trn_cols)):
+                    val = _val(val)
+                    if trn_cols[col] in ['trn_date', 'acc_date', 'cash_date']:
+                        worksheet.write_datetime(row, col, val, date_fmt)
+                    elif isinstance(val, (int, float)):
+                        worksheet.write_number(row, col, val, num_fmt)
+                    else:
+                        worksheet.write(row, col, val)
+                row += 1
+
+            row += 2
+            # worksheet.write(row, 0, 'Items', header_fmt)
+            worksheet.merge_range(row, 0, row, len(item_cols), 'Items:', header_fmt)
+            row += 1
+            for col, name in enumerate(item_cols):
+                worksheet.write(row, col, name, col_fmt)
+            row += 1
+            for item in r.items:
+                for col, val in enumerate(ReportItem.dump_values(item, item_cols)):
+                    val = _val(val)
+                    if isinstance(val, (int, float)):
+                        worksheet.write_number(row, col, val, num_fmt)
+                    else:
+                        worksheet.write(row, col, val)
+                row += 1
+
+            row += 5
+
+        workbook.close()
 
     # ------------------------------------------------------------------------------------------------------------------
 
@@ -2443,31 +2509,34 @@ class ReportTestCase(TestCase):
             Currency.objects.get(master_user=self.m, user_code='GBP'),
         ]
         portfolio_modes = [
-            Report.MODE_IGNORE,
+            # Report.MODE_IGNORE,
             Report.MODE_INDEPENDENT,
         ]
         account_modes = [
-            Report.MODE_IGNORE,
+            # Report.MODE_IGNORE,
             Report.MODE_INDEPENDENT,
         ]
         strategy1_modes = [
-            Report.MODE_IGNORE,
+            # Report.MODE_IGNORE,
             Report.MODE_INDEPENDENT,
         ]
 
+        reports = []
         for report_date in report_dates:
             for report_currency in report_currencies:
                 for portfolio_mode in portfolio_modes:
                     for account_mode in account_modes:
                         for strategy1_mode in strategy1_modes:
-                            self._simple_run(None,
-                                             csv_save=True,
-                                             report_currency=report_currency,
-                                             report_date=report_date,
-                                             cost_method=cost_method,
-                                             portfolio_mode=portfolio_mode,
-                                             account_mode=account_mode,
-                                             strategy1_mode=strategy1_mode,
-                                             strategy2_mode=Report.MODE_IGNORE,
-                                             strategy3_mode=Report.MODE_IGNORE,)
-
+                            r = self._simple_run(
+                                None,
+                                report_currency=report_currency,
+                                report_date=report_date,
+                                cost_method=cost_method,
+                                portfolio_mode=portfolio_mode,
+                                account_mode=account_mode,
+                                strategy1_mode=strategy1_mode,
+                                strategy2_mode=Report.MODE_IGNORE,
+                                strategy3_mode=Report.MODE_IGNORE,
+                            )
+                            reports.append(r)
+        self._write_results(reports)
