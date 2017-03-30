@@ -731,9 +731,9 @@ class ReportSerializer(serializers.Serializer):
         if pl_first_date and pl_first_date >= attrs['report_date']:
             raise ValidationError(ugettext('"pl_first_date" must be lesser than "report_date"'))
 
-        if not attrs.get('pl_first_date', None):
-            if settings.DEBUG:
-                attrs['pl_first_date'] = date(2017, 2, 10)
+        # if settings.DEBUG:
+        #     if not attrs.get('pl_first_date', None):
+        #         attrs['pl_first_date'] = date(2017, 2, 10)
 
         if not attrs.get('report_currency', None):
             attrs['report_currency'] = attrs['master_user'].system_currency
