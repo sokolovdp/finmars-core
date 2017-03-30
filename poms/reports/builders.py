@@ -1609,7 +1609,7 @@ class ReportItem(_Base):
         item.ccy = src.ccy  # -> Currency
         item.trn_ccy = src.trn_ccy  # -> Currency
         item.prtfl = src.prtfl  # -> Portfolio if use_portfolio
-        item.instr = src.instr
+        # item.instr = src.instr
         item.acc = src.acc  # -> Account if use_account
         item.str1 = src.str1  # -> Strategy1 if use_strategy1
         item.str2 = src.str2  # -> Strategy2 if use_strategy2
@@ -2520,8 +2520,8 @@ class ReportBuilder(object):
             'linked_instrument',
             # 'linked_instrument__instrument_type',
             # 'linked_instrument__instrument_type__instrument_class',
-            # 'linked_instrument__pricing_currency',
-            # 'linked_instrument__accrued_currency',
+            'linked_instrument__pricing_currency',
+            'linked_instrument__accrued_currency',
             # 'linked_instrument__accrual_calculation_schedules',
             # 'linked_instrument__accrual_calculation_schedules__accrual_calculation_model',
             # 'linked_instrument__accrual_calculation_schedules__periodicity',
@@ -2810,13 +2810,17 @@ class ReportBuilder(object):
                 t.multiplier = t.fifo_multiplier
                 t.closed_by = t.fifo_closed_by
 
-            if self.instance.cost_method.id == CostMethod.AVCO:
-                t.multiplier = t.avco_multiplier
-                t.closed_by = t.avco_closed_by
+            if t.trn_cls.id in [TransactionClass.TRANSACTION_PL, TransactionClass.FX_TRADE]:
+                self.multiplier = 1.0
 
-            elif self.instance.cost_method.id == CostMethod.FIFO:
-                t.multiplier = t.fifo_multiplier
-                t.closed_by = t.fifo_closed_by
+            if t.trn_cls.id in [TransactionClass.BUY, TransactionClass.SELL]:
+                if self.instance.cost_method.id == CostMethod.AVCO:
+                    t.multiplier = t.avco_multiplier
+                    t.closed_by = t.avco_closed_by
+
+                elif self.instance.cost_method.id == CostMethod.FIFO:
+                    t.multiplier = t.fifo_multiplier
+                    t.closed_by = t.fifo_closed_by
 
     def _get_trn_key(self, t):
         return (
@@ -3393,11 +3397,16 @@ class ReportBuilder(object):
                 if i.alloc_pl.accrued_currency_id:
                     ccys.add(i.alloc_pl.accrued_currency_id)
 
-        _l.debug('instrs' + '-' * 79)
         instrs = Instrument.objects.filter(master_user=self.instance.master_user).prefetch_related(
-            'master_user', 'instrument_type', 'instrument_type__instrument_class',
-            'pricing_currency', 'accrued_currency', 'payment_size_detail', 'daily_pricing_model',
-            'price_download_scheme', 'price_download_scheme__provider',
+            'master_user',
+            'instrument_type',
+            'instrument_type__instrument_class',
+            'pricing_currency',
+            'accrued_currency',
+            'payment_size_detail',
+            'daily_pricing_model',
+            'price_download_scheme',
+            'price_download_scheme__provider',
             get_attributes_prefetch(),
             get_tag_prefetch(),
             *get_permissions_prefetch_lookups(
@@ -3407,15 +3416,16 @@ class ReportBuilder(object):
         ).in_bulk(instrs)
         _l.debug('instrs: %s', sorted(instrs.keys()))
 
-        _l.debug('ccys' + '-' * 79)
         ccys = Currency.objects.filter(master_user=self.instance.master_user).prefetch_related(
-            'master_user', 'daily_pricing_model', 'price_download_scheme', 'price_download_scheme__provider',
+            'master_user',
+            'daily_pricing_model',
+            'price_download_scheme',
+            'price_download_scheme__provider',
             get_attributes_prefetch(),
             get_tag_prefetch()
         ).in_bulk(ccys)
         _l.debug('ccys: %s', sorted(ccys.keys()))
 
-        _l.debug('prtfls' + '-' * 79)
         prtfls = Portfolio.objects.filter(master_user=self.instance.master_user).prefetch_related(
             'master_user',
             get_attributes_prefetch(),
@@ -3426,9 +3436,9 @@ class ReportBuilder(object):
         ).in_bulk(prtfls)
         _l.debug('prtfls: %s', sorted(prtfls.keys()))
 
-        _l.debug('accs' + '-' * 79)
         accs = Account.objects.filter(master_user=self.instance.master_user).prefetch_related(
-            'master_user', 'type',
+            'master_user',
+            'type',
             get_attributes_prefetch(),
             get_tag_prefetch(),
             *get_permissions_prefetch_lookups(
@@ -3438,9 +3448,10 @@ class ReportBuilder(object):
         ).in_bulk(accs)
         _l.debug('accs: %s', sorted(accs.keys()))
 
-        _l.debug('strs1' + '-' * 79)
         strs1 = Strategy1.objects.filter(master_user=self.instance.master_user).prefetch_related(
-            'master_user', 'subgroup', 'subgroup__group',
+            'master_user',
+            'subgroup',
+            'subgroup__group',
             get_tag_prefetch(),
             *get_permissions_prefetch_lookups(
                 (None, Strategy1),
@@ -3450,9 +3461,10 @@ class ReportBuilder(object):
         ).in_bulk(strs1)
         _l.debug('strs1: %s', sorted(strs1.keys()))
 
-        _l.debug('strs2' + '-' * 79)
         strs2 = Strategy2.objects.filter(master_user=self.instance.master_user).prefetch_related(
-            'master_user', 'subgroup', 'subgroup__group',
+            'master_user',
+            'subgroup',
+            'subgroup__group',
             get_tag_prefetch(),
             *get_permissions_prefetch_lookups(
                 (None, Strategy2),
@@ -3462,9 +3474,10 @@ class ReportBuilder(object):
         ).in_bulk(strs2)
         _l.debug('strs2: %s', sorted(strs2.keys()))
 
-        _l.debug('strs3' + '-' * 79)
         strs3 = Strategy3.objects.filter(master_user=self.instance.master_user).prefetch_related(
-            'master_user', 'subgroup', 'subgroup__group',
+            'master_user',
+            'subgroup',
+            'subgroup__group',
             get_tag_prefetch(),
             *get_permissions_prefetch_lookups(
                 (None, Strategy3),

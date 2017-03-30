@@ -1,15 +1,19 @@
+import csv
 import logging
-from datetime import date, timedelta
+import os
+from datetime import date, timedelta, datetime
 
+from django.conf import settings
 from django.contrib.auth.models import User
 from django.test import TestCase
 from django.utils.functional import cached_property
 
 from poms.accounts.models import AccountType, Account
+from poms.counterparties.models import Counterparty, Responsible, CounterpartyGroup, ResponsibleGroup
 from poms.currencies.models import Currency, CurrencyHistory
 from poms.instruments.models import Instrument, PriceHistory, PricingPolicy, CostMethod, InstrumentType, \
     InstrumentClass, \
-    AccrualCalculationSchedule, AccrualCalculationModel, Periodicity
+    AccrualCalculationSchedule, AccrualCalculationModel, Periodicity, PaymentSizeDetail
 from poms.portfolios.models import Portfolio
 from poms.reports.builders import Report, ReportBuilder, VirtualTransaction, ReportItem
 from poms.strategies.models import Strategy1Group, Strategy1Subgroup, Strategy1, Strategy2Group, Strategy2Subgroup, \
@@ -20,6 +24,226 @@ from poms.users.models import MasterUser, Member
 _l = logging.getLogger('poms.reports')
 
 
+def load_from_csv(master_user, instr, instr_price_hist, ccy_fx_rate, trn):
+    _l.debug('load from csv: instr=%s, instr_price_hist=%s, ccy_fx_rate=%s, trn=%s',
+             instr, instr_price_hist, ccy_fx_rate, trn)
+
+    pricing_policy = PricingPolicy.objects.filter(master_user=master_user).first()
+
+    account_type = AccountType.objects.get(master_user=master_user, user_code='-')
+    strategy1_subgroup = Strategy1Subgroup.objects.get(master_user=master_user, user_code='-')
+    strategy2_subgroup = Strategy2Subgroup.objects.get(master_user=master_user, user_code='-')
+    strategy3_subgroup = Strategy3Subgroup.objects.get(master_user=master_user, user_code='-')
+    counterparty_group = CounterpartyGroup.objects.get(master_user=master_user, user_code='-')
+    responsible_group = ResponsibleGroup.objects.get(master_user=master_user, user_code='-')
+
+    def _float(s):
+        if not s:
+            return 0.0
+        s = s.replace(',', '.')
+        s = s.replace(' ', '')
+        s = s.replace('\xa0', '')
+        return float(s)
+
+    def _int(s):
+        return int(_float(s))
+
+    def _bool(s):
+        if s == 'ЛОЖЬ':
+            return False
+        elif s == 'ИСТИНА':
+            return True
+        return bool(s)
+
+    def _date(s):
+        if not s:
+            return date.max
+        return datetime.strptime(s, "%Y-%m-%d").date()
+
+    def _portfolio(user_code):
+        obj, created = Portfolio.objects.get_or_create(
+            master_user=master_user,
+            user_code=user_code
+        )
+        return obj
+
+    def _account(user_code):
+        obj, created = Account.objects.get_or_create(
+            master_user=master_user,
+            user_code=user_code,
+            defaults={
+                'type': account_type,
+            }
+        )
+        return obj
+
+    def _strategy1(user_code):
+        obj, created = Strategy1.objects.get_or_create(
+            master_user=master_user,
+            user_code=user_code,
+            defaults={
+                'subgroup': strategy1_subgroup,
+            }
+        )
+        return obj
+
+    def _strategy2(user_code):
+        obj, created = Strategy2.objects.get_or_create(
+            master_user=master_user,
+            user_code=user_code,
+            defaults={
+                'subgroup': strategy2_subgroup,
+            }
+        )
+        return obj
+
+    def _strategy3(user_code):
+        obj, created = Strategy3.objects.get_or_create(
+            master_user=master_user,
+            user_code=user_code,
+            defaults={
+                'subgroup': strategy3_subgroup,
+            }
+        )
+        return obj
+
+    def _counterparty(user_code):
+        obj, created = Counterparty.objects.get_or_create(
+            master_user=master_user,
+            user_code=user_code,
+            defaults={
+                'group': counterparty_group,
+            }
+        )
+        return obj
+
+    def _responsible(user_code):
+        obj, created = Responsible.objects.get_or_create(
+            master_user=master_user,
+            user_code=user_code,
+            defaults={
+                'group': responsible_group,
+            }
+        )
+        return obj
+
+    def _create_intr(data):
+        # _l.debug('create instrument: %s', data)
+        o = Instrument()
+        o.master_user = master_user
+        o.user_code = data['id']
+        o.instrument_type = InstrumentType.objects.get(master_user=master_user, user_code='-')
+        o.pricing_currency = Currency.objects.get(master_user=master_user, user_code=data['pricing_currency'])
+        o.price_multiplier = _float(data['price_multiplier'])
+        o.accrued_currency = Currency.objects.get(master_user=master_user, user_code=data['accrued_currency'])
+        o.accrued_multiplier = _float(data['accrued_multiplier'])
+        o.default_price = _float(data['default_price'])
+        o.default_accrued = _float(data['default_accrued'])
+        o.maturity_date = _date(data['maturity_date'])
+        o.maturity_price = _float(data['maturity_price'])
+        o.payment_size_detail = PaymentSizeDetail.objects.get(id=PaymentSizeDetail.PERCENT)
+        o.save()
+        return o
+
+    def _create_instr_price_hist(data):
+        # _l.debug('create price history: %s', data)
+        o = PriceHistory()
+        o.instrument = Instrument.objects.get(master_user=master_user, user_code=data['instrument'])
+        o.pricing_policy = pricing_policy
+        o.date = _date(data['date'])
+        o.principal_price = _float(data['principal_price'])
+        o.accrued_price = _float(data['accrued_price'])
+        o.save()
+        return o
+
+    def _create_ccy_fx_rate(data):
+        # _l.debug('create currency history: %s', data)
+        o = CurrencyHistory()
+        o.currency = Currency.objects.get(master_user=master_user, user_code=data['currency'])
+        o.pricing_policy = pricing_policy
+        o.date = _date(data['date'])
+        o.fx_rate = _float(data['fx_rate'])
+        o.save()
+        return o
+
+    def _create_trn(data):
+        # _l.debug('create transaction: %s', data)
+        o = Transaction()
+        o.master_user = master_user
+        o.transaction_code = _int(data['transaction_code'])
+        o.transaction_class = TransactionClass.objects.get(name__icontains=data['transaction_class'])
+        o.instrument = Instrument.objects.get(master_user=master_user, user_code=data['instrument'])
+        o.transaction_currency = Currency.objects.get(master_user=master_user, user_code=data['transaction_currency'])
+        o.position_size_with_sign = _float(data['position_size_with_sign'])
+        o.settlement_currency = Currency.objects.get(master_user=master_user, user_code=data['settlement_currency'])
+        o.cash_consideration = _float(data['cash_consideration'])
+        o.principal_with_sign = _float(data['principal_with_sign'])
+        o.carry_with_sign = _float(data['carry_with_sign'])
+        o.overheads_with_sign = _float(data['overheads_with_sign'])
+        # o.transaction_date = _date(data['transaction_date'])
+        o.accounting_date = _date(data['accounting_date'])
+        o.cash_date = _date(data['cash_date'])
+        o.portfolio = _portfolio(data['portfolio'])
+        o.account_position = _account(data['account_position'])
+        o.account_cash = _account(data['account_cash'])
+        o.account_interim = _account(data['account_interim'])
+        o.strategy1_position = _strategy1(data['strategy1_position'])
+        o.strategy1_cash = _strategy1(data['strategy1_cash'])
+        o.strategy2_position = _strategy2(data['strategy2_position'])
+        o.strategy2_cash = _strategy2(data['strategy2_cash'])
+        o.strategy3_position = _strategy3(data['strategy3_position'])
+        o.strategy3_cash = _strategy3(data['strategy3_cash'])
+        o.responsible = _responsible(data['responsible'])
+        o.counterparty = _counterparty(data['counterparty'])
+        o.linked_instrument = Instrument.objects.get(master_user=master_user, user_code=data['linked_instrument'])
+        o.allocation_balance = Instrument.objects.get(master_user=master_user, user_code=data['allocation_balance'])
+        o.allocation_pl = Instrument.objects.get(master_user=master_user, user_code=data['allocation_pl'])
+        o.reference_fx_rate = _float(data['reference_fx_rate'])
+        o.is_locked = _bool(data['is_locked'] == 'ЛОЖЬ')
+        o.factor = _float(data['factor'])
+        o.trade_price = _float(data['trade_price'])
+        o.position_amount = _float(data['position_amount'])
+        o.principal_amount = _float(data['principal_amount'])
+        o.carry_amount = _float(data['carry_amount'])
+        o.overheads = _float(data['overheads'])
+        o.notes = data['notes']
+        o.save()
+        return o
+
+    def _read(file_name, row_handler):
+        delimiter = ';'
+        quotechar = '"'
+        # with open(file_name, mode='rt', encoding='utf-8') as csvfile:
+        #     _l.info('-' * 10)
+        #     _l.info(file_name)
+        #
+        #     reader = csv.reader(csvfile, delimiter=delimiter, quotechar=quotechar)
+        #     for row in reader:
+        #         _l.info('b=%s, data=%s' % (bool(row), row))
+        #         if callable(row_handler):
+        #             row_handler(row)
+
+        with open(file_name, mode='rt', encoding='utf-8') as csvfile:
+            # _l.debug('-' * 10)
+            reader = csv.DictReader(csvfile, delimiter=delimiter, quotechar=quotechar)
+            for row in reader:
+                if all(not v for v in row.values()):
+                    continue
+                row = {k.lower(): v for k, v in row.items() if k}
+                # _l.debug('%s', row)
+                if callable(row_handler):
+                    row_handler(row)
+
+    if instr:
+        _read(instr, _create_intr)
+    if instr_price_hist:
+        _read(instr_price_hist, _create_instr_price_hist)
+    if ccy_fx_rate:
+        _read(ccy_fx_rate, _create_ccy_fx_rate)
+    if trn:
+        _read(trn, _create_trn)
+
+
 class ReportTestCase(TestCase):
     TRN_COLS_ALL = [
         # 'lid',
@@ -27,7 +251,7 @@ class ReportTestCase(TestCase):
         'is_cloned',
         'is_hidden',
         # 'is_mismatch',
-        # 'trn_code',
+        'trn_code',
         'trn_cls',
         # 'avco_multiplier',
         # 'avco_closed_by',
@@ -153,7 +377,7 @@ class ReportTestCase(TestCase):
         'pk',
         # 'is_hidden',
         # 'is_mismatch',
-        # 'trn_code',
+        'trn_code',
         'trn_cls',
         # 'avco_multiplier',
         # 'avco_closed_by',
@@ -928,7 +1152,7 @@ class ReportTestCase(TestCase):
             )
             if show_trns:
                 trn_cols = trn_cols or self.TRN_COLS
-                s += '\nTransactions: \n%s\n' % (
+                s += '\nVirtual transactions: \n%s\n' % (
                     VirtualTransaction.sdumps(builder.instance.transactions, columns=trn_cols, filter=trn_filter,
                                               in_csv=in_csv)
                 )
@@ -995,7 +1219,27 @@ class ReportTestCase(TestCase):
         b = ReportBuilder(instance=r, queryset=queryset)
         b.build()
 
-        name = '%s - %s' % (name, r.report_date)
+        # mode_names = {
+        #     Report.MODE_IGNORE: 'IGNORE_________',
+        #     Report.MODE_INDEPENDENT: 'INDEPENDENT____',
+        #     Report.MODE_INTERDEPENDENT: 'INTERDEPENDENT',
+        # }
+        name_part_delim = '_'
+        name_parts = [
+            '%s' % r.report_date,
+            '%s' % r.report_currency,
+            # 'prtfl_%s' % mode_names[r.portfolio_mode],
+            # 'acc_%s' % mode_names[r.account_mode],
+            # 'str1_%s' % mode_names[r.strategy1_mode],
+            # 'str2_%s' % mode_names[r.strategy2_mode],
+            # 'str3_%s' % mode_names[r.strategy3_mode],
+        ]
+        name1 = name_part_delim.join(name_parts)
+        if name:
+            name += name1
+        else:
+            name = name1
+
         if trns:
             if isinstance(trns, bool):
                 trns = [t.trn for t in r.transactions if not t.is_cloned]
@@ -1021,6 +1265,90 @@ class ReportTestCase(TestCase):
 
         self._dump(b, name, trn_cols=trn_cols, item_cols=item_cols, trn_filter=trn_filter, in_csv=in_csv)
         return r
+
+    def _write_results(self, reports, ):
+        import xlsxwriter
+
+        trn_cols = self.TRN_COLS_MINI
+        item_cols = self.ITEM_COLS_ALL
+
+        def _val(val):
+            # if isinstance(val, (bool, int, float, str, date, datetime)):
+            #     return val
+            if val is None:
+                return val
+            if isinstance(val, (bool, int, float, str, datetime)):
+                return val
+            if isinstance(val, date):
+                return datetime(val.year, month=val.month, day=val.day)
+            return str(val)
+
+        # data_path = os.path.join(tempfile.gettempdir(), 'data.xlsx')
+        data_path = os.path.join('/Users', 'ailyukhin', 'tmp', 'data.xlsx')
+
+        workbook = xlsxwriter.Workbook(data_path)
+        header_fmt = workbook.add_format({'bold': True})
+        date_fmt = workbook.add_format({'num_format': 'dd-mm-yyyy'})
+        col_fmt = workbook.add_format({'bold': True, 'bg_color': '#EEEEEE'})
+        delim_fmt = workbook.add_format({'bg_color': 'gray'})
+        # num_fmt = workbook.add_format({'num_format': '#,###.###'})
+        num_fmt = None
+
+        worksheet = workbook.add_worksheet()
+
+        row = 0
+        for r in reports:
+            worksheet.set_row(row, cell_format=delim_fmt)
+            row += 1
+
+            # worksheet.write(row, 0, 'Report date:', header_fmt)
+            worksheet.merge_range(row, 0, row, 2, 'Report date:', header_fmt)
+            worksheet.write_datetime(row, 3, _val(r.report_date), date_fmt)
+            row += 1
+
+            # worksheet.write(row, 0, 'Report currency:', header_fmt)
+            worksheet.merge_range(row, 0, row, 2, 'Report currency:', header_fmt)
+            worksheet.write(row, 3, _val(r.report_currency))
+            row += 1
+
+            # worksheet.write(row, 0, 'Virtual Transactions', header_fmt)
+            worksheet.merge_range(row, 0, row, len(trn_cols), 'Virtual Transactions:', header_fmt)
+            row += 1
+            for col, name in enumerate(trn_cols):
+                worksheet.write(row, col, name, col_fmt)
+            row += 1
+            for trn in r.transactions:
+                if trn.is_cloned:
+                    continue
+                for col, val in enumerate(VirtualTransaction.dump_values(trn, trn_cols)):
+                    val = _val(val)
+                    if trn_cols[col] in ['trn_date', 'acc_date', 'cash_date']:
+                        worksheet.write_datetime(row, col, val, date_fmt)
+                    elif isinstance(val, (int, float)):
+                        worksheet.write_number(row, col, val, num_fmt)
+                    else:
+                        worksheet.write(row, col, val)
+                row += 1
+
+            row += 2
+            # worksheet.write(row, 0, 'Items', header_fmt)
+            worksheet.merge_range(row, 0, row, len(item_cols), 'Items:', header_fmt)
+            row += 1
+            for col, name in enumerate(item_cols):
+                worksheet.write(row, col, name, col_fmt)
+            row += 1
+            for item in r.items:
+                for col, val in enumerate(ReportItem.dump_values(item, item_cols)):
+                    val = _val(val)
+                    if isinstance(val, (int, float)):
+                        worksheet.write_number(row, col, val, num_fmt)
+                    else:
+                        worksheet.write(row, col, val)
+                row += 1
+
+            row += 5
+
+        workbook.close()
 
     # ------------------------------------------------------------------------------------------------------------------
 
@@ -1115,7 +1443,7 @@ class ReportTestCase(TestCase):
 
     # ------------------------------------------------------------------------------------------------------------------
 
-    def test_modes(self):
+    def _test_modes(self):
         trns = [
             self._buy,
             self._sell,
@@ -1235,7 +1563,9 @@ class ReportTestCase(TestCase):
                            notes='trnpl2')
 
         if 'ignore' in fields:
-            self._simple_run('mode - IGNORE - all', report_currency=self.cad, report_date=self._d(14),
+            self._simple_run('mode - IGNORE - all',
+                             report_currency=self.cad,
+                             report_date=self._d(14),
                              portfolio_mode=Report.MODE_IGNORE,
                              account_mode=Report.MODE_IGNORE,
                              strategy1_mode=Report.MODE_IGNORE,
@@ -1243,7 +1573,9 @@ class ReportTestCase(TestCase):
                              strategy3_mode=Report.MODE_IGNORE)
 
         if 'portfolio' in fields:
-            self._simple_run('mode - INDEPENDENT - portfolio', report_currency=self.cad, report_date=self._d(14),
+            self._simple_run('mode - INDEPENDENT - portfolio',
+                             report_currency=self.cad,
+                             report_date=self._d(14),
                              portfolio_mode=Report.MODE_INDEPENDENT,
                              account_mode=Report.MODE_IGNORE,
                              strategy1_mode=Report.MODE_IGNORE,
@@ -1251,7 +1583,9 @@ class ReportTestCase(TestCase):
                              strategy3_mode=Report.MODE_IGNORE)
 
         if 'account' in fields:
-            self._simple_run('mode - INDEPENDENT - account', report_currency=self.cad, report_date=self._d(14),
+            self._simple_run('mode - INDEPENDENT - account',
+                             report_currency=self.cad,
+                             report_date=self._d(14),
                              portfolio_mode=Report.MODE_IGNORE,
                              account_mode=Report.MODE_INDEPENDENT,
                              strategy1_mode=Report.MODE_IGNORE,
@@ -1259,13 +1593,17 @@ class ReportTestCase(TestCase):
                              strategy3_mode=Report.MODE_IGNORE)
 
         if 'strategy1' in fields:
-            self._simple_run('mode - INDEPENDENT - strategy1', report_currency=self.cad, report_date=self._d(14),
+            self._simple_run('mode - INDEPENDENT - strategy1',
+                             report_currency=self.cad,
+                             report_date=self._d(14),
                              portfolio_mode=Report.MODE_IGNORE,
                              account_mode=Report.MODE_IGNORE,
                              strategy1_mode=Report.MODE_INDEPENDENT,
                              strategy2_mode=Report.MODE_IGNORE,
                              strategy3_mode=Report.MODE_IGNORE)
-            self._simple_run('mode - INTERDEPENDENT - strategy1', report_currency=self.cad, report_date=self._d(14),
+            self._simple_run('mode - INTERDEPENDENT - strategy1',
+                             report_currency=self.cad,
+                             report_date=self._d(14),
                              portfolio_mode=Report.MODE_IGNORE,
                              account_mode=Report.MODE_IGNORE,
                              strategy1_mode=Report.MODE_INTERDEPENDENT,
@@ -1273,13 +1611,17 @@ class ReportTestCase(TestCase):
                              strategy3_mode=Report.MODE_IGNORE)
 
         if 'strategy2' in fields:
-            self._simple_run('mode - INDEPENDENT - strategy2', report_currency=self.cad, report_date=self._d(14),
+            self._simple_run('mode - INDEPENDENT - strategy2',
+                             report_currency=self.cad,
+                             report_date=self._d(14),
                              portfolio_mode=Report.MODE_IGNORE,
                              account_mode=Report.MODE_IGNORE,
                              strategy1_mode=Report.MODE_IGNORE,
                              strategy2_mode=Report.MODE_INDEPENDENT,
                              strategy3_mode=Report.MODE_IGNORE)
-            self._simple_run('mode - INTERDEPENDENT - strategy2', report_currency=self.cad, report_date=self._d(14),
+            self._simple_run('mode - INTERDEPENDENT - strategy2',
+                             report_currency=self.cad,
+                             report_date=self._d(14),
                              portfolio_mode=Report.MODE_IGNORE,
                              account_mode=Report.MODE_IGNORE,
                              strategy1_mode=Report.MODE_IGNORE,
@@ -1287,13 +1629,17 @@ class ReportTestCase(TestCase):
                              strategy3_mode=Report.MODE_IGNORE)
 
         if 'strategy3' in fields:
-            self._simple_run('mode - INDEPENDENT - strategy3', report_currency=self.cad, report_date=self._d(14),
+            self._simple_run('mode - INDEPENDENT - strategy3',
+                             report_currency=self.cad,
+                             report_date=self._d(14),
                              portfolio_mode=Report.MODE_IGNORE,
                              account_mode=Report.MODE_IGNORE,
                              strategy1_mode=Report.MODE_IGNORE,
                              strategy2_mode=Report.MODE_IGNORE,
                              strategy3_mode=Report.MODE_INDEPENDENT)
-            self._simple_run('mode - INTERDEPENDENT - strategy3', report_currency=self.cad, report_date=self._d(14),
+            self._simple_run('mode - INTERDEPENDENT - strategy3',
+                             report_currency=self.cad,
+                             report_date=self._d(14),
                              portfolio_mode=Report.MODE_IGNORE,
                              account_mode=Report.MODE_IGNORE,
                              strategy1_mode=Report.MODE_IGNORE,
@@ -1301,7 +1647,9 @@ class ReportTestCase(TestCase):
                              strategy3_mode=Report.MODE_INTERDEPENDENT)
 
         if 'all' in fields:
-            self._simple_run('mode - INDEPENDENT - all', report_currency=self.cad, report_date=self._d(14),
+            self._simple_run('mode - INDEPENDENT - all',
+                             report_currency=self.cad,
+                             report_date=self._d(14),
                              portfolio_mode=Report.MODE_INDEPENDENT,
                              account_mode=Report.MODE_INDEPENDENT,
                              strategy1_mode=Report.MODE_INDEPENDENT,
@@ -2136,3 +2484,59 @@ class ReportTestCase(TestCase):
         b = ReportBuilder(instance=r)
         b.build()
         self._dump(b, 'test_pl_date_interval_1: pl_first_date abd report_date', show_trns=show_trns)
+
+    def test_from_csv_td_1(self):
+        base_path = os.path.join(settings.BASE_DIR, 'poms', 'reports', 'tests_data')
+        load_from_csv(
+            master_user=self.m,
+            instr=os.path.join(base_path, 'td_1_instrument.csv'),
+            instr_price_hist=os.path.join(base_path, 'td_1_price_history.csv'),
+            ccy_fx_rate=os.path.join(base_path, 'td_1_fx_history.csv'),
+            trn=os.path.join(base_path, 'td_1_transactions.csv')
+        )
+
+        cost_method = self._avco
+
+        report_dates = [
+            date(2017, 3, 10),
+            date(2017, 3, 15),
+            date(2017, 3, 25),
+            date(2017, 3, 28),
+        ]
+        report_currencies = [
+            Currency.objects.get(master_user=self.m, user_code='USD'),
+            Currency.objects.get(master_user=self.m, user_code='EUR'),
+            Currency.objects.get(master_user=self.m, user_code='GBP'),
+        ]
+        portfolio_modes = [
+            # Report.MODE_IGNORE,
+            Report.MODE_INDEPENDENT,
+        ]
+        account_modes = [
+            # Report.MODE_IGNORE,
+            Report.MODE_INDEPENDENT,
+        ]
+        strategy1_modes = [
+            # Report.MODE_IGNORE,
+            Report.MODE_INDEPENDENT,
+        ]
+
+        reports = []
+        for report_date in report_dates:
+            for report_currency in report_currencies:
+                for portfolio_mode in portfolio_modes:
+                    for account_mode in account_modes:
+                        for strategy1_mode in strategy1_modes:
+                            r = self._simple_run(
+                                None,
+                                report_currency=report_currency,
+                                report_date=report_date,
+                                cost_method=cost_method,
+                                portfolio_mode=portfolio_mode,
+                                account_mode=account_mode,
+                                strategy1_mode=strategy1_mode,
+                                strategy2_mode=Report.MODE_IGNORE,
+                                strategy3_mode=Report.MODE_IGNORE,
+                            )
+                            reports.append(r)
+        self._write_results(reports)

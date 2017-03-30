@@ -1201,9 +1201,13 @@ class TransactionTypeProcessSerializer(serializers.Serializer):
         if self.instance:
             self.fields['values'] = TransactionTypeProcessValuesSerializer(instance=self.instance, required=False)
 
-        recalculate_inputs = [(i.name, i.verbose_name) for i in self.instance.inputs if i.can_recalculate]
-        self.fields['recalculate_inputs'] = serializers.MultipleChoiceField(required=False, allow_null=True,
-                                                                            choices=recalculate_inputs)
+        if self.instance:
+            recalculate_inputs = [(i.name, i.verbose_name) for i in self.instance.inputs if i.can_recalculate]
+            self.fields['recalculate_inputs'] = serializers.MultipleChoiceField(required=False, allow_null=True,
+                                                                                choices=recalculate_inputs)
+        else:
+            self.fields['recalculate_inputs'] = serializers.MultipleChoiceField(required=False, allow_null=True,
+                                                                                choices=[])
 
         self.fields['has_errors'] = serializers.BooleanField(read_only=True)
         self.fields['value_errors'] = serializers.ReadOnlyField()

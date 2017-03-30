@@ -402,7 +402,8 @@ class Instrument(NamedModel, FakeDeletableModel):
         processed = []
 
         # process accruals
-        accruals = list(self.accrual_calculation_schedules.order_by('accrual_start_date'))
+        # accruals = list(self.accrual_calculation_schedules.order_by('accrual_start_date'))
+        accruals = self.get_accrual_calculation_schedules_all()
         for i, accrual in enumerate(accruals):
             try:
                 accrual_next = accruals[i + 1]
@@ -548,14 +549,18 @@ class Instrument(NamedModel, FakeDeletableModel):
             if old_event:
                 processed.append(old_event.id)
 
+    def get_accrual_calculation_schedules_all(self):
+        return sorted(self.accrual_calculation_schedules.all(), key=lambda x: x.accrual_start_date)
+
     def find_accrual(self, d, accruals=None):
         if d >= self.maturity_date:
             return None
         if accruals is None:
-            # TODO: verify that use queryset cache
-            accruals = self.accrual_calculation_schedules.select_related(
-                'periodicity', 'accrual_calculation_model'
-            ).order_by('accrual_start_date').all()
+            # # TODO: verify that use queryset cache
+            # accruals = self.accrual_calculation_schedules.select_related(
+            #     'periodicity', 'accrual_calculation_model'
+            # ).order_by('accrual_start_date').all()
+            accruals = self.get_accrual_calculation_schedules_all()
         accrual = None
         for a in accruals:
             if a.accrual_start_date <= d:
@@ -563,7 +568,8 @@ class Instrument(NamedModel, FakeDeletableModel):
         return accrual
 
     def calculate_prices_accrued_price(self, begin_date=None, end_date=None):
-        accruals = [a for a in self.accrual_calculation_schedules.order_by('accrual_start_date')]
+        # accruals = [a for a in self.accrual_calculation_schedules.order_by('accrual_start_date')]
+        accruals = self.get_accrual_calculation_schedules_all()
         if not accruals:
             return
         existed_prices = PriceHistory.objects.filter(instrument=self, date__range=(begin_date, end_date))
@@ -616,25 +622,8 @@ class Instrument(NamedModel, FakeDeletableModel):
 
     def get_future_accrual_payments(self, data=None, d0=None, v0=None, begin_date=None, accruals=None,
                                     principal_ccy_fx=1.0, accrual_ccy_fx=1.0):
-        # accrual_start_date
-        # accrual_end_date -> fake
-        # first_payment_date
-        # accrual_size
-        # accrual_calculation_model -> AccrualCalculationModel
-        # periodicity -> Periodicity
-        # periodicity_n
         if accruals is None:
-            # accruals = list(self.accrual_calculation_schedules.select_related(
-            #     'accrual_calculation_model', 'periodicity',
-            # ).order_by('accrual_start_date').all())
-            # accruals = list(self.accrual_calculation_schedules.all())
-            # accruals = sorted(accruals, key=lambda x: x.accrual_start_date)
-            try:
-                accruals = self._get_future_accrual_payments_accruals
-            except AttributeError:
-                accruals = list(self.accrual_calculation_schedules.all())
-                accruals = sorted(accruals, key=lambda x: x.accrual_start_date)
-                self._get_future_accrual_payments_accruals = accruals
+            accruals = self.get_accrual_calculation_schedules_all()
 
         if data is None:
             data = []
