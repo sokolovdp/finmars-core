@@ -2374,7 +2374,7 @@ class ReportBuilder(object):
         self._transaction_pricing()
         self._transaction_multipliers()
         self._transaction_calc()
-        self.clone_transactions_if_need()
+        self._clone_transactions_if_need()
         self.instance.transactions = self._transactions
         self._generate_items()
         self._aggregate_items()
@@ -2747,7 +2747,7 @@ class ReportBuilder(object):
         for trn in self._transactions:
             trn.calc()
 
-    def clone_transactions_if_need(self):
+    def _clone_transactions_if_need(self):
         _l.debug('transactions - clone if need')
 
         res = []
