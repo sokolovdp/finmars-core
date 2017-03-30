@@ -6,6 +6,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 from rest_framework.fields import empty
+from django.utils import timezone
 
 from poms.accounts.fields import AccountField, AccountDefault
 from poms.accounts.models import Account
@@ -35,6 +36,7 @@ from poms.transactions.models import TransactionClass, Transaction, TransactionT
     TransactionTypeActionTransaction, TransactionTypeActionInstrument, TransactionTypeInput, TransactionTypeGroup, \
     ComplexTransaction, EventClass, NotificationClass, ComplexTransactionInput
 from poms.users.fields import MasterUserField
+from poms.users.utils import get_master_user_from_context
 
 
 class EventClassSerializer(PomsClassSerializer):
@@ -1062,6 +1064,9 @@ class TransactionTypeProcessValuesSerializer(serializers.Serializer):
         from poms.portfolios.serializers import PortfolioViewSerializer
         from poms.integrations.serializers import PriceDownloadSchemeViewSerializer
 
+        # now = timezone.now().date()
+        # master_user = get_master_user_from_context(self.context)
+
         for i in self.instance.inputs:
             name = i.name
             name_object = '%s_object' % name
@@ -1069,69 +1074,86 @@ class TransactionTypeProcessValuesSerializer(serializers.Serializer):
             field_object = None
 
             if i.value_type == TransactionTypeInput.STRING:
-                field = serializers.CharField(required=True, label=i.name, help_text=i.verbose_name)
+                # field = serializers.CharField(required=True, label=i.name, help_text=i.verbose_name)
+                field = serializers.CharField(required=False, allow_blank=True, allow_null=True,
+                                              label=i.name, help_text=i.verbose_name)
 
             elif i.value_type == TransactionTypeInput.NUMBER:
-                field = serializers.FloatField(required=True, label=i.name, help_text=i.verbose_name)
+                field = serializers.FloatField(required=False, allow_null=True,
+                                               label=i.name, help_text=i.verbose_name)
 
             elif i.value_type == TransactionTypeInput.DATE:
-                field = serializers.DateField(required=True, label=i.name, help_text=i.verbose_name)
+                field = serializers.DateField(required=False, allow_null=True,
+                                              label=i.name, help_text=i.verbose_name)
 
             elif i.value_type == TransactionTypeInput.RELATION:
                 model_class = i.content_type.model_class()
 
                 if issubclass(model_class, Account):
-                    field = AccountField(required=True, label=i.name, help_text=i.verbose_name)
+                    field = AccountField(required=False, allow_null=True,
+                                         label=i.name, help_text=i.verbose_name)
                     field_object = AccountViewSerializer(source=name, read_only=True)
 
                 elif issubclass(model_class, Currency):
-                    field = CurrencyField(required=True, label=i.name, help_text=i.verbose_name)
+                    field = CurrencyField(required=False, allow_null=True,
+                                          label=i.name, help_text=i.verbose_name)
                     field_object = CurrencyViewSerializer(source=name, read_only=True)
 
                 elif issubclass(model_class, Instrument):
-                    field = InstrumentField(required=True, label=i.name, help_text=i.verbose_name)
+                    field = InstrumentField(required=False, allow_null=True,
+                                            label=i.name, help_text=i.verbose_name)
                     field_object = InstrumentViewSerializer(source=name, read_only=True)
 
                 elif issubclass(model_class, InstrumentType):
-                    field = InstrumentTypeField(required=True, label=i.name, help_text=i.verbose_name)
+                    field = InstrumentTypeField(required=False, allow_null=True,
+                                                label=i.name, help_text=i.verbose_name)
                     field_object = InstrumentTypeViewSerializer(source=name, read_only=True)
 
                 elif issubclass(model_class, Counterparty):
-                    field = CounterpartyField(required=True, label=i.name, help_text=i.verbose_name)
+                    field = CounterpartyField(required=False, allow_null=True,
+                                              label=i.name, help_text=i.verbose_name)
                     field_object = CounterpartyViewSerializer(source=name, read_only=True)
 
                 elif issubclass(model_class, Responsible):
-                    field = ResponsibleField(required=True, label=i.name, help_text=i.verbose_name)
+                    field = ResponsibleField(required=False, allow_null=True,
+                                             label=i.name, help_text=i.verbose_name)
                     field_object = ResponsibleViewSerializer(source=name, read_only=True)
 
                 elif issubclass(model_class, Strategy1):
-                    field = Strategy1Field(required=True, label=i.name, help_text=i.verbose_name)
+                    field = Strategy1Field(required=False, allow_null=True,
+                                           label=i.name, help_text=i.verbose_name)
                     field_object = Strategy1ViewSerializer(source=name, read_only=True)
 
                 elif issubclass(model_class, Strategy2):
-                    field = Strategy2Field(required=True, label=i.name, help_text=i.verbose_name)
+                    field = Strategy2Field(required=False, allow_null=True,
+                                           label=i.name, help_text=i.verbose_name)
                     field_object = Strategy2ViewSerializer(source=name, read_only=True)
 
                 elif issubclass(model_class, Strategy3):
-                    field = Strategy3Field(required=True, label=i.name, help_text=i.verbose_name)
+                    field = Strategy3Field(required=False, allow_null=True,
+                                           label=i.name, help_text=i.verbose_name)
                     field_object = Strategy3ViewSerializer(source=name, read_only=True)
 
                 elif issubclass(model_class, DailyPricingModel):
-                    field = serializers.PrimaryKeyRelatedField(queryset=DailyPricingModel.objects, required=True,
+                    field = serializers.PrimaryKeyRelatedField(queryset=DailyPricingModel.objects,
+                                                               required=False, allow_null=True,
                                                                label=i.name, help_text=i.verbose_name)
                     field_object = DailyPricingModelSerializer(source=name, read_only=True)
 
                 elif issubclass(model_class, PaymentSizeDetail):
-                    field = serializers.PrimaryKeyRelatedField(queryset=PaymentSizeDetail.objects, required=True,
+                    field = serializers.PrimaryKeyRelatedField(queryset=PaymentSizeDetail.objects,
+                                                               required=False, allow_null=True,
                                                                label=i.name, help_text=i.verbose_name)
                     field_object = PaymentSizeDetailSerializer(source=name, read_only=True)
 
                 elif issubclass(model_class, Portfolio):
-                    field = PortfolioField(required=True, label=i.name, help_text=i.verbose_name)
+                    field = PortfolioField(required=False, allow_null=True,
+                                           label=i.name, help_text=i.verbose_name)
                     field_object = PortfolioViewSerializer(source=name, read_only=True)
 
                 elif issubclass(model_class, PriceDownloadScheme):
-                    field = PriceDownloadSchemeField(required=True, label=i.name, help_text=i.verbose_name)
+                    field = PriceDownloadSchemeField(required=False, allow_null=True,
+                                                     label=i.name, help_text=i.verbose_name)
                     field_object = PriceDownloadSchemeViewSerializer(source=name, read_only=True)
 
             if field:
