@@ -50,7 +50,7 @@ class AbstractApiView(APIView):
                 return self._mini_if_need(request, response)
 
     def _mini_if_need(self, request, response):
-        if request.GET.get('_mini', None):
+        if '_mini' in request.GET:
             self._remove_object(response.data)
         return response
 
