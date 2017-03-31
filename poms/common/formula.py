@@ -732,7 +732,7 @@ class SimpleEval2(object):
             val = self._table[name]
             val = self._check_value(val)
             return val
-        except KeyError:
+        except (IndexError, KeyError, TypeError):
             raise NameNotDefined(name)
 
     def _check_value(self, val):
@@ -973,7 +973,7 @@ class SimpleEval2(object):
             val = val[index_or_key]
             val = self._check_value(val)
             return val
-        except KeyError:
+        except (IndexError, KeyError, TypeError):
             return None
 
     def _on_ast_Attribute(self, node, val=empty):
@@ -984,7 +984,7 @@ class SimpleEval2(object):
         if isinstance(val, (dict, OrderedDict)):
             try:
                 return val[node.attr]
-            except (KeyError, TypeError):
+            except (IndexError, KeyError, TypeError):
                 raise AttributeDoesNotExist(node.attr)
         else:
             if isinstance(val, datetime.date):
