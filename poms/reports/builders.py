@@ -601,31 +601,57 @@ class VirtualTransaction(_Base):
             self.total_fixed_opened_res = self.total_fixed_res * (1.0 - self.multiplier)
 
             # ----------------------------------------------------
-            if not self.is_cloned and not isclose(self.pos_size, 0.0):
+            if not self.is_cloned:
                 try:
                     self.gross_cost_res = self.principal_res * self.ref_fx * \
                                           (self.trn_ccy_cur_fx / self.instr_pricing_ccy_cur_fx) * \
                                           (1.0 - self.multiplier) / self.pos_size / self.instr.price_multiplier
                 except ArithmeticError:
                     self.gross_cost_res = 0.0
+
                 try:
                     self.net_cost_res = (self.principal_res + self.overheads_res) * self.ref_fx * \
                                         (self.trn_ccy_cur_fx / self.instr_pricing_ccy_cur_fx) * \
                                         (1.0 - self.multiplier) / self.pos_size / self.instr.price_multiplier
                 except ArithmeticError:
                     self.net_cost_res = 0.0
+
                 try:
                     self.principal_invested_res = self.principal_res * self.ref_fx * \
                                                   (self.trn_ccy_cur_fx / self.instr_pricing_ccy_cur_fx) * \
                                                   (1.0 - self.multiplier)
                 except ArithmeticError:
                     self.principal_invested_res = 0.0
+
                 try:
                     self.amount_invested_res = self.total_res * self.ref_fx * \
                                                (self.trn_ccy_cur_fx / self.instr_pricing_ccy_cur_fx) * \
                                                (1.0 - self.multiplier)
                 except ArithmeticError:
                     self.amount_invested_res = 0.0
+
+                if self.trn_cls.id in [TransactionClass.BUY, TransactionClass.SELL] and self.instr:
+                    # try:
+                    #     self.remaining_pos_size_percent = self.remaining_pos_size / balance_pos_size
+                    # except ArithmeticError:
+                    #     self.remaining_pos_size_percent = 0.0
+                    try:
+                        future_accrual_payments = self.instr.get_future_accrual_payments(
+                            d0=self.acc_date,
+                            v0=self.trade_price,
+                            principal_ccy_fx=self.instr_pricing_ccy_cur_fx,
+                            accrual_ccy_fx=self.instr_accrued_ccy_cur_fx
+                        )
+                    except (ValueError, TypeError):
+                        future_accrual_payments = False
+                    self.ytm = f_xirr(future_accrual_payments)
+
+                    self.time_invested_days = (self.report.report_date - self.acc_date).days
+                    self.time_invested = self.time_invested_days / 365.0
+
+                    self.weighted_ytm = self.ytm * self.remaining_pos_size_percent
+                    self.weighted_time_invested_days = self.time_invested * self.remaining_pos_size_percent
+                    self.weighted_time_invested = self.time_invested * self.remaining_pos_size_percent
 
         elif self.trn_cls.id in [TransactionClass.CASH_INFLOW, TransactionClass.CASH_OUTFLOW]:
             self.pl_fx_mul = self.stl_ccy_cur_fx - self.ref_fx * self.trn_ccy_acc_hist_fx
@@ -641,30 +667,30 @@ class VirtualTransaction(_Base):
         else:
             self.mismatch = self.cash - self.total
 
-    def calc_pass2(self, balance_pos_size):
-        # called after "balance"
-        if not self.is_cloned and self.trn_cls.id in [TransactionClass.BUY, TransactionClass.SELL] and self.instr:
-            # try:
-            #     self.remaining_pos_size_percent = self.remaining_pos_size / balance_pos_size
-            # except ArithmeticError:
-            #     self.remaining_pos_size_percent = 0.0
-            try:
-                future_accrual_payments = self.instr.get_future_accrual_payments(
-                    d0=self.acc_date,
-                    v0=self.trade_price,
-                    principal_ccy_fx=self.instr_pricing_ccy_cur_fx,
-                    accrual_ccy_fx=self.instr_accrued_ccy_cur_fx
-                )
-            except (ValueError, TypeError):
-                future_accrual_payments = False
-            self.ytm = f_xirr(future_accrual_payments)
-
-            self.time_invested_days = (self.report.report_date - self.acc_date).days
-            self.time_invested = self.time_invested_days / 365.0
-
-            self.weighted_ytm = self.ytm * self.remaining_pos_size_percent
-            self.weighted_time_invested_days = self.time_invested * self.remaining_pos_size_percent
-            self.weighted_time_invested = self.time_invested * self.remaining_pos_size_percent
+    # def calc_pass2(self, balance_pos_size):
+    #     # called after "balance"
+    #     if not self.is_cloned and self.trn_cls.id in [TransactionClass.BUY, TransactionClass.SELL] and self.instr:
+    #         # try:
+    #         #     self.remaining_pos_size_percent = self.remaining_pos_size / balance_pos_size
+    #         # except ArithmeticError:
+    #         #     self.remaining_pos_size_percent = 0.0
+    #         try:
+    #             future_accrual_payments = self.instr.get_future_accrual_payments(
+    #                 d0=self.acc_date,
+    #                 v0=self.trade_price,
+    #                 principal_ccy_fx=self.instr_pricing_ccy_cur_fx,
+    #                 accrual_ccy_fx=self.instr_accrued_ccy_cur_fx
+    #             )
+    #         except (ValueError, TypeError):
+    #             future_accrual_payments = False
+    #         self.ytm = f_xirr(future_accrual_payments)
+    #
+    #         self.time_invested_days = (self.report.report_date - self.acc_date).days
+    #         self.time_invested = self.time_invested_days / 365.0
+    #
+    #         self.weighted_ytm = self.ytm * self.remaining_pos_size_percent
+    #         self.weighted_time_invested_days = self.time_invested * self.remaining_pos_size_percent
+    #         self.weighted_time_invested = self.time_invested * self.remaining_pos_size_percent
 
     @staticmethod
     def approach_clone(cur, closed, mul_delta):
@@ -1542,6 +1568,11 @@ class ReportItem(_Base):
             if trn.trn_cls.id in [TransactionClass.BUY, TransactionClass.SELL]:
                 item.last_notes = trn.notes
 
+            if not trn.is_cloned:
+                item.ytm_at_cost = trn.weighted_ytm
+                item.time_invested_days = trn.weighted_time_invested_days
+                item.time_invested += trn.weighted_time_invested
+
         elif item.type == ReportItem.TYPE_CURRENCY:
             item.acc = acc or trn.acc_cash
             item.str1 = str1 or trn.str1_cash
@@ -1739,6 +1770,10 @@ class ReportItem(_Base):
             # self.total_unreal_res += o.market_value_res + o.cost_res
             # self.total_unreal_res += (o.instr_principal_res + o.instr_accrued_res) + o.cost_res
 
+            self.ytm_at_cost += o.ytm_at_cost
+            self.time_invested_days += o.time_invested_days
+            self.time_invested += o.time_invested
+
             self.gross_cost_res += o.gross_cost_res
             self.net_cost_res += o.net_cost_res
             self.principal_invested_res += o.principal_invested_res
@@ -1756,12 +1791,18 @@ class ReportItem(_Base):
         elif self.type == ReportItem.TYPE_MISMATCH:
             self.mismatch += o.mismatch
 
-    def add_pos(self, o):
-        if self.type == ReportItem.TYPE_CURRENCY:
-            self.pos_size += o.pos_size
+    # def add_pass2(self, trn):
+    #     if not trn.is_cloned and self.type == ReportItem.TYPE_INSTRUMENT:
+    #         self.ytm_at_cost += trn.weighted_ytm
+    #         self.time_invested_days += trn.weighted_time_invested_days
+    #         # self.time_invested += trn.weighted_time_invested
 
-        elif self.type == ReportItem.TYPE_INSTRUMENT:
-            self.pos_size += o.pos_size
+    # def add_pos(self, o):
+    #     if self.type == ReportItem.TYPE_CURRENCY:
+    #         self.pos_size += o.pos_size
+    #
+    #     elif self.type == ReportItem.TYPE_INSTRUMENT:
+    #         self.pos_size += o.pos_size
 
     def close(self):
         # if self.type == ReportItem.TYPE_CURRENCY or self.type == ReportItem.TYPE_INVESTED_CURRENCY:
@@ -1832,7 +1873,7 @@ class ReportItem(_Base):
                 self.pos_return_res = 0
             try:
                 self.net_pos_return_res = (
-                                              self.principal_opened_res + self.carry_opened_res + self.overheads_opened_res) / self.principal_invested_res
+                                          self.principal_opened_res + self.carry_opened_res + self.overheads_opened_res) / self.principal_invested_res
             except ArithmeticError:
                 self.net_pos_return_res = 0.0
 
@@ -1840,7 +1881,6 @@ class ReportItem(_Base):
                 # YTM/Duration - берем price из price history на дату репорта.
                 # Для записка итеративного алгоритма, для x0 из accrued schedule
                 # берем на текущую дату - (accrued_size * accrued_multiplier)/(price * price_multiplier).
-                _l.debug('> future_accrual_payments: instr=%s', self.instr.id)
                 try:
                     future_accrual_payments = self.instr.get_future_accrual_payments(
                         d0=self.report.report_date,
@@ -1850,13 +1890,49 @@ class ReportItem(_Base):
                     )
                 except (ValueError, TypeError):
                     future_accrual_payments = False
-                _l.debug('< future_accrual_payments: %s', future_accrual_payments)
-                _l.debug('> ytm: instr=%s', self.instr.id)
+
                 self.ytm = f_xirr(future_accrual_payments)
-                _l.debug('< ytm: %s', self.ytm)
-                _l.debug('> modified_duration: instr=%s', self.instr.id)
+
                 self.modified_duration = f_duration(future_accrual_payments, ytm=self.ytm)
-                _l.debug('< modified_duration: %s', self.modified_duration)
+
+            self.time_invested = self.time_invested_days / 365.0
+
+            if self.time_invested_days < 1.0 or isclose(self.time_invested_days, 1.0):
+                # T - report date
+                #  = (Current Price - Gross Cost Price) / Gross Cost Price, if Time Invested in days= 1 day
+                # self.pricing()
+                try:
+                    self.daily_price_change = (
+                                              self.instr_price_cur_principal_price - self.gross_cost_loc) / self.gross_cost_loc
+                except ArithmeticError:
+                    self.daily_price_change = 0.0
+            else:
+                #  = (Current Price at T -  Price from Price History at T-1) / (Price from Price History at T-1) , if Time Invested > 1 day
+                price_yest = self.pricing_provider[self.instr, self.report.report_date - timedelta(days=1)]
+                try:
+                    self.daily_price_change = (
+                                              self.instr_price_cur_principal_price - price_yest.principal_price) / price_yest.principal_price
+                except ArithmeticError:
+                    self.daily_price_change = 0.0
+
+            if self.time_invested_days <= self.report.report_date.day or isclose(self.time_invested_days,
+                                                                                 self.report.report_date.day):
+                # T - report date
+                #  = (Current Price - Gross Cost Price) / Gross Cost Price, if Time Invested in days <= Day(Report Date)
+                try:
+                    self.mtd_price_change = (
+                                            self.instr_price_cur_principal_price - self.gross_cost_loc) / self.gross_cost_loc
+                except ArithmeticError:
+                    self.mtd_price_change = 0.0
+            else:
+                #  = (Current Price -  Price from Price History at end_of_previous_month (Report Date)) / (Price from Price History at end_of_previous_month (Report Date)) , if Time Invested > Day(Report Date)
+                price_eom = self.pricing_provider[
+                    self.instr, self.report.report_date - timedelta(days=self.report.report_date.day)]
+                try:
+                    self.mtd_price_change = (
+                                            self.instr_price_cur_principal_price - price_eom.principal_price) / price_eom.principal_price
+                except ArithmeticError:
+                    self.mtd_price_change = 0.0
 
         elif self.type == ReportItem.TYPE_MISMATCH:
             # self.market_value_res = self.pos_size * self.ccy_cur_fx
@@ -1948,52 +2024,46 @@ class ReportItem(_Base):
                             isclose(self.total_closed_res, 0.0) and \
                             isclose(self.total_opened_res, 0.0)
 
-    def add_pass2(self, trn):
-        if trn.is_cloned and self.type == ReportItem.TYPE_INSTRUMENT:
-            self.ytm_at_cost += trn.weighted_ytm
-            self.time_invested_days += trn.weighted_time_invested_days
-            # self.time_invested += trn.weighted_time_invested
-
-    def close_pass2(self):
-        if self.type == ReportItem.TYPE_INSTRUMENT:
-            self.time_invested = self.time_invested_days / 365.0
-
-            if self.time_invested_days < 1.0 or isclose(self.time_invested_days, 1.0):
-                # T - report date
-                #  = (Current Price - Gross Cost Price) / Gross Cost Price, if Time Invested in days= 1 day
-                # self.pricing()
-                try:
-                    self.daily_price_change = (
-                                                  self.instr_price_cur_principal_price - self.gross_cost_loc) / self.gross_cost_loc
-                except ArithmeticError:
-                    self.daily_price_change = 0.0
-            else:
-                #  = (Current Price at T -  Price from Price History at T-1) / (Price from Price History at T-1) , if Time Invested > 1 day
-                price_yest = self.pricing_provider[self.instr, self.report.report_date - timedelta(days=1)]
-                try:
-                    self.daily_price_change = (
-                                                  self.instr_price_cur_principal_price - price_yest.principal_price) / price_yest.principal_price
-                except ArithmeticError:
-                    self.daily_price_change = 0.0
-
-            if self.time_invested_days <= self.report.report_date.day or isclose(self.time_invested_days,
-                                                                                 self.report.report_date.day):
-                # T - report date
-                #  = (Current Price - Gross Cost Price) / Gross Cost Price, if Time Invested in days <= Day(Report Date)
-                try:
-                    self.mtd_price_change = (
-                                                self.instr_price_cur_principal_price - self.gross_cost_loc) / self.gross_cost_loc
-                except ArithmeticError:
-                    self.mtd_price_change = 0.0
-            else:
-                #  = (Current Price -  Price from Price History at end_of_previous_month (Report Date)) / (Price from Price History at end_of_previous_month (Report Date)) , if Time Invested > Day(Report Date)
-                price_eom = self.pricing_provider[
-                    self.instr, self.report.report_date - timedelta(days=self.report.report_date.day)]
-                try:
-                    self.mtd_price_change = (
-                                                self.instr_price_cur_principal_price - price_eom.principal_price) / price_eom.principal_price
-                except ArithmeticError:
-                    self.mtd_price_change = 0.0
+    # def close_pass2(self):
+    #     if self.type == ReportItem.TYPE_INSTRUMENT:
+    #         self.time_invested = self.time_invested_days / 365.0
+    #
+    #         if self.time_invested_days < 1.0 or isclose(self.time_invested_days, 1.0):
+    #             # T - report date
+    #             #  = (Current Price - Gross Cost Price) / Gross Cost Price, if Time Invested in days= 1 day
+    #             # self.pricing()
+    #             try:
+    #                 self.daily_price_change = (
+    #                                               self.instr_price_cur_principal_price - self.gross_cost_loc) / self.gross_cost_loc
+    #             except ArithmeticError:
+    #                 self.daily_price_change = 0.0
+    #         else:
+    #             #  = (Current Price at T -  Price from Price History at T-1) / (Price from Price History at T-1) , if Time Invested > 1 day
+    #             price_yest = self.pricing_provider[self.instr, self.report.report_date - timedelta(days=1)]
+    #             try:
+    #                 self.daily_price_change = (
+    #                                               self.instr_price_cur_principal_price - price_yest.principal_price) / price_yest.principal_price
+    #             except ArithmeticError:
+    #                 self.daily_price_change = 0.0
+    #
+    #         if self.time_invested_days <= self.report.report_date.day or isclose(self.time_invested_days,
+    #                                                                              self.report.report_date.day):
+    #             # T - report date
+    #             #  = (Current Price - Gross Cost Price) / Gross Cost Price, if Time Invested in days <= Day(Report Date)
+    #             try:
+    #                 self.mtd_price_change = (
+    #                                             self.instr_price_cur_principal_price - self.gross_cost_loc) / self.gross_cost_loc
+    #             except ArithmeticError:
+    #                 self.mtd_price_change = 0.0
+    #         else:
+    #             #  = (Current Price -  Price from Price History at end_of_previous_month (Report Date)) / (Price from Price History at end_of_previous_month (Report Date)) , if Time Invested > Day(Report Date)
+    #             price_eom = self.pricing_provider[
+    #                 self.instr, self.report.report_date - timedelta(days=self.report.report_date.day)]
+    #             try:
+    #                 self.mtd_price_change = (
+    #                                             self.instr_price_cur_principal_price - price_eom.principal_price) / price_eom.principal_price
+    #             except ArithmeticError:
+    #                 self.mtd_price_change = 0.0
 
     def pl_sub_item(self, o):
         self.principal_res -= o.principal_res
@@ -2390,7 +2460,7 @@ class ReportBuilder(object):
         self.instance.transactions = self._transactions
         self._generate_items()
         self._aggregate_items()
-        self._calc_pass2()
+        # self._calc_pass2()
         self._aggregate_summary()
         self._detect_mismatches()
         self.instance.items = self._items + self._mismatch_items + self._summaries
@@ -2743,7 +2813,7 @@ class ReportBuilder(object):
                 trn=t,
                 overrides=overrides
             )
-            # trn.key = self._get_trn_key(trn)
+            # trn.key = self._get_trn_group_key(trn)
             self._transactions.append(trn)
 
         _l.debug('transactions - len=%s', len(self._transactions))
@@ -2841,12 +2911,12 @@ class ReportBuilder(object):
 
                 t.remaining_pos_size = t.pos_size * (1 - t.multiplier)
 
-                t_key = self._get_trn_key(t)
+                t_key = self._get_trn_group_key(t)
                 balances[t_key] += t.remaining_pos_size
 
         for t in self._transactions:
             if t.trn_cls.id in [TransactionClass.BUY, TransactionClass.SELL]:
-                t_key = self._get_trn_key(t)
+                t_key = self._get_trn_group_key(t)
                 t.balance_pos_size = balances[t_key]
                 try:
                     t.remaining_pos_size_percent = t.remaining_pos_size / t.balance_pos_size
@@ -2856,27 +2926,17 @@ class ReportBuilder(object):
         sum_remaining_positions = Counter()
         for t in self._transactions:
             if t.trn_cls.id in [TransactionClass.BUY, TransactionClass.SELL]:
-                t_key = self._get_trn_key(t)
+                t_key = self._get_trn_group_key(t)
                 sum_remaining_positions[t_key] += t.remaining_pos_size
 
             elif t.trn_cls.id == TransactionClass.INSTRUMENT_PL:
-                t_key = self._get_trn_key(t)
+                t_key = self._get_trn_group_key(t)
                 t.balance_pos_size = balances[t_key]
                 remaining_pos_size = sum_remaining_positions[t_key]
                 try:
                     t.multiplier = abs(remaining_pos_size / t.balance_pos_size)
                 except ArithmeticError:
                     t.multiplier = 0.0
-
-    def _get_trn_key(self, t):
-        return (
-            getattr(t.prtfl, 'id', None) if self.instance.portfolio_mode == Report.MODE_INDEPENDENT else None,
-            getattr(t.acc_pos, 'id', None) if self.instance.account_mode == Report.MODE_INDEPENDENT else None,
-            getattr(t.str1_pos, 'id', None) if self.instance.strategy1_mode == Report.MODE_INDEPENDENT else None,
-            getattr(t.str2_pos, 'id', None) if self.instance.strategy2_mode == Report.MODE_INDEPENDENT else None,
-            getattr(t.str3_pos, 'id', None) if self.instance.strategy3_mode == Report.MODE_INDEPENDENT else None,
-            getattr(t.instr, 'id', None),
-        )
 
     def _calc_avco_multipliers(self):
         _l.debug('transactions - calculate multipliers - avco')
@@ -2893,7 +2953,7 @@ class ReportBuilder(object):
             closed.avco_closed_by.append((cur, delta))
 
         for t in self._transactions:
-            t_key = self._get_trn_key(t)
+            t_key = self._get_trn_group_key(t)
 
             if t.trn_cls.id == TransactionClass.INSTRUMENT_PL:
                 t.avco_rolling_pos_size = self.avco_rolling_positions[t_key]
@@ -2962,7 +3022,7 @@ class ReportBuilder(object):
             closed.fifo_closed_by.append((cur, delta))
 
         for t in self._transactions:
-            t_key = self._get_trn_key(t)
+            t_key = self._get_trn_group_key(t)
 
             if t.trn_cls.id == TransactionClass.INSTRUMENT_PL:
                 t.fifo_rolling_pos_size = self.fifo_rolling_positions[t_key]
@@ -3039,6 +3099,18 @@ class ReportBuilder(object):
 
             self.fifo_rolling_positions[t_key] = rolling_pos
             t.fifo_rolling_pos_size = rolling_pos
+
+    def _get_trn_group_key(self, t):
+        return (
+            getattr(t.prtfl, 'id', None) if self.instance.portfolio_mode == Report.MODE_INDEPENDENT else None,
+            getattr(t.acc_pos, 'id', None) if self.instance.account_mode == Report.MODE_INDEPENDENT else None,
+            getattr(t.str1_pos, 'id', None) if self.instance.strategy1_mode == Report.MODE_INDEPENDENT else None,
+            getattr(t.str2_pos, 'id', None) if self.instance.strategy2_mode == Report.MODE_INDEPENDENT else None,
+            getattr(t.str3_pos, 'id', None) if self.instance.strategy3_mode == Report.MODE_INDEPENDENT else None,
+            getattr(t.instr, 'id', None),
+            getattr(t.alloc_bl, 'id', None),
+            getattr(t.alloc_pl, 'id', None),
+        )
 
     def _generate_items(self):
         _l.debug('items - generate')
@@ -3137,9 +3209,9 @@ class ReportBuilder(object):
             getattr(item.str1, 'id', -1),
             getattr(item.str2, 'id', -1),
             getattr(item.str3, 'id', -1),
+            getattr(item.instr, 'id', -1),
             getattr(item.alloc_bl, 'id', -1),
             getattr(item.alloc_pl, 'id', -1),
-            getattr(item.instr, 'id', -1),
             getattr(item.ccy, 'id', -1),
             getattr(item.trn_ccy, 'id', -1),
             getattr(item.detail_trn, 'id', -1),
@@ -3156,35 +3228,35 @@ class ReportBuilder(object):
             getattr(item.mismatch_acc, 'id', -1),
         )
 
-    def _item_group_key_pass2(self, trn=None, item=None):
-        if trn:
-            return (
-                getattr(trn.prtfl, 'id', -1),
-                getattr(trn.acc_pos, 'id', -1),
-                getattr(trn.str1_pos, 'id', -1),
-                getattr(trn.str2_pos, 'id', -1),
-                getattr(trn.str3_pos, 'id', -1),
-                getattr(trn.alloc_bl, 'id', -1),
-                getattr(trn.alloc_pl, 'id', -1),
-                getattr(trn.instr, 'id', -1),
-                # getattr(trn.ccy, 'id', -1),
-                # getattr(trn.trn_ccy, 'id', -1),
-            )
-        elif item:
-            return (
-                getattr(item.prtfl, 'id', -1),
-                getattr(item.acc, 'id', -1),
-                getattr(item.str1, 'id', -1),
-                getattr(item.str2, 'id', -1),
-                getattr(item.str3, 'id', -1),
-                getattr(item.alloc_bl, 'id', -1),
-                getattr(item.alloc_pl, 'id', -1),
-                getattr(item.instr, 'id', -1),
-                # getattr(item.ccy, 'id', -1),
-                # getattr(item.trn_ccy, 'id', -1),
-            )
-        else:
-            raise RuntimeError('code bug')
+    # def _item_group_key_pass2(self, trn=None, item=None):
+    #     if trn:
+    #         return (
+    #             getattr(trn.prtfl, 'id', -1),
+    #             getattr(trn.acc_pos, 'id', -1),
+    #             getattr(trn.str1_pos, 'id', -1),
+    #             getattr(trn.str2_pos, 'id', -1),
+    #             getattr(trn.str3_pos, 'id', -1),
+    #             getattr(trn.alloc_bl, 'id', -1),
+    #             getattr(trn.alloc_pl, 'id', -1),
+    #             getattr(trn.instr, 'id', -1),
+    #             # getattr(trn.ccy, 'id', -1),
+    #             # getattr(trn.trn_ccy, 'id', -1),
+    #         )
+    #     elif item:
+    #         return (
+    #             getattr(item.prtfl, 'id', -1),
+    #             getattr(item.acc, 'id', -1),
+    #             getattr(item.str1, 'id', -1),
+    #             getattr(item.str2, 'id', -1),
+    #             getattr(item.str3, 'id', -1),
+    #             getattr(item.alloc_bl, 'id', -1),
+    #             getattr(item.alloc_pl, 'id', -1),
+    #             getattr(item.instr, 'id', -1),
+    #             # getattr(item.ccy, 'id', -1),
+    #             # getattr(item.trn_ccy, 'id', -1),
+    #         )
+    #     else:
+    #         raise RuntimeError('code bug')
 
     def _build_on_pl_first_date(self):
         report_on_pl_first_date = Report(
@@ -3271,28 +3343,28 @@ class ReportBuilder(object):
 
         return report_on_pl_first_date
 
-    def _calc_pass2(self):
-        _l.debug('transactions - pass 2')
-
-        items_map = {}
-        for item in self._items:
-            if item.type == ReportItem.TYPE_INSTRUMENT and item.instr:
-                key = self._item_group_key_pass2(item=item)
-                items_map[key] = item
-
-        for trn in self._transactions:
-            if not trn.is_cloned and trn.trn_cls.id in [TransactionClass.BUY, TransactionClass.SELL]:
-                key = self._item_group_key_pass2(trn=trn)
-                item = items_map.get(key, None)
-                if item:
-                    trn.calc_pass2(balance_pos_size=item.pos_size)
-                    item.add_pass2(trn)
-                else:
-                    raise RuntimeError('Oh error')
-
-        _l.debug('items - pass 2')
-        for item in self._items:
-            item.close_pass2()
+    # def _calc_pass2(self):
+    #     _l.debug('transactions - pass 2')
+    #
+    #     items_map = {}
+    #     for item in self._items:
+    #         if item.type == ReportItem.TYPE_INSTRUMENT and item.instr:
+    #             key = self._item_group_key_pass2(item=item)
+    #             items_map[key] = item
+    #
+    #     for trn in self._transactions:
+    #         if not trn.is_cloned and trn.trn_cls.id in [TransactionClass.BUY, TransactionClass.SELL]:
+    #             key = self._item_group_key_pass2(trn=trn)
+    #             item = items_map.get(key, None)
+    #             if item:
+    #                 trn.calc_pass2(balance_pos_size=item.pos_size)
+    #                 item.add_pass2(trn)
+    #             else:
+    #                 raise RuntimeError('Oh error')
+    #
+    #     _l.debug('items - pass 2')
+    #     for item in self._items:
+    #         item.close_pass2()
 
     def _aggregate_summary(self):
         if not settings.DEBUG:
