@@ -248,17 +248,20 @@ class ReportTestCase(TestCase):
     TRN_COLS_ALL = [
         # 'lid',
         'pk',
-        'is_cloned',
-        'is_hidden',
+        # 'is_cloned',
+        # 'is_hidden',
         # 'is_mismatch',
         'trn_code',
         'trn_cls',
         # 'avco_multiplier',
         # 'avco_closed_by',
+        # 'avco_rolling_pos_size',
         # 'fifo_multiplier',
         # 'fifo_closed_by',
+        # 'fifo_rolling_pos_size',
         'multiplier',
         # 'closed_by',
+        'rolling_pos_size',
         'instr',
         'trn_ccy',
         'pos_size',
@@ -381,10 +384,13 @@ class ReportTestCase(TestCase):
         'trn_cls',
         # 'avco_multiplier',
         # 'avco_closed_by',
+        'avco_rolling_pos_size',
         # 'fifo_multiplier',
         # 'fifo_closed_by',
+        'fifo_rolling_pos_size',
         'multiplier',
         # 'closed_by',
+        'rolling_pos_size',
         'instr',
         'trn_ccy',
         'pos_size',
@@ -1402,14 +1408,27 @@ class ReportTestCase(TestCase):
         #                 ccys=(self.gbp, self.chf, self.cad, self.rub),
         #                 instrs=False)
 
-    def _test_instrument_pl(self):
-        self._t_instr_pl(instr=self.stock1, position=0.,
+    def test_instrument_pl(self):
+        self._t_buy(instr=self.bond0, position=5,
+                    stl_ccy=self.usd, principal=-10., carry=-0., overheads=-0.,
+                    days=1)
+        self._t_instr_pl(instr=self.bond0, position=0.,
                          stl_ccy=self.chf, principal=0., carry=11., overheads=-1.,
-                         days=7)
+                         days=2)
 
+        self._t_buy(instr=self.bond0, position=5,
+                    stl_ccy=self.usd, principal=-15., carry=-0., overheads=-0.,
+                    days=3)
         self._t_instr_pl(instr=self.bond0, position=0.,
                          stl_ccy=self.chf, principal=0., carry=20., overheads=0.,
-                         days=8)
+                         days=4)
+
+        self._t_sell(instr=self.bond0, position=-5,
+                     stl_ccy=self.usd, principal=20., carry=0., overheads=0.,
+                     days=5)
+        self._t_instr_pl(instr=self.bond0, position=0.,
+                         stl_ccy=self.chf, principal=0., carry=20., overheads=0.,
+                         days=6)
 
         self._simple_run('instrument_pl', report_currency=self.cad, report_date=self._d(14))
 
@@ -2485,7 +2504,7 @@ class ReportTestCase(TestCase):
         b.build()
         self._dump(b, 'test_pl_date_interval_1: pl_first_date abd report_date', show_trns=show_trns)
 
-    def test_from_csv_td_1(self):
+    def _test_from_csv_td_1(self):
         base_path = os.path.join(settings.BASE_DIR, 'poms', 'reports', 'tests_data')
         load_from_csv(
             master_user=self.m,

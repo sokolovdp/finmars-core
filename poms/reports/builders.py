@@ -1523,7 +1523,10 @@ class ReportItem(_Base):
             item.str3 = str3 or trn.str3_pos
             item.instr = instr or trn.instr
 
-            item.pos_size = trn.pos_size * (1.0 - trn.multiplier)
+            if val is None:
+                item.pos_size = trn.pos_size * (1.0 - trn.multiplier)
+            else:
+                item.pos_size = val
             item.cost_res = trn.principal_res * (1.0 - trn.multiplier)
 
             if trn.instr:
@@ -1546,7 +1549,10 @@ class ReportItem(_Base):
             item.str3 = str3 or trn.str3_cash
             item.ccy = ccy or trn.trn_ccy
 
-            item.pos_size = val
+            if val is None:
+                item.pos_size = 0.0
+            else:
+                item.pos_size = val
 
             item.pricing_ccy = trn.report.master_user.system_currency
 
@@ -2812,16 +2818,16 @@ class ReportBuilder(object):
         self._calc_fifo_multipliers()
 
         for t in self._transactions:
-            if t.instr and t.instr.instrument_type.instrument_class_id == InstrumentClass.CONTRACT_FOR_DIFFERENCE:
-                t.multiplier = t.fifo_multiplier
-                t.closed_by = t.fifo_closed_by
-                t.rolling_pos_size = t.fifo_rolling_pos_size
-
             if t.trn_cls.id in [TransactionClass.TRANSACTION_PL, TransactionClass.FX_TRADE]:
                 self.multiplier = 1.0
 
-            if t.trn_cls.id in [TransactionClass.BUY, TransactionClass.SELL, TransactionClass.INSTRUMENT_PL]:
-                if self.instance.cost_method.id == CostMethod.AVCO:
+            elif t.trn_cls.id in [TransactionClass.BUY, TransactionClass.SELL, TransactionClass.INSTRUMENT_PL]:
+                if t.instr and t.instr.instrument_type.instrument_class_id == InstrumentClass.CONTRACT_FOR_DIFFERENCE:
+                    t.multiplier = t.fifo_multiplier
+                    t.closed_by = t.fifo_closed_by
+                    t.rolling_pos_size = t.fifo_rolling_pos_size
+
+                elif self.instance.cost_method.id == CostMethod.AVCO:
                     t.multiplier = t.avco_multiplier
                     t.closed_by = t.avco_closed_by
                     t.rolling_pos_size = t.avco_rolling_pos_size
@@ -2831,12 +2837,14 @@ class ReportBuilder(object):
                     t.closed_by = t.fifo_closed_by
                     t.rolling_pos_size = t.fifo_rolling_pos_size
 
+        remaining_positions = Counter()
         for t in self._transactions:
-            if t.trn_cls.id ==TransactionClass.INSTRUMENT_PL:
+            if t.trn_cls.id in [TransactionClass.BUY, TransactionClass.SELL, TransactionClass.INSTRUMENT_PL]:
                 t_key = self._get_trn_key(t)
-                # self.avco_rolling_positions[t_key]
-                # self.fifo_rolling_positions[t_key]
-                pass
+                if t.trn_cls.id in [TransactionClass.BUY, TransactionClass.SELL]:
+                    remaining_positions[t_key] += t.pos_size * (1.0 - t.multiplier)
+                elif t.trn_cls.id == TransactionClass.INSTRUMENT_PL:
+                    t.pos_size = remaining_positions[t_key]
 
 
     def _get_trn_key(self, t):
@@ -2917,8 +2925,6 @@ class ReportBuilder(object):
 
             self.avco_rolling_positions[t_key] = rolling_pos
             t.avco_rolling_pos_size = rolling_pos
-
-            # return res
 
     def _calc_fifo_multipliers(self):
         _l.debug('transactions - calculate multipliers - fifo')
@@ -3013,8 +3019,6 @@ class ReportBuilder(object):
             self.fifo_rolling_positions[t_key] = rolling_pos
             t.fifo_rolling_pos_size = rolling_pos
 
-            # return res
-
     def _generate_items(self):
         _l.debug('items - generate')
         for trn in self._transactions:
@@ -3038,7 +3042,7 @@ class ReportBuilder(object):
                 self._items.append(item)
 
             elif trn.trn_cls.id == TransactionClass.INSTRUMENT_PL:
-                self._add_instr(trn)
+                self._add_instr(trn, val=0.0)
                 self._add_cash(trn, val=trn.cash, ccy=trn.stl_ccy)
 
             elif trn.trn_cls.id == TransactionClass.TRANSACTION_PL:
@@ -3315,15 +3319,15 @@ class ReportBuilder(object):
 
         _l.debug('mismatches - len=%s', len(self._mismatch_items))
 
-    def _add_instr(self, trn):
+    def _add_instr(self, trn, val=None):
         if trn.case == 0:
             item = ReportItem.from_trn(self.instance, self.pricing_provider, self.fx_rate_provider,
-                                       ReportItem.TYPE_INSTRUMENT, trn)
+                                       ReportItem.TYPE_INSTRUMENT, trn, val=val)
             self._items.append(item)
 
         elif trn.case == 1:
             item = ReportItem.from_trn(self.instance, self.pricing_provider, self.fx_rate_provider,
-                                       ReportItem.TYPE_INSTRUMENT, trn)
+                                       ReportItem.TYPE_INSTRUMENT, trn, val=val)
             self._items.append(item)
 
         elif trn.case == 2:
