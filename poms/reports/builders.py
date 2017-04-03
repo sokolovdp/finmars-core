@@ -94,6 +94,7 @@ class _Base:
 class VirtualTransaction(_Base):
     trn = None
     lid = None
+    key = None
     pk = None
     is_hidden = False  # if True it is not involved in the calculations
     is_mismatch = True
@@ -210,6 +211,7 @@ class VirtualTransaction(_Base):
     principal_invested_res = 0.0
     amount_invested_res = 0.0
 
+    balance_pos_size = 0.0
     remaining_pos_size = 0.0
     remaining_pos_size_percent = 0.0  # calculated in second pass
     ytm = 0.0
@@ -642,12 +644,10 @@ class VirtualTransaction(_Base):
     def calc_pass2(self, balance_pos_size):
         # called after "balance"
         if not self.is_cloned and self.trn_cls.id in [TransactionClass.BUY, TransactionClass.SELL] and self.instr:
-            self.remaining_pos_size = self.pos_size * (1 - self.multiplier)
-            try:
-                self.remaining_pos_size_percent = self.remaining_pos_size / balance_pos_size
-            except ArithmeticError:
-                self.remaining_pos_size_percent = 0.0
-
+            # try:
+            #     self.remaining_pos_size_percent = self.remaining_pos_size / balance_pos_size
+            # except ArithmeticError:
+            #     self.remaining_pos_size_percent = 0.0
             try:
                 future_accrual_payments = self.instr.get_future_accrual_payments(
                     d0=self.acc_date,
@@ -2743,6 +2743,7 @@ class ReportBuilder(object):
                 trn=t,
                 overrides=overrides
             )
+            # trn.key = self._get_trn_key(trn)
             self._transactions.append(trn)
 
         _l.debug('transactions - len=%s', len(self._transactions))
@@ -2817,11 +2818,12 @@ class ReportBuilder(object):
         self._calc_avco_multipliers()
         self._calc_fifo_multipliers()
 
+        balances = Counter()
         for t in self._transactions:
             if t.trn_cls.id in [TransactionClass.TRANSACTION_PL, TransactionClass.FX_TRADE]:
                 self.multiplier = 1.0
 
-            elif t.trn_cls.id in [TransactionClass.BUY, TransactionClass.SELL, TransactionClass.INSTRUMENT_PL]:
+            elif t.trn_cls.id in [TransactionClass.BUY, TransactionClass.SELL]:
                 if t.instr and t.instr.instrument_type.instrument_class_id == InstrumentClass.CONTRACT_FOR_DIFFERENCE:
                     t.multiplier = t.fifo_multiplier
                     t.closed_by = t.fifo_closed_by
@@ -2837,15 +2839,34 @@ class ReportBuilder(object):
                     t.closed_by = t.fifo_closed_by
                     t.rolling_pos_size = t.fifo_rolling_pos_size
 
-        remaining_positions = Counter()
-        for t in self._transactions:
-            if t.trn_cls.id in [TransactionClass.BUY, TransactionClass.SELL, TransactionClass.INSTRUMENT_PL]:
-                t_key = self._get_trn_key(t)
-                if t.trn_cls.id in [TransactionClass.BUY, TransactionClass.SELL]:
-                    remaining_positions[t_key] += t.pos_size * (1.0 - t.multiplier)
-                elif t.trn_cls.id == TransactionClass.INSTRUMENT_PL:
-                    t.pos_size = remaining_positions[t_key]
+                t.remaining_pos_size = t.pos_size * (1 - t.multiplier)
 
+                t_key = self._get_trn_key(t)
+                balances[t_key] += t.remaining_pos_size
+
+        for t in self._transactions:
+            if t.trn_cls.id in [TransactionClass.BUY, TransactionClass.SELL]:
+                t_key = self._get_trn_key(t)
+                t.balance_pos_size = balances[t_key]
+                try:
+                    t.remaining_pos_size_percent = t.remaining_pos_size / t.balance_pos_size
+                except ArithmeticError:
+                    t.remaining_pos_size_percent = 0.0
+
+        sum_remaining_positions = Counter()
+        for t in self._transactions:
+            if t.trn_cls.id in [TransactionClass.BUY, TransactionClass.SELL]:
+                t_key = self._get_trn_key(t)
+                sum_remaining_positions[t_key] += t.remaining_pos_size
+
+            elif t.trn_cls.id == TransactionClass.INSTRUMENT_PL:
+                t_key = self._get_trn_key(t)
+                t.balance_pos_size = balances[t_key]
+                remaining_pos_size = sum_remaining_positions[t_key]
+                try:
+                    t.multiplier = abs(remaining_pos_size / t.balance_pos_size)
+                except ArithmeticError:
+                    t.multiplier = 0.0
 
     def _get_trn_key(self, t):
         return (
