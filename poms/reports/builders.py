@@ -102,10 +102,13 @@ class VirtualTransaction(_Base):
     # case = 0
     avco_multiplier = 0.0
     avco_closed_by = None
+    avco_rolling_pos_size = 0.0
     fifo_multiplier = 0.0
     fifo_closed_by = None
+    fifo_rolling_pos_size = 0.0
     multiplier = 0.0
     closed_by = None
+    rolling_pos_size = 0.0
 
     # Position related
     instr = None
@@ -2362,6 +2365,9 @@ class ReportBuilder(object):
         self._pricing_provider = pricing_provider
         self._fx_rate_provider = fx_rate_provider
 
+        self.avco_rolling_positions = Counter()
+        self.fifo_rolling_positions = Counter()
+
         self._transactions = []
         self._mismatch_items = []
         self._items = []
@@ -2809,18 +2815,29 @@ class ReportBuilder(object):
             if t.instr and t.instr.instrument_type.instrument_class_id == InstrumentClass.CONTRACT_FOR_DIFFERENCE:
                 t.multiplier = t.fifo_multiplier
                 t.closed_by = t.fifo_closed_by
+                t.rolling_pos_size = t.fifo_rolling_pos_size
 
             if t.trn_cls.id in [TransactionClass.TRANSACTION_PL, TransactionClass.FX_TRADE]:
                 self.multiplier = 1.0
 
-            if t.trn_cls.id in [TransactionClass.BUY, TransactionClass.SELL]:
+            if t.trn_cls.id in [TransactionClass.BUY, TransactionClass.SELL, TransactionClass.INSTRUMENT_PL]:
                 if self.instance.cost_method.id == CostMethod.AVCO:
                     t.multiplier = t.avco_multiplier
                     t.closed_by = t.avco_closed_by
+                    t.rolling_pos_size = t.avco_rolling_pos_size
 
                 elif self.instance.cost_method.id == CostMethod.FIFO:
                     t.multiplier = t.fifo_multiplier
                     t.closed_by = t.fifo_closed_by
+                    t.rolling_pos_size = t.fifo_rolling_pos_size
+
+        for t in self._transactions:
+            if t.trn_cls.id ==TransactionClass.INSTRUMENT_PL:
+                t_key = self._get_trn_key(t)
+                # self.avco_rolling_positions[t_key]
+                # self.fifo_rolling_positions[t_key]
+                pass
+
 
     def _get_trn_key(self, t):
         return (
@@ -2835,7 +2852,6 @@ class ReportBuilder(object):
     def _calc_avco_multipliers(self):
         _l.debug('transactions - calculate multipliers - avco')
 
-        rolling_positions = Counter()
         items = defaultdict(list)
 
         def _set_mul(t0, avco_multiplier):
@@ -2847,23 +2863,26 @@ class ReportBuilder(object):
             # closed.avco_closed_by.append(VirtualTransactionClosedByData(cur, delta))
             closed.avco_closed_by.append((cur, delta))
 
-        # res = []
         for t in self._transactions:
-            # res.append(t)
+            t_key = self._get_trn_key(t)
+
+            if t.trn_cls.id == TransactionClass.INSTRUMENT_PL:
+                t.avco_rolling_pos_size = self.avco_rolling_positions[t_key]
+                continue
 
             if t.trn_cls.id not in [TransactionClass.BUY, TransactionClass.SELL]:
                 continue
 
-            t_key = self._get_trn_key(t)
-
             t.avco_multiplier = 0.0
             t.avco_closed_by = []
-            rolling_position = rolling_positions[t_key]
+            t.avco_rolling_pos_size = 0.0
 
-            if isclose(rolling_position, 0.0):
+            rolling_pos = self.avco_rolling_positions[t_key]
+
+            if isclose(rolling_pos, 0.0):
                 k = -1
             else:
-                k = - t.pos_size / rolling_position
+                k = - t.pos_size / rolling_pos
 
             if k > 1.0:
                 if t_key in items:
@@ -2873,7 +2892,7 @@ class ReportBuilder(object):
                     del items[t_key]
                 items[t_key].append(t)
                 _set_mul(t, 1.0 / k)
-                rolling_position = t.pos_size * (1.0 - t.avco_multiplier)
+                rolling_pos = t.pos_size * (1.0 - t.avco_multiplier)
 
             elif isclose(k, 1.0):
                 if t_key in items:
@@ -2882,7 +2901,7 @@ class ReportBuilder(object):
                         _close_by(t0, t, delta)
                     del items[t_key]
                 _set_mul(t, 1.0)
-                rolling_position = 0.0
+                rolling_pos = 0.0
 
             elif k > 0.0:
                 if t_key in items:
@@ -2890,20 +2909,20 @@ class ReportBuilder(object):
                         delta = _set_mul(t0, t0.avco_multiplier + k * (1.0 - t0.avco_multiplier))
                         _close_by(t0, t, delta)
                 _set_mul(t, 1.0)
-                rolling_position += t.pos_size
+                rolling_pos += t.pos_size
 
             else:
                 items[t_key].append(t)
-                rolling_position += t.pos_size
+                rolling_pos += t.pos_size
 
-            rolling_positions[t_key] = rolling_position
+            self.avco_rolling_positions[t_key] = rolling_pos
+            t.avco_rolling_pos_size = rolling_pos
 
             # return res
 
     def _calc_fifo_multipliers(self):
         _l.debug('transactions - calculate multipliers - fifo')
 
-        rolling_positions = Counter()
         items = defaultdict(list)
 
         def _set_mul(t0, fifo_multiplier):
@@ -2915,23 +2934,26 @@ class ReportBuilder(object):
             # closed.fifo_closed_by.append(VirtualTransactionClosedByData(cur, delta))
             closed.fifo_closed_by.append((cur, delta))
 
-        # res = []
         for t in self._transactions:
-            # res.append(t)
+            t_key = self._get_trn_key(t)
+
+            if t.trn_cls.id == TransactionClass.INSTRUMENT_PL:
+                t.fifo_rolling_pos_size = self.fifo_rolling_positions[t_key]
+                continue
 
             if t.trn_cls.id not in [TransactionClass.BUY, TransactionClass.SELL]:
                 continue
 
-            t_key = self._get_trn_key(t)
-
             t.fifo_multiplier = 0.0
             t.fifo_closed_by = []
-            rolling_position = rolling_positions[t_key]
+            t.fifo_rolling_pos_size = 0.0
 
-            if isclose(rolling_position, 0.0):
+            rolling_pos = self.fifo_rolling_positions[t_key]
+
+            if isclose(rolling_pos, 0.0):
                 k = -1
             else:
-                k = - t.pos_size / rolling_position
+                k = - t.pos_size / rolling_pos
 
             if k > 1.0:
                 if t_key in items:
@@ -2941,7 +2963,7 @@ class ReportBuilder(object):
                     items[t_key].clear()
                 items[t_key].append(t)
                 _set_mul(t, 1.0 / k)
-                rolling_position = t.pos_size * (1.0 - t.fifo_multiplier)
+                rolling_pos = t.pos_size * (1.0 - t.fifo_multiplier)
 
             elif isclose(k, 1.0):
                 if t_key in items:
@@ -2950,7 +2972,7 @@ class ReportBuilder(object):
                         _close_by(t0, t, delta)
                     del items[t_key]
                 _set_mul(t, 1.0)
-                rolling_position = 0.0
+                rolling_pos = 0.0
 
             elif k > 0.0:
                 position = t.pos_size
@@ -2982,13 +3004,14 @@ class ReportBuilder(object):
                         del items[t_key]
 
                 _set_mul(t, abs((t.pos_size - position) / t.pos_size))
-                rolling_position += t.pos_size * t.fifo_multiplier
+                rolling_pos += t.pos_size * t.fifo_multiplier
 
             else:
                 items[t_key].append(t)
-                rolling_position += t.pos_size
+                rolling_pos += t.pos_size
 
-            rolling_positions[t_key] = rolling_position
+            self.fifo_rolling_positions[t_key] = rolling_pos
+            t.fifo_rolling_pos_size = rolling_pos
 
             # return res
 
