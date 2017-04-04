@@ -530,8 +530,16 @@ class GenericAttributeListSerializer(serializers.ListSerializer):
         attribute_type_qs = GenericAttributeType.objects.filter(master_user=master_user)
         attribute_type_qs = obj_perms_filter_objects_for_view(member, attribute_type_qs)
         # return instance.attributes.filter(attribute_type__in=attribute_type_qs)
+
+        from poms.reports.builders.transaction_item import TransactionReportItem
+        from poms.transactions.models import Transaction
+        if isinstance(instance, TransactionReportItem):
+            content_type = ContentType.objects.get_for_model(Transaction)
+        else:
+            content_type = ContentType.objects.get_for_model(instance)
+
         return GenericAttribute.objects.filter(
-            content_type=ContentType.objects.get_for_model(instance),
+            content_type=content_type,
             object_id=instance.id,
             attribute_type__in=attribute_type_qs
         )
