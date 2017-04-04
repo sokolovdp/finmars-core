@@ -1,5 +1,6 @@
 import logging
 import sys
+import time
 from collections import Counter, defaultdict
 from datetime import date
 from itertools import groupby
@@ -45,9 +46,18 @@ class ReportBuilder(object):
         self._summaries = []
 
     def build_balance(self, full=True):
-        return self.build(full=full)
+        st = time.perf_counter()
+        _l.debug('build balance report: %s', self.instance)
+
+        res = self.build(full=full)
+
+        _l.debug('done: %s', (time.perf_counter() - st))
+        return res
 
     def build_pl(self, full=True):
+        st = time.perf_counter()
+        _l.debug('build pl report: %s', self.instance)
+
         self.build(full=full)
 
         # items = []
@@ -72,9 +82,12 @@ class ReportBuilder(object):
         #         items.append(oitem)
         #
         # self.instance.items = items
+
+        _l.debug('done: %s', (time.perf_counter() - st))
         return self.instance
 
     def build(self, full=True):
+        st = time.perf_counter()
         _l.debug('build report: %s', self.instance)
 
         self._load_transactions()
@@ -99,10 +112,11 @@ class ReportBuilder(object):
         _l.debug('finalize report')
         self.instance.close()
 
-        _l.debug('done')
+        _l.debug('done: %s', (time.perf_counter() - st))
         return self.instance
 
     def build_position_only(self):
+        st = time.perf_counter()
         _l.debug('build position only report: %s', self.instance)
 
         self._load_transactions()
@@ -131,7 +145,7 @@ class ReportBuilder(object):
 
         self.instance.items = res_items
 
-        _l.debug('done')
+        _l.debug('done: %s', (time.perf_counter() - st))
         return self.instance
 
     @cached_property
@@ -753,8 +767,8 @@ class ReportBuilder(object):
             getattr(str2_pos, 'id', None),
             getattr(str3_pos, 'id', None),
             getattr(instr, 'id', None),
-            getattr(alloc_bl, 'id', None),
-            getattr(alloc_pl, 'id', None),
+            # getattr(alloc_bl, 'id', None),
+            # getattr(alloc_pl, 'id', None),
         )
 
     def _generate_items(self):
