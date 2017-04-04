@@ -1,6 +1,7 @@
 import datetime
 import logging
 import sys
+import time
 from collections import defaultdict
 from itertools import groupby
 
@@ -31,6 +32,25 @@ class CashFlowProjectionReportBuilder(TransactionReportBuilder):
 
         self._id_seq = 0
         self._transaction_order_seq = 0
+
+    def build(self):
+        st = time.perf_counter()
+        _l.debug('build cash flow projection')
+
+        with transaction.atomic():
+            self._load()
+            self._set_trns_refs(self._transactions)
+            self._step1()
+            self._step2()
+            self._step3()
+            self._refresh_from_db()
+            self._set_items_refs(self._items)
+            self._update_instance()
+            self.instance.close()
+            transaction.set_rollback(True)
+
+        _l.debug('done: %s', (time.perf_counter() - st))
+        return self.instance
 
     def _fake_id_gen(self):
         self._id_seq -= 1
@@ -117,22 +137,6 @@ class CashFlowProjectionReportBuilder(TransactionReportBuilder):
 
     def _rolling(self, trn, key=None):
         return self._item(self._rolling_items, trn, key, itype=CashFlowProjectionReportItem.ROLLING)
-
-    def build(self):
-        _l.debug('> build')
-        with transaction.atomic():
-            self._load()
-            self._set_trns_refs(self._transactions)
-            self._step1()
-            self._step2()
-            self._step3()
-            self._refresh_from_db()
-            self._set_items_refs(self._items)
-            self._update_instance()
-            self.instance.close()
-            transaction.set_rollback(True)
-        _l.debug('< build')
-        return self.instance
 
     def _step1(self):
         self._transactions_by_date = defaultdict(list)

@@ -1,6 +1,7 @@
 import datetime
 import logging
 import random
+import time
 from collections import defaultdict
 
 from django.db import transaction
@@ -46,6 +47,55 @@ class TransactionReportBuilder:
         # self._responsibles = {}
         # self._counterparties = {}
         # self._attribute_types = {}
+
+    def build(self):
+        st = time.perf_counter()
+        _l.debug('build transaction')
+
+        with transaction.atomic():
+            # if settings.DEBUG:
+            #     _l.debug('> _make_transactions')
+            #     self._make_transactions(10000)
+            #     _l.debug('< _make_transactions')
+
+            self._load()
+            self._set_trns_refs(self._transactions)
+            self._items = [TransactionReportItem(self.instance, trn=t) for t in self._transactions]
+            self._refresh_from_db()
+            self._set_items_refs(self._items)
+            self._update_instance()
+            self.instance.close()
+
+            # if settings.DEBUG:
+            #     _l.debug('> pickle')
+            #     import pickle
+            #     data = pickle.dumps(self.instance, protocol=pickle.HIGHEST_PROTOCOL)
+            #     _l.debug('< pickle: %s', len(data))
+            #     _l.debug('> pickle.zlib')
+            #     import zlib
+            #     data1 = zlib.compress(data)
+            #     _l.debug('< pickle.zlib: %s', len(data1))
+            #
+            #     _l.debug('> json')
+            #     from poms.reports.serializers import TransactionReportSerializer
+            #     from rest_framework.renderers import JSONRenderer
+            #     s = TransactionReportSerializer(instance=self.instance, context={
+            #         'master_user': self.instance.master_user,
+            #         'member': self.instance.member,
+            #     })
+            #     data_dict = s.data
+            #     r = JSONRenderer()
+            #     data = r.render(data_dict)
+            #     _l.debug('< json: %s', len(data))
+            #     _l.debug('> json.zlib')
+            #     import zlib
+            #     data1 = zlib.compress(data)
+            #     _l.debug('< json.zlib: %s', len(data1))
+
+            transaction.set_rollback(True)
+
+        _l.debug('done: %s', (time.perf_counter() - st))
+        return self.instance
 
     def _get_ref(self, clazz, pk, obj=None):
         tc = self._similar_cache[clazz]
@@ -488,52 +538,6 @@ class TransactionReportBuilder:
 
                     elif issubclass(model_class, Counterparty):
                         self.instance.counterparty_attribute_types.append(at)
-
-    def build(self):
-        _l.debug('> build')
-        with transaction.atomic():
-            # if settings.DEBUG:
-            #     _l.debug('> _make_transactions')
-            #     self._make_transactions(10000)
-            #     _l.debug('< _make_transactions')
-
-            self._load()
-            self._set_trns_refs(self._transactions)
-            self._items = [TransactionReportItem(self.instance, trn=t) for t in self._transactions]
-            self._refresh_from_db()
-            self._set_items_refs(self._items)
-            self._update_instance()
-            self.instance.close()
-
-            # if settings.DEBUG:
-            #     _l.debug('> pickle')
-            #     import pickle
-            #     data = pickle.dumps(self.instance, protocol=pickle.HIGHEST_PROTOCOL)
-            #     _l.debug('< pickle: %s', len(data))
-            #     _l.debug('> pickle.zlib')
-            #     import zlib
-            #     data1 = zlib.compress(data)
-            #     _l.debug('< pickle.zlib: %s', len(data1))
-            #
-            #     _l.debug('> json')
-            #     from poms.reports.serializers import TransactionReportSerializer
-            #     from rest_framework.renderers import JSONRenderer
-            #     s = TransactionReportSerializer(instance=self.instance, context={
-            #         'master_user': self.instance.master_user,
-            #         'member': self.instance.member,
-            #     })
-            #     data_dict = s.data
-            #     r = JSONRenderer()
-            #     data = r.render(data_dict)
-            #     _l.debug('< json: %s', len(data))
-            #     _l.debug('> json.zlib')
-            #     import zlib
-            #     data1 = zlib.compress(data)
-            #     _l.debug('< json.zlib: %s', len(data1))
-
-            transaction.set_rollback(True)
-        _l.debug('< build')
-        return self.instance
 
     def _make_transactions(self, count=100):
         from poms.common.utils import date_now
