@@ -1134,10 +1134,12 @@ def _get_supported_models_serializer_class():
     from poms.integrations.serializers import PriceDownloadSchemeSerializer
     from poms.transactions.models import Transaction, ComplexTransaction
     from poms.transactions.serializers import TransactionTextRenderSerializer, ComplexTransactionEvalSerializer
-    from poms.reports.builders import ReportItem
-    from poms.reports.serializers import ReportItemEvalSerializer, TransactionReportItemSerializer, \
-        CashFlowProjectionReportItemSerializer
-    from poms.reports.cash_flow_projection import TransactionReportItem, CashFlowProjectionReportItem
+    from poms.reports.builders.balance_pl import ReportItem
+    from poms.reports.builders.balance_serializers import ReportItemEvalSerializer
+    from poms.reports.builders.transaction_item import TransactionReportItem
+    from poms.reports.builders.transaction_serializers import TransactionReportItemSerializer
+    from poms.reports.builders.cash_flow_projection_item import CashFlowProjectionReportItem
+    from poms.reports.builders.cash_flow_projection_serializers import CashFlowProjectionReportItemSerializer
     return {
         Account: AccountSerializer,
         Counterparty: CounterpartySerializer,

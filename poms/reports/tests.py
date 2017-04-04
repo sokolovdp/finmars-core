@@ -15,7 +15,9 @@ from poms.instruments.models import Instrument, PriceHistory, PricingPolicy, Cos
     InstrumentClass, \
     AccrualCalculationSchedule, AccrualCalculationModel, Periodicity, PaymentSizeDetail
 from poms.portfolios.models import Portfolio
-from poms.reports.builders import Report, ReportBuilder, VirtualTransaction, ReportItem
+from poms.reports.builders.balance_item import ReportItem, Report
+from poms.reports.builders.balance_pl import ReportBuilder
+from poms.reports.builders.balance_virt_trn import VirtualTransaction
 from poms.strategies.models import Strategy1Group, Strategy1Subgroup, Strategy1, Strategy2Group, Strategy2Subgroup, \
     Strategy2, Strategy3Subgroup, Strategy3Group, Strategy3
 from poms.transactions.models import Transaction, TransactionClass
@@ -1361,7 +1363,7 @@ class ReportTestCase(TestCase):
 
     # ------------------------------------------------------------------------------------------------------------------
 
-    def _test_buy_sell(self):
+    def test_buy_sell(self):
         # self._t(t_class=self._cash_inflow, trn_ccy=self.usd, position=1000, fx_rate=1.3)
         self._t_buy(instr=self.bond0, position=5,
                     stl_ccy=self.usd, principal=-10., carry=-0., overheads=-0.,
@@ -1411,7 +1413,7 @@ class ReportTestCase(TestCase):
         #                 ccys=(self.gbp, self.chf, self.cad, self.rub),
         #                 instrs=False)
 
-    def test_instrument_pl(self):
+    def _test_instrument_pl(self):
         self._t_buy(instr=self.bond0, position=5,
                     stl_ccy=self.usd, principal=-10., carry=-0., overheads=-0.,
                     days=1)

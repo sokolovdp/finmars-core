@@ -1,18 +1,17 @@
 import logging
 from collections import defaultdict
-from datetime import timedelta, date
+from datetime import date
 
 from celery import shared_task
-from django.conf import settings
 from django.db import transaction
 from django.db.models import F, Q
 from django.utils import timezone
 
 from poms import notifications
 from poms.common.utils import date_now, isclose
-from poms.instruments.models import EventSchedule, Instrument, CostMethod, GeneratedEvent
-from poms.reports.builders import Report, ReportBuilder, ReportItem
-from poms.transactions.models import EventClass
+from poms.instruments.models import EventSchedule, Instrument, GeneratedEvent
+from poms.reports.builders.balance_item import Report, ReportItem
+from poms.reports.builders.balance_pl import ReportBuilder
 from poms.users.models import MasterUser
 
 _l = logging.getLogger('poms.instruments')
@@ -60,9 +59,10 @@ def generate_events(master_users=None):
         opened_instrument_items = []
         instruments_pk = set()
 
-        report = Report(master_user=master_user, report_date=now)
+        report = Report(master_user=master_user, report_date=now,
+                        alloc_mode=Report.MODE_IGNORE)
         builder = ReportBuilder(instance=report)
-        builder.build()
+        builder.build_balance()
 
         for i in report.items:
             if i.type == ReportItem.TYPE_INSTRUMENT and not isclose(i.position_size, 0.0):
