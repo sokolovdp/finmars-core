@@ -12,7 +12,7 @@ from poms.instruments.handlers import GeneratedEventProcess
 from poms.instruments.models import GeneratedEvent
 from poms.reports.builders.cash_flow_projection_item import CashFlowProjectionReportItem
 from poms.reports.builders.transaction import TransactionReportBuilder
-from poms.reports.builders.utils import empty, check_int_min, check_date_min
+from poms.reports.builders.transaction_item import empty, check_int_min, check_date_min
 from poms.transactions.models import ComplexTransaction, TransactionType, TransactionClass
 
 _l = logging.getLogger('poms.reports')
@@ -22,12 +22,12 @@ class CashFlowProjectionReportBuilder(TransactionReportBuilder):
     def __init__(self, instance):
         super(CashFlowProjectionReportBuilder, self).__init__(instance)
 
-        self._transactions_by_date = None
-
+        self._transactions_by_date = defaultdict(list)
+        self._items = []
         self._balance_items = {}
         self._rolling_items = {}
-        # self._generated_transactions = []
 
+        # self._generated_transactions = []
         # self._instrument_event_cache = {}
 
         self._id_seq = 0
@@ -40,9 +40,11 @@ class CashFlowProjectionReportBuilder(TransactionReportBuilder):
         with transaction.atomic():
             self._load()
             self._set_trns_refs(self._transactions)
-            self._step1()
-            self._step2()
-            self._step3()
+
+            self._calc_balance()
+            self._calc_future()
+            self._calc_before_after()
+
             self._refresh_from_db()
             self._set_items_refs(self._items)
             self._update_instance()
@@ -138,12 +140,8 @@ class CashFlowProjectionReportBuilder(TransactionReportBuilder):
     def _rolling(self, trn, key=None):
         return self._item(self._rolling_items, trn, key, itype=CashFlowProjectionReportItem.ROLLING)
 
-    def _step1(self):
-        self._transactions_by_date = defaultdict(list)
-        self._items = []
-        self._balance_items = {}
-        self._rolling_items = {}
-
+    def _calc_balance(self):
+        # calculate balance
         for t in self._transactions:
             self._transaction_order_seq = max(self._transaction_order_seq, int(t.transaction_code))
 
@@ -162,6 +160,11 @@ class CashFlowProjectionReportBuilder(TransactionReportBuilder):
                 elif t.transaction_class_id in [TransactionClass.TRANSFER]:
                     raise RuntimeError('implement me please')
 
+        # remove items with position_size_with_sign close to zerop
+        for key, ritem in self._rolling_items.items():
+            if isclose(ritem.position_size_with_sign, 0.0):
+                del self._rolling_items[key]
+
         for k, bitem in self._balance_items.items():
             self._items.append(bitem)
 
@@ -169,7 +172,7 @@ class CashFlowProjectionReportBuilder(TransactionReportBuilder):
             #     for k, ritem in self._rolling_items.items():
             #         self._items.append(ritem)
 
-    def _step2(self):
+    def _calc_future(self):
         # eval future events
         now = self.instance.balance_date
         td1 = datetime.timedelta(days=1)
@@ -177,7 +180,7 @@ class CashFlowProjectionReportBuilder(TransactionReportBuilder):
             now += td1
             _l.debug('\tnow=%s', now.isoformat())
 
-            # check events
+            # check events only for exist elements on balance date
             for key, ritem in self._rolling_items.items():
                 instr = ritem.instrument
                 if instr is None:
@@ -228,11 +231,12 @@ class CashFlowProjectionReportBuilder(TransactionReportBuilder):
                                         d = getattr(t2.complex_transaction, 'date', datetime.date.max)
                                         self._transactions_by_date[d].append(t2)
 
-            # process transactions
+            # process transactions for current date
             if now in self._transactions_by_date:
                 for t in self._transactions_by_date[now]:
                     _l.debug('\t\t\ttrn=%s', t.id)
                     key = self._trn_key(t)
+
                     item = CashFlowProjectionReportItem(self.instance, trn=t)
                     self._items.append(item)
 
@@ -241,12 +245,14 @@ class CashFlowProjectionReportBuilder(TransactionReportBuilder):
                         ritem = self._rolling(t, key)
                         ritem.add_balance(t)
                     elif t.transaction_class_id in [TransactionClass.TRANSFER]:
-                        raise RuntimeError('implement me please')
+                        # TODO: implement me please
+                        pass
 
+                    # remove item with position_size_with_sign close to zerop
                     if ritem and isclose(ritem.position_size_with_sign, 0.0):
                         del self._rolling_items[key]
 
-    def _step3(self):
+    def _calc_before_after(self):
         # aggregate some rolling values
         # sort result
 
