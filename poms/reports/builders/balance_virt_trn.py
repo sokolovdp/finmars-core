@@ -544,28 +544,28 @@ class VirtualTransaction(BaseReportItem):
                 except ArithmeticError:
                     self.amount_invested_res = 0.0
 
-                # if self.trn_cls.id in [TransactionClass.BUY, TransactionClass.SELL] and self.instr:
-                #     # try:
-                #     #     self.remaining_pos_size_percent = self.remaining_pos_size / balance_pos_size
-                #     # except ArithmeticError:
-                #     #     self.remaining_pos_size_percent = 0.0
-                #     try:
-                #         future_accrual_payments = self.instr.get_future_accrual_payments(
-                #             d0=self.acc_date,
-                #             v0=self.trade_price,
-                #             principal_ccy_fx=self.instr_pricing_ccy_cur_fx,
-                #             accrual_ccy_fx=self.instr_accrued_ccy_cur_fx
-                #         )
-                #     except (ValueError, TypeError):
-                #         future_accrual_payments = False
-                #     self.ytm = f_xirr(future_accrual_payments)
-                #
-                #     self.time_invested_days = (self.report.report_date - self.acc_date).days
-                #     self.time_invested = self.time_invested_days / 365.0
-                #
-                #     self.weighted_ytm = self.ytm * self.remaining_pos_size_percent
-                #     self.weighted_time_invested_days = self.time_invested * self.remaining_pos_size_percent
-                #     self.weighted_time_invested = self.time_invested * self.remaining_pos_size_percent
+                if self.trn_cls.id in [TransactionClass.BUY, TransactionClass.SELL] and self.instr:
+                    try:
+                        future_accrual_payments = self.instr.get_future_accrual_payments(
+                            d0=self.acc_date,
+                            v0=self.trade_price,
+                            principal_ccy_fx=self.instr_pricing_ccy_cur_fx,
+                            accrual_ccy_fx=self.instr_accrued_ccy_cur_fx
+                        )
+                    except (ValueError, TypeError):
+                        future_accrual_payments = False
+                    self.ytm = f_xirr(future_accrual_payments)
+
+                    self.time_invested_days = (self.report.report_date - self.acc_date).days
+                    self.time_invested = self.time_invested_days / 365.0
+
+                    # try:
+                    #     self.remaining_pos_size_percent = self.remaining_pos_size / balance_pos_size
+                    # except ArithmeticError:
+                    #     self.remaining_pos_size_percent = 0.0
+                    # self.weighted_ytm = self.ytm * self.remaining_pos_size_percent
+                    # self.weighted_time_invested_days = self.time_invested * self.remaining_pos_size_percent
+                    # self.weighted_time_invested = self.time_invested * self.remaining_pos_size_percent
 
         elif self.trn_cls.id in [TransactionClass.CASH_INFLOW, TransactionClass.CASH_OUTFLOW]:
             self.pl_fx_mul = self.stl_ccy_cur_fx - self.ref_fx * self.trn_ccy_acc_hist_fx
@@ -584,23 +584,24 @@ class VirtualTransaction(BaseReportItem):
     def calc_pass2(self, balance_pos_size):
         # called after "balance"
         if not self.is_cloned and self.trn_cls.id in [TransactionClass.BUY, TransactionClass.SELL] and self.instr:
+            # try:
+            #     future_accrual_payments = self.instr.get_future_accrual_payments(
+            #         d0=self.acc_date,
+            #         v0=self.trade_price,
+            #         principal_ccy_fx=self.instr_pricing_ccy_cur_fx,
+            #         accrual_ccy_fx=self.instr_accrued_ccy_cur_fx
+            #     )
+            # except (ValueError, TypeError):
+            #     future_accrual_payments = False
+            # self.ytm = f_xirr(future_accrual_payments)
+            #
+            # self.time_invested_days = (self.report.report_date - self.acc_date).days
+            # self.time_invested = self.time_invested_days / 365.0
+
             try:
                 self.remaining_pos_size_percent = self.remaining_pos_size / balance_pos_size
             except ArithmeticError:
                 self.remaining_pos_size_percent = 0.0
-            try:
-                future_accrual_payments = self.instr.get_future_accrual_payments(
-                    d0=self.acc_date,
-                    v0=self.trade_price,
-                    principal_ccy_fx=self.instr_pricing_ccy_cur_fx,
-                    accrual_ccy_fx=self.instr_accrued_ccy_cur_fx
-                )
-            except (ValueError, TypeError):
-                future_accrual_payments = False
-            self.ytm = f_xirr(future_accrual_payments)
-
-            self.time_invested_days = (self.report.report_date - self.acc_date).days
-            self.time_invested = self.time_invested_days / 365.0
 
             self.weighted_ytm = self.ytm * self.remaining_pos_size_percent
             self.weighted_time_invested_days = self.time_invested_days * self.remaining_pos_size_percent
