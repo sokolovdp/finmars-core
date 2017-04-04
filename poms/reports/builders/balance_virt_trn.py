@@ -125,7 +125,7 @@ class VirtualTransaction(BaseReportItem):
     principal_invested_res = 0.0
     amount_invested_res = 0.0
 
-    balance_pos_size = 0.0
+    # balance_pos_size = 0.0
     remaining_pos_size = 0.0
     remaining_pos_size_percent = 0.0  # calculated in second pass
     ytm = 0.0
@@ -584,10 +584,10 @@ class VirtualTransaction(BaseReportItem):
     def calc_pass2(self, balance_pos_size):
         # called after "balance"
         if not self.is_cloned and self.trn_cls.id in [TransactionClass.BUY, TransactionClass.SELL] and self.instr:
-            # try:
-            #     self.remaining_pos_size_percent = self.remaining_pos_size / balance_pos_size
-            # except ArithmeticError:
-            #     self.remaining_pos_size_percent = 0.0
+            try:
+                self.remaining_pos_size_percent = self.remaining_pos_size / balance_pos_size
+            except ArithmeticError:
+                self.remaining_pos_size_percent = 0.0
             try:
                 future_accrual_payments = self.instr.get_future_accrual_payments(
                     d0=self.acc_date,

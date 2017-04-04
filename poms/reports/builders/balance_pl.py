@@ -486,7 +486,7 @@ class ReportBuilder(object):
         self._calc_avco_multipliers()
         self._calc_fifo_multipliers()
 
-        balances = Counter()
+        # balances = Counter()
         for t in self._transactions:
             if t.trn_cls.id in [TransactionClass.TRANSACTION_PL, TransactionClass.FX_TRADE]:
                 self.multiplier = 1.0
@@ -509,32 +509,34 @@ class ReportBuilder(object):
 
                 t.remaining_pos_size = t.pos_size * (1 - t.multiplier)
 
-                t_key = self._get_trn_group_key(t)
-                balances[t_key] += t.remaining_pos_size
+                # t_key = self._get_trn_group_key(t)
+                # balances[t_key] += t.remaining_pos_size
+                pass
 
-        for t in self._transactions:
-            if t.trn_cls.id in [TransactionClass.BUY, TransactionClass.SELL]:
-                t_key = self._get_trn_group_key(t)
-                t.balance_pos_size = balances[t_key]
-                try:
-                    t.remaining_pos_size_percent = t.remaining_pos_size / t.balance_pos_size
-                except ArithmeticError:
-                    t.remaining_pos_size_percent = 0.0
-
-        sum_remaining_positions = Counter()
-        for t in self._transactions:
-            if t.trn_cls.id in [TransactionClass.BUY, TransactionClass.SELL]:
-                t_key = self._get_trn_group_key(t)
-                sum_remaining_positions[t_key] += t.remaining_pos_size
-
-            elif t.trn_cls.id == TransactionClass.INSTRUMENT_PL:
-                t_key = self._get_trn_group_key(t)
-                t.balance_pos_size = balances[t_key]
-                remaining_pos_size = sum_remaining_positions[t_key]
-                try:
-                    t.multiplier = abs(remaining_pos_size / t.balance_pos_size)
-                except ArithmeticError:
-                    t.multiplier = 0.0
+        # for t in self._transactions:
+        #     if t.trn_cls.id in [TransactionClass.INSTRUMENT_PL]:
+        #         t_key = self._get_trn_group_key(t)
+        #         t.balance_pos_size = balances[t_key]
+        #         try:
+        #             t.remaining_pos_size_percent = t.remaining_pos_size / t.balance_pos_size
+        #         except ArithmeticError:
+        #             t.remaining_pos_size_percent = 0.0
+        #
+        # sum_remaining_positions = Counter()
+        # for t in self._transactions:
+        #     if t.trn_cls.id in [TransactionClass.BUY, TransactionClass.SELL]:
+        #         t_key = self._get_trn_group_key(t)
+        #         sum_remaining_positions[t_key] += t.remaining_pos_size
+        #
+        #     elif t.trn_cls.id == TransactionClass.INSTRUMENT_PL:
+        #         t_key = self._get_trn_group_key(t)
+        #         balance_pos_size = balances[t_key]
+        #         remaining_pos_size = sum_remaining_positions[t_key]
+        #         try:
+        #             t.multiplier = abs(remaining_pos_size / balance_pos_size)
+        #         except ArithmeticError:
+        #             t.multiplier = 0.0
+        pass
 
     def _calc_avco_multipliers(self):
         _l.debug('transactions - calculate multipliers - avco')
