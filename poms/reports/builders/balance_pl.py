@@ -162,12 +162,12 @@ class ReportBuilder(object):
 
     def _trn_qs(self):
         if self._queryset is None:
-            queryset = Transaction.objects.all()
+            qs = Transaction.objects.all()
         else:
-            queryset = self._queryset
+            qs = self._queryset
 
         # permissions and attributes refreshed after build report
-        queryset = queryset.prefetch_related(
+        qs = qs.prefetch_related(
             'master_user',
             # 'complex_transaction',
             # 'complex_transaction__transaction_type',
@@ -332,11 +332,14 @@ class ReportBuilder(object):
         if self.instance.transaction_classes:
             kw_filters['transaction_class__in'] = self.instance.transaction_classes
 
-        queryset = queryset.filter(*a_filters, **kw_filters)
+        qs = qs.filter(*a_filters, **kw_filters)
 
-        queryset = queryset.order_by(self.instance.date_field, 'transaction_code', 'id')
+        qs = qs.order_by(self.instance.date_field, 'transaction_code', 'id')
 
-        return queryset
+        from poms.transactions.filters import TransactionObjectPermissionFilter
+        qs = TransactionObjectPermissionFilter.filter_qs(qs, self.instance.master_user, self.instance.member)
+
+        return qs
 
     def sort_transactions(self):
         def _trn_key(t):

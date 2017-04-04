@@ -19,10 +19,29 @@ from poms.transactions.models import Transaction
 
 class TransactionObjectPermissionFilter(BaseFilterBackend):
     def filter_queryset(self, request, queryset, view):
-        member = request.user.member
         master_user = request.user.master_user
+        member = request.user.member
+
+        # if member.is_superuser:
+        #     return queryset
+        #
+        # portfolio_qs = obj_perms_filter_objects_for_view(member, Portfolio.objects.filter(master_user=master_user))
+        # account_qs = obj_perms_filter_objects_for_view(member, Account.objects.filter(master_user=master_user))
+        # # minimize inlined SQL
+        # portfolio_qs = list(portfolio_qs.values_list('id', flat=True))
+        # account_qs = list(account_qs.values_list('id', flat=True))
+        # queryset = queryset.filter(
+        #     Q(portfolio__in=portfolio_qs) |
+        #     (Q(account_position__in=account_qs) | Q(account_cash__in=account_qs) | Q(account_interim__in=account_qs))
+        # )
+        # return queryset
+        return self.filter_qs(queryset, master_user, member)
+
+    @classmethod
+    def filter_qs(self, queryset, master_user, member):
         if member.is_superuser:
             return queryset
+
         portfolio_qs = obj_perms_filter_objects_for_view(member, Portfolio.objects.filter(master_user=master_user))
         account_qs = obj_perms_filter_objects_for_view(member, Account.objects.filter(master_user=master_user))
         # minimize inlined SQL

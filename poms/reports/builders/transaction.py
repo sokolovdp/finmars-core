@@ -139,6 +139,10 @@ class TransactionReportBuilder:
         end_date = getattr(self.instance, 'end_date', None)
         if end_date:
             qs = qs.filter(complex_transaction__date__lte=end_date)
+
+        from poms.transactions.filters import TransactionObjectPermissionFilter
+        qs = TransactionObjectPermissionFilter.filter_qs(qs, self.instance.master_user, self.instance.member)
+
         self._transactions = list(qs)
 
         _l.debug('< _load %s', len(self._transactions))
