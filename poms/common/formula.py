@@ -732,7 +732,7 @@ class SimpleEval2(object):
             val = self._table[name]
             val = self._check_value(val)
             return val
-        except KeyError:
+        except (IndexError, KeyError, TypeError):
             raise NameNotDefined(name)
 
     def _check_value(self, val):
@@ -973,7 +973,7 @@ class SimpleEval2(object):
             val = val[index_or_key]
             val = self._check_value(val)
             return val
-        except KeyError:
+        except (IndexError, KeyError, TypeError):
             return None
 
     def _on_ast_Attribute(self, node, val=empty):
@@ -984,7 +984,7 @@ class SimpleEval2(object):
         if isinstance(val, (dict, OrderedDict)):
             try:
                 return val[node.attr]
-            except (KeyError, TypeError):
+            except (IndexError, KeyError, TypeError):
                 raise AttributeDoesNotExist(node.attr)
         else:
             if isinstance(val, datetime.date):
@@ -1134,10 +1134,12 @@ def _get_supported_models_serializer_class():
     from poms.integrations.serializers import PriceDownloadSchemeSerializer
     from poms.transactions.models import Transaction, ComplexTransaction
     from poms.transactions.serializers import TransactionTextRenderSerializer, ComplexTransactionEvalSerializer
-    from poms.reports.builders import ReportItem
-    from poms.reports.serializers import ReportItemEvalSerializer, TransactionReportItemSerializer, \
-        CashFlowProjectionReportItemSerializer
-    from poms.reports.cash_flow_projection import TransactionReportItem, CashFlowProjectionReportItem
+    from poms.reports.builders.balance_pl import ReportItem
+    from poms.reports.builders.balance_serializers import ReportItemEvalSerializer
+    from poms.reports.builders.transaction_item import TransactionReportItem
+    from poms.reports.builders.transaction_serializers import TransactionReportItemSerializer
+    from poms.reports.builders.cash_flow_projection_item import CashFlowProjectionReportItem
+    from poms.reports.builders.cash_flow_projection_serializers import CashFlowProjectionReportItemSerializer
     return {
         Account: AccountSerializer,
         Counterparty: CounterpartySerializer,

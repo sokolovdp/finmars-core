@@ -6,9 +6,11 @@ from rest_framework.filters import FilterSet
 
 from poms.common.filters import NoOpFilter, CharFilter
 from poms.common.views import AbstractModelViewSet, AbstractAsyncViewSet
+from poms.reports.builders.balance_serializers import BalanceReportSerializer, PLReportSerializer
+from poms.reports.builders.cash_flow_projection_serializers import CashFlowProjectionReportSerializer
+from poms.reports.builders.transaction_serializers import TransactionReportSerializer
 from poms.reports.models import CustomField
-from poms.reports.serializers import CustomFieldSerializer, ReportSerializer, TransactionReportSerializer, \
-    CashFlowProjectionReportSerializer
+from poms.reports.serializers import CustomFieldSerializer
 from poms.reports.tasks import balance_report, pl_report, transaction_report, cash_flow_projection_report
 from poms.users.filters import OwnerByMasterUserFilter
 
@@ -115,12 +117,12 @@ class CustomFieldViewSet(AbstractModelViewSet):
 
 
 class BalanceReportViewSet(AbstractAsyncViewSet):
-    serializer_class = ReportSerializer
+    serializer_class = BalanceReportSerializer
     celery_task = balance_report
 
 
 class PLReportViewSet(AbstractAsyncViewSet):
-    serializer_class = ReportSerializer
+    serializer_class = PLReportSerializer
     celery_task = pl_report
 
 

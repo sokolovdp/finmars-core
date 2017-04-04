@@ -1,0 +1,63 @@
+import copy
+import csv
+import logging
+from io import StringIO
+
+from poms.reports.utils import sprint_table
+
+_l = logging.getLogger('poms.reports')
+
+
+class BaseReportItem:
+    is_cloned = False
+    report = None
+    pricing_provider = None
+    fx_rate_provider = None
+
+    dump_columns = []
+
+    def __init__(self, report, pricing_provider, fx_rate_provider):
+        self.report = report
+        self.pricing_provider = pricing_provider
+        self.fx_rate_provider = fx_rate_provider
+
+    def clone(self):
+        ret = copy.copy(self)
+        ret.is_cloned = True
+        return ret
+
+    @classmethod
+    def dump_values(cls, obj, columns=None):
+        if columns is None:
+            columns = cls.dump_columns
+        row = []
+        for f in columns:
+            row.append(getattr(obj, f))
+        return row
+
+    @classmethod
+    def sdumps(cls, items, columns=None, filter=None, in_csv=False):
+        if columns is None:
+            columns = cls.dump_columns
+
+        data = []
+        for item in items:
+            if filter and callable(filter):
+                if filter(item):
+                    pass
+                else:
+                    continue
+            data.append(cls.dump_values(item, columns=columns))
+
+        if in_csv:
+            si = StringIO()
+            cw = csv.writer(si)
+            cw.writerow(columns)
+            for r in data:
+                cw.writerow(r)
+            return si.getvalue()
+        return sprint_table(data, columns)
+
+    @classmethod
+    def dumps(cls, items, columns=None, trn_filter=None, in_csv=None):
+        _l.debug('\n%s', cls.sdumps(items, columns=columns, filter=filter, in_csv=in_csv))

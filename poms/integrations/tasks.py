@@ -35,7 +35,8 @@ from poms.integrations.providers.base import get_provider, parse_date_iso, fill_
     AbstractProvider
 from poms.integrations.storage import import_file_storage
 from poms.portfolios.models import Portfolio
-from poms.reports.builders import Report, ReportItem, ReportBuilder
+from poms.reports.builders.balance_item import Report, ReportItem
+from poms.reports.builders.balance_pl import ReportBuilder
 from poms.strategies.models import Strategy1, Strategy2, Strategy3
 from poms.transactions.handlers import TransactionTypeProcess
 from poms.users.models import MasterUser
