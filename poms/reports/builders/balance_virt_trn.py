@@ -603,7 +603,7 @@ class VirtualTransaction(BaseReportItem):
             self.time_invested = self.time_invested_days / 365.0
 
             self.weighted_ytm = self.ytm * self.remaining_pos_size_percent
-            self.weighted_time_invested_days = self.time_invested * self.remaining_pos_size_percent
+            self.weighted_time_invested_days = self.time_invested_days * self.remaining_pos_size_percent
             self.weighted_time_invested = self.time_invested * self.remaining_pos_size_percent
 
     @staticmethod
