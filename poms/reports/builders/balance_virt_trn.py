@@ -515,7 +515,7 @@ class VirtualTransaction(BaseReportItem):
             self.total_fixed_opened_res = self.total_fixed_res * (1.0 - self.multiplier)
 
             # ----------------------------------------------------
-            if not self.is_cloned:
+            if not self.is_cloned and self.instr:
                 try:
                     self.gross_cost_res = self.principal_res * self.ref_fx * \
                                           (self.trn_ccy_cur_fx / self.instr_pricing_ccy_cur_fx) * \

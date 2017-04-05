@@ -506,7 +506,7 @@ class ReportBuilder(object):
         # balances = Counter()
         for t in self._transactions:
             if t.trn_cls.id in [TransactionClass.TRANSACTION_PL, TransactionClass.FX_TRADE]:
-                self.multiplier = 1.0
+                t.multiplier = 1.0
 
             elif t.trn_cls.id in [TransactionClass.BUY, TransactionClass.SELL]:
                 if t.instr and t.instr.instrument_type.instrument_class_id == InstrumentClass.CONTRACT_FOR_DIFFERENCE:
