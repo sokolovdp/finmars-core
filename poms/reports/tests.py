@@ -385,7 +385,6 @@ class ReportTestCase(TestCase):
         # 'is_mismatch',
         'trn_code',
         'trn_cls',
-        'pos_size',
         # 'avco_multiplier',
         # 'avco_closed_by',
         # 'avco_rolling_pos_size',
@@ -800,7 +799,7 @@ class ReportTestCase(TestCase):
 
         user = User.objects.create_user('a1')
         self.m = MasterUser.objects.create_master_user(user=user, name='a1_m1')
-        self.member = Member.objects.create(master_user=self.m, user=user, is_owner=True, is_admin=True)
+        self.mm = Member.objects.create(master_user=self.m, user=user, is_owner=True, is_admin=True)
 
         self.pp = PricingPolicy.objects.create(master_user=self.m)
 
@@ -1157,6 +1156,7 @@ class ReportTestCase(TestCase):
 
     def _sdump(self, builder, name, show_trns=True, show_items=True, trn_cols=None, item_cols=None,
                trn_filter=None, in_csv=False):
+        transpose = True
         if show_trns or show_items:
             s = 'Report: %s\n' % (
                 name,
@@ -1165,13 +1165,13 @@ class ReportTestCase(TestCase):
                 trn_cols = trn_cols or self.TRN_COLS
                 s += '\nVirtual transactions: \n%s\n' % (
                     VirtualTransaction.sdumps(builder.instance.transactions, columns=trn_cols, filter=trn_filter,
-                                              in_csv=in_csv)
+                                              in_csv=in_csv, transpose=transpose)
                 )
 
             if show_items:
                 item_cols = item_cols or self.ITEM_COLS
                 s += '\nItems: \n%s\n' % (
-                    ReportItem.sdumps(builder.instance.items, columns=item_cols, in_csv=in_csv)
+                    ReportItem.sdumps(builder.instance.items, columns=item_cols, in_csv=in_csv, transpose=transpose)
                 )
             return s
         return None
@@ -1223,7 +1223,7 @@ class ReportTestCase(TestCase):
         _l.info('*' * 79)
 
         kwargs.setdefault('pricing_policy', self.pp)
-        r = Report(master_user=self.m, **kwargs)
+        r = Report(master_user=self.m, member=self.mm, **kwargs)
         queryset = None
         if isinstance(trns, (list, tuple)):
             queryset = Transaction.objects.filter(pk__in=[int(t) if isinstance(t, int) else t.id for t in trns])
@@ -1751,7 +1751,7 @@ class ReportTestCase(TestCase):
                 approach_multiplier=mult
             )
 
-    def test_allocations2(self):
+    def _test_allocations2(self):
         # settings.DEBUG = True
         self.bond0.price_multiplier = 0
         self.bond0.accrued_multiplier = 0
@@ -2596,7 +2596,7 @@ class ReportTestCase(TestCase):
         b.build()
         self._dump(b, 'test_pl_date_interval_1: pl_first_date abd report_date', show_trns=show_trns)
 
-    def _test_from_csv_td_1(self):
+    def test_from_csv_td_1(self):
         base_path = os.path.join(settings.BASE_DIR, 'poms', 'reports', 'tests_data')
         load_from_csv(
             master_user=self.m,
@@ -2605,19 +2605,21 @@ class ReportTestCase(TestCase):
             ccy_fx_rate=os.path.join(base_path, 'td_1_fx_history.csv'),
             trn=os.path.join(base_path, 'td_1_transactions.csv')
         )
+        # Transaction.objects.filter(master_user=self.m).exclude(transaction_class_id=TransactionClass.TRANSACTION_PL).delete()
+        # Transaction.objects.filter(master_user=self.m).exclude(transaction_code__in=[7856, 7857]).delete()
 
         cost_method = self._avco
 
         report_dates = [
-            date(2017, 3, 10),
-            date(2017, 3, 15),
-            date(2017, 3, 25),
-            date(2017, 3, 28),
+            # date(2017, 3, 10),  # 1,  2,  3
+            date(2017, 3, 15),  # 4,  5,  6
+            # date(2017, 3, 25),  # 7,  8,  9
+            # date(2017, 3, 28),  # 10, 11, 12
         ]
         report_currencies = [
-            Currency.objects.get(master_user=self.m, user_code='USD'),
-            Currency.objects.get(master_user=self.m, user_code='EUR'),
-            Currency.objects.get(master_user=self.m, user_code='GBP'),
+            Currency.objects.get(master_user=self.m, user_code='USD'),  # 1, 4, 7, 10
+            # Currency.objects.get(master_user=self.m, user_code='EUR'),  # 2, 5, 8, 11
+            # Currency.objects.get(master_user=self.m, user_code='GBP'),  # 3, 6, 9, 12
         ]
         portfolio_modes = [
             # Report.MODE_IGNORE,
@@ -2631,6 +2633,19 @@ class ReportTestCase(TestCase):
             # Report.MODE_IGNORE,
             Report.MODE_INDEPENDENT,
         ]
+
+        trn_cols = [x for x in self.TRN_COLS_ALL if x not in
+                    {'rolling_pos_size', 'remaining_pos_size', 'remaining_pos_size_percent', 'trn_date', 'str2_pos',
+                     'str2_cash', 'str3_pos', 'str3_cash'}]
+
+        item_cols = [x for x in self.ITEM_COLS_ALL if x not in
+                     {'subtype_code', 'str2', 'str3', 'last_notes', 'mismatch_prtfl', 'mismatch_acc', 'alloc_bl',
+                      'alloc_pl', 'instr_accrual', 'mismatch', 'report_ccy_cur_fx'}]
+
+        item_cols = [x for x in item_cols if not str(x).endswith('_loc')]
+
+        # item_cols = ['type_code', 'instr', 'ccy', 'trn_ccy', 'prtfl', 'acc', 'str1', 'pricing_ccy',]
+        # item_cols += ['pos_return_loc', 'net_pos_return_loc',]
 
         reports = []
         for report_date in report_dates:
@@ -2648,6 +2663,9 @@ class ReportTestCase(TestCase):
                                 strategy1_mode=strategy1_mode,
                                 strategy2_mode=Report.MODE_IGNORE,
                                 strategy3_mode=Report.MODE_IGNORE,
+                                trn_cols=trn_cols,
+                                item_cols=item_cols
                             )
                             reports.append(r)
-        self._write_results(reports)
+        # self._write_results(reports)
+        pass
