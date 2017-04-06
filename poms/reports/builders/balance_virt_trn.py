@@ -496,23 +496,26 @@ class VirtualTransaction(BaseReportItem):
             self.overheads_fx_opened_res = self.overheads_fx_res * (1.0 - self.multiplier)
             self.total_fx_opened_res = self.total_fx_res * (1.0 - self.multiplier)
 
-            # fixed ----------------------------------------------------
-            self.principal_fixed_res = self.principal * self.pl_fixed_mul
-            self.carry_fixed_res = self.carry * self.pl_fixed_mul
-            self.overheads_fixed_res = self.overheads * self.pl_fixed_mul
-            self.total_fixed_res = self.total * self.pl_fixed_mul
+            if self.trn_cls.id in [TransactionClass.FX_TRADE]:
+                pass
+            else:
+                # fixed ----------------------------------------------------
+                self.principal_fixed_res = self.principal * self.pl_fixed_mul
+                self.carry_fixed_res = self.carry * self.pl_fixed_mul
+                self.overheads_fixed_res = self.overheads * self.pl_fixed_mul
+                self.total_fixed_res = self.total * self.pl_fixed_mul
 
-            # fixed / closed ----------------------------------------------------
-            self.principal_fixed_closed_res = self.principal_fixed_res * self.multiplier
-            self.carry_fixed_closed_res = self.carry_fixed_res * self.multiplier
-            self.overheads_fixed_closed_res = self.overheads_fixed_res * self.multiplier
-            self.total_fixed_closed_res = self.total_fixed_res * self.multiplier
+                # fixed / closed ----------------------------------------------------
+                self.principal_fixed_closed_res = self.principal_fixed_res * self.multiplier
+                self.carry_fixed_closed_res = self.carry_fixed_res * self.multiplier
+                self.overheads_fixed_closed_res = self.overheads_fixed_res * self.multiplier
+                self.total_fixed_closed_res = self.total_fixed_res * self.multiplier
 
-            # fixed / opened ----------------------------------------------------
-            self.principal_fixed_opened_res = self.principal_fixed_res * (1.0 - self.multiplier)
-            self.carry_fixed_opened_res = self.carry_fixed_res * (1.0 - self.multiplier)
-            self.overheads_fixed_opened_res = self.overheads_fixed_res * (1.0 - self.multiplier)
-            self.total_fixed_opened_res = self.total_fixed_res * (1.0 - self.multiplier)
+                # fixed / opened ----------------------------------------------------
+                self.principal_fixed_opened_res = self.principal_fixed_res * (1.0 - self.multiplier)
+                self.carry_fixed_opened_res = self.carry_fixed_res * (1.0 - self.multiplier)
+                self.overheads_fixed_opened_res = self.overheads_fixed_res * (1.0 - self.multiplier)
+                self.total_fixed_opened_res = self.total_fixed_res * (1.0 - self.multiplier)
 
             # ----------------------------------------------------
             if not self.is_cloned and self.instr:

@@ -38,8 +38,15 @@ def date_now():
 try:
     isclose = math.isclose
 except AttributeError:
-    def isclose(a, b, rel_tol=1e-09, abs_tol=0.0):
-        return abs(a - b) <= max(rel_tol * max(abs(a), abs(b)), abs_tol)
+    try:
+        import numpy
+        isclose = numpy.isclose
+    except ImportError:
+        numpy = None
+
+        def isclose(a, b, rel_tol=1e-09, abs_tol=0.0):
+            # TODO: maybe incorrect!
+            return abs(a - b) <= max(rel_tol * max(abs(a), abs(b)), abs_tol)
 
 
 def iszero(v):
