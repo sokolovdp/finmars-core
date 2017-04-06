@@ -41,11 +41,15 @@ class BaseReportItem:
         return row
 
     @classmethod
-    def transpose(cls, columns, data):
-        ncols = ['attr']
-        nrows = [[c] for c in columns]
+    def transpose(cls, columns, data, showindex=None):
+        if showindex:
+            ncols = ['I', 'attr']
+            nrows = [[i + 1, c] for i, c in enumerate(columns)]
+        else:
+            ncols = ['attr']
+            nrows = [[c] for c in columns]
         for irow, row in enumerate(data):
-            ncols.append('%s' % irow)
+            ncols.append('%s' % (irow + 1))
             for icol, col in enumerate(row):
                 nrows[icol].append(col)
         return ncols, nrows
@@ -72,8 +76,8 @@ class BaseReportItem:
                 cw.writerow(r)
             return si.getvalue()
         if transpose:
-            columns, data = cls.transpose(columns=columns, data=data)
-        return sprint_table(data, columns, showindex=showindex)
+            columns, data = cls.transpose(columns=columns, data=data, showindex=showindex)
+        return sprint_table(data, columns)
 
     @classmethod
     def dumps(cls, items, columns=None, trn_filter=None, in_csv=None):

@@ -2583,15 +2583,15 @@ class ReportTestCase(TestCase):
             trn=os.path.join(base_path, 'td_1_transactions.csv')
         )
         # Transaction.objects.filter(master_user=self.m).exclude(transaction_class_id=TransactionClass.TRANSACTION_PL).delete()
-        # Transaction.objects.filter(master_user=self.m).exclude(transaction_code__in=[7856, 7857]).delete()
+        # Transaction.objects.filter(master_user=self.m).exclude(transaction_code__in=[7853, ]).delete()
 
         cost_method = self._avco
 
         report_dates = [
-            # date(2017, 3, 10),  # 1,  2,  3
+            date(2017, 3, 10),  # 1,  2,  3
             # date(2017, 3, 15),  # 4,  5,  6
             # date(2017, 3, 25),  # 7,  8,  9
-            date(2017, 3, 28),  # 10, 11, 12
+            # date(2017, 3, 28),  # 10, 11, 12
         ]
         report_currencies = [
             Currency.objects.get(master_user=self.m, user_code='USD'),  # 1, 4, 7, 10
@@ -2651,6 +2651,8 @@ class ReportTestCase(TestCase):
             'total_fixed_opened_loc'
         ]
 
+        trn_cols = self.TRN_COLS_ALL
+
         # trn_cols = [x for x in trn_cols if x not in
         #             {'rolling_pos_size', 'remaining_pos_size', 'remaining_pos_size_percent', 'trn_date', 'str2_pos',
         #              'str2_cash', 'str3_pos', 'str3_cash'}]
@@ -2658,13 +2660,12 @@ class ReportTestCase(TestCase):
         # item_cols = [x for x in item_cols if x not in
         #              {'subtype_code', 'str2', 'str3', 'last_notes', 'mismatch_prtfl', 'mismatch_acc', 'alloc_bl',
         #               'alloc_pl', 'instr_accrual', 'mismatch', 'report_ccy_cur_fx'}]
-        #
-        # item_cols = [x for x in item_cols if not str(x).endswith('_loc')]
+
+        # trn_cols = [x for x in trn_cols if '_loc' not in x]
+        # item_cols = [x for x in item_cols if '_loc' not in x]
 
         # item_cols = ['type_code', 'instr', 'ccy', 'trn_ccy', 'prtfl', 'acc', 'str1', 'pricing_ccy',]
         # item_cols += ['pos_return_loc', 'net_pos_return_loc',]
-
-
 
         reports = []
         for report_date in report_dates:
