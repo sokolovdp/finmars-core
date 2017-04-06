@@ -971,7 +971,7 @@ def complex_transaction_csv_file_import(instance):
             try:
                 return mapping_cache[key]
             except KeyError:
-                v = model_map_class.objects.get(master_user=instance.master_user, value=value)
+                v = model_map_class.objects.get(master_user=instance.master_user, value=value).content_object
                 mapping_cache[key] = v
                 return v
 
