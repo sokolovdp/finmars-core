@@ -251,7 +251,7 @@ class ReportTestCase(TestCase):
         # 'lid',
         'pk',
         # 'is_cloned',
-        # 'is_hidden',
+        'is_hidden',
         # 'is_mismatch',
         'trn_code',
         'trn_cls',
@@ -385,7 +385,6 @@ class ReportTestCase(TestCase):
         # 'is_mismatch',
         'trn_code',
         'trn_cls',
-        'pos_size',
         # 'avco_multiplier',
         # 'avco_closed_by',
         # 'avco_rolling_pos_size',
@@ -800,7 +799,7 @@ class ReportTestCase(TestCase):
 
         user = User.objects.create_user('a1')
         self.m = MasterUser.objects.create_master_user(user=user, name='a1_m1')
-        self.member = Member.objects.create(master_user=self.m, user=user, is_owner=True, is_admin=True)
+        self.mm = Member.objects.create(master_user=self.m, user=user, is_owner=True, is_admin=True)
 
         self.pp = PricingPolicy.objects.create(master_user=self.m)
 
@@ -1157,6 +1156,8 @@ class ReportTestCase(TestCase):
 
     def _sdump(self, builder, name, show_trns=True, show_items=True, trn_cols=None, item_cols=None,
                trn_filter=None, in_csv=False):
+        transpose = True
+        showindex = 'always'
         if show_trns or show_items:
             s = 'Report: %s\n' % (
                 name,
@@ -1165,13 +1166,14 @@ class ReportTestCase(TestCase):
                 trn_cols = trn_cols or self.TRN_COLS
                 s += '\nVirtual transactions: \n%s\n' % (
                     VirtualTransaction.sdumps(builder.instance.transactions, columns=trn_cols, filter=trn_filter,
-                                              in_csv=in_csv)
+                                              in_csv=in_csv, transpose=transpose, showindex=showindex)
                 )
 
             if show_items:
                 item_cols = item_cols or self.ITEM_COLS
                 s += '\nItems: \n%s\n' % (
-                    ReportItem.sdumps(builder.instance.items, columns=item_cols, in_csv=in_csv)
+                    ReportItem.sdumps(builder.instance.items, columns=item_cols, in_csv=in_csv, transpose=transpose,
+                                      showindex=showindex)
                 )
             return s
         return None
@@ -1223,7 +1225,7 @@ class ReportTestCase(TestCase):
         _l.info('*' * 79)
 
         kwargs.setdefault('pricing_policy', self.pp)
-        r = Report(master_user=self.m, **kwargs)
+        r = Report(master_user=self.m, member=self.mm, **kwargs)
         queryset = None
         if isinstance(trns, (list, tuple)):
             queryset = Transaction.objects.filter(pk__in=[int(t) if isinstance(t, int) else t.id for t in trns])
@@ -1751,7 +1753,7 @@ class ReportTestCase(TestCase):
                 approach_multiplier=mult
             )
 
-    def test_allocations2(self):
+    def _test_allocations2(self):
         # settings.DEBUG = True
         self.bond0.price_multiplier = 0
         self.bond0.accrued_multiplier = 0
@@ -2060,122 +2062,6 @@ class ReportTestCase(TestCase):
         b.build()
         self._dump(b, 'test_pl_1')
 
-    # def _test_pl_real_unreal_1(self):
-    #     s1 = self.s1_1_1_1
-    #     s2 = self.s1_1_1_2
-    #     s3 = self.s1_1_1_3
-    #     s4 = self.s1_1_1_4
-    #
-    #     instr = Instrument.objects.create(master_user=self.m, name="I1, USD/USD",
-    #                                       instrument_type=self.m.instrument_type,
-    #                                       pricing_currency=self.usd, price_multiplier=1.0,
-    #                                       accrued_currency=self.usd, accrued_multiplier=1.0)
-    #
-    #     PriceHistory.objects.create(instrument=instr, pricing_policy=self.pp,
-    #                                 date=self._d(1), principal_price=8.0, accrued_price=0.0)
-    #     PriceHistory.objects.create(instrument=instr, pricing_policy=self.pp,
-    #                                 date=self._d(2), principal_price=10.0, accrued_price=0.0)
-    #     PriceHistory.objects.create(instrument=instr, pricing_policy=self.pp,
-    #                                 date=self._d(3), principal_price=10.5, accrued_price=0.0)
-    #     PriceHistory.objects.create(instrument=instr, pricing_policy=self.pp,
-    #                                 date=self._d(4), principal_price=11.0, accrued_price=0.0)
-    #     PriceHistory.objects.create(instrument=instr, pricing_policy=self.pp,
-    #                                 date=self._d(5), principal_price=11.5, accrued_price=0.0)
-    #     PriceHistory.objects.create(instrument=instr, pricing_policy=self.pp,
-    #                                 date=self._d(6), principal_price=12.0, accrued_price=0.0)
-    #     PriceHistory.objects.create(instrument=instr, pricing_policy=self.pp,
-    #                                 date=self._d(7), principal_price=12.5, accrued_price=0.0)
-    #     PriceHistory.objects.create(instrument=instr, pricing_policy=self.pp,
-    #                                 date=self._d(8), principal_price=13.0, accrued_price=0.0)
-    #
-    #     PriceHistory.objects.create(instrument=instr, pricing_policy=self.pp,
-    #                                 date=self._d(14), principal_price=15.0, accrued_price=0.0)
-    #
-    #     self._t(t_class=self._sell, instr=instr, position=-5,
-    #             stl_ccy=self.usd, principal=40.0, carry=0.0, overheads=0.0,
-    #             acc_date_days=1, cash_date_days=1, s1_pos=s1, s1_cash=s1)
-    #
-    #     self._t(t_class=self._buy, instr=instr, position=10,
-    #             stl_ccy=self.usd, principal=-100.0, carry=0.0, overheads=0.0,
-    #             acc_date_days=2, cash_date_days=2, s1_pos=s1, s1_cash=s1)
-    #
-    #     self._t(t_class=self._buy, instr=instr, position=10,
-    #             stl_ccy=self.usd, principal=-105.0, carry=0.0, overheads=0.0,
-    #             acc_date_days=3, cash_date_days=3, s1_pos=s1, s1_cash=s1)
-    #
-    #     self._t(t_class=self._buy, instr=instr, position=10,
-    #             stl_ccy=self.usd, principal=-110.0, carry=0.0, overheads=0.0,
-    #             acc_date_days=4, cash_date_days=4, s1_pos=s1, s1_cash=s1)
-    #
-    #     self._t(t_class=self._sell, instr=instr, position=-20,
-    #             stl_ccy=self.usd, principal=230.0, carry=0.0, overheads=0.0,
-    #             acc_date_days=5, cash_date_days=5, s1_pos=s2, s1_cash=s2)
-    #
-    #     self._t(t_class=self._buy, instr=instr, position=10,
-    #             stl_ccy=self.usd, principal=-120.0, carry=0.0, overheads=0.0,
-    #             acc_date_days=6, cash_date_days=6, s1_pos=s3, s1_cash=s3)
-    #
-    #     self._t(t_class=self._sell, instr=instr, position=-20,
-    #             stl_ccy=self.usd, principal=250.0, carry=0.0, overheads=0.0,
-    #             acc_date_days=7, cash_date_days=7, s1_pos=s2, s1_cash=s2)
-    #
-    #     self._t(t_class=self._sell, instr=instr, position=-10,
-    #             stl_ccy=self.usd, principal=130.0, carry=0.0, overheads=0.0,
-    #             acc_date_days=8, cash_date_days=8, s1_pos=s4, s1_cash=s4)
-    #
-    #     r = Report(master_user=self.m, pricing_policy=self.pp, report_date=self._d(14),
-    #                cost_method=self._avco)
-    #     b = ReportBuilder(instance=r)
-    #     b.build()
-    #     self._dump(b, 'test_pl_real_unreal_1')
-
-    # def _test_pl_fx_fix_full_0(self):
-    #     instr = Instrument.objects.create(master_user=self.m, name="I1, RUB/RUB",
-    #                                       instrument_type=self.m.instrument_type,
-    #                                       pricing_currency=self.rub, price_multiplier=1.0,
-    #                                       accrued_currency=self.rub, accrued_multiplier=1.0)
-    #
-    #     # self.m.system_currency = self.cad
-    #     # self.m.save()
-    #
-    #     self._instr_hist(instr, self._d(101), 1.0, 1.0)
-    #     self._instr_hist(instr, self._d(102), 1.0, 1.0)
-    #     self._instr_hist(instr, self._d(103), 1.0, 1.0)
-    #     self._instr_hist(instr, self._d(104), 240.0, 160.0)
-    #
-    #     self._ccy_hist(self.gbp, self._d(101), 1.1)
-    #     self._ccy_hist(self.eur, self._d(102), 1.15)
-    #     self._ccy_hist(self.chf, self._d(103), 0.9)
-    #
-    #     self._ccy_hist(self.gbp, self._d(104), 1.2)
-    #     self._ccy_hist(self.eur, self._d(104), 1.1)
-    #     self._ccy_hist(self.chf, self._d(104), 1.0)
-    #     self._ccy_hist(self.cad, self._d(104), 0.9)
-    #     self._ccy_hist(self.rub, self._d(104), 1.0 / 65.0)
-    #     # for ch in CurrencyHistory.objects.order_by('currency__user_code', '-date').filter(date__gte=self._d(100)):
-    #     #     _l.debug(ch.currency.user_code, ch.date, ch.fx_rate)
-    #
-    #     self._t(t_class=self._buy, instr=instr, position=5,
-    #             stl_ccy=self.gbp, principal=-20.0, carry=-5.0,
-    #             trn_ccy=self.usd, fx_rate=1.5,
-    #             acc_date_days=101, cash_date_days=101)
-    #
-    #     self._t(t_class=self._buy, instr=instr, position=5,
-    #             stl_ccy=self.eur, principal=-22.0, carry=-8.0,
-    #             trn_ccy=self.usd, fx_rate=1.3,
-    #             acc_date_days=102, cash_date_days=102)
-    #
-    #     self._t(t_class=self._sell, instr=instr, position=-5,
-    #             stl_ccy=self.chf, principal=25.0, carry=9.0,
-    #             trn_ccy=self.usd, fx_rate=1.1,
-    #             acc_date_days=103, cash_date_days=103)
-    #
-    #     r = Report(master_user=self.m, pricing_policy=self.pp, report_date=self._d(104), report_currency=self.cad,
-    #                cost_method=self._avco)
-    #     b = ReportBuilder(instance=r)
-    #     b.build()
-    #     self._dump(b, 'test_pl_fx_fix_full_0')
-
     def _test_pl_full_fx_fixed_buy_sell_1(self):
         instr = Instrument.objects.create(master_user=self.m, name="I1, RUB/RUB",
                                           instrument_type=self.m.instrument_type,
@@ -2218,11 +2104,29 @@ class ReportTestCase(TestCase):
                 trn_ccy=self.usd, fx_rate=1.1,
                 acc_date_days=101, cash_date_days=101)
 
-        r = Report(master_user=self.m, pricing_policy=self.pp, report_date=self._d(104), report_currency=self.cad,
-                   cost_method=self._avco, approach_multiplier=1.0)
-        b = ReportBuilder(instance=r)
-        b.build()
-        self._dump(b, 'test_pl_full_fx_fixed_buy_sell_1')
+        # r = Report(master_user=self.m, pricing_policy=self.pp, report_date=self._d(104), report_currency=self.cad,
+        #            cost_method=self._avco, approach_multiplier=1.0)
+        # b = ReportBuilder(instance=r)
+        # b.build()
+        # self._dump(b, 'test_pl_full_fx_fixed_buy_sell_1', trn_cols=self.TRN_COLS_ALL, item_cols=self.ITEM_COLS_ALL)
+        trn_cols = self.TRN_COLS_ALL
+        item_cols = self.ITEM_COLS_ALL
+        item_cols = [x for x in item_cols if ('_loc' not in x) and ('opened' not in x) and ('closed' not in x)]
+        self._simple_run(
+            'test_pl_full_fx_fixed_buy_sell_1',
+            report_currency=self.cad,
+            report_date=self._d(104),
+            cost_method=self._avco,
+            portfolio_mode=Report.MODE_IGNORE,
+            account_mode=Report.MODE_IGNORE,
+            strategy1_mode=Report.MODE_IGNORE,
+            strategy2_mode=Report.MODE_IGNORE,
+            strategy3_mode=Report.MODE_IGNORE,
+            trn_cols=trn_cols,
+            item_cols=item_cols,
+            approach_multiplier=1.0,
+            trn_dump_all=False
+        )
 
     def _test_pl_full_fx_fixed_cash_in_out_1(self):
         self._ccy_hist(self.gbp, self._d(101), 1.45)
@@ -2240,17 +2144,35 @@ class ReportTestCase(TestCase):
                 acc_date_days=101, cash_date_days=101,
                 alloc_bl=self.bond1, alloc_pl=self.bond2)
 
-        self._t(t_class=self._cash_inflow,
-                trn_ccy=self.gbp, position=0,
-                stl_ccy=self.rub, cash=100, fx_rate=0.75,
-                acc_date_days=101, cash_date_days=101,
-                alloc_bl=self.bond1, alloc_pl=self.bond2)
+        # self._t(t_class=self._cash_inflow,
+        #         trn_ccy=self.gbp, position=0,
+        #         stl_ccy=self.rub, cash=100, fx_rate=0.75,
+        #         acc_date_days=101, cash_date_days=101,
+        #         alloc_bl=self.bond1, alloc_pl=self.bond2)
 
-        r = Report(master_user=self.m, pricing_policy=self.pp, report_date=self._d(104), report_currency=self.cad,
-                   cost_method=self._avco)
-        b = ReportBuilder(instance=r)
-        b.build()
-        self._dump(b, 'test_pl_full_fx_fixed_cash_in_out_1')
+        # r = Report(master_user=self.m, pricing_policy=self.pp, report_date=self._d(104), report_currency=self.cad,
+        #            cost_method=self._avco)
+        # b = ReportBuilder(instance=r)
+        # b.build()
+        # self._dump(b, 'test_pl_full_fx_fixed_cash_in_out_1')
+        trn_cols = self.TRN_COLS_ALL
+        item_cols = self.ITEM_COLS_ALL
+        item_cols = [x for x in item_cols if ('_loc' not in x) and ('opened' not in x) and ('closed' not in x)]
+        self._simple_run(
+            'test_pl_full_fx_fixed_cash_in_out_1',
+            report_currency=self.cad,
+            report_date=self._d(104),
+            cost_method=self._avco,
+            portfolio_mode=Report.MODE_IGNORE,
+            account_mode=Report.MODE_IGNORE,
+            strategy1_mode=Report.MODE_IGNORE,
+            strategy2_mode=Report.MODE_IGNORE,
+            strategy3_mode=Report.MODE_IGNORE,
+            trn_cols=trn_cols,
+            item_cols=item_cols,
+            approach_multiplier=1.0,
+            trn_dump_all=False
+        )
 
     def _test_pl_full_fx_fixed_instr_pl_1(self):
         self._ccy_hist(self.gbp, self._d(101), 1.45)
@@ -2265,15 +2187,33 @@ class ReportTestCase(TestCase):
         self._t(t_class=self._instrument_pl,
                 instr=self.bond0,
                 trn_ccy=self.gbp, position=0,
-                stl_ccy=self.chf, carry=1000, overheads=-20, fx_rate=0.75,
+                stl_ccy=self.chf, principal=0, carry=1000, overheads=-20, fx_rate=0.75,
                 acc_date_days=101, cash_date_days=101,
                 alloc_bl=self.bond1, alloc_pl=self.bond2)
 
-        r = Report(master_user=self.m, pricing_policy=self.pp, report_date=self._d(104), report_currency=self.cad,
-                   cost_method=self._avco)
-        b = ReportBuilder(instance=r)
-        b.build()
-        self._dump(b, 'test_pl_full_fx_fixed_instr_pl_1')
+        # r = Report(master_user=self.m, pricing_policy=self.pp, report_date=self._d(104), report_currency=self.cad,
+        #            cost_method=self._avco)
+        # b = ReportBuilder(instance=r)
+        # b.build()
+        # self._dump(b, 'test_pl_full_fx_fixed_instr_pl_1')
+        trn_cols = self.TRN_COLS_ALL
+        item_cols = self.ITEM_COLS_ALL
+        item_cols = [x for x in item_cols if ('_loc' not in x) and ('opened' not in x) and ('closed' not in x)]
+        self._simple_run(
+            'test_pl_full_fx_fixed_instr_pl_1',
+            report_currency=self.cad,
+            report_date=self._d(104),
+            cost_method=self._avco,
+            portfolio_mode=Report.MODE_IGNORE,
+            account_mode=Report.MODE_IGNORE,
+            strategy1_mode=Report.MODE_IGNORE,
+            strategy2_mode=Report.MODE_IGNORE,
+            strategy3_mode=Report.MODE_IGNORE,
+            trn_cols=trn_cols,
+            item_cols=item_cols,
+            approach_multiplier=1.0,
+            trn_dump_all=False
+        )
 
     def _test_pl_full_fx_fixed_trn_pl_1(self):
         self._ccy_hist(self.gbp, self._d(101), 1.45)
@@ -2291,11 +2231,29 @@ class ReportTestCase(TestCase):
                 acc_date_days=101, cash_date_days=101,
                 alloc_bl=self.bond1, alloc_pl=self.bond2)
 
-        r = Report(master_user=self.m, pricing_policy=self.pp, report_date=self._d(104), report_currency=self.cad,
-                   cost_method=self._avco)
-        b = ReportBuilder(instance=r)
-        b.build()
-        self._dump(b, 'test_pl_full_fx_fixed_trn_pl_1')
+        # r = Report(master_user=self.m, pricing_policy=self.pp, report_date=self._d(104), report_currency=self.cad,
+        #            cost_method=self._avco)
+        # b = ReportBuilder(instance=r)
+        # b.build()
+        # self._dump(b, 'test_pl_full_fx_fixed_trn_pl_1')
+        trn_cols = self.TRN_COLS_ALL
+        item_cols = self.ITEM_COLS_ALL
+        item_cols = [x for x in item_cols if ('_loc' not in x) and ('opened' not in x) and ('closed' not in x)]
+        self._simple_run(
+            'test_pl_full_fx_fixed_trn_pl_1',
+            report_currency=self.cad,
+            report_date=self._d(104),
+            cost_method=self._avco,
+            portfolio_mode=Report.MODE_IGNORE,
+            account_mode=Report.MODE_IGNORE,
+            strategy1_mode=Report.MODE_IGNORE,
+            strategy2_mode=Report.MODE_IGNORE,
+            strategy3_mode=Report.MODE_IGNORE,
+            trn_cols=trn_cols,
+            item_cols=item_cols,
+            approach_multiplier=1.0,
+            trn_dump_all=False
+        )
 
     def _test_pl_full_fx_fixed_fx_trade_1(self):
         self._ccy_hist(self.gbp, self._d(101), 1.45)
@@ -2316,17 +2274,36 @@ class ReportTestCase(TestCase):
                 acc_date_days=101, cash_date_days=101,
                 alloc_bl=self.bond1, alloc_pl=self.bond2)
 
-        self._t(t_class=self._fx_tade,
-                trn_ccy=self.gbp, position=100,
-                stl_ccy=self.rub, principal=-140,
-                acc_date_days=101, cash_date_days=101,
-                alloc_bl=self.bond1, alloc_pl=self.bond2)
+        # self._t(t_class=self._fx_tade,
+        #         trn_ccy=self.gbp, position=100,
+        #         stl_ccy=self.rub, principal=-140,
+        #         acc_date_days=101, cash_date_days=101,
+        #         alloc_bl=self.bond1, alloc_pl=self.bond2)
 
-        r = Report(master_user=self.m, pricing_policy=self.pp, report_date=self._d(104), report_currency=self.cad,
-                   cost_method=self._avco)
-        b = ReportBuilder(instance=r)
-        b.build()
-        self._dump(b, 'test_pl_full_fx_fixed_fx_trade_1')
+        # r = Report(master_user=self.m, pricing_policy=self.pp, report_date=self._d(104), report_currency=self.cad,
+        #            cost_method=self._avco)
+        # b = ReportBuilder(instance=r)
+        # b.build()
+        # self._dump(b, 'test_pl_full_fx_fixed_fx_trade_1')
+        trn_cols = self.TRN_COLS_ALL
+        trn_cols = [x for x in trn_cols if ('_loc' not in x) and ('opened' not in x) and ('closed' not in x)]
+        item_cols = self.ITEM_COLS_ALL
+        item_cols = [x for x in item_cols if ('_loc' not in x) and ('opened' not in x) and ('closed' not in x)]
+        self._simple_run(
+            'test_pl_full_fx_fixed_fx_trade_1',
+            report_currency=self.cad,
+            report_date=self._d(104),
+            cost_method=self._avco,
+            portfolio_mode=Report.MODE_IGNORE,
+            account_mode=Report.MODE_IGNORE,
+            strategy1_mode=Report.MODE_IGNORE,
+            strategy2_mode=Report.MODE_IGNORE,
+            strategy3_mode=Report.MODE_IGNORE,
+            trn_cols=trn_cols,
+            item_cols=item_cols,
+            approach_multiplier=1.0,
+            # trn_dump_all=False
+        )
 
     def _test_mismatch_0(self):
         for i in range(0, 2):
@@ -2596,7 +2573,7 @@ class ReportTestCase(TestCase):
         b.build()
         self._dump(b, 'test_pl_date_interval_1: pl_first_date abd report_date', show_trns=show_trns)
 
-    def _test_from_csv_td_1(self):
+    def test_from_csv_td_1(self):
         base_path = os.path.join(settings.BASE_DIR, 'poms', 'reports', 'tests_data')
         load_from_csv(
             master_user=self.m,
@@ -2605,19 +2582,21 @@ class ReportTestCase(TestCase):
             ccy_fx_rate=os.path.join(base_path, 'td_1_fx_history.csv'),
             trn=os.path.join(base_path, 'td_1_transactions.csv')
         )
+        # Transaction.objects.filter(master_user=self.m).exclude(transaction_class_id=TransactionClass.TRANSACTION_PL).delete()
+        # Transaction.objects.filter(master_user=self.m).exclude(transaction_code__in=[7859, 7860]).delete()
 
         cost_method = self._avco
 
         report_dates = [
-            date(2017, 3, 10),
-            date(2017, 3, 15),
-            date(2017, 3, 25),
-            date(2017, 3, 28),
+            # date(2017, 3, 10),  # 1,  2,  3
+            # date(2017, 3, 15),  # 4,  5,  6
+            date(2017, 3, 25),  # 7,  8,  9
+            # date(2017, 3, 28),  # 10, 11, 12
         ]
         report_currencies = [
-            Currency.objects.get(master_user=self.m, user_code='USD'),
-            Currency.objects.get(master_user=self.m, user_code='EUR'),
-            Currency.objects.get(master_user=self.m, user_code='GBP'),
+            Currency.objects.get(master_user=self.m, user_code='USD'),  # 1, 4, 7, 10
+            # Currency.objects.get(master_user=self.m, user_code='EUR'),  # 2, 5, 8, 11
+            # Currency.objects.get(master_user=self.m, user_code='GBP'),  # 3, 6, 9, 12
         ]
         portfolio_modes = [
             # Report.MODE_IGNORE,
@@ -2631,6 +2610,62 @@ class ReportTestCase(TestCase):
             # Report.MODE_IGNORE,
             Report.MODE_INDEPENDENT,
         ]
+
+        trn_cols = [
+            'pk', 'trn_code', 'trn_cls', 'multiplier', 'instr', 'trn_ccy', 'pos_size', 'stl_ccy', 'cash', 'principal',
+            'carry', 'overheads', 'ref_fx', 'acc_date', 'cash_date', 'prtfl', 'acc_pos', 'acc_cash', 'acc_interim',
+            'str1_pos', 'str1_cash', 'str2_pos', 'str2_cash', 'str3_pos', 'str3_cash', 'link_instr', 'alloc_bl',
+            'alloc_pl', 'trade_price', 'notes', 'report_ccy_cur_fx', 'report_ccy_cash_hist_fx',
+            'report_ccy_acc_hist_fx', 'instr_price_cur_principal_price', 'instr_price_cur_accrued_price',
+            'instr_pricing_ccy_cur_fx', 'instr_accrued_ccy_cur_fx', 'trn_ccy_cash_hist_fx', 'trn_ccy_acc_hist_fx',
+            'trn_ccy_cur_fx', 'stl_ccy_cash_hist_fx', 'stl_ccy_acc_hist_fx', 'stl_ccy_cur_fx',
+        ]
+        item_cols = [
+            'type_code', 'subtype_code', 'instr', 'ccy', 'trn_ccy', 'prtfl', 'acc', 'str1', 'str2', 'str3',
+            'pricing_ccy', 'last_notes', 'mismatch', 'mismatch_prtfl', 'mismatch_acc', 'alloc_bl', 'alloc_pl',
+            'report_ccy_cur_fx', 'instr_price_cur_principal_price', 'instr_price_cur_accrued_price',
+            'instr_pricing_ccy_cur_fx', 'instr_accrued_ccy_cur_fx', 'ccy_cur_fx', 'pricing_ccy_cur_fx',
+            'instr_principal_res', 'instr_accrued_res', 'exposure_res', 'exposure_loc', 'instr_accrual',
+            'instr_accrual_accrued_price', 'pos_size', 'market_value_res', 'market_value_loc', 'cost_res', 'ytm',
+            'modified_duration', 'ytm_at_cost', 'time_invested_days', 'time_invested', 'gross_cost_res',
+            'gross_cost_loc', 'net_cost_res', 'net_cost_loc', 'principal_invested_res', 'principal_invested_loc',
+            'amount_invested_res', 'amount_invested_loc', 'pos_return_res', 'pos_return_loc', 'net_pos_return_res',
+            'net_pos_return_loc', 'daily_price_change', 'mtd_price_change', 'principal_res', 'carry_res',
+            'overheads_res', 'total_res', 'principal_loc', 'carry_loc', 'overheads_loc', 'total_loc',
+            'principal_closed_res', 'carry_closed_res', 'overheads_closed_res', 'total_closed_res',
+            'principal_closed_loc', 'carry_closed_loc', 'overheads_closed_loc', 'total_closed_loc',
+            'principal_opened_res', 'carry_opened_res', 'overheads_opened_res', 'total_opened_res',
+            'principal_opened_loc', 'carry_opened_loc', 'overheads_opened_loc', 'total_opened_loc', 'principal_fx_res',
+            'carry_fx_res', 'overheads_fx_res', 'total_fx_res', 'principal_fx_loc', 'carry_fx_loc', 'overheads_fx_loc',
+            'total_fx_loc', 'principal_fx_closed_res', 'carry_fx_closed_res', 'overheads_fx_closed_res',
+            'total_fx_closed_res', 'principal_fx_closed_loc', 'carry_fx_closed_loc', 'overheads_fx_closed_loc',
+            'total_fx_closed_loc', 'principal_fx_opened_res', 'carry_fx_opened_res', 'overheads_fx_opened_res',
+            'total_fx_opened_res', 'principal_fx_opened_loc', 'carry_fx_opened_loc', 'overheads_fx_opened_loc',
+            'total_fx_opened_loc', 'principal_fixed_res', 'carry_fixed_res', 'overheads_fixed_res', 'total_fixed_res',
+            'principal_fixed_loc', 'carry_fixed_loc', 'overheads_fixed_loc', 'total_fixed_loc',
+            'principal_fixed_closed_res', 'carry_fixed_closed_res', 'overheads_fixed_closed_res',
+            'total_fixed_closed_res', 'principal_fixed_closed_loc', 'carry_fixed_closed_loc',
+            'overheads_fixed_closed_loc', 'total_fixed_closed_loc', 'principal_fixed_opened_res',
+            'carry_fixed_opened_res', 'overheads_fixed_opened_res', 'total_fixed_opened_res',
+            'principal_fixed_opened_loc', 'carry_fixed_opened_loc', 'overheads_fixed_opened_loc',
+            'total_fixed_opened_loc'
+        ]
+
+        trn_cols = self.TRN_COLS_ALL
+
+        # trn_cols = [x for x in trn_cols if x not in
+        #             {'rolling_pos_size', 'remaining_pos_size', 'remaining_pos_size_percent', 'trn_date', 'str2_pos',
+        #              'str2_cash', 'str3_pos', 'str3_cash'}]
+        #
+        # item_cols = [x for x in item_cols if x not in
+        #              {'subtype_code', 'str2', 'str3', 'last_notes', 'mismatch_prtfl', 'mismatch_acc', 'alloc_bl',
+        #               'alloc_pl', 'instr_accrual', 'mismatch', 'report_ccy_cur_fx'}]
+
+        # trn_cols = [x for x in trn_cols if '_loc' not in x]
+        # item_cols = [x for x in item_cols if '_loc' not in x]
+
+        # item_cols = ['type_code', 'instr', 'ccy', 'trn_ccy', 'prtfl', 'acc', 'str1', 'pricing_ccy',]
+        # item_cols += ['pos_return_loc', 'net_pos_return_loc',]
 
         reports = []
         for report_date in report_dates:
@@ -2648,6 +2683,9 @@ class ReportTestCase(TestCase):
                                 strategy1_mode=strategy1_mode,
                                 strategy2_mode=Report.MODE_IGNORE,
                                 strategy3_mode=Report.MODE_IGNORE,
+                                trn_cols=trn_cols,
+                                item_cols=item_cols
                             )
                             reports.append(r)
-        self._write_results(reports)
+        # self._write_results(reports)
+        pass

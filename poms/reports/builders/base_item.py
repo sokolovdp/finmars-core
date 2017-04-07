@@ -3,6 +3,7 @@ import csv
 import logging
 from io import StringIO
 
+from poms.common.utils import isclose
 from poms.reports.utils import sprint_table
 
 _l = logging.getLogger('poms.reports')
@@ -32,11 +33,29 @@ class BaseReportItem:
             columns = cls.dump_columns
         row = []
         for f in columns:
-            row.append(getattr(obj, f))
+            v = getattr(obj, f)
+            if isinstance(v, float):
+                if isclose(v, 0.0):
+                    v = 0.0
+            row.append(v)
         return row
 
     @classmethod
-    def sdumps(cls, items, columns=None, filter=None, in_csv=False):
+    def transpose(cls, columns, data, showindex=None):
+        if showindex:
+            ncols = ['I', 'attr']
+            nrows = [[i + 1, c] for i, c in enumerate(columns)]
+        else:
+            ncols = ['attr']
+            nrows = [[c] for c in columns]
+        for irow, row in enumerate(data):
+            ncols.append('%s' % (irow + 1))
+            for icol, col in enumerate(row):
+                nrows[icol].append(col)
+        return ncols, nrows
+
+    @classmethod
+    def sdumps(cls, items, columns=None, filter=None, in_csv=False, transpose=False, showindex=None):
         if columns is None:
             columns = cls.dump_columns
 
@@ -56,8 +75,10 @@ class BaseReportItem:
             for r in data:
                 cw.writerow(r)
             return si.getvalue()
+        if transpose:
+            columns, data = cls.transpose(columns=columns, data=data, showindex=showindex)
         return sprint_table(data, columns)
 
     @classmethod
     def dumps(cls, items, columns=None, trn_filter=None, in_csv=None):
-        _l.debug('\n%s', cls.sdumps(items, columns=columns, filter=filter, in_csv=in_csv))
+        _l.debug('\n%s', cls.sdumps(items, columns=columns, filter=trn_filter, in_csv=in_csv))

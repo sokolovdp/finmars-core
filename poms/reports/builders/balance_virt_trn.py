@@ -1,6 +1,7 @@
 import uuid
 
 from poms.common.formula_accruals import f_xirr
+from poms.common.utils import isclose
 from poms.reports.builders.base_item import BaseReportItem
 from poms.transactions.models import TransactionClass
 
@@ -463,8 +464,10 @@ class VirtualTransaction(BaseReportItem):
             self.overheads_res = self.overheads * self.stl_ccy_cur_fx
             self.total_res = self.total * self.stl_ccy_cur_fx
 
-            self.pl_fx_mul = self.stl_ccy_cur_fx - self.ref_fx * self.trn_ccy_cash_hist_fx
-            self.pl_fixed_mul = self.ref_fx * self.trn_ccy_cash_hist_fx
+            # self.pl_fx_mul = self.stl_ccy_cur_fx - self.ref_fx * self.trn_ccy_cash_hist_fx
+            # self.pl_fixed_mul = self.ref_fx * self.trn_ccy_cash_hist_fx
+            self.pl_fx_mul = self.stl_ccy_cur_fx - self.ref_fx * self.trn_ccy_acc_hist_fx
+            self.pl_fixed_mul = self.ref_fx * self.trn_ccy_acc_hist_fx
 
             # full / closed ----------------------------------------------------
             self.principal_closed_res = self.principal_res * self.multiplier
@@ -496,26 +499,31 @@ class VirtualTransaction(BaseReportItem):
             self.overheads_fx_opened_res = self.overheads_fx_res * (1.0 - self.multiplier)
             self.total_fx_opened_res = self.total_fx_res * (1.0 - self.multiplier)
 
-            # fixed ----------------------------------------------------
-            self.principal_fixed_res = self.principal * self.pl_fixed_mul
-            self.carry_fixed_res = self.carry * self.pl_fixed_mul
-            self.overheads_fixed_res = self.overheads * self.pl_fixed_mul
-            self.total_fixed_res = self.total * self.pl_fixed_mul
+            if self.trn_cls.id in [TransactionClass.FX_TRADE]:
+                pass
+            else:
+                # fixed ----------------------------------------------------
+                self.principal_fixed_res = self.principal * self.pl_fixed_mul
+                self.carry_fixed_res = self.carry * self.pl_fixed_mul
+                self.overheads_fixed_res = self.overheads * self.pl_fixed_mul
+                self.total_fixed_res = self.total * self.pl_fixed_mul
 
-            # fixed / closed ----------------------------------------------------
-            self.principal_fixed_closed_res = self.principal_fixed_res * self.multiplier
-            self.carry_fixed_closed_res = self.carry_fixed_res * self.multiplier
-            self.overheads_fixed_closed_res = self.overheads_fixed_res * self.multiplier
-            self.total_fixed_closed_res = self.total_fixed_res * self.multiplier
+                # fixed / closed ----------------------------------------------------
+                self.principal_fixed_closed_res = self.principal_fixed_res * self.multiplier
+                self.carry_fixed_closed_res = self.carry_fixed_res * self.multiplier
+                self.overheads_fixed_closed_res = self.overheads_fixed_res * self.multiplier
+                self.total_fixed_closed_res = self.total_fixed_res * self.multiplier
 
-            # fixed / opened ----------------------------------------------------
-            self.principal_fixed_opened_res = self.principal_fixed_res * (1.0 - self.multiplier)
-            self.carry_fixed_opened_res = self.carry_fixed_res * (1.0 - self.multiplier)
-            self.overheads_fixed_opened_res = self.overheads_fixed_res * (1.0 - self.multiplier)
-            self.total_fixed_opened_res = self.total_fixed_res * (1.0 - self.multiplier)
+                # fixed / opened ----------------------------------------------------
+                self.principal_fixed_opened_res = self.principal_fixed_res * (1.0 - self.multiplier)
+                self.carry_fixed_opened_res = self.carry_fixed_res * (1.0 - self.multiplier)
+                self.overheads_fixed_opened_res = self.overheads_fixed_res * (1.0 - self.multiplier)
+                self.total_fixed_opened_res = self.total_fixed_res * (1.0 - self.multiplier)
 
             # ----------------------------------------------------
-            if not self.is_cloned:
+            if not self.is_cloned and self.instr:
+
+                # if not isclose(self.pos_size, 0.0):
                 try:
                     self.gross_cost_res = self.principal_res * self.ref_fx * \
                                           (self.trn_ccy_cur_fx / self.instr_pricing_ccy_cur_fx) * \

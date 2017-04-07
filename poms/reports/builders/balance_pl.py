@@ -336,8 +336,9 @@ class ReportBuilder(object):
 
         qs = qs.order_by(self.instance.date_field, 'transaction_code', 'id')
 
-        from poms.transactions.filters import TransactionObjectPermissionFilter
-        qs = TransactionObjectPermissionFilter.filter_qs(qs, self.instance.master_user, self.instance.member)
+        if self.instance.member is not None:
+            from poms.transactions.filters import TransactionObjectPermissionFilter
+            qs = TransactionObjectPermissionFilter.filter_qs(qs, self.instance.master_user, self.instance.member)
 
         return qs
 
@@ -506,7 +507,11 @@ class ReportBuilder(object):
         # balances = Counter()
         for t in self._transactions:
             if t.trn_cls.id in [TransactionClass.TRANSACTION_PL, TransactionClass.FX_TRADE]:
-                self.multiplier = 1.0
+                t.multiplier = 1.0
+
+            if t.trn_cls.id in [TransactionClass.INSTRUMENT_PL]:
+                # TODO: remove after new algo
+                t.multiplier = 1.0
 
             elif t.trn_cls.id in [TransactionClass.BUY, TransactionClass.SELL]:
                 if t.instr and t.instr.instrument_type.instrument_class_id == InstrumentClass.CONTRACT_FOR_DIFFERENCE:
