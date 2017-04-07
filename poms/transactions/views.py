@@ -805,8 +805,6 @@ class TransactionViewSet(AbstractModelViewSet):
     ]
 
     def perform_update(self, serializer):
-        if serializer.is_locked:
-            raise PermissionDenied()
         super(TransactionViewSet, self).perform_update(serializer)
         serializer.instance.calc_cash_by_formulas()
 

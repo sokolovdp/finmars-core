@@ -1369,7 +1369,7 @@ class TransactionTypeProcessSerializer(serializers.Serializer):
         instance.complex_transaction.inputs.all().delete()
 
         for ti in instance.transaction_type.inputs.all():
-            val = instance.values[ti.name]
+            val = instance.values.get(ti.name, None)
 
             ci = ComplexTransactionInput()
             ci.complex_transaction = instance.complex_transaction
