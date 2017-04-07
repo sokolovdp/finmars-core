@@ -464,8 +464,10 @@ class VirtualTransaction(BaseReportItem):
             self.overheads_res = self.overheads * self.stl_ccy_cur_fx
             self.total_res = self.total * self.stl_ccy_cur_fx
 
-            self.pl_fx_mul = self.stl_ccy_cur_fx - self.ref_fx * self.trn_ccy_cash_hist_fx
-            self.pl_fixed_mul = self.ref_fx * self.trn_ccy_cash_hist_fx
+            # self.pl_fx_mul = self.stl_ccy_cur_fx - self.ref_fx * self.trn_ccy_cash_hist_fx
+            # self.pl_fixed_mul = self.ref_fx * self.trn_ccy_cash_hist_fx
+            self.pl_fx_mul = self.stl_ccy_cur_fx - self.ref_fx * self.trn_ccy_acc_hist_fx
+            self.pl_fixed_mul = self.ref_fx * self.trn_ccy_acc_hist_fx
 
             # full / closed ----------------------------------------------------
             self.principal_closed_res = self.principal_res * self.multiplier

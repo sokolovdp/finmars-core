@@ -2583,14 +2583,14 @@ class ReportTestCase(TestCase):
             trn=os.path.join(base_path, 'td_1_transactions.csv')
         )
         # Transaction.objects.filter(master_user=self.m).exclude(transaction_class_id=TransactionClass.TRANSACTION_PL).delete()
-        # Transaction.objects.filter(master_user=self.m).exclude(transaction_code__in=[7853, ]).delete()
+        # Transaction.objects.filter(master_user=self.m).exclude(transaction_code__in=[7859, 7860]).delete()
 
         cost_method = self._avco
 
         report_dates = [
-            date(2017, 3, 10),  # 1,  2,  3
+            # date(2017, 3, 10),  # 1,  2,  3
             # date(2017, 3, 15),  # 4,  5,  6
-            # date(2017, 3, 25),  # 7,  8,  9
+            date(2017, 3, 25),  # 7,  8,  9
             # date(2017, 3, 28),  # 10, 11, 12
         ]
         report_currencies = [
