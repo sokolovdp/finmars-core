@@ -160,10 +160,14 @@ class CashFlowProjectionReportBuilder(TransactionReportBuilder):
                 elif t.transaction_class_id in [TransactionClass.TRANSFER]:
                     raise RuntimeError('implement me please')
 
-        # remove items with position_size_with_sign close to zerop
+        # remove items with position_size_with_sign close to zero
+        rolling_items_to_remove = set()
         for key, ritem in self._rolling_items.items():
             if isclose(ritem.position_size_with_sign, 0.0):
-                del self._rolling_items[key]
+                rolling_items_to_remove.add(key)
+                # del self._rolling_items[key]
+        for key in rolling_items_to_remove:
+            del self._rolling_items[key]
 
         for k, bitem in self._balance_items.items():
             self._items.append(bitem)
