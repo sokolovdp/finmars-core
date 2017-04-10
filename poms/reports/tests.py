@@ -2590,8 +2590,8 @@ class ReportTestCase(TestCase):
         report_dates = [
             # date(2017, 3, 10),  # 1,  2,  3
             # date(2017, 3, 15),  # 4,  5,  6
-            date(2017, 3, 25),  # 7,  8,  9
-            # date(2017, 3, 28),  # 10, 11, 12
+            # date(2017, 3, 25),  # 7,  8,  9
+            date(2017, 3, 28),  # 10, 11, 12
         ]
         report_currencies = [
             Currency.objects.get(master_user=self.m, user_code='USD'),  # 1, 4, 7, 10

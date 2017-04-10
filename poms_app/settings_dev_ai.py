@@ -23,8 +23,8 @@ if 'redisboard' not in INSTALLED_APPS:
 LOGGING['formatters']['verbose']['format'] = '[%(levelname)1.1s %(asctime)s %(name)s %(module)s:%(lineno)d] %(message)s'
 LOGGING['formatters']['verbose']['format'] = '%(message)s'
 # LOGGING['loggers']['django.db'] = {'level': 'DEBUG'}
-# LOGGING['loggers']['poms']['level'] = 'DEBUG'
-LOGGING['loggers']['poms']['level'] = 'INFO'
+LOGGING['loggers']['poms']['level'] = 'DEBUG'
+# LOGGING['loggers']['poms']['level'] = 'INFO'
 
 SECRET_KEY = 's#)m^ug%_jr0dtko#83_55rd_we&xu#f9p#!1gh@k&$=5&3e67'
 
@@ -60,8 +60,8 @@ REST_FRAMEWORK['DEFAULT_AUTHENTICATION_CLASSES'] = (
 # CELERY ------------------------------------------------
 
 CELERY_WORKER_CONCURRENCY = 1
-CELERY_TASK_ALWAYS_EAGER = True
-CELERY_TASK_EAGER_PROPAGATES = True
+# CELERY_TASK_ALWAYS_EAGER = True
+# CELERY_TASK_EAGER_PROPAGATES = True
 # CELERY_WORKER_LOG_FORMAT = LOGGING['formatters']['verbose']['format']
 # CELERY_RESULT_EXPIRES = 60
 CELERY_BEAT_SCHEDULE = {
