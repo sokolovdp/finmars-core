@@ -62,6 +62,9 @@ def transaction_report(instance):
             builder = TransactionReportBuilder(instance)
             builder.build()
             return builder.instance
+        except:
+            _l.error('transaction report failed', exc_info=True)
+            raise
         finally:
             transaction.set_rollback(True)
             _l.debug('transaction_report: <')
@@ -75,6 +78,9 @@ def cash_flow_projection_report(instance):
             builder = CashFlowProjectionReportBuilder(instance)
             builder.build()
             return builder.instance
+        except:
+            _l.error('cash flow projection report failed', exc_info=True)
+            raise
         finally:
             transaction.set_rollback(True)
             _l.debug('cash_flow_projection_report: <')
