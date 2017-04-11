@@ -601,31 +601,35 @@ class ReportItem(BaseReportItem):
             item.str1 = str1 or trn.str1_cash
             item.str2 = str2 or trn.str2_cash
             item.str3 = str3 or trn.str3_cash
-            item.ccy = ccy
-            item.trn_ccy = trn_ccy
+            # item.ccy = ccy
+            item.ccy = None
+            # item.trn_ccy = trn_ccy
+            item.trn_ccy = None
             item.notes = trn.notes
-
-            item.pricing_ccy = trn.report.master_user.system_currency
+            # item.pricing_ccy = trn.report.master_user.system_currency
+            item.pricing_ccy = None
 
         elif item.type == ReportItem.TYPE_CASH_IN_OUT:
             item.acc = acc or trn.acc_cash
             item.str1 = str1 or trn.str1_cash
             item.str2 = str2 or trn.str2_cash
             item.str3 = str3 or trn.str3_cash
-            item.ccy = ccy
+            # item.ccy = ccy
+            item.ccy = None
             item.notes = trn.notes
-
-            item.pricing_ccy = trn.report.master_user.system_currency
+            # item.pricing_ccy = trn.report.master_user.system_currency
+            item.pricing_ccy = None
 
         elif item.type == ReportItem.TYPE_TRANSACTION_PL:
             item.acc = acc or trn.acc_cash
             item.str1 = str1 or trn.str1_cash
             item.str2 = str2 or trn.str2_cash
             item.str3 = str3 or trn.str3_cash
-            item.ccy = ccy or trn.stl_ccy
+            # item.ccy = ccy or trn.stl_ccy
+            item.ccy = None
             item.notes = trn.notes
-
-            item.pricing_ccy = trn.report.master_user.system_currency
+            # item.pricing_ccy = trn.report.master_user.system_currency
+            item.pricing_ccy = None
 
             # item.principal_res = trn.principal_res
             # item.carry_res = trn.carry_res
