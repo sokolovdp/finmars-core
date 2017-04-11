@@ -811,10 +811,11 @@ class ReportBuilder(object):
             elif trn.trn_cls.id == TransactionClass.TRANSACTION_PL:
                 self._add_cash(trn, val=trn.cash, ccy=trn.stl_ccy)
 
-                item = ReportItem.from_trn(self.instance, self.pricing_provider, self.fx_rate_provider,
-                                           ReportItem.TYPE_TRANSACTION_PL, trn, acc=trn.acc_pos,
-                                           str1=trn.str1_pos, str2=trn.str2_pos, str3=trn.str3_pos)
-                self._items.append(item)
+                if trn.case in [0, 1]:
+                    item = ReportItem.from_trn(self.instance, self.pricing_provider, self.fx_rate_provider,
+                                               ReportItem.TYPE_TRANSACTION_PL, trn, acc=trn.acc_pos,
+                                               str1=trn.str1_pos, str2=trn.str2_pos, str3=trn.str3_pos)
+                    self._items.append(item)
 
             elif trn.trn_cls.id == TransactionClass.FX_TRADE:
                 # TODO: Что используем для strategy?
@@ -823,11 +824,12 @@ class ReportBuilder(object):
                 # self._add_cash(trn, val=trn.cash, ccy=trn.stl_ccy)
 
                 # P&L
-                item = ReportItem.from_trn(self.instance, self.pricing_provider, self.fx_rate_provider,
-                                           ReportItem.TYPE_FX_TRADE, trn, acc=trn.acc_pos,
-                                           str1=trn.str1_pos, str2=trn.str2_pos, str3=trn.str3_pos,
-                                           ccy=trn.trn.settlement_currency, trn_ccy=trn.trn_ccy)
-                self._items.append(item)
+                if trn.case in [0, 1]:
+                    item = ReportItem.from_trn(self.instance, self.pricing_provider, self.fx_rate_provider,
+                                               ReportItem.TYPE_FX_TRADE, trn, acc=trn.acc_pos,
+                                               str1=trn.str1_pos, str2=trn.str2_pos, str3=trn.str3_pos,
+                                               ccy=trn.trn.settlement_currency, trn_ccy=trn.trn_ccy)
+                    self._items.append(item)
 
             elif trn.trn_cls.id == TransactionClass.TRANSFER:
                 # raise RuntimeError('Virtual transaction must be created')
