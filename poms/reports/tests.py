@@ -1230,7 +1230,10 @@ class ReportTestCase(TestCase):
         if isinstance(trns, (list, tuple)):
             queryset = Transaction.objects.filter(pk__in=[int(t) if isinstance(t, int) else t.id for t in trns])
         b = ReportBuilder(instance=r, queryset=queryset)
-        b.build()
+        if r.report_type == Report.TYPE_BALANCE:
+            b.build_balance(full=True)
+        elif r.report_type == Report.TYPE_PL:
+            b.build_pl(full=True)
 
         # mode_names = {
         #     Report.MODE_IGNORE: 'IGNORE_________',
@@ -1241,6 +1244,7 @@ class ReportTestCase(TestCase):
         name_parts = [
             '%s' % r.report_date,
             '%s' % r.report_currency,
+            '%s' % r.report_type_str,
             # 'prtfl_%s' % mode_names[r.portfolio_mode],
             # 'acc_%s' % mode_names[r.account_mode],
             # 'str1_%s' % mode_names[r.strategy1_mode],
@@ -1972,14 +1976,14 @@ class ReportTestCase(TestCase):
                    cost_method=self._avco,
                    account_mode=Report.MODE_IGNORE)
         b = ReportBuilder(instance=r)
-        b.build()
+        b.build_balance()
         self._dump(b, 'test_avco_acc_0: IGNORE')
 
         r = Report(master_user=self.m, pricing_policy=self.pp, report_date=self._d(14),
                    cost_method=self._avco,
                    account_mode=Report.MODE_INDEPENDENT)
         b = ReportBuilder(instance=r)
-        b.build()
+        b.build_balance()
         self._dump(b, 'test_avco_acc_0: INDEPENDENT')
 
     def _test_avco_str1_0(self):
@@ -2008,14 +2012,14 @@ class ReportTestCase(TestCase):
                    cost_method=self._avco,
                    strategy1_mode=Report.MODE_INDEPENDENT)
         b = ReportBuilder(instance=r)
-        b.build()
+        b.build_balance()
         self._dump(b, 'test_avco_str1_0: NON_OFFSETTING')
 
         r = Report(master_user=self.m, pricing_policy=self.pp, report_date=self._d(14),
                    cost_method=self._avco,
                    strategy1_mode=Report.MODE_INTERDEPENDENT)
         b = ReportBuilder(instance=r)
-        b.build()
+        b.build_balance()
         self._dump(b, 'test_avco_str1_0: OFFSETTING')
 
     def _test_pl_0(self):
@@ -2107,7 +2111,7 @@ class ReportTestCase(TestCase):
         # r = Report(master_user=self.m, pricing_policy=self.pp, report_date=self._d(104), report_currency=self.cad,
         #            cost_method=self._avco, approach_multiplier=1.0)
         # b = ReportBuilder(instance=r)
-        # b.build()
+        # b.build_balance()
         # self._dump(b, 'test_pl_full_fx_fixed_buy_sell_1', trn_cols=self.TRN_COLS_ALL, item_cols=self.ITEM_COLS_ALL)
         trn_cols = self.TRN_COLS_ALL
         item_cols = self.ITEM_COLS_ALL
@@ -2153,7 +2157,7 @@ class ReportTestCase(TestCase):
         # r = Report(master_user=self.m, pricing_policy=self.pp, report_date=self._d(104), report_currency=self.cad,
         #            cost_method=self._avco)
         # b = ReportBuilder(instance=r)
-        # b.build()
+        # b.build_balance()
         # self._dump(b, 'test_pl_full_fx_fixed_cash_in_out_1')
         trn_cols = self.TRN_COLS_ALL
         item_cols = self.ITEM_COLS_ALL
@@ -2333,7 +2337,7 @@ class ReportTestCase(TestCase):
 
         r = Report(master_user=self.m, pricing_policy=self.pp, report_date=self._d(14))
         b = ReportBuilder(instance=r)
-        b.build()
+        b.build_balance()
         self._dump(b, 'test_mismatch_0')
 
     def _test_approach_alloc_0(self):
@@ -2367,7 +2371,7 @@ class ReportTestCase(TestCase):
         r = Report(master_user=self.m, pricing_policy=self.pp, report_date=self._d(10),
                    approach_multiplier=1.0)
         b = ReportBuilder(instance=r)
-        b.build()
+        b.build_balance()
         self._dump(b, 'test_approach_alloc_0')
 
     def _test_approach_alloc_1(self):
@@ -2398,7 +2402,7 @@ class ReportTestCase(TestCase):
         r = Report(master_user=self.m, pricing_policy=self.pp, report_date=self._d(0),
                    approach_multiplier=1.0)
         b = ReportBuilder(instance=r)
-        b.build()
+        b.build_balance()
         self._dump(b, 'test_approach_alloc_1')
 
     def _test_approach_str1_0(self):
@@ -2436,14 +2440,14 @@ class ReportTestCase(TestCase):
                    approach_multiplier=approach_multiplier,
                    strategy1_mode=Report.MODE_INDEPENDENT)
         b = ReportBuilder(instance=r)
-        b.build()
+        b.build_balance()
         self._dump(b, 'test_approach_str1_0: STRATEGY_INDEPENDENT')
 
         r = Report(master_user=self.m, pricing_policy=self.pp, report_date=self._d(0),
                    approach_multiplier=approach_multiplier,
                    strategy1_mode=Report.MODE_INTERDEPENDENT)
         b = ReportBuilder(instance=r)
-        b.build()
+        b.build_balance()
         self._dump(b, 'test_approach_str1_0: STRATEGY_INTERDEPENDENT')
 
     def _test_instr_contract_for_difference(self):
@@ -2560,17 +2564,17 @@ class ReportTestCase(TestCase):
 
         r = Report(master_user=self.m, pricing_policy=self.pp, report_date=pl_first_date)
         b = ReportBuilder(instance=r)
-        b.build()
+        b.build_balance()
         self._dump(b, 'test_pl_date_interval_1: pl_first_date', show_trns=show_trns)
 
         r = Report(master_user=self.m, pricing_policy=self.pp, report_date=report_date)
         b = ReportBuilder(instance=r)
-        b.build()
+        b.build_balance()
         self._dump(b, 'test_pl_date_interval_1: report_date', show_trns=show_trns)
 
         r = Report(master_user=self.m, pricing_policy=self.pp, pl_first_date=pl_first_date, report_date=report_date)
         b = ReportBuilder(instance=r)
-        b.build()
+        b.build_balance()
         self._dump(b, 'test_pl_date_interval_1: pl_first_date abd report_date', show_trns=show_trns)
 
     def test_from_csv_td_1(self):
@@ -2588,10 +2592,10 @@ class ReportTestCase(TestCase):
         cost_method = self._avco
 
         report_dates = [
-            # date(2017, 3, 10),  # 1,  2,  3
+            date(2017, 3, 10),  # 1,  2,  3
             # date(2017, 3, 15),  # 4,  5,  6
             # date(2017, 3, 25),  # 7,  8,  9
-            date(2017, 3, 28),  # 10, 11, 12
+            # date(2017, 3, 28),  # 10, 11, 12
         ]
         report_currencies = [
             Currency.objects.get(master_user=self.m, user_code='USD'),  # 1, 4, 7, 10
@@ -2651,7 +2655,7 @@ class ReportTestCase(TestCase):
             'total_fixed_opened_loc'
         ]
 
-        trn_cols = self.TRN_COLS_ALL
+        # trn_cols = self.TRN_COLS_ALL
 
         # trn_cols = [x for x in trn_cols if x not in
         #             {'rolling_pos_size', 'remaining_pos_size', 'remaining_pos_size_percent', 'trn_date', 'str2_pos',

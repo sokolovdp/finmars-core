@@ -3,6 +3,7 @@ import logging
 from celery import shared_task
 from django.db import transaction
 
+from poms.reports.builders.balance_item import Report
 from poms.reports.builders.balance_pl import ReportBuilder
 from poms.reports.builders.cash_flow_projection import CashFlowProjectionReportBuilder
 from poms.reports.builders.transaction import TransactionReportBuilder
@@ -25,8 +26,6 @@ def balance_report(instance):
     _l.debug('balance_report: %s', instance)
     with transaction.atomic():
         try:
-            instance.pl_first_date = None
-
             builder = ReportBuilder(instance=instance)
             instance = builder.build_balance()
             return instance

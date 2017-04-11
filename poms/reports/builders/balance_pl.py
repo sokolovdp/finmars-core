@@ -49,6 +49,8 @@ class ReportBuilder(object):
         st = time.perf_counter()
         _l.debug('build balance report: %s', self.instance)
 
+        self.instance.report_type = Report.TYPE_BALANCE
+        self.instance.pl_first_date = None
         res = self.build(full=full)
 
         _l.debug('done: %s', (time.perf_counter() - st))
@@ -58,6 +60,7 @@ class ReportBuilder(object):
         st = time.perf_counter()
         _l.debug('build pl report: %s', self.instance)
 
+        self.instance.report_type = Report.TYPE_PL
         self.build(full=full)
 
         # items = []
@@ -750,15 +753,15 @@ class ReportBuilder(object):
 
         instr = t.instr
 
-        if self.instance.alloc_mode == Report.MODE_INDEPENDENT:
-            alloc_bl = t.alloc_bl
-        else:
-            alloc_bl = None
-
-        if self.instance.alloc_mode == Report.MODE_INDEPENDENT:
-            alloc_pl = t.alloc_pl
-        else:
-            alloc_pl = None
+        # if self.instance.alloc_mode == Report.MODE_INDEPENDENT:
+        #     alloc_bl = t.alloc_bl
+        # else:
+        #     alloc_bl = None
+        #
+        # if self.instance.alloc_mode == Report.MODE_INDEPENDENT:
+        #     alloc_pl = t.alloc_pl
+        # else:
+        #     alloc_pl = None
 
         return (
             # getattr(t.prtfl, 'id', None) if self.instance.portfolio_mode == Report.MODE_INDEPENDENT else None,
@@ -877,8 +880,9 @@ class ReportBuilder(object):
             getattr(item.str2, 'id', -1),
             getattr(item.str3, 'id', -1),
             getattr(item.instr, 'id', -1),
-            getattr(item.alloc_bl, 'id', -1),
-            getattr(item.alloc_pl, 'id', -1),
+            getattr(item.alloc, 'id', -1),
+            # getattr(item.alloc_bl, 'id', -1),
+            # getattr(item.alloc_pl, 'id', -1),
             getattr(item.ccy, 'id', -1),
             getattr(item.trn_ccy, 'id', -1),
             getattr(item.detail_trn, 'id', -1),
@@ -903,8 +907,9 @@ class ReportBuilder(object):
                 getattr(trn.str1_pos, 'id', -1),
                 getattr(trn.str2_pos, 'id', -1),
                 getattr(trn.str3_pos, 'id', -1),
-                getattr(trn.alloc_bl, 'id', -1),
-                getattr(trn.alloc_pl, 'id', -1),
+                getattr(trn.alloc, 'id', -1),
+                # getattr(trn.alloc_bl, 'id', -1),
+                # getattr(trn.alloc_pl, 'id', -1),
                 getattr(trn.instr, 'id', -1),
                 # getattr(trn.ccy, 'id', -1),
                 # getattr(trn.trn_ccy, 'id', -1),
@@ -916,8 +921,9 @@ class ReportBuilder(object):
                 getattr(item.str1, 'id', -1),
                 getattr(item.str2, 'id', -1),
                 getattr(item.str3, 'id', -1),
-                getattr(item.alloc_bl, 'id', -1),
-                getattr(item.alloc_pl, 'id', -1),
+                getattr(item.alloc, 'id', -1),
+                # getattr(item.alloc_bl, 'id', -1),
+                # getattr(item.alloc_pl, 'id', -1),
                 getattr(item.instr, 'id', -1),
                 # getattr(item.ccy, 'id', -1),
                 # getattr(item.trn_ccy, 'id', -1),
@@ -966,8 +972,9 @@ class ReportBuilder(object):
                 getattr(item.str1, 'id', -1),
                 getattr(item.str2, 'id', -1),
                 getattr(item.str3, 'id', -1),
-                getattr(item.alloc_bl, 'id', -1),
-                getattr(item.alloc_pl, 'id', -1),
+                getattr(item.alloc, 'id', -1),
+                # getattr(item.alloc_bl, 'id', -1),
+                # getattr(item.alloc_pl, 'id', -1),
                 getattr(item.instr, 'id', -1),
                 getattr(item.ccy, 'id', -1),
                 getattr(item.trn_ccy, 'id', -1),
@@ -998,6 +1005,7 @@ class ReportBuilder(object):
                 item_rpd.str3 = item_plsd.str3
                 item_rpd.pricing_ccy = item_plsd.pricing_ccy
                 item_rpd.trn = item_plsd.trn
+                item_rpd.alloc = item_plsd.alloc
                 item_rpd.alloc_bl = item_plsd.alloc_bl
                 item_rpd.alloc_pl = item_plsd.alloc_pl
                 item_rpd.mismatch_prtfl = item_plsd.mismatch_prtfl
@@ -1170,19 +1178,26 @@ class ReportBuilder(object):
             if i.mismatch_acc:
                 accs.add(i.mismatch_acc.id)
 
-            if i.alloc_bl:
-                instrs.add(i.alloc_bl.id)
-                if i.alloc_bl.pricing_currency_id:
-                    ccys.add(i.alloc_bl.pricing_currency_id)
-                if i.alloc_bl.accrued_currency_id:
-                    ccys.add(i.alloc_bl.accrued_currency_id)
+            if i.alloc:
+                instrs.add(i.alloc.id)
+                if i.alloc.pricing_currency_id:
+                    ccys.add(i.alloc.pricing_currency_id)
+                if i.alloc.accrued_currency_id:
+                    ccys.add(i.alloc.accrued_currency_id)
 
-            if i.alloc_pl:
-                instrs.add(i.alloc_pl.id)
-                if i.alloc_pl.pricing_currency_id:
-                    ccys.add(i.alloc_pl.pricing_currency_id)
-                if i.alloc_pl.accrued_currency_id:
-                    ccys.add(i.alloc_pl.accrued_currency_id)
+            # if i.alloc_bl:
+            #     instrs.add(i.alloc_bl.id)
+            #     if i.alloc_bl.pricing_currency_id:
+            #         ccys.add(i.alloc_bl.pricing_currency_id)
+            #     if i.alloc_bl.accrued_currency_id:
+            #         ccys.add(i.alloc_bl.accrued_currency_id)
+            #
+            # if i.alloc_pl:
+            #     instrs.add(i.alloc_pl.id)
+            #     if i.alloc_pl.pricing_currency_id:
+            #         ccys.add(i.alloc_pl.pricing_currency_id)
+            #     if i.alloc_pl.accrued_currency_id:
+            #         ccys.add(i.alloc_pl.accrued_currency_id)
 
         instrs = Instrument.objects.filter(master_user=self.instance.master_user).prefetch_related(
             'master_user',
@@ -1306,16 +1321,24 @@ class ReportBuilder(object):
             if i.mismatch_acc:
                 i.mismatch_acc = accs[i.mismatch_acc.id]
 
-            if i.alloc_bl:
-                i.alloc_bl = instrs[i.alloc_bl.id]
-                if i.alloc_bl.pricing_currency_id:
-                    i.alloc_bl.pricing_currency = ccys[i.alloc_bl.pricing_currency_id]
-                if i.alloc_bl.accrued_currency_id:
-                    i.alloc_bl.accrued_currency = ccys[i.alloc_bl.accrued_currency_id]
+            if i.alloc:
+                i.alloc = instrs[i.alloc.id]
+                if i.alloc.pricing_currency_id:
+                    i.alloc.pricing_currency = ccys[i.alloc.pricing_currency_id]
+                if i.alloc.accrued_currency_id:
+                    i.alloc.accrued_currency = ccys[i.alloc.accrued_currency_id]
 
-            if i.alloc_pl:
-                i.alloc_pl = instrs[i.alloc_pl.id]
-                if i.alloc_pl.pricing_currency_id:
-                    i.alloc_pl.pricing_currency = ccys[i.alloc_pl.pricing_currency_id]
-                if i.alloc_pl.accrued_currency_id:
-                    i.alloc_pl.accrued_currency = ccys[i.alloc_pl.accrued_currency_id]
+            # if i.alloc_bl:
+            #     i.alloc_bl = instrs[i.alloc_bl.id]
+            #     if i.alloc_bl.pricing_currency_id:
+            #         i.alloc_bl.pricing_currency = ccys[i.alloc_bl.pricing_currency_id]
+            #     if i.alloc_bl.accrued_currency_id:
+            #         i.alloc_bl.accrued_currency = ccys[i.alloc_bl.accrued_currency_id]
+            #
+            # if i.alloc_pl:
+            #     i.alloc_pl = instrs[i.alloc_pl.id]
+            #     if i.alloc_pl.pricing_currency_id:
+            #         i.alloc_pl.pricing_currency = ccys[i.alloc_pl.pricing_currency_id]
+            #     if i.alloc_pl.accrued_currency_id:
+            #         i.alloc_pl.accrued_currency = ccys[i.alloc_pl.accrued_currency_id]
+            pass

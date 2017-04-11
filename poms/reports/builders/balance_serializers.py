@@ -64,8 +64,9 @@ class ReportItemSerializer(serializers.Serializer):
 
     # allocations ----------------------------------------------------
 
-    allocation_balance = serializers.PrimaryKeyRelatedField(source='alloc_bl', read_only=True)
-    allocation_pl = serializers.PrimaryKeyRelatedField(source='alloc_pl', read_only=True)
+    allocation = serializers.PrimaryKeyRelatedField(source='alloc', read_only=True)
+    # allocation_balance = serializers.PrimaryKeyRelatedField(source='alloc_bl', read_only=True)
+    # allocation_pl = serializers.PrimaryKeyRelatedField(source='alloc_pl', read_only=True)
 
     # mismatches ----------------------------------------------------
 
@@ -247,8 +248,10 @@ class ReportItemSerializer(serializers.Serializer):
     transaction_currency_object = ReportCurrencySerializer(source='trn_ccy', read_only=True)
     pricing_currency_object = ReportCurrencySerializer(source='pricing_ccy', read_only=True)
 
-    allocation_balance_object = ReportInstrumentSerializer(source='alloc_bl', read_only=True)
-    allocation_pl_object = ReportInstrumentSerializer(source='alloc_pl', read_only=True)
+    allocation_object = ReportInstrumentSerializer(source='alloc', read_only=True)
+    # allocation_balance_object = ReportInstrumentSerializer(source='alloc_bl', read_only=True)
+    # allocation_pl_object = ReportInstrumentSerializer(source='alloc_pl', read_only=True)
+
     mismatch_portfolio_object = ReportPortfolioSerializer(source='mismatch_prtfl', read_only=True)
     mismatch_account_object = ReportAccountSerializer(source='mismatch_acc', read_only=True)
 
@@ -342,6 +345,7 @@ class ReportSerializer(serializers.Serializer):
     pricing_policy = PricingPolicyField()
     pl_first_date = serializers.DateField(required=False, allow_null=True,
                                           help_text=ugettext_lazy('First date for pl report'))
+    report_type = serializers.ChoiceField(read_only=True, choices=Report.TYPE_CHOICES)
     report_date = serializers.DateField(required=False, allow_null=True, default=date_now,
                                         help_text=ugettext_lazy('Report date or second date for pl report'))
     report_currency = CurrencyField(required=False, allow_null=True, default=SystemCurrencyDefault())
