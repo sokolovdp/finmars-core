@@ -1,6 +1,6 @@
 import logging
-
 from datetime import timedelta
+
 from django.utils.translation import ugettext_lazy, ugettext
 
 from poms.common import formula
@@ -871,7 +871,7 @@ class ReportItem(BaseReportItem):
                 self.pos_return_res = 0
             try:
                 self.net_pos_return_res = (
-                                          self.principal_opened_res + self.carry_opened_res + self.overheads_opened_res) / self.principal_invested_res
+                                              self.principal_opened_res + self.carry_opened_res + self.overheads_opened_res) / self.principal_invested_res
             except ArithmeticError:
                 self.net_pos_return_res = 0.0
 
@@ -893,44 +893,44 @@ class ReportItem(BaseReportItem):
 
                 self.modified_duration = f_duration(future_accrual_payments, ytm=self.ytm)
 
-            # self.time_invested = self.time_invested_days / 365.0
-            #
-            # if self.time_invested_days < 1.0 or isclose(self.time_invested_days, 1.0):
-            #     # T - report date
-            #     #  = (Current Price - Gross Cost Price) / Gross Cost Price, if Time Invested in days= 1 day
-            #     # self.pricing()
-            #     try:
-            #         self.daily_price_change = (
-            #                                   self.instr_price_cur_principal_price - self.gross_cost_loc) / self.gross_cost_loc
-            #     except ArithmeticError:
-            #         self.daily_price_change = 0.0
-            # else:
-            #     #  = (Current Price at T -  Price from Price History at T-1) / (Price from Price History at T-1) , if Time Invested > 1 day
-            #     price_yest = self.pricing_provider[self.instr, self.report.report_date - timedelta(days=1)]
-            #     try:
-            #         self.daily_price_change = (
-            #                                   self.instr_price_cur_principal_price - price_yest.principal_price) / price_yest.principal_price
-            #     except ArithmeticError:
-            #         self.daily_price_change = 0.0
-            #
-            # if self.time_invested_days <= self.report.report_date.day or isclose(self.time_invested_days,
-            #                                                                      self.report.report_date.day):
-            #     # T - report date
-            #     #  = (Current Price - Gross Cost Price) / Gross Cost Price, if Time Invested in days <= Day(Report Date)
-            #     try:
-            #         self.mtd_price_change = (
-            #                                 self.instr_price_cur_principal_price - self.gross_cost_loc) / self.gross_cost_loc
-            #     except ArithmeticError:
-            #         self.mtd_price_change = 0.0
-            # else:
-            #     #  = (Current Price -  Price from Price History at end_of_previous_month (Report Date)) / (Price from Price History at end_of_previous_month (Report Date)) , if Time Invested > Day(Report Date)
-            #     price_eom = self.pricing_provider[
-            #         self.instr, self.report.report_date - timedelta(days=self.report.report_date.day)]
-            #     try:
-            #         self.mtd_price_change = (
-            #                                 self.instr_price_cur_principal_price - price_eom.principal_price) / price_eom.principal_price
-            #     except ArithmeticError:
-            #         self.mtd_price_change = 0.0
+                # self.time_invested = self.time_invested_days / 365.0
+                #
+                # if self.time_invested_days < 1.0 or isclose(self.time_invested_days, 1.0):
+                #     # T - report date
+                #     #  = (Current Price - Gross Cost Price) / Gross Cost Price, if Time Invested in days= 1 day
+                #     # self.pricing()
+                #     try:
+                #         self.daily_price_change = (
+                #                                   self.instr_price_cur_principal_price - self.gross_cost_loc) / self.gross_cost_loc
+                #     except ArithmeticError:
+                #         self.daily_price_change = 0.0
+                # else:
+                #     #  = (Current Price at T -  Price from Price History at T-1) / (Price from Price History at T-1) , if Time Invested > 1 day
+                #     price_yest = self.pricing_provider[self.instr, self.report.report_date - timedelta(days=1)]
+                #     try:
+                #         self.daily_price_change = (
+                #                                   self.instr_price_cur_principal_price - price_yest.principal_price) / price_yest.principal_price
+                #     except ArithmeticError:
+                #         self.daily_price_change = 0.0
+                #
+                # if self.time_invested_days <= self.report.report_date.day or isclose(self.time_invested_days,
+                #                                                                      self.report.report_date.day):
+                #     # T - report date
+                #     #  = (Current Price - Gross Cost Price) / Gross Cost Price, if Time Invested in days <= Day(Report Date)
+                #     try:
+                #         self.mtd_price_change = (
+                #                                 self.instr_price_cur_principal_price - self.gross_cost_loc) / self.gross_cost_loc
+                #     except ArithmeticError:
+                #         self.mtd_price_change = 0.0
+                # else:
+                #     #  = (Current Price -  Price from Price History at end_of_previous_month (Report Date)) / (Price from Price History at end_of_previous_month (Report Date)) , if Time Invested > Day(Report Date)
+                #     price_eom = self.pricing_provider[
+                #         self.instr, self.report.report_date - timedelta(days=self.report.report_date.day)]
+                #     try:
+                #         self.mtd_price_change = (
+                #                                 self.instr_price_cur_principal_price - price_eom.principal_price) / price_eom.principal_price
+                #     except ArithmeticError:
+                #         self.mtd_price_change = 0.0
 
         elif self.type == ReportItem.TYPE_MISMATCH:
             # self.market_value_res = self.pos_size * self.ccy_cur_fx
@@ -957,7 +957,9 @@ class ReportItem(BaseReportItem):
 
         self.market_value_loc = self.market_value_res * res_to_loc_fx
         self.exposure_loc = self.exposure_res * res_to_loc_fx
+        self.gross_cost_res = -self.gross_cost_res
         self.gross_cost_loc = self.gross_cost_res * res_to_loc_fx
+        self.net_cost_res = -self.net_cost_res
         self.net_cost_loc = self.net_cost_res * res_to_loc_fx
         self.principal_invested_loc = self.principal_invested_res * res_to_loc_fx
         self.amount_invested_loc = self.amount_invested_res * res_to_loc_fx
@@ -1031,14 +1033,16 @@ class ReportItem(BaseReportItem):
                 #  = (Current Price - Gross Cost Price) / Gross Cost Price, if Time Invested in days= 1 day
                 # self.pricing()
                 try:
-                    self.daily_price_change = (self.instr_price_cur_principal_price - self.gross_cost_loc) / self.gross_cost_loc
+                    self.daily_price_change = (
+                                              self.instr_price_cur_principal_price - self.gross_cost_loc) / self.gross_cost_loc
                 except ArithmeticError:
                     self.daily_price_change = 0.0
             else:
                 #  = (Current Price at T -  Price from Price History at T-1) / (Price from Price History at T-1) , if Time Invested > 1 day
                 price_yest = self.pricing_provider[self.instr, self.report.report_date - timedelta(days=1)]
                 try:
-                    self.daily_price_change = (self.instr_price_cur_principal_price - price_yest.principal_price) / price_yest.principal_price
+                    self.daily_price_change = (
+                                              self.instr_price_cur_principal_price - price_yest.principal_price) / price_yest.principal_price
                 except ArithmeticError:
                     self.daily_price_change = 0.0
 
@@ -1047,14 +1051,17 @@ class ReportItem(BaseReportItem):
                 # T - report date
                 #  = (Current Price - Gross Cost Price) / Gross Cost Price, if Time Invested in days <= Day(Report Date)
                 try:
-                    self.mtd_price_change = (self.instr_price_cur_principal_price - self.gross_cost_loc) / self.gross_cost_loc
+                    self.mtd_price_change = (
+                                            self.instr_price_cur_principal_price - self.gross_cost_loc) / self.gross_cost_loc
                 except ArithmeticError:
                     self.mtd_price_change = 0.0
             else:
                 #  = (Current Price -  Price from Price History at end_of_previous_month (Report Date)) / (Price from Price History at end_of_previous_month (Report Date)) , if Time Invested > Day(Report Date)
-                price_eom = self.pricing_provider[self.instr, self.report.report_date - timedelta(days=self.report.report_date.day)]
+                price_eom = self.pricing_provider[
+                    self.instr, self.report.report_date - timedelta(days=self.report.report_date.day)]
                 try:
-                    self.mtd_price_change = (self.instr_price_cur_principal_price - price_eom.principal_price) / price_eom.principal_price
+                    self.mtd_price_change = (
+                                            self.instr_price_cur_principal_price - price_eom.principal_price) / price_eom.principal_price
                 except ArithmeticError:
                     self.mtd_price_change = 0.0
 
