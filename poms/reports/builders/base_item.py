@@ -44,7 +44,7 @@ class BaseReportItem:
     def transpose(cls, columns, data, showindex=None):
         if showindex:
             ncols = ['I', 'attr']
-            nrows = [[i + 1, c] for i, c in enumerate(columns)]
+            nrows = [[str(i + 1), c] for i, c in enumerate(columns)]
         else:
             ncols = ['attr']
             nrows = [[c] for c in columns]

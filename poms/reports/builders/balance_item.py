@@ -1402,7 +1402,7 @@ class Report(object):
         }
         self.pricing_policy = pricing_policy
         self.pl_first_date = pl_first_date
-        self.report_type = report_type
+        self.report_type = report_type if report_type is not None else Report.TYPE_BALANCE
         self.report_date = report_date or (date_now() - timedelta(days=1))
         self.report_currency = report_currency or master_user.system_currency
         self.cost_method = cost_method or CostMethod.objects.get(pk=CostMethod.AVCO)
@@ -1436,6 +1436,14 @@ class Report(object):
     def close(self):
         for item in self.items:
             item.eval_custom_fields()
+
+    @property
+    def report_type_str(self):
+        if self.report_type == Report.TYPE_BALANCE:
+            return "BALANCE"
+        elif self.report_type == Report.TYPE_PL:
+            return "P&L"
+        return "<UNKNOWN>"
 
     @property
     def approach_begin_multiplier(self):
