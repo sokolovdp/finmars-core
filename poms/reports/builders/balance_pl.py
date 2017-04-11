@@ -982,6 +982,7 @@ class ReportBuilder(object):
                 getattr(item.instr, 'id', -1),
                 getattr(item.ccy, 'id', -1),
                 getattr(item.trn_ccy, 'id', -1),
+                item.notes,
                 getattr(item.detail_trn, 'id', -1),
             )
 
@@ -1007,6 +1008,7 @@ class ReportBuilder(object):
                 item_rpd.str1 = item_plsd.str1
                 item_rpd.str2 = item_plsd.str2
                 item_rpd.str3 = item_plsd.str3
+                item_rpd.notes = item_plsd.notes
                 item_rpd.pricing_ccy = item_plsd.pricing_ccy
                 item_rpd.trn = item_plsd.trn
                 item_rpd.alloc = item_plsd.alloc
