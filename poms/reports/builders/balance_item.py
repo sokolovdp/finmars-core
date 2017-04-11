@@ -477,7 +477,7 @@ class ReportItem(BaseReportItem):
         self.type = type
 
     @classmethod
-    def from_trn(cls, report, pricing_provider, fx_rate_provider, type, trn, instr=None, ccy=None, trn_ccy=None,
+    def from_trn(cls, report, pricing_provider, fx_rate_provider, type, trn, instr=None, ccy=None,
                  prtfl=None, acc=None, str1=None, str2=None, str3=None, val=None):
         item = cls(report, pricing_provider, fx_rate_provider, type)
         item.trn = trn
@@ -602,12 +602,9 @@ class ReportItem(BaseReportItem):
             item.str2 = str2 or trn.str2_cash
             item.str3 = str3 or trn.str3_cash
             # item.ccy = ccy
-            item.ccy = None
             # item.trn_ccy = trn_ccy
-            item.trn_ccy = None
             item.notes = trn.notes
             # item.pricing_ccy = trn.report.master_user.system_currency
-            item.pricing_ccy = None
 
         elif item.type == ReportItem.TYPE_CASH_IN_OUT:
             item.acc = acc or trn.acc_cash
@@ -615,21 +612,17 @@ class ReportItem(BaseReportItem):
             item.str2 = str2 or trn.str2_cash
             item.str3 = str3 or trn.str3_cash
             # item.ccy = ccy
-            item.ccy = None
             item.notes = trn.notes
             # item.pricing_ccy = trn.report.master_user.system_currency
-            item.pricing_ccy = None
 
         elif item.type == ReportItem.TYPE_TRANSACTION_PL:
             item.acc = acc or trn.acc_cash
             item.str1 = str1 or trn.str1_cash
             item.str2 = str2 or trn.str2_cash
             item.str3 = str3 or trn.str3_cash
-            # item.ccy = ccy or trn.stl_ccy
             item.ccy = None
             item.notes = trn.notes
-            # item.pricing_ccy = trn.report.master_user.system_currency
-            item.pricing_ccy = None
+            # item.pricing_ccy = None
 
             # item.principal_res = trn.principal_res
             # item.carry_res = trn.carry_res
@@ -663,7 +656,7 @@ class ReportItem(BaseReportItem):
 
         item.instr = src.instr  # -> Instrument
         item.ccy = src.ccy  # -> Currency
-        item.trn_ccy = src.trn_ccy  # -> Currency
+        # item.trn_ccy = src.trn_ccy  # -> Currency
         item.prtfl = src.prtfl  # -> Portfolio if use_portfolio
         # item.instr = src.instr
         item.acc = src.acc  # -> Account if use_account
@@ -671,7 +664,6 @@ class ReportItem(BaseReportItem):
         item.str2 = src.str2  # -> Strategy2 if use_strategy2
         item.str3 = src.str3  # -> Strategy3 if use_strategy3
         item.notes = src.notes
-
         item.pricing_ccy = src.pricing_ccy
 
         # if item.type in [ReportItem.TYPE_TRANSACTION_PL, ReportItem.TYPE_FX_TRADE]:

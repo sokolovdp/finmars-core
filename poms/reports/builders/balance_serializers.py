@@ -50,7 +50,7 @@ class ReportItemSerializer(serializers.Serializer):
 
     instrument = serializers.PrimaryKeyRelatedField(source='instr', read_only=True)
     currency = serializers.PrimaryKeyRelatedField(source='ccy', read_only=True)
-    transaction_currency = serializers.PrimaryKeyRelatedField(source='trn_ccy', read_only=True)
+    # transaction_currency = serializers.PrimaryKeyRelatedField(source='trn_ccy', read_only=True)
     portfolio = serializers.PrimaryKeyRelatedField(source='prtfl', read_only=True)
     account = serializers.PrimaryKeyRelatedField(source='acc', read_only=True)
     strategy1 = serializers.PrimaryKeyRelatedField(source='str1', read_only=True)
@@ -248,7 +248,7 @@ class ReportItemSerializer(serializers.Serializer):
     strategy3_object = ReportStrategy3Serializer(source='str3', read_only=True)
     instrument_object = ReportInstrumentSerializer(source='instr', read_only=True)
     currency_object = ReportCurrencySerializer(source='ccy', read_only=True)
-    transaction_currency_object = ReportCurrencySerializer(source='trn_ccy', read_only=True)
+    # transaction_currency_object = ReportCurrencySerializer(source='trn_ccy', read_only=True)
     pricing_currency_object = ReportCurrencySerializer(source='pricing_ccy', read_only=True)
 
     allocation_object = ReportInstrumentSerializer(source='alloc', read_only=True)

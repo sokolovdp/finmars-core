@@ -802,7 +802,8 @@ class ReportBuilder(object):
                     item = ReportItem.from_trn(self.instance, self.pricing_provider, self.fx_rate_provider,
                                                ReportItem.TYPE_CASH_IN_OUT, trn, acc=trn.acc_pos,
                                                str1=trn.str1_pos, str2=trn.str2_pos, str3=trn.str3_pos,
-                                               ccy=trn.stl_ccy)
+                                               # ccy=trn.stl_ccy
+                                               )
                     self._items.append(item)
 
             elif trn.trn_cls.id == TransactionClass.INSTRUMENT_PL:
@@ -829,7 +830,8 @@ class ReportBuilder(object):
                     item = ReportItem.from_trn(self.instance, self.pricing_provider, self.fx_rate_provider,
                                                ReportItem.TYPE_FX_TRADE, trn, acc=trn.acc_pos,
                                                str1=trn.str1_pos, str2=trn.str2_pos, str3=trn.str3_pos,
-                                               ccy=trn.trn.settlement_currency, trn_ccy=trn.trn_ccy)
+                                               # ccy=trn.trn.settlement_currency, trn_ccy=trn.trn_ccy
+                                               )
                     self._items.append(item)
 
             elif trn.trn_cls.id == TransactionClass.TRANSFER:
@@ -1162,8 +1164,8 @@ class ReportBuilder(object):
 
             if i.ccy:
                 ccys.add(i.ccy.id)
-            if i.trn_ccy:
-                ccys.add(i.trn_ccy.id)
+            # if i.trn_ccy:
+            #     ccys.add(i.trn_ccy.id)
             if i.pricing_ccy:
                 ccys.add(i.pricing_ccy.id)
 
@@ -1305,8 +1307,8 @@ class ReportBuilder(object):
 
             if i.ccy:
                 i.ccy = ccys[i.ccy.id]
-            if i.trn_ccy:
-                i.trn_ccy = ccys[i.trn_ccy.id]
+            # if i.trn_ccy:
+            #     i.trn_ccy = ccys[i.trn_ccy.id]
             if i.pricing_ccy:
                 i.pricing_ccy = ccys[i.pricing_ccy.id]
 
