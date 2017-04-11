@@ -1437,7 +1437,9 @@ class Report(object):
         self.strategies3 = strategies3 or []
         self.transaction_classes = transaction_classes or []
         # self.date_field = date_field or 'transaction_date'
-        if not date_field:
+        if date_field:
+            self.date_field = date_field
+        else:
             if self.report_type == Report.TYPE_BALANCE:
                 self.date_field = 'transaction_date'
             elif self.report_type == Report.TYPE_PL:
