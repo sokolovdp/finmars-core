@@ -55,13 +55,14 @@ class ReportItem(BaseReportItem):
 
     instr = None
     ccy = None
-    trn_ccy = None  # for FX_TRADE
+    trn_ccy = None  # TODO: deprecated - for FX_TRADE
     prtfl = None
     acc = None
     str1 = None
     str2 = None
     str3 = None
     # detail_trn = None
+    notes = None  # used by Transaction-PL, FX-Trade and Cash-In/Out
     custom_fields = []
     is_empty = False
 
@@ -339,6 +340,7 @@ class ReportItem(BaseReportItem):
         'instr',
         'ccy',
         'trn_ccy',
+        'notes',
         'prtfl',
         'acc',
         'str1',
@@ -475,7 +477,7 @@ class ReportItem(BaseReportItem):
         self.type = type
 
     @classmethod
-    def from_trn(cls, report, pricing_provider, fx_rate_provider, type, trn, instr=None, ccy=None, trn_ccy=None,
+    def from_trn(cls, report, pricing_provider, fx_rate_provider, type, trn, instr=None, ccy=None,
                  prtfl=None, acc=None, str1=None, str2=None, str3=None, val=None):
         item = cls(report, pricing_provider, fx_rate_provider, type)
         item.trn = trn
@@ -585,7 +587,7 @@ class ReportItem(BaseReportItem):
             item.str1 = str1 or trn.str1_cash
             item.str2 = str2 or trn.str2_cash
             item.str3 = str3 or trn.str3_cash
-            item.ccy = ccy or trn.trn_ccy
+            item.ccy = ccy or trn.stl_ccy
 
             if val is None:
                 item.pos_size = 0.0
@@ -599,28 +601,28 @@ class ReportItem(BaseReportItem):
             item.str1 = str1 or trn.str1_cash
             item.str2 = str2 or trn.str2_cash
             item.str3 = str3 or trn.str3_cash
-            item.ccy = ccy
-            item.trn_ccy = trn_ccy
-
-            item.pricing_ccy = trn.report.master_user.system_currency
+            # item.ccy = ccy
+            # item.trn_ccy = trn_ccy
+            item.notes = trn.notes
+            # item.pricing_ccy = trn.report.master_user.system_currency
 
         elif item.type == ReportItem.TYPE_CASH_IN_OUT:
             item.acc = acc or trn.acc_cash
             item.str1 = str1 or trn.str1_cash
             item.str2 = str2 or trn.str2_cash
             item.str3 = str3 or trn.str3_cash
-            item.ccy = ccy
-
-            item.pricing_ccy = trn.report.master_user.system_currency
+            # item.ccy = ccy
+            item.notes = trn.notes
+            # item.pricing_ccy = trn.report.master_user.system_currency
 
         elif item.type == ReportItem.TYPE_TRANSACTION_PL:
             item.acc = acc or trn.acc_cash
             item.str1 = str1 or trn.str1_cash
             item.str2 = str2 or trn.str2_cash
             item.str3 = str3 or trn.str3_cash
-            item.ccy = ccy or trn.trn_ccy
-
-            item.pricing_ccy = trn.report.master_user.system_currency
+            item.ccy = None
+            item.notes = trn.notes
+            # item.pricing_ccy = None
 
             # item.principal_res = trn.principal_res
             # item.carry_res = trn.carry_res
@@ -654,14 +656,14 @@ class ReportItem(BaseReportItem):
 
         item.instr = src.instr  # -> Instrument
         item.ccy = src.ccy  # -> Currency
-        item.trn_ccy = src.trn_ccy  # -> Currency
+        # item.trn_ccy = src.trn_ccy  # -> Currency
         item.prtfl = src.prtfl  # -> Portfolio if use_portfolio
         # item.instr = src.instr
         item.acc = src.acc  # -> Account if use_account
         item.str1 = src.str1  # -> Strategy1 if use_strategy1
         item.str2 = src.str2  # -> Strategy2 if use_strategy2
         item.str3 = src.str3  # -> Strategy3 if use_strategy3
-
+        item.notes = src.notes
         item.pricing_ccy = src.pricing_ccy
 
         # if item.type in [ReportItem.TYPE_TRANSACTION_PL, ReportItem.TYPE_FX_TRADE]:
@@ -1210,18 +1212,21 @@ class ReportItem(BaseReportItem):
             return getattr(self.ccy, 'user_code', None)
 
         elif self.type == ReportItem.TYPE_TRANSACTION_PL:
-            return 'TRANSACTION_PL'
+            # return 'TRANSACTION_PL'
+            return self.notes
 
         elif self.type == ReportItem.TYPE_FX_TRADE:
             # return 'FX_TRADE'
-            return '%s/%s' % (getattr(self.trn_ccy, 'user_code', None), getattr(self.ccy, 'user_code', None),)
+            # return '%s/%s' % (getattr(self.trn_ccy, 'user_code', None), getattr(self.ccy, 'user_code', None),)
+            return self.notes
 
         elif self.type == ReportItem.TYPE_CASH_IN_OUT:
             # return 'CASH_IN_OUT'
-            return getattr(self.ccy, 'user_code', None)
+            # return getattr(self.ccy, 'user_code', None)
+            return self.notes
 
         elif self.type == ReportItem.TYPE_MISMATCH:
-            return getattr(self.ccy, 'user_code', None)
+            return getattr(self.instr, 'user_code', None)
 
         elif self.type == ReportItem.TYPE_SUMMARY:
             return 'SUMMARY'
@@ -1240,16 +1245,19 @@ class ReportItem(BaseReportItem):
             return getattr(self.ccy, 'short_name', None)
 
         elif self.type == ReportItem.TYPE_TRANSACTION_PL:
-            return ugettext('Transaction PL')
+            # return ugettext('Transaction PL')
+            return self.notes
 
         elif self.type == ReportItem.TYPE_FX_TRADE:
             # return ugettext('FX-Trade')
-            return ugettext('FX-Trades: %s/%s') % (getattr(self.trn_ccy, 'short_name', None),
-                                                   getattr(self.ccy, 'short_name', None),)
+            # return ugettext('FX-Trades: %s/%s') % (getattr(self.trn_ccy, 'short_name', None),
+            #                                        getattr(self.ccy, 'short_name', None),)
+            return self.notes
 
         elif self.type == ReportItem.TYPE_CASH_IN_OUT:
             # return ugettext('Cash In/Out: %s/%s')
-            return ugettext('Cash In/Out: %s') % getattr(self.ccy, 'short_name', None)
+            # return ugettext('Cash In/Out: %s') % getattr(self.ccy, 'short_name', None)
+            return self.notes
 
         elif self.type == ReportItem.TYPE_MISMATCH:
             return getattr(self.instr, 'short_name', None)
@@ -1271,16 +1279,19 @@ class ReportItem(BaseReportItem):
             return getattr(self.ccy, 'name', None)
 
         elif self.type == ReportItem.TYPE_TRANSACTION_PL:
-            return ugettext('Transaction PL')
+            # return ugettext('Transaction PL')
+            return self.notes
 
         elif self.type == ReportItem.TYPE_FX_TRADE:
             # return ugettext('FX-Trade')
-            return ugettext('FX-Trades: %s/%s') % (
-                getattr(self.trn_ccy, 'name', None), getattr(self.ccy, 'name', None),)
+            # return ugettext('FX-Trades: %s/%s') % (
+            #     getattr(self.trn_ccy, 'name', None), getattr(self.ccy, 'name', None),)
+            return self.notes
 
         elif self.type == ReportItem.TYPE_CASH_IN_OUT:
             # return ugettext('Cash In/Out: %s/%s')
-            return ugettext('Cash In/Out: %s') % getattr(self.ccy, 'name', None)
+            # return ugettext('Cash In/Out: %s') % getattr(self.ccy, 'name', None)
+            return self.notes
 
         elif self.type == ReportItem.TYPE_MISMATCH:
             return getattr(self.instr, 'name', None)
@@ -1380,6 +1391,7 @@ class Report(object):
                  strategy3_mode=MODE_INDEPENDENT,
                  show_transaction_details=False,
                  approach_multiplier=0.5,
+                 allocation_detailing=True,
                  instruments=None,
                  portfolios=None,
                  accounts=None,
@@ -1415,6 +1427,7 @@ class Report(object):
         # self.alloc_mode = alloc_mode
         self.show_transaction_details = show_transaction_details
         self.approach_multiplier = approach_multiplier
+        self.allocation_detailing = allocation_detailing
 
         self.instruments = instruments or []
         self.portfolios = portfolios or []
@@ -1423,7 +1436,14 @@ class Report(object):
         self.strategies2 = strategies2 or []
         self.strategies3 = strategies3 or []
         self.transaction_classes = transaction_classes or []
-        self.date_field = date_field or 'transaction_date'
+        # self.date_field = date_field or 'transaction_date'
+        if not date_field:
+            if self.report_type == Report.TYPE_BALANCE:
+                self.date_field = 'transaction_date'
+            elif self.report_type == Report.TYPE_PL:
+                self.date_field = 'accounting_date'
+            else:
+                self.date_field = 'transaction_date'
 
         self.custom_fields = custom_fields or []
 

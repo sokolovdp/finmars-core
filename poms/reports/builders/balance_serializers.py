@@ -50,14 +50,17 @@ class ReportItemSerializer(serializers.Serializer):
 
     instrument = serializers.PrimaryKeyRelatedField(source='instr', read_only=True)
     currency = serializers.PrimaryKeyRelatedField(source='ccy', read_only=True)
-    transaction_currency = serializers.PrimaryKeyRelatedField(source='trn_ccy', read_only=True)
+    # transaction_currency = serializers.PrimaryKeyRelatedField(source='trn_ccy', read_only=True)
     portfolio = serializers.PrimaryKeyRelatedField(source='prtfl', read_only=True)
     account = serializers.PrimaryKeyRelatedField(source='acc', read_only=True)
     strategy1 = serializers.PrimaryKeyRelatedField(source='str1', read_only=True)
     strategy2 = serializers.PrimaryKeyRelatedField(source='str2', read_only=True)
     strategy3 = serializers.PrimaryKeyRelatedField(source='str3', read_only=True)
+    notes = serializers.CharField(read_only=True)
+
     custom_fields = ReportItemCustomFieldSerializer(many=True, read_only=True)
     is_empty = serializers.BooleanField(read_only=True)
+
     pricing_currency = serializers.PrimaryKeyRelatedField(source='pricing_ccy', read_only=True)
 
     last_notes = serializers.CharField(read_only=True)
@@ -245,7 +248,7 @@ class ReportItemSerializer(serializers.Serializer):
     strategy3_object = ReportStrategy3Serializer(source='str3', read_only=True)
     instrument_object = ReportInstrumentSerializer(source='instr', read_only=True)
     currency_object = ReportCurrencySerializer(source='ccy', read_only=True)
-    transaction_currency_object = ReportCurrencySerializer(source='trn_ccy', read_only=True)
+    # transaction_currency_object = ReportCurrencySerializer(source='trn_ccy', read_only=True)
     pricing_currency_object = ReportCurrencySerializer(source='pricing_ccy', read_only=True)
 
     allocation_object = ReportInstrumentSerializer(source='alloc', read_only=True)
@@ -361,8 +364,9 @@ class ReportSerializer(serializers.Serializer):
                                              choices=Report.MODE_CHOICES, required=False)
     strategy3_mode = serializers.ChoiceField(default=Report.MODE_INDEPENDENT, initial=Report.MODE_INDEPENDENT,
                                              choices=Report.MODE_CHOICES, required=False)
-    show_transaction_details = serializers.BooleanField(default=False)
+    show_transaction_details = serializers.BooleanField(default=False, initial=False)
     approach_multiplier = serializers.FloatField(default=0.5, initial=0.5, min_value=0.0, max_value=1.0, required=False)
+    allocation_detailing = serializers.BooleanField(default=True, initial=True)
 
     custom_fields = CustomFieldField(many=True, allow_empty=True, allow_null=True, required=False)
 

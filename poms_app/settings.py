@@ -69,17 +69,18 @@ INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.admindocs',
 
+    'crispy_forms',
+    'rest_framework',
+    # 'rest_framework_swagger',
+
+    'corsheaders',
+
     # 'django_otp',
     # 'django_otp.plugins.otp_hotp',
     # 'django_otp.plugins.otp_totp',
     # 'django_otp.plugins.otp_email',
     # 'django_otp.plugins.otp_static',
     # 'two_factor',
-
-    'crispy_forms',
-    'rest_framework',
-
-    'corsheaders',
 ]
 
 MIDDLEWARE_CLASSES = [

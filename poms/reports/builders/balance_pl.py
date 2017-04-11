@@ -798,11 +798,13 @@ class ReportBuilder(object):
                                str3=trn.str3_cash)
 
                 # P&L
-                item = ReportItem.from_trn(self.instance, self.pricing_provider, self.fx_rate_provider,
-                                           ReportItem.TYPE_CASH_IN_OUT, trn, acc=trn.acc_cash,
-                                           str1=trn.str1_cash, str2=trn.str2_cash, str3=trn.str3_cash,
-                                           ccy=trn.stl_ccy)
-                self._items.append(item)
+                if trn.case in [0, 1]:
+                    item = ReportItem.from_trn(self.instance, self.pricing_provider, self.fx_rate_provider,
+                                               ReportItem.TYPE_CASH_IN_OUT, trn, acc=trn.acc_pos,
+                                               str1=trn.str1_pos, str2=trn.str2_pos, str3=trn.str3_pos,
+                                               # ccy=trn.stl_ccy
+                                               )
+                    self._items.append(item)
 
             elif trn.trn_cls.id == TransactionClass.INSTRUMENT_PL:
                 self._add_instr(trn, val=0.0)
@@ -811,10 +813,11 @@ class ReportBuilder(object):
             elif trn.trn_cls.id == TransactionClass.TRANSACTION_PL:
                 self._add_cash(trn, val=trn.cash, ccy=trn.stl_ccy)
 
-                item = ReportItem.from_trn(self.instance, self.pricing_provider, self.fx_rate_provider,
-                                           ReportItem.TYPE_TRANSACTION_PL, trn, acc=trn.acc_cash,
-                                           str1=trn.str1_cash, str2=trn.str2_cash, str3=trn.str3_cash)
-                self._items.append(item)
+                if trn.case in [0, 1]:
+                    item = ReportItem.from_trn(self.instance, self.pricing_provider, self.fx_rate_provider,
+                                               ReportItem.TYPE_TRANSACTION_PL, trn, acc=trn.acc_pos,
+                                               str1=trn.str1_pos, str2=trn.str2_pos, str3=trn.str3_pos)
+                    self._items.append(item)
 
             elif trn.trn_cls.id == TransactionClass.FX_TRADE:
                 # TODO: Что используем для strategy?
@@ -823,11 +826,13 @@ class ReportBuilder(object):
                 # self._add_cash(trn, val=trn.cash, ccy=trn.stl_ccy)
 
                 # P&L
-                item = ReportItem.from_trn(self.instance, self.pricing_provider, self.fx_rate_provider,
-                                           ReportItem.TYPE_FX_TRADE, trn, acc=trn.acc_cash,
-                                           str1=trn.str1_cash, str2=trn.str2_cash, str3=trn.str3_cash,
-                                           ccy=trn.trn.settlement_currency, trn_ccy=trn.trn_ccy)
-                self._items.append(item)
+                if trn.case in [0, 1]:
+                    item = ReportItem.from_trn(self.instance, self.pricing_provider, self.fx_rate_provider,
+                                               ReportItem.TYPE_FX_TRADE, trn, acc=trn.acc_pos,
+                                               str1=trn.str1_pos, str2=trn.str2_pos, str3=trn.str3_pos,
+                                               # ccy=trn.trn.settlement_currency, trn_ccy=trn.trn_ccy
+                                               )
+                    self._items.append(item)
 
             elif trn.trn_cls.id == TransactionClass.TRANSFER:
                 # raise RuntimeError('Virtual transaction must be created')
@@ -884,7 +889,8 @@ class ReportBuilder(object):
             # getattr(item.alloc_bl, 'id', -1),
             # getattr(item.alloc_pl, 'id', -1),
             getattr(item.ccy, 'id', -1),
-            getattr(item.trn_ccy, 'id', -1),
+            # getattr(item.trn_ccy, 'id', -1),
+            item.notes,
             getattr(item.detail_trn, 'id', -1),
         )
 
@@ -977,7 +983,8 @@ class ReportBuilder(object):
                 # getattr(item.alloc_pl, 'id', -1),
                 getattr(item.instr, 'id', -1),
                 getattr(item.ccy, 'id', -1),
-                getattr(item.trn_ccy, 'id', -1),
+                # getattr(item.trn_ccy, 'id', -1),
+                item.notes,
                 getattr(item.detail_trn, 'id', -1),
             )
 
@@ -996,13 +1003,14 @@ class ReportBuilder(object):
 
                 item_rpd.instr = item_plsd.instr
                 item_rpd.ccy = item_plsd.ccy
-                item_rpd.trn_ccy = item_plsd.trn_ccy
+                # item_rpd.trn_ccy = item_plsd.trn_ccy
                 item_rpd.prtfl = item_plsd.prtfl
                 item_rpd.instr = item_plsd.instr
                 item_rpd.acc = item_plsd.acc
                 item_rpd.str1 = item_plsd.str1
                 item_rpd.str2 = item_plsd.str2
                 item_rpd.str3 = item_plsd.str3
+                item_rpd.notes = item_plsd.notes
                 item_rpd.pricing_ccy = item_plsd.pricing_ccy
                 item_rpd.trn = item_plsd.trn
                 item_rpd.alloc = item_plsd.alloc
@@ -1156,8 +1164,8 @@ class ReportBuilder(object):
 
             if i.ccy:
                 ccys.add(i.ccy.id)
-            if i.trn_ccy:
-                ccys.add(i.trn_ccy.id)
+            # if i.trn_ccy:
+            #     ccys.add(i.trn_ccy.id)
             if i.pricing_ccy:
                 ccys.add(i.pricing_ccy.id)
 
@@ -1299,8 +1307,8 @@ class ReportBuilder(object):
 
             if i.ccy:
                 i.ccy = ccys[i.ccy.id]
-            if i.trn_ccy:
-                i.trn_ccy = ccys[i.trn_ccy.id]
+            # if i.trn_ccy:
+            #     i.trn_ccy = ccys[i.trn_ccy.id]
             if i.pricing_ccy:
                 i.pricing_ccy = ccys[i.pricing_ccy.id]
 
