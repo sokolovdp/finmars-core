@@ -379,7 +379,6 @@ class ReportSerializer(serializers.Serializer):
                                                              many=True, required=False, allow_null=True,
                                                              allow_empty=True)
     date_field = serializers.ChoiceField(required=False, allow_null=True,
-                                         initial='transaction_date', default='transaction_date',
                                          choices=(
                                              ('transaction_date', ugettext_lazy('Transaction date')),
                                              ('accounting_date', ugettext_lazy('Accounting date')),
