@@ -1423,7 +1423,14 @@ class Report(object):
         self.strategies2 = strategies2 or []
         self.strategies3 = strategies3 or []
         self.transaction_classes = transaction_classes or []
-        self.date_field = date_field or 'transaction_date'
+        # self.date_field = date_field or 'transaction_date'
+        if not date_field:
+            if self.report_type == Report.TYPE_BALANCE:
+                self.date_field = 'transaction_date'
+            elif self.report_type == Report.TYPE_PL:
+                self.date_field = 'accounting_date'
+            else:
+                self.date_field = 'transaction_date'
 
         self.custom_fields = custom_fields or []
 
