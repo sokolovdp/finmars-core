@@ -257,6 +257,7 @@ class ReportTestCase(TestCase):
         'trn_cls',
         'instr',
         'trn_ccy',
+        'notes',
         'stl_ccy',
         'pos_size',
         # 'avco_multiplier',
@@ -293,7 +294,6 @@ class ReportTestCase(TestCase):
         'alloc_bl',
         'alloc_pl',
         'trade_price',
-        'notes',
         'case',
         'report_ccy_cur',
         'report_ccy_cur_fx',
@@ -399,6 +399,7 @@ class ReportTestCase(TestCase):
         # 'remaining_pos_size_percent',
         'instr',
         'trn_ccy',
+        'notes',
         'pos_size',
         'stl_ccy',
         'cash',
@@ -420,8 +421,8 @@ class ReportTestCase(TestCase):
         # 'str3_pos',
         # 'str3_cash',
         # 'link_instr',
-        'alloc_bl',
-        'alloc_pl',
+        # 'alloc_bl',
+        # 'alloc_pl',
         # 'trade_price',
         # 'notes',
         # 'case',
@@ -512,9 +513,13 @@ class ReportTestCase(TestCase):
         # 'is_cloned',
         'type_code',
         'subtype_code',
+        'user_code',
+        'short_name',
+        'name',
         # 'trn',
         'instr',
         'ccy',
+        'notes',
         'trn_ccy',
         'prtfl',
         'acc',
@@ -651,8 +656,12 @@ class ReportTestCase(TestCase):
         'type_code',
         # 'subtype_code',
         # 'trn',
+        'user_code',
+        'short_name',
+        'name',
         'instr',
         'ccy',
+        'notes',
         # 'trn_ccy',
         # 'prtfl',
         # 'acc',
@@ -1385,8 +1394,8 @@ class ReportTestCase(TestCase):
         self._simple_run('buy_sell - fifo', report_date=self._d(14), cost_method=self._fifo)
 
     def _test_cash_in_out(self):
-        self._t_cash_in(trn_ccy=self.eur, stl_ccy=self.eur, position=1000, fx_rate=1.3)
-        self._t_cash_out(trn_ccy=self.usd, stl_ccy=self.usd, position=-1000, days=1, fx_rate=1.0)
+        self._t_cash_in(trn_ccy=self.eur, stl_ccy=self.eur, position=1000, fx_rate=1.3, notes='N1')
+        self._t_cash_out(trn_ccy=self.usd, stl_ccy=self.usd, position=-1000, days=1, fx_rate=1.0, notes='N2')
 
         self._simple_run('cash_in_out', report_date=self._d(14))
         # self._dump_hist(days=(self._d(12), self._d(15)),
@@ -1408,11 +1417,13 @@ class ReportTestCase(TestCase):
 
         self._t_fx_tade(trn_ccy=self.gbp, position=100,
                         stl_ccy=self.chf, principal=-140,
-                        acc_date_days=101, cash_date_days=101)
+                        acc_date_days=101, cash_date_days=101,
+                        notes='N1')
 
         self._t_fx_tade(trn_ccy=self.gbp, position=100,
                         stl_ccy=self.rub, principal=-140,
-                        acc_date_days=101, cash_date_days=101)
+                        acc_date_days=101, cash_date_days=101,
+                        notes='N2')
 
         self._simple_run('fx_trade', trns=True, report_currency=self.cad, report_date=self._d(104))
         # self._dump_hist(days=(self._d(100), self._d(105)),
@@ -1453,31 +1464,43 @@ class ReportTestCase(TestCase):
 
     def _test_transaction_pl(self):
         self._t_trn_pl(stl_ccy=self.rub, principal=0., carry=-900., overheads=-100.,
-                       days=1, notes='tpl1')
+                       days=1, notes='N1')
 
         self._t_trn_pl(stl_ccy=self.rub, principal=0., carry=-900., overheads=-100.,
-                       days=2, notes='tpl2')
+                       days=2, notes='N2')
 
         self._simple_run('transaction_pl', report_currency=self.cad, report_date=self._d(14))
 
     def _test_transfer(self):
         self._t_transfer(instr=self.bond0, position=-10.0,
                          acc_pos=self.a1_1, acc_cash=self.a1_2,
-                         days=1, notes='trfsr2')
+                         days=1, notes='N1')
         self._t_transfer(instr=self.bond0, position=-10.0,
                          acc_pos=self.a1_1, acc_cash=self.a2_3,
-                         days=2, notes='trfsr2')
+                         days=2, notes='N2')
 
         self._simple_run('transfer', report_currency=self.cad, report_date=self._d(14))
 
     def _test_fx_transfer(self):
         self._t_fx_transfer(trn_ccy=self.eur, position=-10.,
                             acc_pos=self.a1_1, acc_cash=self.a1_2,
-                            days=1, notes='trfsr2')
+                            days=1, notes='N1')
         self._t_fx_transfer(trn_ccy=self.gbp, position=-10.,
                             acc_pos=self.a1_1, acc_cash=self.a2_3,
-                            days=2, notes='trfsr2')
+                            days=2, notes='N2')
         self._simple_run('fx_transfer', report_currency=self.cad, report_date=self._d(14))
+
+    def _test_some_notes(self):
+        self._t_cash_in(trn_ccy=self.usd, stl_ccy=self.usd, position=1000, fx_rate=1.3, days=1, notes='N1')
+        self._t_cash_out(trn_ccy=self.usd, stl_ccy=self.usd, position=-1000, fx_rate=1.0, days=1, notes='N2')
+
+        self._t_fx_tade(trn_ccy=self.usd, position=100, stl_ccy=self.usd, principal=-140,  days=1, notes='N1')
+        self._t_fx_tade(trn_ccy=self.usd, position=100, stl_ccy=self.usd, principal=-140,  days=1, notes='N2')
+
+        self._t_trn_pl(stl_ccy=self.usd, principal=0., carry=-900., overheads=-100., days=1, notes='N1')
+        self._t_trn_pl(stl_ccy=self.usd, principal=0., carry=-900., overheads=-100., days=1, notes='N2')
+
+        self._simple_run('test_some_notes', report_currency=self.cad, report_date=self._d(14))
 
     # ------------------------------------------------------------------------------------------------------------------
 
@@ -2577,7 +2600,7 @@ class ReportTestCase(TestCase):
         b.build_balance()
         self._dump(b, 'test_pl_date_interval_1: pl_first_date abd report_date', show_trns=show_trns)
 
-    def test_from_csv_td_1(self):
+    def _test_from_csv_td_1(self):
         base_path = os.path.join(settings.BASE_DIR, 'poms', 'reports', 'tests_data')
         load_from_csv(
             master_user=self.m,
