@@ -2,6 +2,7 @@ import uuid
 
 from poms.common.formula_accruals import f_xirr
 from poms.common.utils import isclose
+from poms.reports.builders.balance_item import Report
 from poms.reports.builders.base_item import BaseReportItem
 from poms.transactions.models import TransactionClass
 
@@ -67,6 +68,7 @@ class VirtualTransaction(BaseReportItem):
     link_instr = None
 
     # allocations
+    alloc = None
     alloc_bl = None
     alloc_pl = None
 
@@ -367,6 +369,12 @@ class VirtualTransaction(BaseReportItem):
 
         self.alloc_bl = overrides.get('allocation_balance', trn.allocation_balance)
         self.alloc_pl = overrides.get('allocation_pl', trn.allocation_pl)
+        if report.report_type == Report.TYPE_BALANCE:
+            self.alloc = self.alloc_bl
+        elif report.report_type == Report.TYPE_PL:
+            self.alloc = self.alloc_pl
+        else:
+            raise RuntimeError('Bad report type: %s' % (report.report_type,))
 
         self.trade_price = overrides.get('trade_price', trn.trade_price)
 

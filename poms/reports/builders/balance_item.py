@@ -75,8 +75,9 @@ class ReportItem(BaseReportItem):
     mismatch_acc = None
 
     # allocations
-    alloc_bl = None
-    alloc_pl = None
+    alloc = None
+    alloc_bl = None  # TODO: deprecated
+    alloc_pl = None  # TODO: deprecated
 
     # pricing
     report_ccy_cur = None
@@ -350,6 +351,7 @@ class ReportItem(BaseReportItem):
         'mismatch',
         'mismatch_prtfl',
         'mismatch_acc',
+        'alloc',
         'alloc_bl',
         'alloc_pl',
         'report_ccy_cur',
@@ -481,8 +483,15 @@ class ReportItem(BaseReportItem):
         # item.instr = instr  # -> Instrument
         # item.ccy = ccy  # -> Currency
         item.prtfl = prtfl or trn.prtfl  # -> Portfolio
-        item.alloc_bl = trn.alloc_bl
-        item.alloc_pl = trn.alloc_pl
+
+        if report.report_type == Report.TYPE_BALANCE:
+            item.alloc = trn.alloc_bl
+            item.alloc_bl = trn.alloc_bl
+        elif report.report_type == Report.TYPE_PL:
+            item.alloc = trn.alloc_pl
+            item.alloc_pl = trn.alloc_pl
+        else:
+            raise RuntimeError('Bad report type: %s' % (report.report_type,))
 
         if type in [ReportItem.TYPE_INSTRUMENT, ReportItem.TYPE_TRANSACTION_PL, ReportItem.TYPE_FX_TRADE,
                     ReportItem.TYPE_CASH_IN_OUT]:
@@ -660,6 +669,7 @@ class ReportItem(BaseReportItem):
         if src.detail_trn:
             item.trn = src.trn
 
+        item.alloc = src.alloc
         item.alloc_bl = src.alloc_bl
         item.alloc_pl = src.alloc_pl
 
@@ -1034,7 +1044,7 @@ class ReportItem(BaseReportItem):
                 # self.pricing()
                 try:
                     self.daily_price_change = (
-                                              self.instr_price_cur_principal_price - self.gross_cost_loc) / self.gross_cost_loc
+                                                  self.instr_price_cur_principal_price - self.gross_cost_loc) / self.gross_cost_loc
                 except ArithmeticError:
                     self.daily_price_change = 0.0
             else:
@@ -1042,7 +1052,7 @@ class ReportItem(BaseReportItem):
                 price_yest = self.pricing_provider[self.instr, self.report.report_date - timedelta(days=1)]
                 try:
                     self.daily_price_change = (
-                                              self.instr_price_cur_principal_price - price_yest.principal_price) / price_yest.principal_price
+                                                  self.instr_price_cur_principal_price - price_yest.principal_price) / price_yest.principal_price
                 except ArithmeticError:
                     self.daily_price_change = 0.0
 
@@ -1052,7 +1062,7 @@ class ReportItem(BaseReportItem):
                 #  = (Current Price - Gross Cost Price) / Gross Cost Price, if Time Invested in days <= Day(Report Date)
                 try:
                     self.mtd_price_change = (
-                                            self.instr_price_cur_principal_price - self.gross_cost_loc) / self.gross_cost_loc
+                                                self.instr_price_cur_principal_price - self.gross_cost_loc) / self.gross_cost_loc
                 except ArithmeticError:
                     self.mtd_price_change = 0.0
             else:
@@ -1061,7 +1071,7 @@ class ReportItem(BaseReportItem):
                     self.instr, self.report.report_date - timedelta(days=self.report.report_date.day)]
                 try:
                     self.mtd_price_change = (
-                                            self.instr_price_cur_principal_price - price_eom.principal_price) / price_eom.principal_price
+                                                self.instr_price_cur_principal_price - price_eom.principal_price) / price_eom.principal_price
                 except ArithmeticError:
                     self.mtd_price_change = 0.0
 
@@ -1335,6 +1345,13 @@ class ReportItem(BaseReportItem):
 
 
 class Report(object):
+    TYPE_BALANCE = 1
+    TYPE_PL = 2
+    TYPE_CHOICES = (
+        (TYPE_BALANCE, 'Balance'),
+        (TYPE_PL, 'P&L'),
+    )
+
     MODE_IGNORE = 0
     MODE_INDEPENDENT = 1
     MODE_INTERDEPENDENT = 2
@@ -1351,6 +1368,7 @@ class Report(object):
                  task_id=None,
                  task_status=None,
                  pl_first_date=None,
+                 report_type=TYPE_BALANCE,
                  report_date=None,
                  report_currency=None,
                  pricing_policy=None,
@@ -1360,7 +1378,6 @@ class Report(object):
                  strategy1_mode=MODE_INDEPENDENT,
                  strategy2_mode=MODE_INDEPENDENT,
                  strategy3_mode=MODE_INDEPENDENT,
-                 alloc_mode=MODE_INDEPENDENT,
                  show_transaction_details=False,
                  approach_multiplier=0.5,
                  instruments=None,
@@ -1385,6 +1402,7 @@ class Report(object):
         }
         self.pricing_policy = pricing_policy
         self.pl_first_date = pl_first_date
+        self.report_type = report_type
         self.report_date = report_date or (date_now() - timedelta(days=1))
         self.report_currency = report_currency or master_user.system_currency
         self.cost_method = cost_method or CostMethod.objects.get(pk=CostMethod.AVCO)
@@ -1394,7 +1412,7 @@ class Report(object):
         self.strategy1_mode = strategy1_mode
         self.strategy2_mode = strategy2_mode
         self.strategy3_mode = strategy3_mode
-        self.alloc_mode = alloc_mode
+        # self.alloc_mode = alloc_mode
         self.show_transaction_details = show_transaction_details
         self.approach_multiplier = approach_multiplier
 
