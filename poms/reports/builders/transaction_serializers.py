@@ -76,6 +76,28 @@ class TransactionReportSerializer(serializers.Serializer):
     custom_fields = CustomFieldField(many=True, allow_empty=True, allow_null=True, required=False)
 
     items = TransactionReportItemSerializer(many=True, read_only=True)
+
+    item_complex_transactions = ReportComplexTransactionSerializer(source='complex_transactions', many=True, read_only=True)
+    item_transaction_types = TransactionTypeViewSerializer(source='transaction_types', many=True, read_only=True)
+    item_instruments = ReportInstrumentSerializer(source='instruments', many=True, read_only=True)
+    item_currencies = ReportCurrencySerializer(source='currencies', many=True, read_only=True)
+    item_portfolios = ReportPortfolioSerializer(source='portfolios', many=True, read_only=True)
+    item_accounts = ReportAccountSerializer(source='accounts', many=True, read_only=True)
+    item_strategies1 = ReportStrategy1Serializer(source='strategies1', many=True, read_only=True)
+    item_strategies2 = ReportStrategy2Serializer(source='strategies2', many=True, read_only=True)
+    item_strategies3 = ReportStrategy3Serializer(source='strategies3', many=True, read_only=True)
+    item_responsibles = ReportResponsibleSerializer(source='responsibles', many=True, read_only=True)
+    item_counterparties = ReportCounterpartySerializer(source='counterparties', many=True, read_only=True)
+    item_complex_transaction_attribute_types = ReportGenericAttributeTypeSerializer(source='complex_transaction_attribute_types', many=True, read_only=True, show_classifiers=True)
+    item_transaction_attribute_types = ReportGenericAttributeTypeSerializer(source='transaction_attribute_types', many=True, read_only=True, show_classifiers=True)
+    item_instrument_attribute_types = ReportGenericAttributeTypeSerializer(source='instrument_attribute_types', many=True, read_only=True, show_classifiers=True)
+    item_currency_attribute_types = ReportGenericAttributeTypeSerializer(source='currency_attribute_types', many=True, read_only=True, show_classifiers=True)
+    item_portfolio_attribute_types = ReportGenericAttributeTypeSerializer(source='portfolio_attribute_types', many=True, read_only=True, show_classifiers=True)
+    item_account_attribute_types = ReportGenericAttributeTypeSerializer(source='account_attribute_types', many=True, read_only=True, show_classifiers=True)
+    item_responsible_attribute_types = ReportGenericAttributeTypeSerializer(source='responsible_attribute_types', many=True, read_only=True, show_classifiers=True)
+    item_counterparty_attribute_types = ReportGenericAttributeTypeSerializer(source='counterparty_attribute_types', many=True, read_only=True, show_classifiers=True)
+
+    # TODO: deprecated names
     complex_transactions = ReportComplexTransactionSerializer(many=True, read_only=True)
     transaction_types = TransactionTypeViewSerializer(many=True, read_only=True)
     instruments = ReportInstrumentSerializer(many=True, read_only=True)
@@ -87,17 +109,14 @@ class TransactionReportSerializer(serializers.Serializer):
     strategies3 = ReportStrategy3Serializer(many=True, read_only=True)
     responsibles = ReportResponsibleSerializer(many=True, read_only=True)
     counterparties = ReportCounterpartySerializer(many=True, read_only=True)
-
-    complex_transaction_attribute_types = ReportGenericAttributeTypeSerializer(many=True, read_only=True,
-                                                                               show_classifiers=True)
+    complex_transaction_attribute_types = ReportGenericAttributeTypeSerializer(many=True, read_only=True,  show_classifiers=True)
     transaction_attribute_types = ReportGenericAttributeTypeSerializer(many=True, read_only=True, show_classifiers=True)
     instrument_attribute_types = ReportGenericAttributeTypeSerializer(many=True, read_only=True, show_classifiers=True)
     currency_attribute_types = ReportGenericAttributeTypeSerializer(many=True, read_only=True, show_classifiers=True)
     portfolio_attribute_types = ReportGenericAttributeTypeSerializer(many=True, read_only=True, show_classifiers=True)
     account_attribute_types = ReportGenericAttributeTypeSerializer(many=True, read_only=True, show_classifiers=True)
     responsible_attribute_types = ReportGenericAttributeTypeSerializer(many=True, read_only=True, show_classifiers=True)
-    counterparty_attribute_types = ReportGenericAttributeTypeSerializer(many=True, read_only=True,
-                                                                        show_classifiers=True)
+    counterparty_attribute_types = ReportGenericAttributeTypeSerializer(many=True, read_only=True, show_classifiers=True)
 
     def __init__(self, *args, **kwargs):
         super(TransactionReportSerializer, self).__init__(*args, **kwargs)
