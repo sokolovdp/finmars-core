@@ -725,7 +725,7 @@ class ReportBuilder(object):
             self.fifo_rolling_positions[t_key] = rolling_pos
             t.fifo_rolling_pos_size = rolling_pos
 
-    def _get_trn_group_key(self, t):
+    def _get_trn_group_key(self, t, walloc=False):
         if self.instance.portfolio_mode == Report.MODE_INDEPENDENT:
             prtfl = t.prtfl
         else:
@@ -763,23 +763,21 @@ class ReportBuilder(object):
         # else:
         #     alloc_pl = None
 
+        alloc = None
+        if walloc:
+            if self.instance.report_type == Report.TYPE_BALANCE:
+                alloc = t.alloc_bl
+            elif self.instance.report_type == Report.TYPE_BALANCE:
+                alloc = t.alloc_pl
+
         return (
-            # getattr(t.prtfl, 'id', None) if self.instance.portfolio_mode == Report.MODE_INDEPENDENT else None,
-            # getattr(t.acc_pos, 'id', None) if self.instance.account_mode == Report.MODE_INDEPENDENT else None,
-            # getattr(t.str1_pos, 'id', None) if self.instance.strategy1_mode == Report.MODE_INDEPENDENT else None,
-            # getattr(t.str2_pos, 'id', None) if self.instance.strategy2_mode == Report.MODE_INDEPENDENT else None,
-            # getattr(t.str3_pos, 'id', None) if self.instance.strategy3_mode == Report.MODE_INDEPENDENT else None,
-            # getattr(t.instr, 'id', None),
-            # getattr(t.alloc_bl, 'id', None) if self.instance.alloc_mode == Report.MODE_INDEPENDENT else None,
-            # getattr(t.alloc_pl, 'id', None) if self.instance.alloc_mode == Report.MODE_INDEPENDENT else None,
             getattr(prtfl, 'id', None),
             getattr(acc_pos, 'id', None),
             getattr(str1_pos, 'id', None),
             getattr(str2_pos, 'id', None),
             getattr(str3_pos, 'id', None),
+            getattr(alloc, 'id', None),
             getattr(instr, 'id', None),
-            # getattr(alloc_bl, 'id', None),
-            # getattr(alloc_pl, 'id', None),
         )
 
     def _generate_items(self):
