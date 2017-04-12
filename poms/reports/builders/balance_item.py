@@ -1452,16 +1452,16 @@ class Report(object):
         self.items = items or []
         self.transactions = []
 
-        self.item_instruments = None
-        self.item_currencies = None
-        self.item_portfolios = None
-        self.item_accounts = None
-        self.item_strategies1 = None
-        self.item_strategies2 = None
-        self.item_strategies3 = None
-        self.item_currency_fx_rates = None
-        self.item_instrument_pricings = None
-        self.item_instrument_accruals = None
+        self.item_instruments = []
+        self.item_currencies = []
+        self.item_portfolios = []
+        self.item_accounts = []
+        self.item_strategies1 = []
+        self.item_strategies2 = []
+        self.item_strategies3 = []
+        self.item_currency_fx_rates = []
+        self.item_instrument_pricings = []
+        self.item_instrument_accruals = []
 
     def __str__(self):
         return "%s for %s/%s @ %s" % (self.__class__.__name__, self.master_user, self.member, self.report_date)
