@@ -101,7 +101,7 @@ class ReportBuilder(object):
         self.instance.transactions = self._transactions
         self._generate_items()
         self._aggregate_items()
-        self._calc_pass2()
+        # self._calc_pass2()
         self._aggregate_summary()
         self._detect_mismatches()
         self.instance.items = self._items + self._mismatch_items + self._summaries
@@ -507,7 +507,8 @@ class ReportBuilder(object):
         self._calc_avco_multipliers()
         self._calc_fifo_multipliers()
 
-        # balances = Counter()
+        balances = Counter()
+
         for t in self._transactions:
             if t.trn_cls.id in [TransactionClass.TRANSACTION_PL, TransactionClass.FX_TRADE]:
                 t.multiplier = 1.0
@@ -515,6 +516,15 @@ class ReportBuilder(object):
             if t.trn_cls.id in [TransactionClass.INSTRUMENT_PL]:
                 # TODO: remove after new algo
                 t.multiplier = 1.0
+
+                if t.instr and t.instr.instrument_type.instrument_class_id == InstrumentClass.CONTRACT_FOR_DIFFERENCE:
+                    t.rolling_pos_size = t.fifo_rolling_pos_size
+
+                elif self.instance.cost_method.id == CostMethod.AVCO:
+                    t.rolling_pos_size = t.avco_rolling_pos_size
+
+                elif self.instance.cost_method.id == CostMethod.FIFO:
+                    t.rolling_pos_size = t.fifo_rolling_pos_size
 
             elif t.trn_cls.id in [TransactionClass.BUY, TransactionClass.SELL]:
                 if t.instr and t.instr.instrument_type.instrument_class_id == InstrumentClass.CONTRACT_FOR_DIFFERENCE:
@@ -534,9 +544,27 @@ class ReportBuilder(object):
 
                 t.remaining_pos_size = t.pos_size * (1 - t.multiplier)
 
-                # t_key = self._get_trn_group_key(t)
-                # balances[t_key] += t.remaining_pos_size
-                pass
+                t_key = self._get_trn_group_key(t, walloc=True)
+                balances[t_key] += t.remaining_pos_size
+
+        remaining_positions = Counter()
+
+        for t in self._transactions:
+            if t.trn_cls.id in [TransactionClass.BUY, TransactionClass.SELL]:
+                t_key = self._get_trn_group_key(t, walloc=True)
+
+                t.balance_pos_size = balances[t_key]
+
+                remaining_positions[t_key] += t.remaining_pos_size
+
+            elif t.trn_cls.id in [TransactionClass.INSTRUMENT_PL]:
+                t_key = self._get_trn_group_key(t, walloc=True)
+                t.balance_pos_size = balances[t_key]
+                t.remaining_pos_size = remaining_positions[t_key]
+                try:
+                    t.multiplier = abs(t.remaining_pos_size / t.balance_pos_size)
+                except ArithmeticError:
+                    t.multiplier = 0.0
 
         # for t in self._transactions:
         #     if t.trn_cls.id in [TransactionClass.INSTRUMENT_PL]:
@@ -753,16 +781,6 @@ class ReportBuilder(object):
 
         instr = t.instr
 
-        # if self.instance.alloc_mode == Report.MODE_INDEPENDENT:
-        #     alloc_bl = t.alloc_bl
-        # else:
-        #     alloc_bl = None
-        #
-        # if self.instance.alloc_mode == Report.MODE_INDEPENDENT:
-        #     alloc_pl = t.alloc_pl
-        # else:
-        #     alloc_pl = None
-
         alloc = None
         if walloc:
             if self.instance.report_type == Report.TYPE_BALANCE:
@@ -903,37 +921,37 @@ class ReportBuilder(object):
             getattr(item.mismatch_acc, 'id', -1),
         )
 
-    def _item_group_key_pass2(self, trn=None, item=None):
-        if trn:
-            return (
-                getattr(trn.prtfl, 'id', -1),
-                getattr(trn.acc_pos, 'id', -1),
-                getattr(trn.str1_pos, 'id', -1),
-                getattr(trn.str2_pos, 'id', -1),
-                getattr(trn.str3_pos, 'id', -1),
-                getattr(trn.alloc, 'id', -1),
-                # getattr(trn.alloc_bl, 'id', -1),
-                # getattr(trn.alloc_pl, 'id', -1),
-                getattr(trn.instr, 'id', -1),
-                # getattr(trn.ccy, 'id', -1),
-                # getattr(trn.trn_ccy, 'id', -1),
-            )
-        elif item:
-            return (
-                getattr(item.prtfl, 'id', -1),
-                getattr(item.acc, 'id', -1),
-                getattr(item.str1, 'id', -1),
-                getattr(item.str2, 'id', -1),
-                getattr(item.str3, 'id', -1),
-                getattr(item.alloc, 'id', -1),
-                # getattr(item.alloc_bl, 'id', -1),
-                # getattr(item.alloc_pl, 'id', -1),
-                getattr(item.instr, 'id', -1),
-                # getattr(item.ccy, 'id', -1),
-                # getattr(item.trn_ccy, 'id', -1),
-            )
-        else:
-            raise RuntimeError('code bug')
+    # def _item_group_key_pass2(self, trn=None, item=None):
+    #     if trn:
+    #         return (
+    #             getattr(trn.prtfl, 'id', -1),
+    #             getattr(trn.acc_pos, 'id', -1),
+    #             getattr(trn.str1_pos, 'id', -1),
+    #             getattr(trn.str2_pos, 'id', -1),
+    #             getattr(trn.str3_pos, 'id', -1),
+    #             getattr(trn.alloc, 'id', -1),
+    #             # getattr(trn.alloc_bl, 'id', -1),
+    #             # getattr(trn.alloc_pl, 'id', -1),
+    #             getattr(trn.instr, 'id', -1),
+    #             # getattr(trn.ccy, 'id', -1),
+    #             # getattr(trn.trn_ccy, 'id', -1),
+    #         )
+    #     elif item:
+    #         return (
+    #             getattr(item.prtfl, 'id', -1),
+    #             getattr(item.acc, 'id', -1),
+    #             getattr(item.str1, 'id', -1),
+    #             getattr(item.str2, 'id', -1),
+    #             getattr(item.str3, 'id', -1),
+    #             getattr(item.alloc, 'id', -1),
+    #             # getattr(item.alloc_bl, 'id', -1),
+    #             # getattr(item.alloc_pl, 'id', -1),
+    #             getattr(item.instr, 'id', -1),
+    #             # getattr(item.ccy, 'id', -1),
+    #             # getattr(item.trn_ccy, 'id', -1),
+    #         )
+    #     else:
+    #         raise RuntimeError('code bug')
 
     def _build_on_pl_first_date(self):
         report_on_pl_first_date = Report(
@@ -1024,28 +1042,28 @@ class ReportBuilder(object):
 
         return report_on_pl_first_date
 
-    def _calc_pass2(self):
-        _l.debug('transactions - pass 2')
-
-        items_map = {}
-        for item in self._items:
-            if item.type == ReportItem.TYPE_INSTRUMENT and item.instr:
-                key = self._item_group_key_pass2(item=item)
-                items_map[key] = item
-
-        for trn in self._transactions:
-            if not trn.is_cloned and trn.trn_cls.id in [TransactionClass.BUY, TransactionClass.SELL]:
-                key = self._item_group_key_pass2(trn=trn)
-                item = items_map.get(key, None)
-                if item:
-                    trn.calc_pass2(balance_pos_size=item.pos_size)
-                    item.add_pass2(trn)
-                else:
-                    raise RuntimeError('Oh error')
-
-        _l.debug('items - pass 2')
-        for item in self._items:
-            item.close_pass2()
+    # def _calc_pass2(self):
+    #     _l.debug('transactions - pass 2')
+    #
+    #     items_map = {}
+    #     for item in self._items:
+    #         if item.type == ReportItem.TYPE_INSTRUMENT and item.instr:
+    #             key = self._item_group_key_pass2(item=item)
+    #             items_map[key] = item
+    #
+    #     for trn in self._transactions:
+    #         if not trn.is_cloned and trn.trn_cls.id in [TransactionClass.BUY, TransactionClass.SELL]:
+    #             key = self._item_group_key_pass2(trn=trn)
+    #             item = items_map.get(key, None)
+    #             if item:
+    #                 trn.calc_pass2(balance_pos_size=item.pos_size)
+    #                 item.add_pass2(trn)
+    #             else:
+    #                 raise RuntimeError('Oh error')
+    #
+    #     _l.debug('items - pass 2')
+    #     for item in self._items:
+    #         item.close_pass2()
 
     def _aggregate_summary(self):
         if not settings.DEBUG:

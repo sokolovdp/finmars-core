@@ -274,7 +274,7 @@ class ReportTestCase(TestCase):
         'multiplier',
         # 'closed_by',
         'rolling_pos_size',
-        # 'balance_pos_size',
+        'balance_pos_size',
         'remaining_pos_size',
         'remaining_pos_size_percent',
         'cash',
@@ -1396,7 +1396,7 @@ class ReportTestCase(TestCase):
                      days=3)
 
         self._simple_run('buy_sell - avco', report_date=self._d(14), cost_method=self._avco)
-        self._simple_run('buy_sell - fifo', report_date=self._d(14), cost_method=self._fifo)
+        # self._simple_run('buy_sell - fifo', report_date=self._d(14), cost_method=self._fifo)
 
     def _test_cash_in_out(self):
         self._t_cash_in(trn_ccy=self.eur, stl_ccy=self.eur, position=1000, fx_rate=1.3, notes='N1')
@@ -1435,7 +1435,7 @@ class ReportTestCase(TestCase):
         #                 ccys=(self.gbp, self.chf, self.cad, self.rub),
         #                 instrs=False)
 
-    def _test_instrument_pl(self):
+    def test_instrument_pl(self):
         self._t_buy(instr=self.bond0, position=5,
                     stl_ccy=self.usd, principal=-10., carry=-0., overheads=-0.,
                     days=1)
@@ -1450,22 +1450,22 @@ class ReportTestCase(TestCase):
                          stl_ccy=self.chf, principal=0., carry=20., overheads=0.,
                          days=4)
 
-        self._t_sell(instr=self.bond0, position=-6,
+        self._t_sell(instr=self.bond0, position=-5,
                      stl_ccy=self.usd, principal=20., carry=0., overheads=0.,
                      days=5)
         self._t_instr_pl(instr=self.bond0, position=0.,
                          stl_ccy=self.chf, principal=0., carry=20., overheads=0.,
                          days=6)
 
-        self._t_sell(instr=self.bond0, position=-3,
+        self._t_sell(instr=self.bond0, position=-10,
                      stl_ccy=self.usd, principal=20., carry=0., overheads=0.,
                      days=7)
-        # self._t_instr_pl(instr=self.bond0, position=0.,
-        #                  stl_ccy=self.chf, principal=0., carry=20., overheads=0.,
-        #                  days=8)
+        self._t_instr_pl(instr=self.bond0, position=0.,
+                         stl_ccy=self.chf, principal=0., carry=20., overheads=0.,
+                         days=8)
 
         self._simple_run('instrument_pl', report_currency=self.cad, report_date=self._d(14),
-                         trn_dump_all=False)
+                         trn_dump_all=True)
 
     def _test_transaction_pl(self):
         self._t_trn_pl(stl_ccy=self.rub, principal=0., carry=-900., overheads=-100.,
@@ -2605,7 +2605,7 @@ class ReportTestCase(TestCase):
         b.build_balance()
         self._dump(b, 'test_pl_date_interval_1: pl_first_date abd report_date', show_trns=show_trns)
 
-    def test_perfomance(self):
+    def _test_perfomance(self):
         # from django.conf import settings
         # settings.DEBUG = True
 
