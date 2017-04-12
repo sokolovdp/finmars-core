@@ -1170,7 +1170,7 @@ class ReportTestCase(TestCase):
 
     def _sdump(self, builder, name, show_trns=True, show_items=True, trn_cols=None, item_cols=None,
                trn_filter=None, in_csv=False):
-        transpose = True
+        transpose = False
         showindex = 'always'
         if show_trns or show_items:
             s = 'Report: %s\n' % (
@@ -1436,36 +1436,77 @@ class ReportTestCase(TestCase):
         #                 instrs=False)
 
     def test_instrument_pl(self):
-        self._t_buy(instr=self.bond0, position=5,
-                    stl_ccy=self.usd, principal=-10., carry=-0., overheads=-0.,
-                    days=1)
-        self._t_instr_pl(instr=self.bond0, position=0.,
-                         stl_ccy=self.chf, principal=0., carry=11., overheads=-1.,
-                         days=2)
+        # self._t_buy(instr=self.bond0, position=5,
+        #             stl_ccy=self.usd, principal=-10., carry=-0., overheads=-0.,
+        #             days=1)
+        # self._t_instr_pl(instr=self.bond0, position=0.,
+        #                  stl_ccy=self.chf, principal=0., carry=11., overheads=-1.,
+        #                  days=2)
+        #
+        # self._t_buy(instr=self.bond0, position=5,
+        #             stl_ccy=self.usd, principal=-15., carry=-0., overheads=-0.,
+        #             days=3)
+        # self._t_instr_pl(instr=self.bond0, position=0.,
+        #                  stl_ccy=self.chf, principal=0., carry=20., overheads=0.,
+        #                  days=4)
+        #
+        # self._t_sell(instr=self.bond0, position=-5,
+        #              stl_ccy=self.usd, principal=20., carry=0., overheads=0.,
+        #              days=5)
+        # self._t_instr_pl(instr=self.bond0, position=0.,
+        #                  stl_ccy=self.chf, principal=0., carry=20., overheads=0.,
+        #                  days=6)
+        #
+        # self._t_sell(instr=self.bond0, position=-10,
+        #              stl_ccy=self.usd, principal=20., carry=0., overheads=0.,
+        #              days=7)
+        # self._t_instr_pl(instr=self.bond0, position=0.,
+        #                  stl_ccy=self.chf, principal=0., carry=20., overheads=0.,
+        #                  days=8)
 
-        self._t_buy(instr=self.bond0, position=5,
-                    stl_ccy=self.usd, principal=-15., carry=-0., overheads=-0.,
-                    days=3)
-        self._t_instr_pl(instr=self.bond0, position=0.,
-                         stl_ccy=self.chf, principal=0., carry=20., overheads=0.,
-                         days=4)
 
-        self._t_sell(instr=self.bond0, position=-5,
-                     stl_ccy=self.usd, principal=20., carry=0., overheads=0.,
-                     days=5)
-        self._t_instr_pl(instr=self.bond0, position=0.,
-                         stl_ccy=self.chf, principal=0., carry=20., overheads=0.,
-                         days=6)
+        # self._t_buy(instr=self.bond0, position=1, stl_ccy=self.usd, principal=-10., carry=-0., overheads=-0.)
+        # self._t_instr_pl(instr=self.bond0, position=0., stl_ccy=self.chf, principal=0., carry=20., overheads=0.)
 
-        self._t_sell(instr=self.bond0, position=-10,
-                     stl_ccy=self.usd, principal=20., carry=0., overheads=0.,
-                     days=7)
-        self._t_instr_pl(instr=self.bond0, position=0.,
-                         stl_ccy=self.chf, principal=0., carry=20., overheads=0.,
-                         days=8)
+        self._t_sell(instr=self.bond0, position=-1, stl_ccy=self.usd, principal=20., carry=0., overheads=0.)
+        self._t_instr_pl(instr=self.bond0, position=0., stl_ccy=self.chf, principal=0., carry=20., overheads=0.)
+
+        # self._t_buy(instr=self.bond0, position=1, stl_ccy=self.usd, principal=-10., carry=-0., overheads=-0.)
+        # self._t_instr_pl(instr=self.bond0, position=0., stl_ccy=self.chf, principal=0., carry=20., overheads=0.)
+
+        self._t_sell(instr=self.bond0, position=-1, stl_ccy=self.usd, principal=20., carry=0., overheads=0.)
+        self._t_instr_pl(instr=self.bond0, position=0., stl_ccy=self.chf, principal=0., carry=20., overheads=0.)
+
+        # self._t_buy(instr=self.bond0, position=1, stl_ccy=self.usd, principal=-10., carry=-0., overheads=-0.)
+        # self._t_instr_pl(instr=self.bond0, position=0., stl_ccy=self.chf, principal=0., carry=20., overheads=0.)
+
+        self._t_sell(instr=self.bond0, position=-1, stl_ccy=self.usd, principal=20., carry=0., overheads=0.)
+        self._t_instr_pl(instr=self.bond0, position=0., stl_ccy=self.chf, principal=0., carry=20., overheads=0.)
+
+        self._t_buy(instr=self.bond0, position=1, stl_ccy=self.usd, principal=-10., carry=-0., overheads=-0.)
+        self._t_instr_pl(instr=self.bond0, position=0., stl_ccy=self.chf, principal=0., carry=20., overheads=0.)
+
+        # self._t_sell(instr=self.bond0, position=-1, stl_ccy=self.usd, principal=20., carry=0., overheads=0.)
+        # self._t_instr_pl(instr=self.bond0, position=0., stl_ccy=self.chf, principal=0., carry=20., overheads=0.)
+
+        self._t_buy(instr=self.bond0, position=1, stl_ccy=self.usd, principal=-10., carry=-0., overheads=-0.)
+        self._t_instr_pl(instr=self.bond0, position=0., stl_ccy=self.chf, principal=0., carry=20., overheads=0.)
+
+        self._t_buy(instr=self.bond0, position=1, stl_ccy=self.usd, principal=-10., carry=-0., overheads=-0.)
+        self._t_instr_pl(instr=self.bond0, position=0., stl_ccy=self.chf, principal=0., carry=20., overheads=0.)
+
+        self._t_buy(instr=self.bond0, position=1, stl_ccy=self.usd, principal=-10., carry=-0., overheads=-0.)
+        self._t_instr_pl(instr=self.bond0, position=0., stl_ccy=self.chf, principal=0., carry=20., overheads=0.)
+
+        self._t_sell(instr=self.bond0, position=-1, stl_ccy=self.usd, principal=20., carry=0., overheads=0.)
+        self._t_instr_pl(instr=self.bond0, position=0., stl_ccy=self.chf, principal=0., carry=20., overheads=0.)
+
+        trn_cols=['trn_code', 'trn_cls', 'instr', 'pos_size', 'multiplier', 'rolling_pos_size',
+                  'remaining_pos_size', 'sum_remaining_pos_size', 'balance_pos_size',]
+        item_cols=self.ITEM_COLS_ALL
 
         self._simple_run('instrument_pl', report_currency=self.cad, report_date=self._d(14),
-                         trn_dump_all=True)
+                         trn_dump_all=False, trn_cols=trn_cols, item_cols=item_cols)
 
     def _test_transaction_pl(self):
         self._t_trn_pl(stl_ccy=self.rub, principal=0., carry=-900., overheads=-100.,

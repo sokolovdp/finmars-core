@@ -129,6 +129,7 @@ class VirtualTransaction(BaseReportItem):
     amount_invested_res = 0.0
 
     balance_pos_size = 0.0
+    sum_remaining_pos_size = 0.0
     remaining_pos_size = 0.0
     remaining_pos_size_percent = 0.0  # calculated in second pass
     ytm = 0.0
