@@ -241,6 +241,8 @@ class ReportItemSerializer(serializers.Serializer):
     instrument_accrual = serializers.PrimaryKeyRelatedField(source='instr_accrual', read_only=True)
     instrument_accrual_accrued_price = serializers.FloatField(source='instr_accrual_accrued_price', read_only=True)
 
+    # TODO: deprecated all *_object values
+
     portfolio_object = ReportPortfolioSerializer(source='prtfl', read_only=True)
     account_object = ReportAccountSerializer(source='acc', read_only=True)
     strategy1_object = ReportStrategy1Serializer(source='str1', read_only=True)
@@ -385,25 +387,48 @@ class ReportSerializer(serializers.Serializer):
                                              ('cash_date', ugettext_lazy('Cash date')),
                                          ))
 
-    items = ReportItemSerializer(many=True, read_only=True)
+    pricing_policy_object = PricingPolicyViewSerializer(source='pricing_policy', read_only=True)
+    report_currency_object = CurrencyViewSerializer(source='report_currency', read_only=True)
+    cost_method_object = CostMethodSerializer(source='cost_method', read_only=True)
+    portfolios_object = PortfolioViewSerializer(source='portfolios', read_only=True, many=True)
+    accounts_object = AccountViewSerializer(source='accounts', read_only=True, many=True)
+    strategies1_object = Strategy1ViewSerializer(source='strategies1', read_only=True, many=True)
+    strategies2_object = Strategy2ViewSerializer(source='strategies2', read_only=True, many=True)
+    strategies3_object = Strategy3ViewSerializer(source='strategies3', read_only=True, many=True)
+    custom_fields_object = CustomFieldViewSerializer(source='custom_fields', read_only=True,
+                                                                    many=True)
+    transaction_classes_object = TransactionClassSerializer(source='transaction_classes',
+                                                                           read_only=True, many=True)
 
     # transactions = ReportTransactionSerializer(many=True, read_only=True)
+    items = ReportItemSerializer(many=True, read_only=True)
+
+    item_instruments = ReportInstrumentSerializer(many=True, read_only=True)
+    item_currencies = ReportCurrencySerializer(many=True, read_only=True)
+    item_portfolios = ReportPortfolioSerializer(many=True, read_only=True)
+    item_accounts = ReportAccountSerializer(many=True, read_only=True)
+    item_strategies1 = ReportStrategy1Serializer(many=True, read_only=True)
+    item_strategies2 = ReportStrategy2Serializer(many=True, read_only=True)
+    item_strategies3 = ReportStrategy3Serializer(many=True, read_only=True)
+    item_currency_fx_rates = ReportCurrencyHistorySerializer(many=True, read_only=True)
+    item_instrument_pricings = ReportPriceHistorySerializer(many=True, read_only=True)
+    item_instrument_accruals = ReportAccrualCalculationScheduleSerializer(many=True, read_only=True)
 
     def __init__(self, *args, **kwargs):
         super(ReportSerializer, self).__init__(*args, **kwargs)
 
-        self.fields['pricing_policy_object'] = PricingPolicyViewSerializer(source='pricing_policy', read_only=True)
-        self.fields['report_currency_object'] = CurrencyViewSerializer(source='report_currency', read_only=True)
-        self.fields['cost_method_object'] = CostMethodSerializer(source='cost_method', read_only=True)
-        self.fields['portfolios_object'] = PortfolioViewSerializer(source='portfolios', read_only=True, many=True)
-        self.fields['accounts_object'] = AccountViewSerializer(source='accounts', read_only=True, many=True)
-        self.fields['strategies1_object'] = Strategy1ViewSerializer(source='strategies1', read_only=True, many=True)
-        self.fields['strategies2_object'] = Strategy2ViewSerializer(source='strategies2', read_only=True, many=True)
-        self.fields['strategies3_object'] = Strategy3ViewSerializer(source='strategies3', read_only=True, many=True)
-        self.fields['custom_fields_object'] = CustomFieldViewSerializer(source='custom_fields', read_only=True,
-                                                                        many=True)
-        self.fields['transaction_classes_object'] = TransactionClassSerializer(source='transaction_classes',
-                                                                               read_only=True, many=True)
+        # self.fields['pricing_policy_object'] = PricingPolicyViewSerializer(source='pricing_policy', read_only=True)
+        # self.fields['report_currency_object'] = CurrencyViewSerializer(source='report_currency', read_only=True)
+        # self.fields['cost_method_object'] = CostMethodSerializer(source='cost_method', read_only=True)
+        # self.fields['portfolios_object'] = PortfolioViewSerializer(source='portfolios', read_only=True, many=True)
+        # self.fields['accounts_object'] = AccountViewSerializer(source='accounts', read_only=True, many=True)
+        # self.fields['strategies1_object'] = Strategy1ViewSerializer(source='strategies1', read_only=True, many=True)
+        # self.fields['strategies2_object'] = Strategy2ViewSerializer(source='strategies2', read_only=True, many=True)
+        # self.fields['strategies3_object'] = Strategy3ViewSerializer(source='strategies3', read_only=True, many=True)
+        # self.fields['custom_fields_object'] = CustomFieldViewSerializer(source='custom_fields', read_only=True,
+        #                                                                 many=True)
+        # self.fields['transaction_classes_object'] = TransactionClassSerializer(source='transaction_classes',
+        #                                                                        read_only=True, many=True)
 
     def validate(self, attrs):
         if not attrs.get('report_date', None):

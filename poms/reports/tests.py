@@ -6,6 +6,7 @@ import random
 import time
 from datetime import date, timedelta, datetime
 
+import zlib
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.serializers.json import DjangoJSONEncoder
@@ -2710,6 +2711,11 @@ class ReportTestCase(TestCase):
             json_data = json.dumps(data, cls=DjangoJSONEncoder)
             t2 = time.perf_counter()
             _l.debug('json: len=%s, time=%s', len(json_data), t2 - t1)
+
+            t1 = time.perf_counter()
+            zjson_data = zlib.compress(json_data.encode())
+            t2 = time.perf_counter()
+            _l.debug('xjson: len=%s, time=%s', len(zjson_data), t2 - t1)
 
         r = Report(master_user=self.m, member=self.mm, report_currency=self.cad, report_date=self._d(14),
                    pricing_policy=self.pp)
