@@ -824,14 +824,14 @@ class ReportItem(BaseReportItem):
                 self.instr_principal_res = self.pos_size * self.instr.price_multiplier * self.instr_price_cur_principal_price * self.instr_pricing_ccy_cur_fx
                 self.instr_accrued_res = self.pos_size * self.instr.accrued_multiplier * self.instr_price_cur_accrued_price * self.instr_pricing_ccy_cur_fx
 
-                _l.debug('> instr_accrual: instr=%s', self.instr.id)
+                # _l.debug('> instr_accrual: instr=%s', self.instr.id)
                 self.instr_accrual = self.instr.find_accrual(self.report.report_date)
-                _l.debug('< instr_accrual: %s', self.instr_accrual)
+                # _l.debug('< instr_accrual: %s', self.instr_accrual)
                 if self.instr_accrual:
-                    _l.debug('> instr_accrual_accrued_price: instr=%s', self.instr.id)
+                    # _l.debug('> instr_accrual_accrued_price: instr=%s', self.instr.id)
                     self.instr_accrual_accrued_price = self.instr.get_accrued_price(self.report.report_date,
                                                                                     accrual=self.instr_accrual)
-                    _l.debug('< instr_accrual_accrued_price: %s', self.instr_accrual_accrued_price)
+                    # _l.debug('< instr_accrual_accrued_price: %s', self.instr_accrual_accrued_price)
             else:
                 self.instr_principal_res = 0.0
                 self.instr_accrued_res = 0.0
@@ -1452,12 +1452,81 @@ class Report(object):
         self.items = items or []
         self.transactions = []
 
+        self.item_instruments = None
+        self.item_currencies = None
+        self.item_portfolios = None
+        self.item_accounts = None
+        self.item_strategies1 = None
+        self.item_strategies2 = None
+        self.item_strategies3 = None
+        self.item_currency_fx_rates = None
+        self.item_instrument_pricings = None
+        self.item_instrument_accruals = None
+
     def __str__(self):
         return "%s for %s/%s @ %s" % (self.__class__.__name__, self.master_user, self.member, self.report_date)
 
     def close(self):
         for item in self.items:
             item.eval_custom_fields()
+
+        item_instruments = {}
+        item_currencies = {}
+        item_portfolios = {}
+        item_accounts = {}
+        item_strategies1 = {}
+        item_strategies2 = {}
+        item_strategies3 = {}
+        item_currency_fx_rates = {}
+        item_instrument_pricings = {}
+        item_instrument_accruals = {}
+
+        for item in self.items:
+            if item.instr:
+                item_instruments[item.instr.id] = item.instr
+            if item.ccy:
+                item_currencies[item.ccy.id] = item.ccy
+            if item.prtfl:
+                item_portfolios[item.prtfl.id] = item.prtfl
+            if item.acc:
+                item_accounts[item.acc.id] = item.acc
+            if item.str1:
+                item_strategies1[item.str1.id] = item.str1
+            if item.str2:
+                item_strategies2[item.str2.id] = item.str2
+            if item.str3:
+                item_strategies3[item.str3.id] = item.str3
+            if item.mismatch_prtfl:
+                item_portfolios[item.mismatch_prtfl.id] = item.mismatch_prtfl
+            if item.mismatch_acc:
+                item_accounts[item.mismatch_acc.id] = item.mismatch_acc
+            if item.alloc:
+                item_instruments[item.alloc.id] = item.alloc
+            if item.report_ccy_cur:
+                item_currency_fx_rates[item.report_ccy_cur.id] = item.report_ccy_cur
+            if item.instr_price_cur:
+                item_instrument_pricings[item.instr_price_cur.id] = item.instr_price_cur
+            if item.instr_pricing_ccy_cur:
+                item_currency_fx_rates[item.instr_pricing_ccy_cur.id] = item.instr_pricing_ccy_cur
+            if item.instr_accrued_ccy_cur:
+                item_currency_fx_rates[item.instr_accrued_ccy_cur.id] = item.instr_accrued_ccy_cur
+            if item.ccy_cur:
+                item_currency_fx_rates[item.ccy_cur.id] = item.ccy_cur
+            if item.pricing_ccy_cur:
+                item_currency_fx_rates[item.pricing_ccy_cur.id] = item.pricing_ccy_cur
+            if item.instr_accrual:
+                item_instrument_accruals[item.instr_accrual.id] = item.instr_accrual
+
+        self.item_instruments = list(item_instruments.values())
+        self.item_currencies = list(item_currencies.values())
+        self.item_portfolios = list(item_portfolios.values())
+        self.item_accounts = list(item_accounts.values())
+        self.item_strategies1 = list(item_strategies1.values())
+        self.item_strategies2 = list(item_strategies2.values())
+        self.item_strategies3 = list(item_strategies3.values())
+        self.item_currency_fx_rates = list(item_currency_fx_rates.values())
+        self.item_instrument_pricings = list(item_instrument_pricings.values())
+        self.item_instrument_accruals = list(item_instrument_accruals.values())
 
     @property
     def report_type_str(self):

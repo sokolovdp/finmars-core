@@ -1,10 +1,15 @@
 import csv
+import json
 import logging
 import os
+import random
+import time
 from datetime import date, timedelta, datetime
 
+import zlib
 from django.conf import settings
 from django.contrib.auth.models import User
+from django.core.serializers.json import DjangoJSONEncoder
 from django.test import TestCase
 from django.utils.functional import cached_property
 
@@ -20,7 +25,7 @@ from poms.reports.builders.balance_pl import ReportBuilder
 from poms.reports.builders.balance_virt_trn import VirtualTransaction
 from poms.strategies.models import Strategy1Group, Strategy1Subgroup, Strategy1, Strategy2Group, Strategy2Subgroup, \
     Strategy2, Strategy3Subgroup, Strategy3Group, Strategy3
-from poms.transactions.models import Transaction, TransactionClass
+from poms.transactions.models import Transaction, TransactionClass, TransactionType, ComplexTransaction
 from poms.users.models import MasterUser, Member
 
 _l = logging.getLogger('poms.reports')
@@ -1494,8 +1499,8 @@ class ReportTestCase(TestCase):
         self._t_cash_in(trn_ccy=self.usd, stl_ccy=self.usd, position=1000, fx_rate=1.3, days=1, notes='N1')
         self._t_cash_out(trn_ccy=self.usd, stl_ccy=self.usd, position=-1000, fx_rate=1.0, days=1, notes='N2')
 
-        self._t_fx_tade(trn_ccy=self.usd, position=100, stl_ccy=self.usd, principal=-140,  days=1, notes='N1')
-        self._t_fx_tade(trn_ccy=self.usd, position=100, stl_ccy=self.usd, principal=-140,  days=1, notes='N2')
+        self._t_fx_tade(trn_ccy=self.usd, position=100, stl_ccy=self.usd, principal=-140, days=1, notes='N1')
+        self._t_fx_tade(trn_ccy=self.usd, position=100, stl_ccy=self.usd, principal=-140, days=1, notes='N2')
 
         self._t_trn_pl(stl_ccy=self.usd, principal=0., carry=-900., overheads=-100., days=1, notes='N1')
         self._t_trn_pl(stl_ccy=self.usd, principal=0., carry=-900., overheads=-100., days=1, notes='N2')
@@ -2599,6 +2604,131 @@ class ReportTestCase(TestCase):
         b = ReportBuilder(instance=r)
         b.build_balance()
         self._dump(b, 'test_pl_date_interval_1: pl_first_date abd report_date', show_trns=show_trns)
+
+    def test_perfomance(self):
+        # from django.conf import settings
+        # settings.DEBUG = True
+
+        ltcls = list(TransactionClass.objects.all())
+        ltt = list(TransactionType.objects.filter(master_user=self.m).all())
+        linstr = list(Instrument.objects.filter(master_user=self.m).all())
+        lccy = list(Currency.objects.filter(master_user=self.m).all())
+        lp = list(Portfolio.objects.filter(master_user=self.m).all())
+        lacc = list(Account.objects.filter(master_user=self.m).all())
+        ls1 = list(Strategy1.objects.filter(master_user=self.m).all())
+        ls2 = list(Strategy2.objects.filter(master_user=self.m).all())
+        ls3 = list(Strategy3.objects.filter(master_user=self.m).all())
+        lr = list(Responsible.objects.filter(master_user=self.m).all())
+        lc = list(Counterparty.objects.filter(master_user=self.m).all())
+
+        days = 1
+        code = 1
+        for g in range(0, 10):
+            _l.info('group: %s', g)
+
+            ctrns = []
+            trns = []
+            for i in range(0, 100):
+                # ct = ComplexTransaction(
+                #     transaction_type=random.choice(ltt),
+                #     date=self._d(days),
+                #     status=ComplexTransaction.PRODUCTION,
+                #     code=code
+                # )
+                ct = None
+
+                transaction_class = random.choice(ltcls)
+
+                if transaction_class.id == TransactionClass.BUY:
+                    position_size_with_sign = random.randint(0, 1000)
+                elif transaction_class.id == TransactionClass.SELL:
+                    position_size_with_sign = - random.randint(0, 1000)
+                else:
+                    position_size_with_sign = 0
+                principal_with_sign = random.randint(0, 1000)
+                carry_with_sign = random.randint(0, 1000)
+                overheads_with_sign = -random.randint(0, 100)
+
+                t = Transaction(
+                    master_user=self.m,
+                    complex_transaction=ct,
+                    complex_transaction_order=1,
+                    transaction_code=code,
+                    transaction_class=transaction_class,
+                    instrument=random.choice(linstr),
+                    transaction_currency=random.choice(lccy),
+                    position_size_with_sign=position_size_with_sign,
+                    settlement_currency=random.choice(lccy),
+                    cash_consideration=principal_with_sign + carry_with_sign + overheads_with_sign,
+                    principal_with_sign=principal_with_sign,
+                    carry_with_sign=carry_with_sign,
+                    overheads_with_sign=overheads_with_sign,
+                    transaction_date=self._d(days),
+                    accounting_date=self._d(days),
+                    cash_date=self._d(days),
+                    portfolio=random.choice(lp),
+                    account_position=random.choice(lacc),
+                    account_cash=random.choice(lacc),
+                    account_interim=random.choice(lacc),
+                    strategy1_position=random.choice(ls1),
+                    strategy1_cash=random.choice(ls1),
+                    strategy2_position=random.choice(ls2),
+                    strategy2_cash=random.choice(ls2),
+                    strategy3_position=random.choice(ls3),
+                    strategy3_cash=random.choice(ls3),
+                    responsible=random.choice(lr),
+                    counterparty=random.choice(lc),
+                    linked_instrument=random.choice(linstr),
+                    allocation_balance=random.choice(linstr),
+                    allocation_pl=random.choice(linstr),
+                )
+
+                if ct:
+                    ctrns.append(ct)
+                if t:
+                    trns.append(t)
+
+                # days += 1
+                code += 1
+
+            if ctrns:
+                ComplexTransaction.objects.bulk_create(ctrns)
+            if trns:
+                Transaction.objects.bulk_create(trns)
+
+        def as_json(r):
+            from poms.reports.builders.balance_serializers import ReportSerializer
+
+            _l.debug('----------------------')
+
+            t1 = time.perf_counter()
+            serializer = ReportSerializer(instance=r, many=False, context={'master_user': self.m, 'member': self.mm})
+            data = serializer.data
+            t2 = time.perf_counter()
+            _l.debug('serialize: time=%s', t2 - t1)
+
+            t1 = time.perf_counter()
+            json_data = json.dumps(data, cls=DjangoJSONEncoder)
+            t2 = time.perf_counter()
+            _l.debug('json: len=%s, time=%s', len(json_data), t2 - t1)
+
+            t1 = time.perf_counter()
+            zjson_data = zlib.compress(json_data.encode())
+            t2 = time.perf_counter()
+            _l.debug('xjson: len=%s, time=%s', len(zjson_data), t2 - t1)
+
+        r = Report(master_user=self.m, member=self.mm, report_currency=self.cad, report_date=self._d(14),
+                   pricing_policy=self.pp)
+        b = ReportBuilder(instance=r)
+        b.build_balance(full=True)
+        as_json(r)
+
+        # r = Report(master_user=self.m, member=self.mm, report_currency=self.cad, report_date=self._d(14),
+        #            pricing_policy=self.pp)
+        # b = ReportBuilder(instance=r)
+        # b.build_pl(full=True)
+        # as_json(r)
+        pass
 
     def _test_from_csv_td_1(self):
         base_path = os.path.join(settings.BASE_DIR, 'poms', 'reports', 'tests_data')
