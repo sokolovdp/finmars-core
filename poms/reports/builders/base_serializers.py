@@ -13,7 +13,7 @@ from poms.obj_attrs.serializers import GenericAttributeTypeSerializer, GenericAt
 from poms.portfolios.serializers import PortfolioSerializer
 from poms.reports.models import CustomField
 from poms.strategies.serializers import Strategy1Serializer, Strategy2Serializer, Strategy3Serializer
-from poms.transactions.serializers import ComplexTransactionSerializer
+from poms.transactions.serializers import ComplexTransactionSerializer, TransactionTypeViewSerializer
 from poms.users.fields import MasterUserField
 
 
@@ -295,6 +295,8 @@ class ReportComplexTransactionSerializer(ComplexTransactionSerializer):
         for k in list(self.fields.keys()):
             if str(k).endswith('_object'):
                 self.fields.pop(k)
+
+        self.fields['transaction_type_object'] = TransactionTypeViewSerializer(source='transaction_type', read_only=True)
 
 
 class ReportItemCustomFieldSerializer(serializers.Serializer):

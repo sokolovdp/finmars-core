@@ -18,6 +18,7 @@ from poms.obj_perms.utils import get_permissions_prefetch_lookups
 from poms.portfolios.models import Portfolio
 from poms.reports.builders.balance_item import ReportItem, Report
 from poms.reports.builders.balance_virt_trn import VirtualTransaction
+from poms.reports.builders.base_builder import BaseReportBuilder
 from poms.reports.builders.pricing import FakeInstrumentPricingProvider, FakeCurrencyFxRateProvider, \
     CurrencyFxRateProvider
 from poms.reports.builders.pricing import InstrumentPricingProvider
@@ -29,7 +30,7 @@ from poms.transactions.models import TransactionClass, Transaction, ComplexTrans
 _l = logging.getLogger('poms.reports')
 
 
-class ReportBuilder(object):
+class ReportBuilder(BaseReportBuilder):
     def __init__(self, instance=None, queryset=None, transactions=None, pricing_provider=None, fx_rate_provider=None):
         self.instance = instance
         self._queryset = queryset
@@ -1144,207 +1145,268 @@ class ReportBuilder(object):
     def _refresh_with_perms(self):
         _l.debug('items - refresh all objects with permissions')
 
-        instrs = set()
-        ccys = set()
-        prtfls = set()
-        accs = set()
-        strs1 = set()
-        strs2 = set()
-        strs3 = set()
+        self.instance.item_instruments = self._refresh_instruments(
+            master_user=self.instance.master_user,
+            items=self.instance.items,
+            attrs=['instr', 'alloc']
+        )
 
-        for i in self.instance.items:
-            if i.instr:
-                instrs.add(i.instr.id)
-                if i.instr.pricing_currency_id:
-                    ccys.add(i.instr.pricing_currency_id)
-                if i.instr.accrued_currency_id:
-                    ccys.add(i.instr.accrued_currency_id)
+        self.instance.item_currencies = self._refresh_currencies(
+            master_user=self.instance.master_user,
+            items=self.instance.items,
+            attrs=['ccy', 'pricing_ccy']
+        )
 
-            if i.ccy:
-                ccys.add(i.ccy.id)
-            # if i.trn_ccy:
-            #     ccys.add(i.trn_ccy.id)
-            if i.pricing_ccy:
-                ccys.add(i.pricing_ccy.id)
+        self.instance.item_portfolios = self._refresh_portfolios(
+            master_user=self.instance.master_user,
+            items=self.instance.items,
+            attrs=['prtfl', 'mismatch_prtfl']
+        )
 
-            if i.prtfl:
-                prtfls.add(i.prtfl.id)
-            if i.acc:
-                accs.add(i.acc.id)
+        self.instance.item_accounts = self._refresh_accounts(
+            master_user=self.instance.master_user,
+            items=self.instance.items,
+            attrs=['acc', 'mismatch_acc']
+        )
 
-            if i.str1:
-                strs1.add(i.str1.id)
-            if i.str2:
-                strs2.add(i.str2.id)
-            if i.str3:
-                strs3.add(i.str3.id)
+        self.instance.item_strategies1 = self._refresh_strategies1(
+            master_user=self.instance.master_user,
+            items=self.instance.items,
+            attrs=['str1']
+        )
 
-            if i.mismatch_prtfl:
-                prtfls.add(i.mismatch_prtfl.id)
-            if i.mismatch_acc:
-                accs.add(i.mismatch_acc.id)
+        self.instance.item_strategies2 = self._refresh_strategies2(
+            master_user=self.instance.master_user,
+            items=self.instance.items,
+            attrs=['str2']
+        )
 
-            if i.alloc:
-                instrs.add(i.alloc.id)
-                if i.alloc.pricing_currency_id:
-                    ccys.add(i.alloc.pricing_currency_id)
-                if i.alloc.accrued_currency_id:
-                    ccys.add(i.alloc.accrued_currency_id)
+        self.instance.item_strategies3 = self._refresh_strategies3(
+            master_user=self.instance.master_user,
+            items=self.instance.items,
+            attrs=['str3']
+        )
 
-            # if i.alloc_bl:
-            #     instrs.add(i.alloc_bl.id)
-            #     if i.alloc_bl.pricing_currency_id:
-            #         ccys.add(i.alloc_bl.pricing_currency_id)
-            #     if i.alloc_bl.accrued_currency_id:
-            #         ccys.add(i.alloc_bl.accrued_currency_id)
-            #
-            # if i.alloc_pl:
-            #     instrs.add(i.alloc_pl.id)
-            #     if i.alloc_pl.pricing_currency_id:
-            #         ccys.add(i.alloc_pl.pricing_currency_id)
-            #     if i.alloc_pl.accrued_currency_id:
-            #         ccys.add(i.alloc_pl.accrued_currency_id)
+        self.instance.item_currency_fx_rates = self._refresh_currency_fx_rates(
+            master_user=self.instance.master_user,
+            items=self.instance.items,
+            attrs=['report_ccy_cur', 'instr_pricing_ccy_cur', 'instr_accrued_ccy_cur', 'ccy_cur', 'pricing_ccy_cur']
+        )
 
-        instrs = Instrument.objects.filter(master_user=self.instance.master_user).prefetch_related(
-            'master_user',
-            'instrument_type',
-            'instrument_type__instrument_class',
-            'pricing_currency',
-            'accrued_currency',
-            'payment_size_detail',
-            'daily_pricing_model',
-            'price_download_scheme',
-            'price_download_scheme__provider',
-            get_attributes_prefetch(),
-            get_tag_prefetch(),
-            *get_permissions_prefetch_lookups(
-                (None, Instrument),
-                ('instrument_type', InstrumentType),
-            )
-        ).in_bulk(instrs)
-        _l.debug('instrs: %s', sorted(instrs.keys()))
+        self.instance.item_instrument_pricings = self._refresh_item_instrument_pricings(
+            master_user=self.instance.master_user,
+            items=self.instance.items,
+            attrs=['instr_price_cur']
+        )
 
-        ccys = Currency.objects.filter(master_user=self.instance.master_user).prefetch_related(
-            'master_user',
-            'daily_pricing_model',
-            'price_download_scheme',
-            'price_download_scheme__provider',
-            get_attributes_prefetch(),
-            get_tag_prefetch()
-        ).in_bulk(ccys)
-        _l.debug('ccys: %s', sorted(ccys.keys()))
+        self.instance.item_instrument_accruals = self._refresh_item_instrument_accruals(
+            master_user=self.instance.master_user,
+            items=self.instance.items,
+            attrs=['instr_accrual']
+        )
 
-        prtfls = Portfolio.objects.filter(master_user=self.instance.master_user).prefetch_related(
-            'master_user',
-            get_attributes_prefetch(),
-            get_tag_prefetch(),
-            *get_permissions_prefetch_lookups(
-                (None, Portfolio),
-            )
-        ).in_bulk(prtfls)
-        _l.debug('prtfls: %s', sorted(prtfls.keys()))
-
-        accs = Account.objects.filter(master_user=self.instance.master_user).prefetch_related(
-            'master_user',
-            'type',
-            get_attributes_prefetch(),
-            get_tag_prefetch(),
-            *get_permissions_prefetch_lookups(
-                (None, Account),
-                ('type', AccountType),
-            )
-        ).in_bulk(accs)
-        _l.debug('accs: %s', sorted(accs.keys()))
-
-        strs1 = Strategy1.objects.filter(master_user=self.instance.master_user).prefetch_related(
-            'master_user',
-            'subgroup',
-            'subgroup__group',
-            get_tag_prefetch(),
-            *get_permissions_prefetch_lookups(
-                (None, Strategy1),
-                ('subgroup', Strategy1Subgroup),
-                ('subgroup__group', Strategy1Group),
-            )
-        ).in_bulk(strs1)
-        _l.debug('strs1: %s', sorted(strs1.keys()))
-
-        strs2 = Strategy2.objects.filter(master_user=self.instance.master_user).prefetch_related(
-            'master_user',
-            'subgroup',
-            'subgroup__group',
-            get_tag_prefetch(),
-            *get_permissions_prefetch_lookups(
-                (None, Strategy2),
-                ('subgroup', Strategy2Subgroup),
-                ('subgroup__group', Strategy2Group),
-            )
-        ).in_bulk(strs2)
-        _l.debug('strs2: %s', sorted(strs2.keys()))
-
-        strs3 = Strategy3.objects.filter(master_user=self.instance.master_user).prefetch_related(
-            'master_user',
-            'subgroup',
-            'subgroup__group',
-            get_tag_prefetch(),
-            *get_permissions_prefetch_lookups(
-                (None, Strategy3),
-                ('subgroup', Strategy3Subgroup),
-                ('subgroup__group', Strategy3Group),
-            )
-        ).in_bulk(strs3)
-        _l.debug('strs3: %s', sorted(strs3.keys()))
-
-        for i in self.instance.items:
-            if i.instr:
-                i.instr = instrs[i.instr.id]
-                if i.instr.pricing_currency_id:
-                    i.instr.pricing_currency = ccys[i.instr.pricing_currency_id]
-                if i.instr.accrued_currency_id:
-                    i.instr.accrued_currency = ccys[i.instr.accrued_currency_id]
-
-            if i.ccy:
-                i.ccy = ccys[i.ccy.id]
-            # if i.trn_ccy:
-            #     i.trn_ccy = ccys[i.trn_ccy.id]
-            if i.pricing_ccy:
-                i.pricing_ccy = ccys[i.pricing_ccy.id]
-
-            if i.prtfl:
-                i.prtfl = prtfls[i.prtfl.id]
-            if i.acc:
-                i.acc = accs[i.acc.id]
-
-            if i.str1:
-                i.str1 = strs1[i.str1.id]
-            if i.str2:
-                i.str2 = strs2[i.str2.id]
-            if i.str3:
-                i.str3 = strs3[i.str3.id]
-
-            if i.mismatch_prtfl:
-                i.mismatch_prtfl = prtfls[i.mismatch_prtfl.id]
-            if i.mismatch_acc:
-                i.mismatch_acc = accs[i.mismatch_acc.id]
-
-            if i.alloc:
-                i.alloc = instrs[i.alloc.id]
-                if i.alloc.pricing_currency_id:
-                    i.alloc.pricing_currency = ccys[i.alloc.pricing_currency_id]
-                if i.alloc.accrued_currency_id:
-                    i.alloc.accrued_currency = ccys[i.alloc.accrued_currency_id]
-
-            # if i.alloc_bl:
-            #     i.alloc_bl = instrs[i.alloc_bl.id]
-            #     if i.alloc_bl.pricing_currency_id:
-            #         i.alloc_bl.pricing_currency = ccys[i.alloc_bl.pricing_currency_id]
-            #     if i.alloc_bl.accrued_currency_id:
-            #         i.alloc_bl.accrued_currency = ccys[i.alloc_bl.accrued_currency_id]
-            #
-            # if i.alloc_pl:
-            #     i.alloc_pl = instrs[i.alloc_pl.id]
-            #     if i.alloc_pl.pricing_currency_id:
-            #         i.alloc_pl.pricing_currency = ccys[i.alloc_pl.pricing_currency_id]
-            #     if i.alloc_pl.accrued_currency_id:
-            #         i.alloc_pl.accrued_currency = ccys[i.alloc_pl.accrued_currency_id]
-            pass
+        # instrs = set()
+        # ccys = set()
+        # prtfls = set()
+        # accs = set()
+        # strs1 = set()
+        # strs2 = set()
+        # strs3 = set()
+        #
+        # for i in self.instance.items:
+        #     if i.instr:
+        #         instrs.add(i.instr.id)
+        #         if i.instr.pricing_currency_id:
+        #             ccys.add(i.instr.pricing_currency_id)
+        #         if i.instr.accrued_currency_id:
+        #             ccys.add(i.instr.accrued_currency_id)
+        #
+        #     if i.ccy:
+        #         ccys.add(i.ccy.id)
+        #     # if i.trn_ccy:
+        #     #     ccys.add(i.trn_ccy.id)
+        #     if i.pricing_ccy:
+        #         ccys.add(i.pricing_ccy.id)
+        #
+        #     if i.prtfl:
+        #         prtfls.add(i.prtfl.id)
+        #     if i.acc:
+        #         accs.add(i.acc.id)
+        #
+        #     if i.str1:
+        #         strs1.add(i.str1.id)
+        #     if i.str2:
+        #         strs2.add(i.str2.id)
+        #     if i.str3:
+        #         strs3.add(i.str3.id)
+        #
+        #     if i.mismatch_prtfl:
+        #         prtfls.add(i.mismatch_prtfl.id)
+        #     if i.mismatch_acc:
+        #         accs.add(i.mismatch_acc.id)
+        #
+        #     if i.alloc:
+        #         instrs.add(i.alloc.id)
+        #         if i.alloc.pricing_currency_id:
+        #             ccys.add(i.alloc.pricing_currency_id)
+        #         if i.alloc.accrued_currency_id:
+        #             ccys.add(i.alloc.accrued_currency_id)
+        #
+        #             # if i.alloc_bl:
+        #             #     instrs.add(i.alloc_bl.id)
+        #             #     if i.alloc_bl.pricing_currency_id:
+        #             #         ccys.add(i.alloc_bl.pricing_currency_id)
+        #             #     if i.alloc_bl.accrued_currency_id:
+        #             #         ccys.add(i.alloc_bl.accrued_currency_id)
+        #             #
+        #             # if i.alloc_pl:
+        #             #     instrs.add(i.alloc_pl.id)
+        #             #     if i.alloc_pl.pricing_currency_id:
+        #             #         ccys.add(i.alloc_pl.pricing_currency_id)
+        #             #     if i.alloc_pl.accrued_currency_id:
+        #             #         ccys.add(i.alloc_pl.accrued_currency_id)
+        #
+        # instrs = Instrument.objects.filter(master_user=self.instance.master_user).prefetch_related(
+        #     'master_user',
+        #     'instrument_type',
+        #     'instrument_type__instrument_class',
+        #     'pricing_currency',
+        #     'accrued_currency',
+        #     'payment_size_detail',
+        #     'daily_pricing_model',
+        #     'price_download_scheme',
+        #     'price_download_scheme__provider',
+        #     get_attributes_prefetch(),
+        #     get_tag_prefetch(),
+        #     *get_permissions_prefetch_lookups(
+        #         (None, Instrument),
+        #         ('instrument_type', InstrumentType),
+        #     )
+        # ).in_bulk(instrs)
+        # _l.debug('instrs: %s', sorted(instrs.keys()))
+        #
+        # ccys = Currency.objects.filter(master_user=self.instance.master_user).prefetch_related(
+        #     'master_user',
+        #     'daily_pricing_model',
+        #     'price_download_scheme',
+        #     'price_download_scheme__provider',
+        #     get_attributes_prefetch(),
+        #     get_tag_prefetch()
+        # ).in_bulk(ccys)
+        # _l.debug('ccys: %s', sorted(ccys.keys()))
+        #
+        # prtfls = Portfolio.objects.filter(master_user=self.instance.master_user).prefetch_related(
+        #     'master_user',
+        #     get_attributes_prefetch(),
+        #     get_tag_prefetch(),
+        #     *get_permissions_prefetch_lookups(
+        #         (None, Portfolio),
+        #     )
+        # ).in_bulk(prtfls)
+        # _l.debug('prtfls: %s', sorted(prtfls.keys()))
+        #
+        # accs = Account.objects.filter(master_user=self.instance.master_user).prefetch_related(
+        #     'master_user',
+        #     'type',
+        #     get_attributes_prefetch(),
+        #     get_tag_prefetch(),
+        #     *get_permissions_prefetch_lookups(
+        #         (None, Account),
+        #         ('type', AccountType),
+        #     )
+        # ).in_bulk(accs)
+        # _l.debug('accs: %s', sorted(accs.keys()))
+        #
+        # strs1 = Strategy1.objects.filter(master_user=self.instance.master_user).prefetch_related(
+        #     'master_user',
+        #     'subgroup',
+        #     'subgroup__group',
+        #     get_tag_prefetch(),
+        #     *get_permissions_prefetch_lookups(
+        #         (None, Strategy1),
+        #         ('subgroup', Strategy1Subgroup),
+        #         ('subgroup__group', Strategy1Group),
+        #     )
+        # ).in_bulk(strs1)
+        # _l.debug('strs1: %s', sorted(strs1.keys()))
+        #
+        # strs2 = Strategy2.objects.filter(master_user=self.instance.master_user).prefetch_related(
+        #     'master_user',
+        #     'subgroup',
+        #     'subgroup__group',
+        #     get_tag_prefetch(),
+        #     *get_permissions_prefetch_lookups(
+        #         (None, Strategy2),
+        #         ('subgroup', Strategy2Subgroup),
+        #         ('subgroup__group', Strategy2Group),
+        #     )
+        # ).in_bulk(strs2)
+        # _l.debug('strs2: %s', sorted(strs2.keys()))
+        #
+        # strs3 = Strategy3.objects.filter(master_user=self.instance.master_user).prefetch_related(
+        #     'master_user',
+        #     'subgroup',
+        #     'subgroup__group',
+        #     get_tag_prefetch(),
+        #     *get_permissions_prefetch_lookups(
+        #         (None, Strategy3),
+        #         ('subgroup', Strategy3Subgroup),
+        #         ('subgroup__group', Strategy3Group),
+        #     )
+        # ).in_bulk(strs3)
+        # _l.debug('strs3: %s', sorted(strs3.keys()))
+        #
+        # for i in self.instance.items:
+        #     if i.instr:
+        #         i.instr = instrs[i.instr.id]
+        #         if i.instr.pricing_currency_id:
+        #             i.instr.pricing_currency = ccys[i.instr.pricing_currency_id]
+        #         if i.instr.accrued_currency_id:
+        #             i.instr.accrued_currency = ccys[i.instr.accrued_currency_id]
+        #
+        #     if i.ccy:
+        #         i.ccy = ccys[i.ccy.id]
+        #     # if i.trn_ccy:
+        #     #     i.trn_ccy = ccys[i.trn_ccy.id]
+        #     if i.pricing_ccy:
+        #         i.pricing_ccy = ccys[i.pricing_ccy.id]
+        #
+        #     if i.prtfl:
+        #         i.prtfl = prtfls[i.prtfl.id]
+        #     if i.acc:
+        #         i.acc = accs[i.acc.id]
+        #
+        #     if i.str1:
+        #         i.str1 = strs1[i.str1.id]
+        #     if i.str2:
+        #         i.str2 = strs2[i.str2.id]
+        #     if i.str3:
+        #         i.str3 = strs3[i.str3.id]
+        #
+        #     if i.mismatch_prtfl:
+        #         i.mismatch_prtfl = prtfls[i.mismatch_prtfl.id]
+        #     if i.mismatch_acc:
+        #         i.mismatch_acc = accs[i.mismatch_acc.id]
+        #
+        #     if i.alloc:
+        #         i.alloc = instrs[i.alloc.id]
+        #         if i.alloc.pricing_currency_id:
+        #             i.alloc.pricing_currency = ccys[i.alloc.pricing_currency_id]
+        #         if i.alloc.accrued_currency_id:
+        #             i.alloc.accrued_currency = ccys[i.alloc.accrued_currency_id]
+        #
+        #     # if i.alloc_bl:
+        #     #     i.alloc_bl = instrs[i.alloc_bl.id]
+        #     #     if i.alloc_bl.pricing_currency_id:
+        #     #         i.alloc_bl.pricing_currency = ccys[i.alloc_bl.pricing_currency_id]
+        #     #     if i.alloc_bl.accrued_currency_id:
+        #     #         i.alloc_bl.accrued_currency = ccys[i.alloc_bl.accrued_currency_id]
+        #     #
+        #     # if i.alloc_pl:
+        #     #     i.alloc_pl = instrs[i.alloc_pl.id]
+        #     #     if i.alloc_pl.pricing_currency_id:
+        #     #         i.alloc_pl.pricing_currency = ccys[i.alloc_pl.pricing_currency_id]
+        #     #     if i.alloc_pl.accrued_currency_id:
+        #     #         i.alloc_pl.accrued_currency = ccys[i.alloc_pl.accrued_currency_id]
+        #     pass
+        pass

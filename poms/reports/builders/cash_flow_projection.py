@@ -39,15 +39,16 @@ class CashFlowProjectionReportBuilder(TransactionReportBuilder):
 
         with transaction.atomic():
             self._load()
-            self._set_trns_refs(self._transactions)
+            # self._set_trns_refs(self._transactions)
 
             self._calc_balance()
             self._calc_future()
             self._calc_before_after()
 
+            self.instance.items = self._items
             self._refresh_from_db()
-            self._set_items_refs(self._items)
-            self._update_instance()
+            # self._set_items_refs(self._items)
+            # self._update_instance()
             self.instance.close()
             transaction.set_rollback(True)
 
@@ -79,13 +80,14 @@ class CashFlowProjectionReportBuilder(TransactionReportBuilder):
         if item is None:
             # override by '-'
             if itype in [CashFlowProjectionReportItem.BALANCE, CashFlowProjectionReportItem.ROLLING]:
-                ctrn = ComplexTransaction(
-                    # id=self._fake_id_gen(),
-                    date=self.instance.balance_date,
-                    status=ComplexTransaction.PRODUCTION,
-                    code=-sys.maxsize,
-                )
-                ctrn._fake_transactions = []
+                # ctrn = ComplexTransaction(
+                #     id=self._fake_id_gen(),
+                #     date=self.instance.balance_date,
+                #     status=ComplexTransaction.PRODUCTION,
+                #     code=-sys.maxsize,
+                # )
+                # ctrn._fake_transactions = []
+                ctrn = None
                 item = CashFlowProjectionReportItem(
                     self.instance,
                     type=itype,
@@ -123,7 +125,8 @@ class CashFlowProjectionReportBuilder(TransactionReportBuilder):
                 if itype == CashFlowProjectionReportItem.BALANCE:
                     item.instrument = None
                 elif itype == CashFlowProjectionReportItem.ROLLING:
-                    item.complex_transaction.date = datetime.date.max
+                    if item.complex_transaction:
+                        item.complex_transaction.date = datetime.date.max
                     # item.complex_transaction.code = sys.maxsize
                     # item.transaction_code = sys.maxsize
                     item.transaction_date = datetime.date.max
@@ -229,7 +232,7 @@ class CashFlowProjectionReportBuilder(TransactionReportBuilder):
                                     #         self._instruments[i2.id] = i2
                                     # gep.complex_transaction._fake_transactions = list(gep.transactions)
                                     # self._prefetch(gep.transactions)
-                                    self._set_trns_refs(gep.transactions)
+                                    # self._set_trns_refs(gep.transactions)
                                     for t2 in gep.transactions:
                                         _l.debug('\t\t\t+trn=%s', t2.id)
                                         d = getattr(t2.complex_transaction, 'date', datetime.date.max)

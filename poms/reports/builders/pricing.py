@@ -16,6 +16,11 @@ class AbstractProvider:
         self._pricing_policy = pricing_policy
         self._report_date = report_date
         self._lazy = True
+        self._vid = 0
+
+    def next_vid(self):
+        self._vid -= 1
+        return self._vid
 
     def get(self, item, d=None):
         d = d or self._report_date
@@ -45,7 +50,7 @@ class FakeInstrumentPricingProvider(AbstractProvider):
         pass
 
     def _on_missed(self, item, d):
-        h = PriceHistory(pricing_policy=self._pricing_policy, instrument=item, date=d)
+        h = PriceHistory(pk=self.next_vid(), pricing_policy=self._pricing_policy, instrument=item, date=d)
         return h
 
 
@@ -80,7 +85,7 @@ class InstrumentPricingProvider(AbstractProvider):
                 return PriceHistory.objects.get(pricing_policy=self._pricing_policy, instrument=item, date=d)
             except PriceHistory.DoesNotExist:
                 pass
-        h = PriceHistory(pricing_policy=self._pricing_policy, instrument=item, date=d)
+        h = PriceHistory(pk=self.next_vid(), pricing_policy=self._pricing_policy, instrument=item, date=d)
         return h
 
 
@@ -92,7 +97,7 @@ class FakeCurrencyFxRateProvider(AbstractProvider):
         pass
 
     def _on_missed(self, item, d):
-        h = CurrencyHistory(pricing_policy=self._pricing_policy, currency=item, date=d)
+        h = CurrencyHistory(pk=self.next_vid(), pricing_policy=self._pricing_policy, currency=item, date=d)
         if self._master_user.system_currency_id == item.id:
             h.fx_rate = 1.0
         return h
@@ -136,7 +141,7 @@ class CurrencyFxRateProvider(AbstractProvider):
                 return CurrencyHistory.objects.get(pricing_policy=self._pricing_policy, currency=item, date=d)
             except CurrencyHistory.DoesNotExist:
                 pass
-        h = CurrencyHistory(pricing_policy=self._pricing_policy, currency=item, date=d)
+        h = CurrencyHistory(pk=self.next_vid(), pricing_policy=self._pricing_policy, currency=item, date=d)
         if self._master_user.system_currency_id == item.id:
             h.fx_rate = 1.0
         return h
