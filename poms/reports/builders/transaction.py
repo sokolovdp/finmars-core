@@ -445,19 +445,19 @@ class TransactionReportBuilder:
             )
             counterparties.update(qs.in_bulk(id_list=counterparties.keys()))
 
-        attribute_types = self._similar_cache[GenericAttributeType]
-        if attribute_types:
-            qs = GenericAttributeType.objects.filter(
-                master_user=self.instance.master_user,
-            ).prefetch_related(
-                'content_type',
-                'options',
-                'classifiers',
-                *get_permissions_prefetch_lookups(
-                    (None, GenericAttributeType),
-                )
-            )
-            attribute_types.update(qs.in_bulk(id_list=attribute_types.keys()))
+        # attribute_types = self._similar_cache[GenericAttributeType]
+        # if attribute_types:
+        #     qs = GenericAttributeType.objects.filter(
+        #         master_user=self.instance.master_user,
+        #     ).prefetch_related(
+        #         'content_type',
+        #         'options',
+        #         'classifiers',
+        #         *get_permissions_prefetch_lookups(
+        #             (None, GenericAttributeType),
+        #         )
+        #     )
+        #     attribute_types.update(qs.in_bulk(id_list=attribute_types.keys()))
 
         _l.info('< _refresh_from_db')
 
@@ -502,42 +502,42 @@ class TransactionReportBuilder:
             elif clazz is Counterparty:
                 self.instance.counterparties = list(objects.values())
 
-            elif clazz is GenericAttributeType:
-                self.instance.complex_transaction_attribute_types = []
-                self.instance.transaction_attribute_types = []
-                self.instance.instrument_attribute_types = []
-                self.instance.currency_attribute_types = []
-                self.instance.portfolio_attribute_types = []
-                self.instance.account_attribute_types = []
-                self.instance.responsible_attribute_types = []
-                self.instance.counterparty_attribute_types = []
-
-                for at in objects.values():
-                    model_class = at.content_type.model_class()
-
-                    if issubclass(model_class, ComplexTransaction):
-                        self.instance.complex_transaction_attribute_types.append(at)
-
-                    elif issubclass(model_class, Transaction):
-                        self.instance.transaction_attribute_types.append(at)
-
-                    elif issubclass(model_class, Instrument):
-                        self.instance.instrument_attribute_types.append(at)
-
-                    elif issubclass(model_class, Currency):
-                        self.instance.currency_attribute_types.append(at)
-
-                    elif issubclass(model_class, Portfolio):
-                        self.instance.portfolio_attribute_types.append(at)
-
-                    elif issubclass(model_class, Account):
-                        self.instance.account_attribute_types.append(at)
-
-                    elif issubclass(model_class, Responsible):
-                        self.instance.responsible_attribute_types.append(at)
-
-                    elif issubclass(model_class, Counterparty):
-                        self.instance.counterparty_attribute_types.append(at)
+            # elif clazz is GenericAttributeType:
+            #     self.instance.complex_transaction_attribute_types = []
+            #     self.instance.transaction_attribute_types = []
+            #     self.instance.instrument_attribute_types = []
+            #     self.instance.currency_attribute_types = []
+            #     self.instance.portfolio_attribute_types = []
+            #     self.instance.account_attribute_types = []
+            #     self.instance.responsible_attribute_types = []
+            #     self.instance.counterparty_attribute_types = []
+            #
+            #     for at in objects.values():
+            #         model_class = at.content_type.model_class()
+            #
+            #         if issubclass(model_class, ComplexTransaction):
+            #             self.instance.complex_transaction_attribute_types.append(at)
+            #
+            #         elif issubclass(model_class, Transaction):
+            #             self.instance.transaction_attribute_types.append(at)
+            #
+            #         elif issubclass(model_class, Instrument):
+            #             self.instance.instrument_attribute_types.append(at)
+            #
+            #         elif issubclass(model_class, Currency):
+            #             self.instance.currency_attribute_types.append(at)
+            #
+            #         elif issubclass(model_class, Portfolio):
+            #             self.instance.portfolio_attribute_types.append(at)
+            #
+            #         elif issubclass(model_class, Account):
+            #             self.instance.account_attribute_types.append(at)
+            #
+            #         elif issubclass(model_class, Responsible):
+            #             self.instance.responsible_attribute_types.append(at)
+            #
+            #         elif issubclass(model_class, Counterparty):
+            #             self.instance.counterparty_attribute_types.append(at)
 
     def _make_transactions(self, count=100):
         from poms.common.utils import date_now
