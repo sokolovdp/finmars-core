@@ -113,7 +113,8 @@ class ReportCurrencySerializer(CurrencySerializer):
 
         super(ReportCurrencySerializer, self).__init__(*args, **kwargs)
 
-        self.fields['attributes'] = ReportGenericAttributeSerializer(many=True, required=False, allow_null=True)
+        # self.fields['attributes'] = ReportGenericAttributeSerializer(many=True, required=False, allow_null=True)
+        self.fields.pop('attributes')
 
         self.fields.pop('tags')
         self.fields.pop('tags_object')
