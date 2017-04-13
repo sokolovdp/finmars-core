@@ -204,7 +204,6 @@ class TransactionReportBuilder:
             self._set_ref(t, 'complex_transaction', clazz=ComplexTransaction)
             if t.complex_transaction:
                 self._set_ref(t.complex_transaction, 'transaction_type', clazz=TransactionType)
-
                 # for a in t.complex_transaction.attributes.all():
                 #     self._set_ref(a, 'attribute_type', clazz=GenericAttributeType)
                 self._set_attrs(t.complex_transaction)
@@ -212,9 +211,9 @@ class TransactionReportBuilder:
             self._set_ref(t, 'transaction_class', clazz=TransactionClass)
             self._set_ref(t, 'instrument', clazz=Instrument)
             self._set_attrs(t.instrument)
-            # if t.instrument:
-            #     self._set_ref(t.instrument, 'pricing_currency', clazz=Currency)
-            #     self._set_ref(t.instrument, 'accrued_currency', clazz=Currency)
+            if t.instrument:
+                self._set_ref(t.instrument, 'pricing_currency', clazz=Currency)
+                self._set_ref(t.instrument, 'accrued_currency', clazz=Currency)
             self._set_ref(t, 'transaction_currency', clazz=Currency)
             self._set_attrs(t.transaction_currency)
             self._set_ref(t, 'settlement_currency', clazz=Currency)
@@ -238,10 +237,19 @@ class TransactionReportBuilder:
             self._set_ref(t, 'counterparty', clazz=Counterparty)
             self._set_attrs(t.counterparty)
             self._set_ref(t, 'linked_instrument', clazz=Instrument)
+            if t.linked_instrument:
+                self._set_ref(t.linked_instrument, 'pricing_currency', clazz=Currency)
+                self._set_ref(t.linked_instrument, 'accrued_currency', clazz=Currency)
             self._set_attrs(t.linked_instrument)
             self._set_ref(t, 'allocation_balance', clazz=Instrument)
+            if t.allocation_balance:
+                self._set_ref(t.allocation_balance, 'pricing_currency', clazz=Currency)
+                self._set_ref(t.allocation_balance, 'accrued_currency', clazz=Currency)
             self._set_attrs(t.allocation_balance)
             self._set_ref(t, 'allocation_pl', clazz=Instrument)
+            if t.allocation_pl:
+                self._set_ref(t.allocation_pl, 'pricing_currency', clazz=Currency)
+                self._set_ref(t.allocation_pl, 'accrued_currency', clazz=Currency)
             self._set_attrs(t.allocation_pl)
 
             # if t.id > 0:
@@ -445,19 +453,19 @@ class TransactionReportBuilder:
             )
             counterparties.update(qs.in_bulk(id_list=counterparties.keys()))
 
-        attribute_types = self._similar_cache[GenericAttributeType]
-        if attribute_types:
-            qs = GenericAttributeType.objects.filter(
-                master_user=self.instance.master_user,
-            ).prefetch_related(
-                'content_type',
-                'options',
-                'classifiers',
-                *get_permissions_prefetch_lookups(
-                    (None, GenericAttributeType),
-                )
-            )
-            attribute_types.update(qs.in_bulk(id_list=attribute_types.keys()))
+        # attribute_types = self._similar_cache[GenericAttributeType]
+        # if attribute_types:
+        #     qs = GenericAttributeType.objects.filter(
+        #         master_user=self.instance.master_user,
+        #     ).prefetch_related(
+        #         'content_type',
+        #         'options',
+        #         'classifiers',
+        #         *get_permissions_prefetch_lookups(
+        #             (None, GenericAttributeType),
+        #         )
+        #     )
+        #     attribute_types.update(qs.in_bulk(id_list=attribute_types.keys()))
 
         _l.info('< _refresh_from_db')
 
@@ -502,104 +510,104 @@ class TransactionReportBuilder:
             elif clazz is Counterparty:
                 self.instance.counterparties = list(objects.values())
 
-            elif clazz is GenericAttributeType:
-                self.instance.complex_transaction_attribute_types = []
-                self.instance.transaction_attribute_types = []
-                self.instance.instrument_attribute_types = []
-                self.instance.currency_attribute_types = []
-                self.instance.portfolio_attribute_types = []
-                self.instance.account_attribute_types = []
-                self.instance.responsible_attribute_types = []
-                self.instance.counterparty_attribute_types = []
+            # elif clazz is GenericAttributeType:
+            #     self.instance.complex_transaction_attribute_types = []
+            #     self.instance.transaction_attribute_types = []
+            #     self.instance.instrument_attribute_types = []
+            #     self.instance.currency_attribute_types = []
+            #     self.instance.portfolio_attribute_types = []
+            #     self.instance.account_attribute_types = []
+            #     self.instance.responsible_attribute_types = []
+            #     self.instance.counterparty_attribute_types = []
+            #
+            #     for at in objects.values():
+            #         model_class = at.content_type.model_class()
+            #
+            #         if issubclass(model_class, ComplexTransaction):
+            #             self.instance.complex_transaction_attribute_types.append(at)
+            #
+            #         elif issubclass(model_class, Transaction):
+            #             self.instance.transaction_attribute_types.append(at)
+            #
+            #         elif issubclass(model_class, Instrument):
+            #             self.instance.instrument_attribute_types.append(at)
+            #
+            #         elif issubclass(model_class, Currency):
+            #             self.instance.currency_attribute_types.append(at)
+            #
+            #         elif issubclass(model_class, Portfolio):
+            #             self.instance.portfolio_attribute_types.append(at)
+            #
+            #         elif issubclass(model_class, Account):
+            #             self.instance.account_attribute_types.append(at)
+            #
+            #         elif issubclass(model_class, Responsible):
+            #             self.instance.responsible_attribute_types.append(at)
+            #
+            #         elif issubclass(model_class, Counterparty):
+            #             self.instance.counterparty_attribute_types.append(at)
 
-                for at in objects.values():
-                    model_class = at.content_type.model_class()
-
-                    if issubclass(model_class, ComplexTransaction):
-                        self.instance.complex_transaction_attribute_types.append(at)
-
-                    elif issubclass(model_class, Transaction):
-                        self.instance.transaction_attribute_types.append(at)
-
-                    elif issubclass(model_class, Instrument):
-                        self.instance.instrument_attribute_types.append(at)
-
-                    elif issubclass(model_class, Currency):
-                        self.instance.currency_attribute_types.append(at)
-
-                    elif issubclass(model_class, Portfolio):
-                        self.instance.portfolio_attribute_types.append(at)
-
-                    elif issubclass(model_class, Account):
-                        self.instance.account_attribute_types.append(at)
-
-                    elif issubclass(model_class, Responsible):
-                        self.instance.responsible_attribute_types.append(at)
-
-                    elif issubclass(model_class, Counterparty):
-                        self.instance.counterparty_attribute_types.append(at)
-
-    def _make_transactions(self, count=100):
-        from poms.common.utils import date_now
-
-        tcls = TransactionClass.objects.get(pk=TransactionClass.BUY)
-
-        tt = list(TransactionType.objects.filter(master_user=self.instance.master_user).all())
-        instr = list(Instrument.objects.filter(master_user=self.instance.master_user).all())
-        ccy = list(Currency.objects.filter(master_user=self.instance.master_user).all())
-        p = list(Portfolio.objects.filter(master_user=self.instance.master_user).all())
-        acc = list(Account.objects.filter(master_user=self.instance.master_user).all())
-        s1 = list(Strategy1.objects.filter(master_user=self.instance.master_user).all())
-        s2 = list(Strategy2.objects.filter(master_user=self.instance.master_user).all())
-        s3 = list(Strategy3.objects.filter(master_user=self.instance.master_user).all())
-        r = list(Responsible.objects.filter(master_user=self.instance.master_user).all())
-        c = list(Counterparty.objects.filter(master_user=self.instance.master_user).all())
-
-        ctrns = []
-        trns = []
-
-        for i in range(0, count):
-            ct = ComplexTransaction(
-                transaction_type=random.choice(tt),
-                date=date_now() + datetime.timedelta(days=i),
-                status=ComplexTransaction.PRODUCTION,
-                code=i
-            )
-            ctrns.append(ct)
-            t = Transaction(
-                master_user=self.instance.master_user,
-                complex_transaction=ct,
-                complex_transaction_order=1,
-                transaction_code=1,
-                transaction_class=tcls,
-                instrument=random.choice(instr),
-                transaction_currency=random.choice(ccy),
-                position_size_with_sign=100,
-                settlement_currency=random.choice(ccy),
-                cash_consideration=-90,
-                principal_with_sign=100,
-                carry_with_sign=100,
-                overheads_with_sign=100,
-                transaction_date=date_now() + datetime.timedelta(days=i),
-                accounting_date=date_now() + datetime.timedelta(days=i),
-                cash_date=date_now() + datetime.timedelta(days=i),
-                portfolio=random.choice(p),
-                account_position=random.choice(acc),
-                account_cash=random.choice(acc),
-                account_interim=random.choice(acc),
-                strategy1_position=random.choice(s1),
-                strategy1_cash=random.choice(s1),
-                strategy2_position=random.choice(s2),
-                strategy2_cash=random.choice(s2),
-                strategy3_position=random.choice(s3),
-                strategy3_cash=random.choice(s3),
-                responsible=random.choice(r),
-                counterparty=random.choice(c),
-                linked_instrument=random.choice(instr),
-                allocation_balance=random.choice(instr),
-                allocation_pl=random.choice(instr),
-            )
-            trns.append(t)
-
-        ComplexTransaction.objects.bulk_create(ctrns)
-        Transaction.objects.bulk_create(trns)
+    # def _make_transactions(self, count=100):
+    #     from poms.common.utils import date_now
+    #
+    #     tcls = TransactionClass.objects.get(pk=TransactionClass.BUY)
+    #
+    #     tt = list(TransactionType.objects.filter(master_user=self.instance.master_user).all())
+    #     instr = list(Instrument.objects.filter(master_user=self.instance.master_user).all())
+    #     ccy = list(Currency.objects.filter(master_user=self.instance.master_user).all())
+    #     p = list(Portfolio.objects.filter(master_user=self.instance.master_user).all())
+    #     acc = list(Account.objects.filter(master_user=self.instance.master_user).all())
+    #     s1 = list(Strategy1.objects.filter(master_user=self.instance.master_user).all())
+    #     s2 = list(Strategy2.objects.filter(master_user=self.instance.master_user).all())
+    #     s3 = list(Strategy3.objects.filter(master_user=self.instance.master_user).all())
+    #     r = list(Responsible.objects.filter(master_user=self.instance.master_user).all())
+    #     c = list(Counterparty.objects.filter(master_user=self.instance.master_user).all())
+    #
+    #     ctrns = []
+    #     trns = []
+    #
+    #     for i in range(0, count):
+    #         ct = ComplexTransaction(
+    #             transaction_type=random.choice(tt),
+    #             date=date_now() + datetime.timedelta(days=i),
+    #             status=ComplexTransaction.PRODUCTION,
+    #             code=i
+    #         )
+    #         ctrns.append(ct)
+    #         t = Transaction(
+    #             master_user=self.instance.master_user,
+    #             complex_transaction=ct,
+    #             complex_transaction_order=1,
+    #             transaction_code=1,
+    #             transaction_class=tcls,
+    #             instrument=random.choice(instr),
+    #             transaction_currency=random.choice(ccy),
+    #             position_size_with_sign=100,
+    #             settlement_currency=random.choice(ccy),
+    #             cash_consideration=-90,
+    #             principal_with_sign=100,
+    #             carry_with_sign=100,
+    #             overheads_with_sign=100,
+    #             transaction_date=date_now() + datetime.timedelta(days=i),
+    #             accounting_date=date_now() + datetime.timedelta(days=i),
+    #             cash_date=date_now() + datetime.timedelta(days=i),
+    #             portfolio=random.choice(p),
+    #             account_position=random.choice(acc),
+    #             account_cash=random.choice(acc),
+    #             account_interim=random.choice(acc),
+    #             strategy1_position=random.choice(s1),
+    #             strategy1_cash=random.choice(s1),
+    #             strategy2_position=random.choice(s2),
+    #             strategy2_cash=random.choice(s2),
+    #             strategy3_position=random.choice(s3),
+    #             strategy3_cash=random.choice(s3),
+    #             responsible=random.choice(r),
+    #             counterparty=random.choice(c),
+    #             linked_instrument=random.choice(instr),
+    #             allocation_balance=random.choice(instr),
+    #             allocation_pl=random.choice(instr),
+    #         )
+    #         trns.append(t)
+    #
+    #     ComplexTransaction.objects.bulk_create(ctrns)
+    #     Transaction.objects.bulk_create(trns)

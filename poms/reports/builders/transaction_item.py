@@ -196,14 +196,14 @@ class TransactionReport:
         self.responsibles = []
         self.counterparties = []
 
-        self.complex_transaction_attribute_types = []
-        self.transaction_attribute_types = []
-        self.instrument_attribute_types = []
-        self.currency_attribute_types = []
-        self.portfolio_attribute_types = []
-        self.account_attribute_types = []
-        self.responsible_attribute_types = []
-        self.counterparty_attribute_types = []
+        # self.complex_transaction_attribute_types = []
+        # self.transaction_attribute_types = []
+        # self.instrument_attribute_types = []
+        # self.currency_attribute_types = []
+        # self.portfolio_attribute_types = []
+        # self.account_attribute_types = []
+        # self.responsible_attribute_types = []
+        # self.counterparty_attribute_types = []
 
     def __str__(self):
         return 'TransactionReport:%s' % self.id

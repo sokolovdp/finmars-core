@@ -242,34 +242,33 @@ class ReportItemSerializer(serializers.Serializer):
     instrument_accrual_accrued_price = serializers.FloatField(source='instr_accrual_accrued_price', read_only=True)
 
     # TODO: deprecated all *_object values
-
-    portfolio_object = ReportPortfolioSerializer(source='prtfl', read_only=True)
-    account_object = ReportAccountSerializer(source='acc', read_only=True)
-    strategy1_object = ReportStrategy1Serializer(source='str1', read_only=True)
-    strategy2_object = ReportStrategy2Serializer(source='str2', read_only=True)
-    strategy3_object = ReportStrategy3Serializer(source='str3', read_only=True)
-    instrument_object = ReportInstrumentSerializer(source='instr', read_only=True)
-    currency_object = ReportCurrencySerializer(source='ccy', read_only=True)
-    # transaction_currency_object = ReportCurrencySerializer(source='trn_ccy', read_only=True)
-    pricing_currency_object = ReportCurrencySerializer(source='pricing_ccy', read_only=True)
-
-    allocation_object = ReportInstrumentSerializer(source='alloc', read_only=True)
-    # allocation_balance_object = ReportInstrumentSerializer(source='alloc_bl', read_only=True)
-    # allocation_pl_object = ReportInstrumentSerializer(source='alloc_pl', read_only=True)
-
-    mismatch_portfolio_object = ReportPortfolioSerializer(source='mismatch_prtfl', read_only=True)
-    mismatch_account_object = ReportAccountSerializer(source='mismatch_acc', read_only=True)
-
-    report_currency_history_object = ReportCurrencyHistorySerializer(source='report_ccy_cur', read_only=True)
-    instrument_price_history_object = ReportPriceHistorySerializer(source='instr_price_cur', read_only=True)
-    instrument_pricing_currency_history_object = ReportCurrencyHistorySerializer(source='instr_pricing_ccy_cur',
-                                                                                 read_only=True)
-    instrument_accrued_currency_history_object = ReportCurrencyHistorySerializer(source='instr_accrued_ccy_cur',
-                                                                                 read_only=True)
-    currency_history_object = ReportCurrencyHistorySerializer(source='ccy_cur', read_only=True)
-    pricing_currency_history_object = ReportCurrencyHistorySerializer(source='pricing_ccy_cur', read_only=True)
-
-    instrument_accrual_object = ReportAccrualCalculationScheduleSerializer(source='instr_accrual')
+    # portfolio_object = ReportPortfolioSerializer(source='prtfl', read_only=True)
+    # account_object = ReportAccountSerializer(source='acc', read_only=True)
+    # strategy1_object = ReportStrategy1Serializer(source='str1', read_only=True)
+    # strategy2_object = ReportStrategy2Serializer(source='str2', read_only=True)
+    # strategy3_object = ReportStrategy3Serializer(source='str3', read_only=True)
+    # instrument_object = ReportInstrumentSerializer(source='instr', read_only=True)
+    # currency_object = ReportCurrencySerializer(source='ccy', read_only=True)
+    # # transaction_currency_object = ReportCurrencySerializer(source='trn_ccy', read_only=True)
+    # pricing_currency_object = ReportCurrencySerializer(source='pricing_ccy', read_only=True)
+    #
+    # allocation_object = ReportInstrumentSerializer(source='alloc', read_only=True)
+    # # allocation_balance_object = ReportInstrumentSerializer(source='alloc_bl', read_only=True)
+    # # allocation_pl_object = ReportInstrumentSerializer(source='alloc_pl', read_only=True)
+    # 
+    # mismatch_portfolio_object = ReportPortfolioSerializer(source='mismatch_prtfl', read_only=True)
+    # mismatch_account_object = ReportAccountSerializer(source='mismatch_acc', read_only=True)
+    #
+    # report_currency_history_object = ReportCurrencyHistorySerializer(source='report_ccy_cur', read_only=True)
+    # instrument_price_history_object = ReportPriceHistorySerializer(source='instr_price_cur', read_only=True)
+    # instrument_pricing_currency_history_object = ReportCurrencyHistorySerializer(source='instr_pricing_ccy_cur',
+    #                                                                              read_only=True)
+    # instrument_accrued_currency_history_object = ReportCurrencyHistorySerializer(source='instr_accrued_ccy_cur',
+    #                                                                              read_only=True)
+    # currency_history_object = ReportCurrencyHistorySerializer(source='ccy_cur', read_only=True)
+    # pricing_currency_history_object = ReportCurrencyHistorySerializer(source='pricing_ccy_cur', read_only=True)
+    #
+    # instrument_accrual_object = ReportAccrualCalculationScheduleSerializer(source='instr_accrual')
 
     def __init__(self, *args, **kwargs):
         kwargs.setdefault('read_only', True)
