@@ -9,22 +9,14 @@ from django.conf import settings
 from django.db.models import Q
 from django.utils.functional import cached_property
 
-from poms.accounts.models import Account, AccountType
 from poms.common.utils import isclose
-from poms.currencies.models import Currency
-from poms.instruments.models import Instrument, InstrumentType, CostMethod, InstrumentClass
-from poms.obj_attrs.utils import get_attributes_prefetch
-from poms.obj_perms.utils import get_permissions_prefetch_lookups
-from poms.portfolios.models import Portfolio
+from poms.instruments.models import CostMethod, InstrumentClass
 from poms.reports.builders.balance_item import ReportItem, Report
 from poms.reports.builders.balance_virt_trn import VirtualTransaction
 from poms.reports.builders.base_builder import BaseReportBuilder
 from poms.reports.builders.pricing import FakeInstrumentPricingProvider, FakeCurrencyFxRateProvider, \
     CurrencyFxRateProvider
 from poms.reports.builders.pricing import InstrumentPricingProvider
-from poms.strategies.models import Strategy1, Strategy2, Strategy3, Strategy1Subgroup, Strategy1Group, \
-    Strategy2Subgroup, Strategy2Group, Strategy3Subgroup, Strategy3Group
-from poms.tags.utils import get_tag_prefetch
 from poms.transactions.models import TransactionClass, Transaction, ComplexTransaction
 
 _l = logging.getLogger('poms.reports')
@@ -54,8 +46,11 @@ class ReportBuilder(BaseReportBuilder):
         self.instance.pl_first_date = None
         res = self.build(full=full)
 
-        self.instance.items = [item for item in self.instance.items
-                               if item.type in [ReportItem.TYPE_INSTRUMENT, ReportItem.TYPE_CURRENCY]]
+        def _accepted(item):
+            return item.type in [ReportItem.TYPE_INSTRUMENT, ReportItem.TYPE_CURRENCY] and \
+                   not isclose(item.pos_size, 0.0)
+
+        self.instance.items = [item for item in self.instance.items if _accepted(item)]
 
         _l.debug('done: %s', (time.perf_counter() - st))
         return res
