@@ -455,6 +455,73 @@ class ReportSerializer(serializers.Serializer):
     def create(self, validated_data):
         return Report(**validated_data)
 
+    def to_representation(self, instance):
+        data = super(ReportSerializer, self).to_representation(instance)
+
+        custom_fields = data['custom_fields_object']
+        if custom_fields:
+            items = data['items']
+
+            item_instruments = {o['id']: o for o in data['item_instruments']}
+            item_currencies = {o['id']: o for o in data['item_currencies']}
+            item_portfolios = {o['id']: o for o in data['item_portfolios']}
+            item_accounts = {o['id']: o for o in data['item_accounts']}
+            item_strategies1 = {o['id']: o for o in data['item_strategies1']}
+            item_strategies2 = {o['id']: o for o in data['item_strategies2']}
+            item_strategies3 = {o['id']: o for o in data['item_strategies3']}
+            item_currency_fx_rates = {o['id']: o for o in data['item_currency_fx_rates']}
+            item_instrument_pricings = {o['id']: o for o in data['item_instrument_pricings']}
+            item_instrument_accruals = {o['id']: o for o in data['item_instrument_accruals']}
+
+            def _set_object(names, pk_attr, objs):
+                pk = item[pk_attr]
+                if pk is not None:
+                    item['%s_object' % pk_attr] = objs[pk]
+
+            for item in items:
+                names = {n: v for n, v in item.items()}
+
+                _set_object(names, 'portfolio', item_portfolios)
+                _set_object(names, 'account', item_accounts)
+                _set_object(names, 'strategy1', item_strategies1)
+                _set_object(names, 'strategy2', item_strategies2)
+                _set_object(names, 'strategy3', item_strategies3)
+                _set_object(names, 'instrument', item_instruments)
+                _set_object(names, 'currency', item_currencies)
+                _set_object(names, 'pricing_currency', item_currencies)
+                _set_object(names, 'allocation', item_instruments)
+                _set_object(names, 'mismatch_portfolio', item_portfolios)
+                _set_object(names, 'mismatch_account', item_accounts)
+                _set_object(names, 'report_currency_history', item_currency_fx_rates)
+                _set_object(names, 'instrument_price_history', item_instrument_pricings)
+                _set_object(names, 'instrument_pricing_currency_history', item_currency_fx_rates)
+                _set_object(names, 'instrument_accrued_currency_history', item_currency_fx_rates)
+                _set_object(names, 'currency_history', item_currency_fx_rates)
+                _set_object(names, 'pricing_currency_history', item_currency_fx_rates)
+                _set_object(names, 'instrument_accrual', item_instrument_accruals)
+
+                cfv = []
+                for cf in custom_fields:
+                    expr = cf['expr']
+
+                    if expr:
+                        try:
+                            names = {
+                                'item': names
+                            }
+                            value = formula.safe_eval(expr, names=names, context=self.context)
+                        except formula.InvalidExpression:
+                            value = ugettext('Invalid expression')
+                    else:
+                        value = None
+                    cfv.append({
+                        'custom_field': cf['id'],
+                        'value': value,
+                    })
+
+                item['custom_fields'] = cfv
+
+        return data
 
 class BalanceReportSerializer(ReportSerializer):
     pass

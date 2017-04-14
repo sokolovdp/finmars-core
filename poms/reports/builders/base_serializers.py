@@ -23,7 +23,7 @@ class CustomFieldViewSerializer(serializers.ModelSerializer):
     class Meta:
         model = CustomField
         fields = [
-            'id', 'master_user', 'name'
+            'id', 'master_user', 'name', 'expr'
         ]
 
 
