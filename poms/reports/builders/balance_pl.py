@@ -54,6 +54,9 @@ class ReportBuilder(BaseReportBuilder):
         self.instance.pl_first_date = None
         res = self.build(full=full)
 
+        self.instance.items = [item for item in self.instance.items
+                               if item.type in [ReportItem.TYPE_INSTRUMENT, ReportItem.TYPE_CURRENCY]]
+
         _l.debug('done: %s', (time.perf_counter() - st))
         return res
 
