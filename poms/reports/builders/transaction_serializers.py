@@ -1,15 +1,16 @@
 from __future__ import unicode_literals
 
+from django.utils.translation import ugettext
 from rest_framework import serializers
 
+from poms.common import formula
 from poms.reports.builders.base_serializers import ReportItemCustomFieldSerializer, ReportPortfolioSerializer, \
     ReportAccountSerializer, ReportStrategy1Serializer, ReportStrategy2Serializer, ReportStrategy3Serializer, \
     ReportInstrumentSerializer, ReportCurrencySerializer, CustomFieldViewSerializer, ReportGenericAttributeSerializer, \
-    ReportComplexTransactionSerializer, ReportResponsibleSerializer, ReportCounterpartySerializer, \
-    ReportGenericAttributeTypeSerializer
+    ReportComplexTransactionSerializer, ReportResponsibleSerializer, ReportCounterpartySerializer
 from poms.reports.builders.transaction_item import TransactionReport
 from poms.reports.fields import CustomFieldField
-from poms.transactions.serializers import TransactionTypeViewSerializer
+from poms.transactions.serializers import TransactionClassSerializer
 from poms.users.fields import MasterUserField, HiddenMemberField
 
 
@@ -77,7 +78,9 @@ class TransactionReportSerializer(serializers.Serializer):
 
     items = TransactionReportItemSerializer(many=True, read_only=True)
 
-    item_complex_transactions = ReportComplexTransactionSerializer(source='complex_transactions', many=True, read_only=True)
+    item_transaction_classes = TransactionClassSerializer(source='transaction_classes', many=True, read_only=True)
+    item_complex_transactions = ReportComplexTransactionSerializer(source='complex_transactions', many=True,
+                                                                   read_only=True)
     # item_transaction_types = TransactionTypeViewSerializer(source='transaction_types', many=True, read_only=True)
     item_instruments = ReportInstrumentSerializer(source='instruments', many=True, read_only=True)
     item_currencies = ReportCurrencySerializer(source='currencies', many=True, read_only=True)
@@ -88,6 +91,7 @@ class TransactionReportSerializer(serializers.Serializer):
     item_strategies3 = ReportStrategy3Serializer(source='strategies3', many=True, read_only=True)
     item_responsibles = ReportResponsibleSerializer(source='responsibles', many=True, read_only=True)
     item_counterparties = ReportCounterpartySerializer(source='counterparties', many=True, read_only=True)
+
     # item_complex_transaction_attribute_types = ReportGenericAttributeTypeSerializer(source='complex_transaction_attribute_types', many=True, read_only=True, show_classifiers=True)
     # item_transaction_attribute_types = ReportGenericAttributeTypeSerializer(source='transaction_attribute_types', many=True, read_only=True, show_classifiers=True)
     # item_instrument_attribute_types = ReportGenericAttributeTypeSerializer(source='instrument_attribute_types', many=True, read_only=True, show_classifiers=True)
@@ -126,3 +130,73 @@ class TransactionReportSerializer(serializers.Serializer):
 
     def create(self, validated_data):
         return TransactionReport(**validated_data)
+
+    def to_representation(self, instance):
+        data = super(TransactionReportSerializer, self).to_representation(instance)
+
+        custom_fields = data['custom_fields_object']
+        if custom_fields:
+            items = data['items']
+            item_transaction_classes = {o['id']: o for o in data['item_transaction_classes']}
+            item_complex_transactions = {o['id']: o for o in data['item_complex_transactions']}
+            item_instruments = {o['id']: o for o in data['item_instruments']}
+            item_currencies = {o['id']: o for o in data['item_currencies']}
+            item_portfolios = {o['id']: o for o in data['item_portfolios']}
+            item_accounts = {o['id']: o for o in data['item_accounts']}
+            item_strategies1 = {o['id']: o for o in data['item_strategies1']}
+            item_strategies2 = {o['id']: o for o in data['item_strategies2']}
+            item_strategies3 = {o['id']: o for o in data['item_strategies3']}
+            item_responsibles = {o['id']: o for o in data['item_responsibles']}
+            item_counterparties = {o['id']: o for o in data['item_counterparties']}
+
+            def _set_object(names, pk_attr, objs):
+                pk = item[pk_attr]
+                if pk is not None:
+                    item['%s_object' % pk_attr] = objs[pk]
+
+            for item in items:
+                names = {n: v for n, v in item.items()}
+
+                _set_object(names, 'complex_transaction', item_complex_transactions)
+                _set_object(names, 'transaction_class', item_transaction_classes)
+                _set_object(names, 'instrument', item_instruments)
+                _set_object(names, 'transaction_currency', item_currencies)
+                _set_object(names, 'settlement_currency', item_currencies)
+                _set_object(names, 'portfolio', item_portfolios)
+                _set_object(names, 'account_cash', item_accounts)
+                _set_object(names, 'account_position', item_accounts)
+                _set_object(names, 'account_interim', item_accounts)
+                _set_object(names, 'strategy1_position', item_strategies1)
+                _set_object(names, 'strategy1_cash', item_strategies1)
+                _set_object(names, 'strategy2_position', item_strategies2)
+                _set_object(names, 'strategy2_cash', item_strategies2)
+                _set_object(names, 'strategy3_position', item_strategies3)
+                _set_object(names, 'strategy3_cash', item_strategies3)
+                _set_object(names, 'responsible', item_responsibles)
+                _set_object(names, 'counterparty', item_counterparties)
+                _set_object(names, 'linked_instrument', item_instruments)
+                _set_object(names, 'allocation_balance', item_instruments)
+                _set_object(names, 'allocation_pl', item_instruments)
+
+                cfv = []
+                for cf in custom_fields:
+                    expr = cf['expr']
+
+                    if expr:
+                        try:
+                            names = {
+                                'item': names
+                            }
+                            value = formula.safe_eval(expr, names=names, context=self.context)
+                        except formula.InvalidExpression:
+                            value = ugettext('Invalid expression')
+                    else:
+                        value = None
+                    cfv.append({
+                        'custom_field': cf['id'],
+                        'value': value,
+                    })
+
+                item['custom_fields'] = cfv
+
+        return data

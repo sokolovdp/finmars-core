@@ -20,9 +20,9 @@ if 'redisboard' not in INSTALLED_APPS:
 #     MIDDLEWARE_CLASSES = MIDDLEWARE_CLASSES + ['debug_toolbar.middleware.DebugToolbarMiddleware', ]
 #     INTERNAL_IPS = ['127.0.0.1']
 
-# LOGGING['formatters']['verbose']['format'] = '[%(levelname)1.1s %(asctime)s %(name)s %(module)s:%(lineno)d] %(message)s'
+LOGGING['formatters']['verbose']['format'] = '[%(levelname)1.1s %(asctime)s %(name)s %(module)s:%(lineno)d] %(message)s'
 # LOGGING['formatters']['verbose']['format'] = '[%(asctime)s] %(message)s'
-LOGGING['formatters']['verbose']['format'] = '%(message)s'
+# LOGGING['formatters']['verbose']['format'] = '%(message)s'
 # LOGGING['loggers']['django.db'] = {'level': 'DEBUG'}
 LOGGING['loggers']['poms']['level'] = 'DEBUG'
 # LOGGING['loggers']['poms']['level'] = 'INFO'

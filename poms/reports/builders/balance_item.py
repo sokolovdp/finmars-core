@@ -1312,22 +1312,23 @@ class ReportItem(BaseReportItem):
         return None
 
     def eval_custom_fields(self):
+        # use optimization inside serialization
         res = []
-        for cf in self.report.custom_fields:
-            if cf.expr and self.report.member:
-                try:
-                    names = {
-                        'item': self
-                    }
-                    value = formula.safe_eval(cf.expr, names=names, context=self.report.context)
-                except formula.InvalidExpression:
-                    value = ugettext('Invalid expression')
-            else:
-                value = None
-            res.append({
-                'custom_field': cf,
-                'value': value
-            })
+        # for cf in self.report.custom_fields:
+        #     if cf.expr and self.report.member:
+        #         try:
+        #             names = {
+        #                 'item': self
+        #             }
+        #             value = formula.safe_eval(cf.expr, names=names, context=self.report.context)
+        #         except formula.InvalidExpression:
+        #             value = ugettext('Invalid expression')
+        #     else:
+        #         value = None
+        #     res.append({
+        #         'custom_field': cf,
+        #         'value': value
+        #     })
         self.custom_fields = res
 
     def overwrite_pl_fields_by_subtype(self):
