@@ -81,6 +81,8 @@ INSTALLED_APPS = [
     # 'django_otp.plugins.otp_email',
     # 'django_otp.plugins.otp_static',
     # 'two_factor',
+    'django_celery_results',
+    'django_celery_beat',
 ]
 
 MIDDLEWARE_CLASSES = [
@@ -479,7 +481,8 @@ AWS_STORAGE_BUCKET_NAME = os.environ.get('AWS_STORAGE_BUCKET_NAME', None)
 
 
 CELERY_BROKER_URL = 'redis://%s/1' % REDIS_HOST
-CELERY_RESULT_BACKEND = 'redis://%s/1' % REDIS_HOST
+# CELERY_RESULT_BACKEND = 'redis://%s/1' % REDIS_HOST
+CELERY_RESULT_BACKEND = 'django-db'
 CELERY_ENABLE_UTC = True
 CELERY_TIMEZONE = 'UTC'
 # CELERY_ACCEPT_CONTENT = ['json', 'pickle']
@@ -488,7 +491,13 @@ CELERY_TIMEZONE = 'UTC'
 CELERY_ACCEPT_CONTENT = ['json', 'pickle-signed']
 CELERY_TASK_SERIALIZER = 'pickle-signed'
 CELERY_RESULT_SERIALIZER = 'pickle-signed'
-CELERY_RESULT_EXPIRES = 60
+if CELERY_RESULT_BACKEND in ['django-db',]:
+    CELERY_RESULT_EXPIRES = 2 * 24 * 60 * 60
+    CELERY_TASK_STORE_ERRORS_EVEN_IF_IGNORED = CELERY_RESULT_BACKEND in ['django-db',]
+else:
+    CELERY_RESULT_EXPIRES = 60
+    CELERY_TASK_STORE_ERRORS_EVEN_IF_IGNORED = True
+# CELERY_TASK_STORE_ERRORS_EVEN_IF_IGNORED = True
 # CELERY_WORKER_REDIRECT_STDOUTS = False
 # CELERY_WORKER_LOG_COLOR = False
 # CELERY_WORKER_LOG_FORMAT = '[%(levelname)1.1s %(asctime)s %(process)d:%(thread)d %(name)s %(module)s:%(lineno)d] %(message)s'
