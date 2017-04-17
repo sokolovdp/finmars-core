@@ -162,6 +162,14 @@ class ReportBuilder(BaseReportBuilder):
     def _trn_cls_fx_trade(self):
         return TransactionClass.objects.get(pk=TransactionClass.FX_TRADE)
 
+    @cached_property
+    def _trn_cls_cash_in(self):
+        return TransactionClass.objects.get(pk=TransactionClass.CASH_INFLOW)
+
+    @cached_property
+    def _trn_cls_cash_out(self):
+        return TransactionClass.objects.get(pk=TransactionClass.CASH_OUTFLOW)
+
     def _trn_qs(self):
         if self._queryset is None:
             qs = Transaction.objects.all()
@@ -484,18 +492,17 @@ class ReportBuilder(BaseReportBuilder):
             elif trn.trn_cls.id == TransactionClass.FX_TRANSFER:
                 trn.is_hidden = True
 
-                trn1, trn2 = trn.transfer_clone(self._trn_cls_fx_trade, self._trn_cls_fx_trade,
-                                                t1_pos_sign=1.0, t1_cash_sign=-1.0)
-                # res.append(trn1)
-                # res.append(trn2)
+                trn1, trn2 = trn.fx_transfer_clone(trn_cls_out=self._trn_cls_cash_out, trn_cls_in=self._trn_cls_cash_out)
+                res.append(trn1)
+                res.append(trn2)
 
-                trn11, trn12 = trn1.fx_trade_clone()
-                res.append(trn11)
-                res.append(trn12)
-
-                trn21, trn22 = trn2.fx_trade_clone()
-                res.append(trn21)
-                res.append(trn22)
+                # trn11, trn12 = trn1.fx_trade_clone()
+                # res.append(trn11)
+                # res.append(trn12)
+                #
+                # trn21, trn22 = trn2.fx_trade_clone()
+                # res.append(trn21)
+                # res.append(trn22)
 
         self._transactions = res
         _l.debug('transactions - len=%s', len(self._transactions))
