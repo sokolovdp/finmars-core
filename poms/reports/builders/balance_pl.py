@@ -65,10 +65,10 @@ class ReportBuilder(BaseReportBuilder):
         # items = []
         # for oitem in self.instance.items:
         #     if oitem.type in [ReportItem.TYPE_INSTRUMENT]:
-        #         nitem = oitem.clone()
-        #         nitem.subtype = ReportItem.SUBTYPE_TOTAL
-        #         nitem.overwrite_pl_fields_by_subtype()
-        #         items.append(nitem)
+        #         # nitem = oitem.clone()
+        #         # nitem.subtype = ReportItem.SUBTYPE_TOTAL
+        #         # nitem.overwrite_pl_fields_by_subtype()
+        #         # items.append(nitem)
         #
         #         nitem = oitem.clone()
         #         nitem.subtype = ReportItem.SUBTYPE_CLOSED
@@ -161,6 +161,14 @@ class ReportBuilder(BaseReportBuilder):
     @cached_property
     def _trn_cls_fx_trade(self):
         return TransactionClass.objects.get(pk=TransactionClass.FX_TRADE)
+
+    @cached_property
+    def _trn_cls_cash_in(self):
+        return TransactionClass.objects.get(pk=TransactionClass.CASH_INFLOW)
+
+    @cached_property
+    def _trn_cls_cash_out(self):
+        return TransactionClass.objects.get(pk=TransactionClass.CASH_OUTFLOW)
 
     def _trn_qs(self):
         if self._queryset is None:
@@ -424,6 +432,10 @@ class ReportBuilder(BaseReportBuilder):
                 overrides['strategy3_position'] = self.instance.master_user.strategy3
                 overrides['strategy3_cash'] = self.instance.master_user.strategy3
 
+            if self.instance.allocation_mode == Report.MODE_IGNORE:
+                overrides['allocation_balance'] = self.instance.master_user.instrument
+                overrides['allocation_pl'] = self.instance.master_user.instrument
+
             trn = VirtualTransaction(
                 report=self.instance,
                 pricing_provider=self.pricing_provider,
@@ -484,18 +496,17 @@ class ReportBuilder(BaseReportBuilder):
             elif trn.trn_cls.id == TransactionClass.FX_TRANSFER:
                 trn.is_hidden = True
 
-                trn1, trn2 = trn.transfer_clone(self._trn_cls_fx_trade, self._trn_cls_fx_trade,
-                                                t1_pos_sign=1.0, t1_cash_sign=-1.0)
-                # res.append(trn1)
-                # res.append(trn2)
+                trn1, trn2 = trn.fx_transfer_clone(trn_cls_out=self._trn_cls_cash_out, trn_cls_in=self._trn_cls_cash_out)
+                res.append(trn1)
+                res.append(trn2)
 
-                trn11, trn12 = trn1.fx_trade_clone()
-                res.append(trn11)
-                res.append(trn12)
-
-                trn21, trn22 = trn2.fx_trade_clone()
-                res.append(trn21)
-                res.append(trn22)
+                # trn11, trn12 = trn1.fx_trade_clone()
+                # res.append(trn11)
+                # res.append(trn12)
+                #
+                # trn21, trn22 = trn2.fx_trade_clone()
+                # res.append(trn21)
+                # res.append(trn22)
 
         self._transactions = res
         _l.debug('transactions - len=%s', len(self._transactions))
@@ -968,8 +979,10 @@ class ReportBuilder(BaseReportBuilder):
             strategy1_mode=self.instance.strategy1_mode,
             strategy2_mode=self.instance.strategy2_mode,
             strategy3_mode=self.instance.strategy3_mode,
+            allocation_mode=self.instance.allocation_mode,
             show_transaction_details=self.instance.show_transaction_details,
             approach_multiplier=self.instance.approach_multiplier,
+            allocation_detailing=self.instance.allocation_detailing,
             instruments=self.instance.instruments,
             portfolios=self.instance.portfolios,
             accounts=self.instance.accounts,

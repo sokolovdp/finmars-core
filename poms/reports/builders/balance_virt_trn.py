@@ -1,7 +1,6 @@
 import uuid
 
 from poms.common.formula_accruals import f_xirr
-from poms.common.utils import isclose
 from poms.reports.builders.balance_item import Report
 from poms.reports.builders.base_item import BaseReportItem
 from poms.transactions.models import TransactionClass
@@ -853,6 +852,49 @@ class VirtualTransaction(BaseReportItem):
 
         return t1, t2
 
+    def fx_trade_clone(self):
+        # always used *_cash for groupping!
+        # t1
+        t1 = self.clone()
+        t1.is_hidden = False
+        t1.is_mismatch = False
+        t1.trn_ccy = self.trn_ccy
+        t1.stl_ccy = self.trn_ccy
+        # t1.pos_size = self.pos_size
+        t1.cash = self.pos_size
+        t1.principal = self.pos_size
+        t1.carry = 0.0
+        t1.overheads = 0.0
+        t1.ref_fx = 1.0
+        # t1.cash_date = self.acc_date
+        t1.acc_cash = self.acc_pos
+        t1.str1_cash = self.str1_pos
+        t1.str2_cash = self.str2_pos
+        t1.str3_cash = self.str3_pos
+        t1.set_case()
+        t1.pricing()
+        t1.calc()
+
+        # t2
+        t2 = self.clone()
+        t2.is_hidden = False
+        t2.is_mismatch = False
+        t2.trn_ccy = self.trn_ccy
+        t2.stl_ccy = self.stl_ccy
+        t2.pos_size = self.principal
+        # t2.cash = self.cash
+        # t2.principal = self.principal
+        # t2.carry = self.carry
+        # t2.overheads = self.overheads
+        try:
+            t2.ref_fx = abs(self.pos_size / self.principal)
+        except ArithmeticError:
+            t2.ref_fx = 0.0
+        t2.pricing()
+        t2.calc()
+
+        return t1, t2
+
     def transfer_clone(self, t1_cls, t2_cls, t1_pos_sign=-1.0, t1_cash_sign=1.0):
         # t1
         t1 = self.clone()
@@ -897,47 +939,46 @@ class VirtualTransaction(BaseReportItem):
         t2.calc()
         return t1, t2
 
-    def fx_trade_clone(self):
-        # always used *_cash for groupping!
+    def fx_transfer_clone(self, trn_cls_in, trn_cls_out):
         # t1
         t1 = self.clone()
-        t1.is_hidden = False
         t1.is_mismatch = False
-        t1.trn_ccy = self.trn_ccy
-        t1.stl_ccy = self.trn_ccy
-        # t1.pos_size = self.pos_size
-        t1.cash = self.pos_size
-        t1.principal = self.pos_size
-        t1.carry = 0.0
-        t1.overheads = 0.0
-        t1.ref_fx = 1.0
-        # t1.cash_date = self.acc_date
-        t1.acc_cash = self.acc_pos
-        t1.str1_cash = self.str1_pos
-        t1.str2_cash = self.str2_pos
-        t1.str3_cash = self.str3_pos
-        t1.set_case()
-        t1.pricing()
+        t1.is_hidden = False
+        t1.trn_cls = trn_cls_out
+        t1.acc_pos = self.acc_cash
+        t1.acc_cash = self.acc_cash
+        t1.str1_pos = self.str1_cash
+        t1.str1_cash = self.str1_cash
+        t1.str2_pos = self.str2_cash
+        t1.str2_cash = self.str2_cash
+        t1.str3_pos = self.str3_cash
+        t1.str3_cash = self.str3_cash
+        t1.pos_size = -self.pos_size
+        t1.cash = -self.cash
+        t1.principal = -self.principal
+        t1.carry = -self.carry
+        t1.overheads = -self.overheads
         t1.calc()
 
         # t2
         t2 = self.clone()
-        t2.is_hidden = False
         t2.is_mismatch = False
-        t2.trn_ccy = self.trn_ccy
-        t2.stl_ccy = self.stl_ccy
-        t2.pos_size = self.principal
-        # t2.cash = self.cash
-        # t2.principal = self.principal
-        # t2.carry = self.carry
-        # t2.overheads = self.overheads
-        try:
-            t2.ref_fx = abs(self.pos_size / self.principal)
-        except ArithmeticError:
-            t2.ref_fx = 0.0
-        t2.pricing()
+        t2.is_hidden = False
+        t2.trn_cls = trn_cls_in
+        t2.acc_pos = self.acc_pos
+        t2.acc_cash = self.acc_pos
+        t2.str1_pos = self.str1_pos
+        t2.str1_cash = self.str1_pos
+        t2.str2_pos = self.str2_pos
+        t2.str2_cash = self.str2_pos
+        t2.str3_pos = self.str3_pos
+        t2.str3_cash = self.str3_pos
+        t2.pos_size = -self.pos_size
+        t2.cash = self.cash
+        t2.principal = self.principal
+        t2.carry = self.carry
+        t2.overheads = self.overheads
         t2.calc()
-
         return t1, t2
 
     # globals ----------------------------------------------------

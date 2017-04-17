@@ -42,11 +42,13 @@ class ReportItem(BaseReportItem):
     SUBTYPE_TOTAL = 1
     SUBTYPE_CLOSED = 2
     SUBTYPE_OPENED = 3
+    SUBTYPE_ALLOCATION = 3
     SUBTYPE_CHOICES = (
         (SUBTYPE_UNKNOWN, ugettext_lazy('Unknown')),
         (SUBTYPE_TOTAL, ugettext_lazy('Total')),
         (SUBTYPE_CLOSED, ugettext_lazy('Closed')),
         (SUBTYPE_OPENED, ugettext_lazy('Opened')),
+        (SUBTYPE_ALLOCATION, ugettext_lazy('Allocation')),
     )
 
     type = TYPE_UNKNOWN
@@ -1390,6 +1392,7 @@ class Report(object):
                  strategy1_mode=MODE_INDEPENDENT,
                  strategy2_mode=MODE_INDEPENDENT,
                  strategy3_mode=MODE_INDEPENDENT,
+                 allocation_mode=MODE_INDEPENDENT,
                  show_transaction_details=False,
                  approach_multiplier=0.5,
                  allocation_detailing=True,
@@ -1425,7 +1428,7 @@ class Report(object):
         self.strategy1_mode = strategy1_mode
         self.strategy2_mode = strategy2_mode
         self.strategy3_mode = strategy3_mode
-        # self.alloc_mode = alloc_mode
+        self.allocation_mode = allocation_mode
         self.show_transaction_details = show_transaction_details
         self.approach_multiplier = approach_multiplier
         self.allocation_detailing = allocation_detailing
