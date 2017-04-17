@@ -57,17 +57,17 @@ def generate_events(master_users=None):
         _l.debug('generate_events: master_user=%s', master_user.id)
 
         opened_instrument_items = []
-        instruments_pk = set()
+        # instruments_pk = set()
 
-        report = Report(master_user=master_user, report_date=now,
-                        alloc_mode=Report.MODE_IGNORE)
+        report = Report(master_user=master_user, report_date=now)
         builder = ReportBuilder(instance=report)
-        builder.build_balance()
+        # builder.build_balance()
+        builder.build_position_only()
 
         for i in report.items:
-            if i.type == ReportItem.TYPE_INSTRUMENT and not isclose(i.position_size, 0.0):
+            if i.type == ReportItem.TYPE_INSTRUMENT and not isclose(i.pos_size, 0.0):
                 opened_instrument_items.append(i)
-                instruments_pk.add(i.instrument.id)
+                # instruments_pk.add(i.instr.id)
 
         _l.debug('opened_instrument_items: count=%s', len(opened_instrument_items))
         if not opened_instrument_items:
@@ -79,13 +79,12 @@ def generate_events(master_users=None):
             'actions', 'actions__transaction_type'
         ).filter(
             effective_date__lte=(now + F("notify_in_n_days")),
-            final_date__gte=now
-            # ).exclude(
-            #     notification_class__in=[NotificationClass.DONT_REACT]
+            final_date__gte=now,
+            instrument__in={i.instr.id for i in opened_instrument_items}
         ).order_by(
             'instrument__master_user__id', 'instrument__id'
         )
-        event_schedule_qs = event_schedule_qs.filter(instrument__in=instruments_pk)
+        # event_schedule_qs = event_schedule_qs.filter(instrument__in=instruments_pk)
 
         event_schedule_cache = defaultdict(list)
         for event_schedule in event_schedule_qs:
