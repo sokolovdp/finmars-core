@@ -1,5 +1,7 @@
 import logging
 
+from django.utils.translation import ugettext_lazy
+
 from poms.reports.builders.transaction_item import TransactionReportItem, TransactionReport
 
 _l = logging.getLogger('poms.reports')
@@ -9,9 +11,10 @@ class CashFlowProjectionReportItem(TransactionReportItem):
     DEFAULT = 1
     BALANCE = 2
     ROLLING = 3
-    TYPE_CHOICE = (
-        (DEFAULT, 'Default'),
-        (BALANCE, 'Balance'),
+    TYPE_CHOICES = (
+        (DEFAULT, ugettext_lazy('Default')),
+        (BALANCE, ugettext_lazy('Balance')),
+        (ROLLING, ugettext_lazy('Rolling')),
     )
 
     def __init__(self, report, type=DEFAULT, trn=None, cash_consideration_before=0.0, cash_consideration_after=0.0,
@@ -32,6 +35,26 @@ class CashFlowProjectionReportItem(TransactionReportItem):
 
     def __str__(self):
         return 'CashFlowProjectionReportItem:%s' % self.id
+
+    @property
+    def type_name(self):
+        for i, n in CashFlowProjectionReportItem.TYPE_CHOICES:
+            if i == self.type:
+                return n
+        return 'ERR'
+
+    @property
+    def type_code(self):
+        if self.type == CashFlowProjectionReportItem.DEFAULT:
+            return 'DEFAULT'
+
+        elif self.type == CashFlowProjectionReportItem.BALANCE:
+            return 'BALANCE'
+
+        elif self.type == CashFlowProjectionReportItem.ROLLING:
+            return 'ROLLING'
+
+        return 'ERR'
 
 
 class CashFlowProjectionReport(TransactionReport):

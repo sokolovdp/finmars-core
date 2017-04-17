@@ -13,7 +13,9 @@ from poms.reports.builders.transaction_serializers import TransactionReportItemS
 
 
 class CashFlowProjectionReportItemSerializer(TransactionReportItemSerializer):
-    item_type = serializers.ChoiceField(source='type', read_only=True, choices=CashFlowProjectionReportItem.TYPE_CHOICE)
+    item_type = serializers.ChoiceField(source='type', read_only=True, choices=CashFlowProjectionReportItem.TYPE_CHOICES)
+    item_type_code = serializers.CharField(source='type_code', read_only=True)
+    item_type_name = serializers.CharField(source='type_name', read_only=True)
     cash_consideration_before = serializers.ReadOnlyField()
     cash_consideration_after = serializers.ReadOnlyField()
 
@@ -21,8 +23,6 @@ class CashFlowProjectionReportItemSerializer(TransactionReportItemSerializer):
         kwargs.setdefault('read_only', True)
 
         super(CashFlowProjectionReportItemSerializer, self).__init__(*args, **kwargs)
-
-        self.fields.fields.move_to_end('item_type', last=False)
 
 
 class CashFlowProjectionReportSerializer(TransactionReportSerializer):
