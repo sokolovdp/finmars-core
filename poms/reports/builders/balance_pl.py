@@ -432,6 +432,10 @@ class ReportBuilder(BaseReportBuilder):
                 overrides['strategy3_position'] = self.instance.master_user.strategy3
                 overrides['strategy3_cash'] = self.instance.master_user.strategy3
 
+            if self.instance.allocation_mode == Report.MODE_IGNORE:
+                overrides['allocation_balance'] = self.instance.master_user.instrument
+                overrides['allocation_pl'] = self.instance.master_user.instrument
+
             trn = VirtualTransaction(
                 report=self.instance,
                 pricing_provider=self.pricing_provider,
