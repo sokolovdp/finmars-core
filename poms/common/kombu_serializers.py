@@ -19,14 +19,17 @@ def register_pickle_signed(key=None, salt=None, compress=True):
         if compress:
             d = zlib.compress(d)
         d = base64.b64encode(d)
+        # d = base64.encodebytes(d)
         d = signer().sign(d)
-        d = str_to_bytes(d)
+        # d = str_to_bytes(d)
         return d
 
     def decoder(s):
         d = bytes_to_str(s)
         d = signer().unsign(d)
         d = base64.b64decode(d)
+        # d = d.encode()
+        # d = base64.decodebytes(d)
         if compress:
             d = zlib.decompress(d)
         d = io.BytesIO(d)
@@ -34,4 +37,4 @@ def register_pickle_signed(key=None, salt=None, compress=True):
 
     register('pickle-signed', encoder, decoder,
              content_type='application/x-python-serialize-signed',
-             content_encoding='binary')
+             content_encoding='utf-8')
