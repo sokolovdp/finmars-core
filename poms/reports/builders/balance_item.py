@@ -42,11 +42,13 @@ class ReportItem(BaseReportItem):
     SUBTYPE_TOTAL = 1
     SUBTYPE_CLOSED = 2
     SUBTYPE_OPENED = 3
+    SUBTYPE_ALLOCATION = 3
     SUBTYPE_CHOICES = (
         (SUBTYPE_UNKNOWN, ugettext_lazy('Unknown')),
         (SUBTYPE_TOTAL, ugettext_lazy('Total')),
         (SUBTYPE_CLOSED, ugettext_lazy('Closed')),
         (SUBTYPE_OPENED, ugettext_lazy('Opened')),
+        (SUBTYPE_ALLOCATION, ugettext_lazy('Allocation')),
     )
 
     type = TYPE_UNKNOWN

@@ -65,10 +65,10 @@ class ReportBuilder(BaseReportBuilder):
         # items = []
         # for oitem in self.instance.items:
         #     if oitem.type in [ReportItem.TYPE_INSTRUMENT]:
-        #         nitem = oitem.clone()
-        #         nitem.subtype = ReportItem.SUBTYPE_TOTAL
-        #         nitem.overwrite_pl_fields_by_subtype()
-        #         items.append(nitem)
+        #         # nitem = oitem.clone()
+        #         # nitem.subtype = ReportItem.SUBTYPE_TOTAL
+        #         # nitem.overwrite_pl_fields_by_subtype()
+        #         # items.append(nitem)
         #
         #         nitem = oitem.clone()
         #         nitem.subtype = ReportItem.SUBTYPE_CLOSED
