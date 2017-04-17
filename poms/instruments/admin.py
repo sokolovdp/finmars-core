@@ -320,16 +320,16 @@ admin.site.register(GeneratedEvent, GeneratedEventAdmin)
 
 class EventScheduleConfigAdmin(AbstractModelAdmin):
     model = EventScheduleConfig
-    master_user_path = 'instrument__master_user'
+    master_user_path = 'master_user'
     list_display = ('id', 'master_user')
     list_select_related = ('master_user', 'notification_class',)
     ordering = ['master_user']
     raw_id_fields = ('master_user',)
 
-    def master_user(self, obj):
-        return obj.instrument.master_user
+    # def master_user(self, obj):
+    #     return obj.instrument.master_user
 
-    master_user.admin_order_field = 'instrument__master_user'
+    # master_user.admin_order_field = 'instrument__master_user'
 
 
 admin.site.register(EventScheduleConfig, EventScheduleConfigAdmin)
