@@ -13,7 +13,7 @@ from poms.instruments.models import GeneratedEvent
 from poms.reports.builders.cash_flow_projection_item import CashFlowProjectionReportItem
 from poms.reports.builders.transaction import TransactionReportBuilder
 from poms.reports.builders.transaction_item import empty, check_int_min, check_date_min
-from poms.transactions.models import ComplexTransaction, TransactionType, TransactionClass
+from poms.transactions.models import TransactionType, TransactionClass
 
 _l = logging.getLogger('poms.reports')
 
@@ -58,6 +58,14 @@ class CashFlowProjectionReportBuilder(TransactionReportBuilder):
     def _fake_id_gen(self):
         self._id_seq -= 1
         return self._id_seq
+
+    def _trn_qs(self):
+        qs = super(CashFlowProjectionReportBuilder, self)._trn_qs()
+        qs = qs.prefetch_related(
+            'instrument__event_schedules',
+            'instrument__event_schedules__actions',
+        )
+        return qs
 
     def _trn_order_gen(self):
         self._transaction_order_seq += 1
