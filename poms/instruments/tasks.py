@@ -82,7 +82,7 @@ def generate_events(master_users=None):
             'actions',
             'actions__transaction_type'
         ).filter(
-            effective_date__lte=(now + F("notify_in_n_days")),
+            effective_date__lte=(now - F("notify_in_n_days")),
             final_date__gte=now,
             instrument__in={i.instr.id for i in opened_instrument_items}
         ).order_by(
