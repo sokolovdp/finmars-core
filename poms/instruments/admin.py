@@ -204,6 +204,7 @@ class EventScheduleAdmin(AbstractModelAdmin):
     date_hierarchy = 'effective_date'
     search_fields = ['instrument__id', 'instrument__user_code', 'instrument__name']
     raw_id_fields = ['instrument', 'accrual_calculation_schedule']
+    save_as = True
 
     inlines = [
         EventScheduleActionInline
