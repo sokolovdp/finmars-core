@@ -11,6 +11,8 @@ class GeneratedEventProcess(TransactionTypeProcess):
         default_values = kwargs.get('default_values', None) or {}
         default_values.update({
             'instrument': generated_event.instrument,
+            # 'pricing_currency': generated_event.instrument.pricing_currency,
+            'accrued_currency': generated_event.instrument.accrued_currency,
             'portfolio': generated_event.portfolio,
             'account': generated_event.account,
             'strategy1': generated_event.strategy1,

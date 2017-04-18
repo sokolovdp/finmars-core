@@ -180,6 +180,8 @@ def process_events(master_users=None):
                 'event_schedule',
                 'event_schedule__notification_class',
                 'instrument',
+                'instrument__pricing_currency',
+                'instrument__accrued_currency',
                 'portfolio',
                 'account',
                 'strategy1',
