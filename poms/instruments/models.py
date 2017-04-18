@@ -13,6 +13,7 @@ from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext, ugettext_lazy
 from mptt.models import MPTTModel
 
+from poms.common import formula
 from poms.common.formula_accruals import f_xirr
 from poms.common.models import NamedModel, AbstractClassModel, FakeDeletableModel
 from poms.common.utils import date_now, isclose
@@ -1008,6 +1009,26 @@ class GeneratedEvent(models.Model):
             if a.is_book_automatic:
                 return a
         return None
+
+    def generate_text(self, exr, names=None, context=None):
+        names = names or {}
+        names.update({
+            'effective_date': self.effective_date,
+            'notification_date': self.notification_date,
+            'instrument': self.instrument,
+            'portfolio': self.portfolio,
+            'account': self.account,
+            'strategy1': self.strategy1,
+            'strategy2': self.strategy2,
+            'strategy3': self.strategy3,
+            'position': self.position,
+        })
+        # import json
+        # print(json.dumps(names, indent=2))
+        try:
+            return formula.safe_eval(exr, names=names, context=context)
+        except formula.InvalidExpression as e:
+            return '<InvalidExpression>'
 
 
 class EventScheduleConfig(models.Model):
