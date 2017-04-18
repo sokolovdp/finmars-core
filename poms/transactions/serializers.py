@@ -1245,6 +1245,21 @@ class TransactionTypeProcessSerializer(serializers.Serializer):
 
         self.fields['book_transaction_layout'] = serializers.SerializerMethodField()
 
+    def validate(self, attrs):
+        if attrs['process_mode'] == TransactionTypeProcess.MODE_BOOK:
+            values = attrs['values']
+            fvalues = self.fields['values']
+            errors = {}
+            for k, v in values.items():
+                if v is None or v == '':
+                    try:
+                        fvalues.fields[k].fail('required')
+                    except ValidationError as e:
+                        errors[k] = e.detail
+            if errors:
+                raise ValidationError({'values': errors})
+        return attrs
+
     def get_book_transaction_layout(self, obj):
         return obj.transaction_type.book_transaction_layout
 
