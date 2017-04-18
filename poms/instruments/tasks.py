@@ -169,7 +169,9 @@ def process_events(master_users=None):
 
     now = date_now()
 
-    master_user_qs = MasterUser.objects.all()
+    master_user_qs = MasterUser.objects.prefetch_related(
+        'members'
+    )
     if master_users:
         master_user_qs = master_user_qs.filter(pk__in=master_users)
 
@@ -227,13 +229,15 @@ def process_events(master_users=None):
                     is_need_reaction_on_notification_date,
                     is_need_reaction_on_effective_date)
 
+                owner = next(iter([m for m in gevent.master_user.members.all() if m.is_owner]))
+
                 if is_notify_on_notification_date or is_notify_on_effective_date:
                     if is_notify_on_notification_date:
                         gevent.notification_date_notified = True
                     if is_notify_on_effective_date:
                         gevent.effective_date_notified = True
 
-                    recipients = gevent.master_user.members.filter(is_deleted=False, user__isnull=False)
+                    recipients = [m for m in gevent.master_user.members.all() if not m.is_deleted]
 
                     expr = gevent.event_schedule.description or gevent.event_schedule.name
                     if expr:
@@ -262,7 +266,10 @@ def process_events(master_users=None):
                         ttp = GeneratedEventProcess(
                             generated_event=gevent,
                             action=action,
-                            context={'master_user': master_user}
+                            context={
+                                'master_user': master_user,
+                                'member': owner,
+                            }
                         )
                         ttp.process()
                         gevent.processed(None, action, ttp.complex_transaction)
