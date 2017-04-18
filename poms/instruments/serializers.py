@@ -461,10 +461,7 @@ class EventScheduleActionSerializer(serializers.ModelSerializer):
         if isinstance(r, ListSerializer):
             r = r.child
         if isinstance(r, GeneratedEventSerializer):
-            return r.generate_text(obj.text, None, {
-                # 'action': obj,
-                # 'transaction_type': obj.transaction_type,
-            })
+            return r.generate_text(obj.text)
         return None
 
 
@@ -475,6 +472,8 @@ class EventScheduleSerializer(serializers.ModelSerializer):
     event_class_object = serializers.PrimaryKeyRelatedField(source='event_class', read_only=True)
     notification_class_object = serializers.PrimaryKeyRelatedField(source='notification_class', read_only=True)
     periodicity_object = PeriodicitySerializer(source='periodicity', read_only=True)
+    name = ExpressionField(required=True, allow_blank=True, allow_null=True)
+    description = ExpressionField(required=False, allow_blank=True, allow_null=True)
 
     display_name = serializers.SerializerMethodField()
     display_description = serializers.SerializerMethodField()
@@ -519,9 +518,7 @@ class EventScheduleSerializer(serializers.ModelSerializer):
         if isinstance(r, ListSerializer):
             r = r.child
         if isinstance(r, GeneratedEventSerializer):
-            return r.generate_text(obj.name, None, {
-                # 'schedule': obj
-            })
+            return r.generate_text(obj.name)
         return None
 
     def get_display_description(self, obj):
@@ -529,9 +526,7 @@ class EventScheduleSerializer(serializers.ModelSerializer):
         if isinstance(r, ListSerializer):
             r = r.child
         if isinstance(r, GeneratedEventSerializer):
-            return r.generate_text(obj.description, None, {
-                # 'schedule': obj
-            })
+            return r.generate_text(obj.description)
         return None
 
 
@@ -624,38 +619,39 @@ class GeneratedEventSerializer(serializers.ModelSerializer):
     #         obj.is_need_reaction_on_notification_date(now) or obj.is_need_reaction_on_effective_date(now)
     #     )
 
-    def generate_text(self, exr, obj, names=None):
-        # member = get_member_from_context(self.context)
-        names = names or {}
-        if obj is None:
-            obj = self._current_instance
-        names.update({
-            # 'event': obj,
-            # 'effective_date': serializers.DateField().to_representation(obj.effective_date),
-            # 'notification_date': serializers.DateField().to_representation(obj.notification_date),
-            'effective_date': obj.effective_date,
-            'notification_date': obj.notification_date,
-            # 'event_schedule': obj.event_schedule,
-            # 'instrument':  formula.get_model_data(obj.instrument, InstrumentViewSerializer, context=self.context),
-            # 'portfolio': formula.get_model_data(obj.portfolio, PortfolioViewSerializer, context=self.context),
-            # 'account': formula.get_model_data(obj.account, AccountViewSerializer, context=self.context),
-            # 'strategy1': formula.get_model_data(obj.strategy1, Strategy1ViewSerializer, context=self.context),
-            # 'strategy2': formula.get_model_data(obj.strategy2, Strategy2ViewSerializer, context=self.context),
-            # 'strategy3': formula.get_model_data(obj.strategy3, Strategy3ViewSerializer, context=self.context),
-            'instrument': obj.instrument,
-            'portfolio': obj.portfolio,
-            'account': obj.account,
-            'strategy1': obj.strategy1,
-            'strategy2': obj.strategy2,
-            'strategy3': obj.strategy3,
-            'position': obj.position,
-        })
-        # import json
-        # print(json.dumps(names, indent=2))
-        try:
-            return formula.safe_eval(exr, names=names, context=self.context)
-        except formula.InvalidExpression as e:
-            return '<InvalidExpression>'
+    def generate_text(self, exr, names=None):
+        # # member = get_member_from_context(self.context)
+        # names = names or {}
+        # if obj is None:
+        #     obj = self._current_instance
+        # names.update({
+        #     # 'event': obj,
+        #     # 'effective_date': serializers.DateField().to_representation(obj.effective_date),
+        #     # 'notification_date': serializers.DateField().to_representation(obj.notification_date),
+        #     'effective_date': obj.effective_date,
+        #     'notification_date': obj.notification_date,
+        #     # 'event_schedule': obj.event_schedule,
+        #     # 'instrument':  formula.get_model_data(obj.instrument, InstrumentViewSerializer, context=self.context),
+        #     # 'portfolio': formula.get_model_data(obj.portfolio, PortfolioViewSerializer, context=self.context),
+        #     # 'account': formula.get_model_data(obj.account, AccountViewSerializer, context=self.context),
+        #     # 'strategy1': formula.get_model_data(obj.strategy1, Strategy1ViewSerializer, context=self.context),
+        #     # 'strategy2': formula.get_model_data(obj.strategy2, Strategy2ViewSerializer, context=self.context),
+        #     # 'strategy3': formula.get_model_data(obj.strategy3, Strategy3ViewSerializer, context=self.context),
+        #     'instrument': obj.instrument,
+        #     'portfolio': obj.portfolio,
+        #     'account': obj.account,
+        #     'strategy1': obj.strategy1,
+        #     'strategy2': obj.strategy2,
+        #     'strategy3': obj.strategy3,
+        #     'position': obj.position,
+        # })
+        # # import json
+        # # print(json.dumps(names, indent=2))
+        # try:
+        #     return formula.safe_eval(exr, names=names, context=self.context)
+        # except formula.InvalidExpression as e:
+        #     return '<InvalidExpression>'
+        return self._current_instance.generate_text(exr, names=names, context=self.context)
 
 
 class EventScheduleConfigSerializer(serializers.ModelSerializer):
