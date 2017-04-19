@@ -224,7 +224,7 @@ class ObjectHistory4Entry(models.Model):
                     'Deleted "%(value_object_name)s" "%(value)s" from "%(field_name)s" in "%(object_name)s" "%(object_repr)s".') % data
             else:
                 return ugettext_lazy(
-                    '"Deleted %(value_object_name)s" "%(value)s" from "%(field_name)s" in "%(object_name)s" "%(object_repr)s" inside "%(actor_object_name)s" "%(actor_object_repr)s".') % data
+                    'Deleted "%(value_object_name)s" "%(value)s" from "%(field_name)s" in "%(object_name)s" "%(object_repr)s" inside "%(actor_object_name)s" "%(actor_object_repr)s".') % data
         return None
 
 
