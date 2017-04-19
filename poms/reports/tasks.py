@@ -3,7 +3,6 @@ import logging
 from celery import shared_task
 from django.db import transaction
 
-from poms.reports.builders.balance_item import Report
 from poms.reports.builders.balance_pl import ReportBuilder
 from poms.reports.builders.cash_flow_projection import CashFlowProjectionReportBuilder
 from poms.reports.builders.transaction import TransactionReportBuilder
@@ -21,13 +20,14 @@ class FakeRequest:
         self.user.master_user = master_user
 
 
-@shared_task(name='reports.balance_report', expires=30)
+@shared_task(name='reports.balance_report')
 def balance_report(instance):
     _l.debug('balance_report: %s', instance)
     with transaction.atomic():
         try:
             builder = ReportBuilder(instance=instance)
             instance = builder.build_balance()
+            instance.transactions = None
             return instance
         except:
             _l.error('balance report failed', exc_info=True)
@@ -37,13 +37,14 @@ def balance_report(instance):
             _l.debug('finished')
 
 
-@shared_task(name='reports.pl_report', expires=30)
+@shared_task(name='reports.pl_report')
 def pl_report(instance):
     _l.debug('pl_report: %s', instance)
     with transaction.atomic():
         try:
             builder = ReportBuilder(instance=instance)
             instance = builder.build_pl()
+            instance.transactions = None
             return instance
         except:
             _l.error('pl report failed', exc_info=True)
@@ -53,13 +54,14 @@ def pl_report(instance):
             _l.debug('finished')
 
 
-@shared_task(name='reports.transaction_report', expires=30)
+@shared_task(name='reports.transaction_report')
 def transaction_report(instance):
     _l.debug('transaction_report: >')
     with transaction.atomic():
         try:
             builder = TransactionReportBuilder(instance)
             builder.build()
+            instance.transactions = None
             return builder.instance
         except:
             _l.error('transaction report failed', exc_info=True)
@@ -69,13 +71,14 @@ def transaction_report(instance):
             _l.debug('transaction_report: <')
 
 
-@shared_task(name='reports.cash_flow_projection_report', expires=30)
+@shared_task(name='reports.cash_flow_projection_report')
 def cash_flow_projection_report(instance):
     _l.debug('cash_flow_projection_report: >')
     with transaction.atomic():
         try:
             builder = CashFlowProjectionReportBuilder(instance)
             builder.build()
+            instance.transactions = None
             return builder.instance
         except:
             _l.error('cash flow projection report failed', exc_info=True)
