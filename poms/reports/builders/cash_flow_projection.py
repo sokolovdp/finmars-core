@@ -189,20 +189,31 @@ class CashFlowProjectionReportBuilder(TransactionReportBuilder):
 
     def _calc_future(self):
         # eval future events
+
+        # owner = next(iter([m for m in self.instance.master_user.members.all() if m.is_owner]))
+
         now = self.instance.balance_date
         td1 = datetime.timedelta(days=1)
         while now < self.instance.report_date:
             now += td1
-            _l.debug('\tnow=%s', now.isoformat())
+            _l.debug('now=%s', now.isoformat())
 
             # check events only for exist elements on balance date
             for key, ritem in self._rolling_items.items():
                 instr = ritem.instrument
+
                 if instr is None:
                     raise RuntimeError('code bug (instrument is None)')
 
+                _l.debug('instr: id=%s, code=%s, position=%s',
+                         instr.id, instr.user_code, ritem.position_size_with_sign)
+
                 for es in instr.event_schedules.all():
                     is_complies, edate, ndate = es.check_date(now)
+
+                    _l.debug('event sched: id=%s, is_complies=%s, edate=%s, ndate=%s',
+                             es.id, is_complies, edate, ndate)
+
                     if is_complies:
                         e = GeneratedEvent()
                         e.master_user = self.instance.master_user
@@ -218,18 +229,29 @@ class CashFlowProjectionReportBuilder(TransactionReportBuilder):
                         e.strategy3 = ritem.strategy3_position
                         e.position = ritem.position_size_with_sign
 
-                        if e.is_apply_default_on_date(now):
-                            a = e.get_default_action()
-                            if a:
-                                self._set_ref(a, 'transaction_type', clazz=TransactionType)
+                        is_apply_default_on_date = e.is_apply_default_on_date(now)
 
-                                _l.debug('\t\t\tevent_schedule=%s, action=%s, confirmed', es.id, a.id)
+                        _l.debug('gen event: is_apply_default_on_date=%s',
+                                 is_apply_default_on_date)
+
+                        if is_apply_default_on_date:
+                            action = e.get_default_action()
+
+                            _l.debug('gen event action: action=%s, transaction_type=%s',
+                                     getattr(action, 'id', None), getattr(action, 'transaction_type_id', None))
+
+                            if action:
+                                self._set_ref(action, 'transaction_type', clazz=TransactionType)
                                 gep = GeneratedEventProcess(
                                     generated_event=e,
-                                    action=a,
+                                    action=action,
                                     fake_id_gen=self._fake_id_gen,
                                     transaction_order_gen=self._trn_order_gen,
-                                    now=now
+                                    now=now,
+                                    context={
+                                        'master_user': self.instance.master_user,
+                                        'member': self.instance.member,
+                                    }
                                 )
                                 gep.process()
                                 if gep.has_errors:
@@ -242,14 +264,16 @@ class CashFlowProjectionReportBuilder(TransactionReportBuilder):
                                     # self._prefetch(gep.transactions)
                                     # self._set_trns_refs(gep.transactions)
                                     for t2 in gep.transactions:
-                                        _l.debug('\t\t\t+trn=%s', t2.id)
+                                        _l.debug('gen trn: id=%s, c.id=%s, c.date=%s, acc_date=%s, cash_date=%s',
+                                                 t2.id, t2.complex_transaction.id, t2.complex_transaction.date,
+                                                 t2.accounting_date, t2.cash_date)
                                         d = getattr(t2.complex_transaction, 'date', datetime.date.max)
                                         self._transactions_by_date[d].append(t2)
 
             # process transactions for current date
             if now in self._transactions_by_date:
                 for t in self._transactions_by_date[now]:
-                    _l.debug('\t\t\ttrn=%s', t.id)
+                    _l.debug('trn=%s', t.id)
                     key = self._trn_key(t)
 
                     item = CashFlowProjectionReportItem(self.instance, trn=t)
@@ -263,9 +287,11 @@ class CashFlowProjectionReportBuilder(TransactionReportBuilder):
                         # TODO: implement me please
                         pass
 
-                    # remove item with position_size_with_sign close to zerop
-                    if ritem and isclose(ritem.position_size_with_sign, 0.0):
-                        del self._rolling_items[key]
+                    # remove item with position_size_with_sign close to zero
+                    if ritem:
+                        _l.debug('instr del or not: position=%s', ritem.position_size_with_sign)
+                        if isclose(ritem.position_size_with_sign, 0.0):
+                            del self._rolling_items[key]
 
     def _calc_before_after(self):
         # aggregate some rolling values
