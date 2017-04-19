@@ -1929,9 +1929,11 @@ class ReportTestCase(TestCase):
         self._t_trn_pl(stl_ccy=self.usd, principal=0., carry=-900., overheads=-100., notes='N1',
                        alloc_bl=self.bond2, alloc_pl=self.bond2)
 
+        trn_cols = self.TRN_COLS_ALL
+        item_cols = self.ITEM_COLS_ALL
 
         trn_cols = ['pk', 'trn_cls', 'instr', 'pos_size', 'alloc_bl', 'alloc_pl']
-        item_cols = ['type_code', 'subtype_code', 'user_code', 'instr', 'alloc', 'pos_size', 'market_value_res',
+        item_cols = ['group_code', 'type_code', 'subtype_code', 'user_code', 'instr', 'alloc', 'pos_size', 'market_value_res',
                      'total_res']
 
         self._simple_run('test_allocation_detailing - balance - allocation_detailing', report_type=Report.TYPE_BALANCE,

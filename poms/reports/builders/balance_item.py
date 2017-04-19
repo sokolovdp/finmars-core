@@ -60,6 +60,35 @@ class ReportItem(BaseReportItem):
         (SUBTYPE_OPENED, 'OPENED'),
     )
 
+    GROUP_UNDEFINED = 0
+    GROUP_CLOSED = 11
+    GROUP_OPENED = 12
+    GROUP_FX_VARIATIONS = 20
+    GROUP_FX_TRADES = 30
+    GROUP_MISMATCHES = 40
+    GROUP_OTHER = 50
+    GROUP_ALLOCATIONS = 60
+    GROUP_CHOICES = (
+        (GROUP_UNDEFINED, ugettext_lazy('Undefined')),
+        (GROUP_CLOSED, ugettext_lazy('Closed')),
+        (GROUP_OPENED, ugettext_lazy('Opened')),
+        (GROUP_FX_VARIATIONS, ugettext_lazy('FX Variations')),
+        (GROUP_FX_TRADES, ugettext_lazy('FX Trades')),
+        (GROUP_MISMATCHES, ugettext_lazy('Mismatches')),
+        (GROUP_OTHER, ugettext_lazy('Other')),
+        (GROUP_ALLOCATIONS, ugettext_lazy('Allocations')),
+    )
+    GROUP_CODES = (
+        (GROUP_UNDEFINED, 'UNDEFINED'),
+        (GROUP_CLOSED, 'CLOSED'),
+        (GROUP_OPENED, 'OPENED'),
+        (GROUP_FX_VARIATIONS, 'FX_VARIATIONS'),
+        (GROUP_FX_TRADES, 'FX_TRADES'),
+        (GROUP_MISMATCHES, 'MISMATCHES'),
+        (GROUP_OTHER, 'OTHER'),
+        (GROUP_ALLOCATIONS, 'ALLOCATIONS'),
+    )
+
     type = TYPE_UNKNOWN
     subtype = SUBTYPE_DEFAULT
     trn = None
@@ -1271,65 +1300,160 @@ class ReportItem(BaseReportItem):
             self.total_fixed_loc = self.total_fixed_opened_loc
 
         if self.subtype in [ReportItem.SUBTYPE_CLOSED, ReportItem.SUBTYPE_OPENED]:
-            self.principal_closed_res = float('nan')
-            self.carry_closed_res = float('nan')
-            self.overheads_closed_res = float('nan')
-            self.total_closed_res = float('nan')
+            # self.principal_closed_res = float('nan')
+            # self.carry_closed_res = float('nan')
+            # self.overheads_closed_res = float('nan')
+            # self.total_closed_res = float('nan')
+            #
+            # self.principal_opened_res = float('nan')
+            # self.carry_opened_res = float('nan')
+            # self.overheads_opened_res = float('nan')
+            # self.total_opened_res = float('nan')
+            #
+            # self.principal_fx_closed_res = float('nan')
+            # self.carry_fx_closed_res = float('nan')
+            # self.overheads_fx_closed_res = float('nan')
+            # self.total_fx_closed_res = float('nan')
+            #
+            # self.principal_fx_opened_res = float('nan')
+            # self.carry_fx_opened_res = float('nan')
+            # self.overheads_fx_opened_res = float('nan')
+            # self.total_fx_opened_res = float('nan')
+            #
+            # self.principal_fixed_closed_res = float('nan')
+            # self.carry_fixed_closed_res = float('nan')
+            # self.overheads_fixed_closed_res = float('nan')
+            # self.total_fixed_closed_res = float('nan')
+            #
+            # self.principal_fixed_opened_res = float('nan')
+            # self.carry_fixed_opened_res = float('nan')
+            # self.overheads_fixed_opened_res = float('nan')
+            # self.total_fixed_opened_res = float('nan')
+            #
+            # self.principal_closed_loc = float('nan')
+            # self.carry_closed_loc = float('nan')
+            # self.overheads_closed_loc = float('nan')
+            # self.total_closed_loc = float('nan')
+            #
+            # self.principal_opened_loc = float('nan')
+            # self.carry_opened_loc = float('nan')
+            # self.overheads_opened_loc = float('nan')
+            # self.total_opened_loc = float('nan')
+            #
+            # self.principal_fx_closed_loc = float('nan')
+            # self.carry_fx_closed_loc = float('nan')
+            # self.overheads_fx_closed_loc = float('nan')
+            # self.total_fx_closed_loc = float('nan')
+            #
+            # self.principal_fx_opened_loc = float('nan')
+            # self.carry_fx_opened_loc = float('nan')
+            # self.overheads_fx_opened_loc = float('nan')
+            # self.total_fx_opened_loc = float('nan')
+            #
+            # self.principal_fixed_closed_loc = float('nan')
+            # self.carry_fixed_closed_loc = float('nan')
+            # self.overheads_fixed_closed_loc = float('nan')
+            # self.total_fixed_closed_loc = float('nan')
+            #
+            # self.principal_fixed_opened_loc = float('nan')
+            # self.carry_fixed_opened_loc = float('nan')
+            # self.overheads_fixed_opened_loc = float('nan')
+            # self.total_fixed_opened_loc = float('nan')
+            self.set_pl_values(opened=float('nan'), closed=float('nan'))
 
-            self.principal_opened_res = float('nan')
-            self.carry_opened_res = float('nan')
-            self.overheads_opened_res = float('nan')
-            self.total_opened_res = float('nan')
+    def set_pl_values(self, total=None, closed=None, opened=None):
+        if isinstance(total, (float, int)):
+            self.principal_res = total
+            self.carry_res = total
+            self.overheads_res = total
+            self.total_res = total
 
-            self.principal_fx_closed_res = float('nan')
-            self.carry_fx_closed_res = float('nan')
-            self.overheads_fx_closed_res = float('nan')
-            self.total_fx_closed_res = float('nan')
+            self.principal_fx_res = total
+            self.carry_fx_res = total
+            self.overheads_fx_res = total
+            self.total_fx_res = total
 
-            self.principal_fx_opened_res = float('nan')
-            self.carry_fx_opened_res = float('nan')
-            self.overheads_fx_opened_res = float('nan')
-            self.total_fx_opened_res = float('nan')
+            self.principal_fixed_res = total
+            self.carry_fixed_res = total
+            self.overheads_fixed_res = total
+            self.total_fixed_res = total
 
-            self.principal_fixed_closed_res = float('nan')
-            self.carry_fixed_closed_res = float('nan')
-            self.overheads_fixed_closed_res = float('nan')
-            self.total_fixed_closed_res = float('nan')
+            self.principal_loc = total
+            self.carry_loc = total
+            self.overheads_loc = total
+            self.total_loc = total
 
-            self.principal_fixed_opened_res = float('nan')
-            self.carry_fixed_opened_res = float('nan')
-            self.overheads_fixed_opened_res = float('nan')
-            self.total_fixed_opened_res = float('nan')
+            self.principal_fx_loc = total
+            self.carry_fx_loc = total
+            self.overheads_fx_loc = total
+            self.total_fx_loc = total
 
-            self.principal_closed_loc = float('nan')
-            self.carry_closed_loc = float('nan')
-            self.overheads_closed_loc = float('nan')
-            self.total_closed_loc = float('nan')
+            self.principal_fixed_loc = total
+            self.carry_fixed_loc = total
+            self.overheads_fixed_loc = total
+            self.total_fixed_loc = total
 
-            self.principal_opened_loc = float('nan')
-            self.carry_opened_loc = float('nan')
-            self.overheads_opened_loc = float('nan')
-            self.total_opened_loc = float('nan')
+        if isinstance(closed, (float, int)):
+            self.principal_closed_res = closed
+            self.carry_closed_res = closed
+            self.overheads_closed_res = closed
+            self.total_closed_res = closed
 
-            self.principal_fx_closed_loc = float('nan')
-            self.carry_fx_closed_loc = float('nan')
-            self.overheads_fx_closed_loc = float('nan')
-            self.total_fx_closed_loc = float('nan')
+            self.principal_opened_res = closed
+            self.carry_opened_res = closed
+            self.overheads_opened_res = closed
+            self.total_opened_res = closed
 
-            self.principal_fx_opened_loc = float('nan')
-            self.carry_fx_opened_loc = float('nan')
-            self.overheads_fx_opened_loc = float('nan')
-            self.total_fx_opened_loc = float('nan')
+            self.principal_fx_closed_res = closed
+            self.carry_fx_closed_res = closed
+            self.overheads_fx_closed_res = closed
+            self.total_fx_closed_res = closed
 
-            self.principal_fixed_closed_loc = float('nan')
-            self.carry_fixed_closed_loc = float('nan')
-            self.overheads_fixed_closed_loc = float('nan')
-            self.total_fixed_closed_loc = float('nan')
+            self.principal_fx_opened_res = closed
+            self.carry_fx_opened_res = closed
+            self.overheads_fx_opened_res = closed
+            self.total_fx_opened_res = closed
 
-            self.principal_fixed_opened_loc = float('nan')
-            self.carry_fixed_opened_loc = float('nan')
-            self.overheads_fixed_opened_loc = float('nan')
-            self.total_fixed_opened_loc = float('nan')
+            self.principal_fixed_closed_res = closed
+            self.carry_fixed_closed_res = closed
+            self.overheads_fixed_closed_res = closed
+            self.total_fixed_closed_res = closed
+
+            self.principal_fixed_opened_res = closed
+            self.carry_fixed_opened_res = closed
+            self.overheads_fixed_opened_res = closed
+            self.total_fixed_opened_res = closed
+
+        if isinstance(opened, (float, int)):
+            self.principal_closed_loc = opened
+            self.carry_closed_loc = opened
+            self.overheads_closed_loc = opened
+            self.total_closed_loc = opened
+
+            self.principal_opened_loc = opened
+            self.carry_opened_loc = opened
+            self.overheads_opened_loc = opened
+            self.total_opened_loc = opened
+
+            self.principal_fx_closed_loc = opened
+            self.carry_fx_closed_loc = opened
+            self.overheads_fx_closed_loc = opened
+            self.total_fx_closed_loc = opened
+
+            self.principal_fx_opened_loc = opened
+            self.carry_fx_opened_loc = opened
+            self.overheads_fx_opened_loc = opened
+            self.total_fx_opened_loc = opened
+
+            self.principal_fixed_closed_loc = opened
+            self.carry_fixed_closed_loc = opened
+            self.overheads_fixed_closed_loc = opened
+            self.total_fixed_closed_loc = opened
+
+            self.principal_fixed_opened_loc = opened
+            self.carry_fixed_opened_loc = opened
+            self.overheads_fixed_opened_loc = opened
+            self.total_fixed_opened_loc = opened
 
     # ----------------------------------------------------
     @property
@@ -1353,6 +1477,39 @@ class ReportItem(BaseReportItem):
             if i == value:
                 return n
         return '<ERROR>'
+
+    @property
+    def group(self):
+        if self.type == ReportItem.TYPE_INSTRUMENT:
+            if self.subtype == ReportItem.SUBTYPE_CLOSED:
+                return ReportItem.GROUP_CLOSED
+            elif self.subtype == ReportItem.SUBTYPE_OPENED:
+                return ReportItem.GROUP_OPENED
+
+        elif self.type == ReportItem.TYPE_TRANSACTION_PL:
+            return ReportItem.GROUP_OTHER
+
+        elif self.type == ReportItem.TYPE_FX_TRADE:
+            return ReportItem.GROUP_FX_TRADES
+
+        elif self.type == ReportItem.TYPE_CASH_IN_OUT:
+            return ReportItem.GROUP_FX_VARIATIONS
+
+        elif self.type == ReportItem.TYPE_MISMATCH:
+            return ReportItem.GROUP_MISMATCHES
+
+        elif self.type == ReportItem.TYPE_ALLOCATION:
+            return ReportItem.GROUP_ALLOCATIONS
+
+        return ReportItem.GROUP_UNDEFINED
+
+    @property
+    def group_name(self):
+        return self._find_code(self.group, ReportItem.GROUP_CHOICES)
+
+    @property
+    def group_code(self):
+        return self._find_code(self.group, ReportItem.GROUP_CODES)
 
     @property
     def type_name(self):

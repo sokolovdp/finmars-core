@@ -49,6 +49,7 @@ class ReportBuilder(BaseReportBuilder):
         def _accepted(item):
             return item.type in [ReportItem.TYPE_INSTRUMENT, ReportItem.TYPE_CURRENCY] and \
                    not isclose(item.pos_size, 0.0)
+
         self.instance.items = [item for item in self.instance.items if _accepted(item)]
 
         self._alloc_aggregation()
@@ -65,11 +66,12 @@ class ReportBuilder(BaseReportBuilder):
 
         def _accepted(item):
             return item.type not in [ReportItem.TYPE_CURRENCY]
+
         self.instance.items = [item for item in self.instance.items if _accepted(item)]
 
         self._alloc_aggregation()
 
-        self._pnl_regrouping()
+        self._pl_regrouping()
 
         _l.debug('done: %s', (time.perf_counter() - st))
         return self.instance
@@ -1443,7 +1445,7 @@ class ReportBuilder(BaseReportBuilder):
         def _group_key(x):
             return (
                 x.alloc.id,
-                x.subtype,
+                # x.subtype,
             )
 
         no_alloc = self.instance.master_user.instrument
@@ -1464,22 +1466,24 @@ class ReportBuilder(BaseReportBuilder):
                     res_item.add(item)
 
                 if res_item:
+                    res_item.set_pl_values(closed=0.0, opened=0.0)
                     res_item.close()
                     res_items.append(res_item)
 
         self.instance.items = res_items
 
-    def _pnl_regrouping(self):
-        # return
-
+    def _pl_regrouping(self):
         _l.debug('p&l regrouping')
 
         res_items = []
-
         for item in self.instance.items:
             if item.type in [ReportItem.TYPE_CURRENCY, ReportItem.TYPE_CASH_IN_OUT]:
                 res_items.append(item)
-            elif item.type in [ReportItem.TYPE_INSTRUMENT, ReportItem.TYPE_ALLOCATION]:
+
+            elif item.type in [ReportItem.TYPE_ALLOCATION]:
+                res_items.append(item)
+
+            elif item.type in [ReportItem.TYPE_INSTRUMENT]:
                 if self.instance.pl_include_zero or not item.is_pl_is_zero(closed=True):
                     res_item = item.clone()
                     res_item.subtype = ReportItem.SUBTYPE_CLOSED
@@ -1490,6 +1494,7 @@ class ReportBuilder(BaseReportBuilder):
                 res_item.subtype = ReportItem.SUBTYPE_OPENED
                 res_item.set_fields_by_subtype()
                 res_items.append(res_item)
+
             elif item.type in [ReportItem.TYPE_TRANSACTION_PL, ReportItem.TYPE_FX_TRADE, ReportItem.TYPE_CASH_IN_OUT,
                                ReportItem.TYPE_MISMATCH]:
                 res_item = item.clone()
