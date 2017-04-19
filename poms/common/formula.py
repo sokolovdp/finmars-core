@@ -1856,9 +1856,9 @@ accrual_NL_365_NO_EOM(date(2000, 1, 1), date(2000, 1, 25))
         # {id: 10, caption: "Quarterly (+3m)", step: "timedelta(months=3)"},
         # {id: 11, caption: "Yearly (+12m)", step: "timedelta(years=1)",
         # {id: 12, caption: "Yearly (EoY)"}
-        _l.info('200: %s', safe_eval('date_group("2001-03-10", ['
+        _l.info('200: %s', safe_eval('date_group("2001-04-09", ['
                                      '["","2001-02-01",None, "o1"],'
-                                     '["2001-02-01","2020-02-01", timedelta(years=1, month=12, day=31), ["<","%Y-%m-%d","/","","%Y-%m-%d",">"]],'
+                                     '["2001-02-01","2020-02-01", timedelta(weeks=1, weekday=1), ["<","%Y-%m-%d-%a-%b","/","","%Y-%m-%d-%a-%b",">"]],'
                                      '["2020-02-01","",None,"o3"]'
                                      '], "o4")'))
 
