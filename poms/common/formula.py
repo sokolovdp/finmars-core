@@ -687,8 +687,10 @@ class SimpleEval2(object):
         self.result = None
 
         _globals = {f.name: f for f in FUNCTIONS}
-        if now is not None and callable(now):
+        if callable(now):
             _globals['now'] = SimpleEval2Def('now', now)
+        elif isinstance(now, datetime.date):
+            _globals['now'] = SimpleEval2Def('now', lambda: now)
         _globals['globals'] = SimpleEval2Def('globals', lambda: _globals)
         _globals['locals'] = SimpleEval2Def('locals', lambda: self._table)
         _globals['true'] = True
