@@ -22,8 +22,6 @@ class ReportItem(BaseReportItem):
     TYPE_CASH_IN_OUT = 5
     TYPE_MISMATCH = 100  # Linked instrument
     TYPE_SUMMARY = 200
-    # TYPE_INVESTED_CURRENCY = 300
-    # TYPE_INVESTED_SUMMARY = 301
     TYPE_ALLOCATION = 400
     TYPE_CHOICES = (
         (TYPE_UNKNOWN, ugettext_lazy('Unknown')),
@@ -34,19 +32,32 @@ class ReportItem(BaseReportItem):
         (TYPE_CASH_IN_OUT, ugettext_lazy('Cash In/Out')),
         (TYPE_MISMATCH, ugettext_lazy('Mismatch')),
         (TYPE_SUMMARY, ugettext_lazy('Summary')),
-        # (TYPE_INVESTED_CURRENCY, 'Invested'),
-        # (TYPE_INVESTED_SUMMARY, 'Invested summary'),
+        (TYPE_ALLOCATION, ugettext_lazy('Allocation')),
+    )
+    TYPE_CODES = (
+        (TYPE_UNKNOWN, 'UNKNOWN'),
+        (TYPE_INSTRUMENT, 'INSTR'),
+        (TYPE_CURRENCY, 'CCY'),
+        (TYPE_TRANSACTION_PL, 'TRN_PL'),
+        (TYPE_FX_TRADE, 'FX_TRADE'),
+        (TYPE_CASH_IN_OUT, 'CASH_IN_OUT'),
+        (TYPE_MISMATCH, 'MISMATCH'),
+        (TYPE_SUMMARY, 'SUMMARY'),
+        (TYPE_ALLOCATION, 'ALLOCATION'),
     )
 
     SUBTYPE_DEFAULT = 0
     SUBTYPE_CLOSED = 1
     SUBTYPE_OPENED = 2
-    # SUBTYPE_TOTAL = 3
     SUBTYPE_CHOICES = (
         (SUBTYPE_DEFAULT, ugettext_lazy('Default')),
         (SUBTYPE_CLOSED, ugettext_lazy('Closed')),
         (SUBTYPE_OPENED, ugettext_lazy('Opened')),
-        # (SUBTYPE_TOTAL, ugettext_lazy('Total')),
+    )
+    SUBTYPE_CODES = (
+        (SUBTYPE_DEFAULT, 'DEFAULT'),
+        (SUBTYPE_CLOSED, 'CLOSED'),
+        (SUBTYPE_OPENED, 'OPENED'),
     )
 
     type = TYPE_UNKNOWN
@@ -1337,72 +1348,76 @@ class ReportItem(BaseReportItem):
             getattr(self.mismatch_acc, 'id', -1),
         )
 
-    @property
-    def type_name(self):
-        for i, n in ReportItem.TYPE_CHOICES:
-            if i == self.type:
+    def _find_code(self, value, choices):
+        for i, n in choices:
+            if i == value:
                 return n
         return '<ERROR>'
+
+    @property
+    def type_name(self):
+        # for i, n in ReportItem.TYPE_CHOICES:
+        #     if i == self.type:
+        #         return n
+        # return '<ERROR>'
+        return self._find_code(self.type, ReportItem.TYPE_CHOICES)
 
     @property
     def type_code(self):
-        if self.type == ReportItem.TYPE_UNKNOWN:
-            return 'UNKNOWN'
-
-        elif self.type == ReportItem.TYPE_INSTRUMENT:
-            return 'INSTR'
-
-        elif self.type == ReportItem.TYPE_CURRENCY:
-            return 'CCY'
-
-        elif self.type == ReportItem.TYPE_TRANSACTION_PL:
-            return 'TRN_PL'
-
-        elif self.type == ReportItem.TYPE_FX_TRADE:
-            return 'FX_TRADE'
-
-        elif self.type == ReportItem.TYPE_CASH_IN_OUT:
-            return 'CASH_IN_OUT'
-
-        elif self.type == ReportItem.TYPE_MISMATCH:
-            return 'MISMATCH'
-
-        elif self.type == ReportItem.TYPE_SUMMARY:
-            return 'SUMMARY'
-
-        elif self.type == ReportItem.TYPE_ALLOCATION:
-            return 'ALLOCATION'
-
-        # elif self.type == ReportItem.TYPE_INVESTED_CURRENCY:
-        #     return 'INV_CCY'
+        # if self.type == ReportItem.TYPE_UNKNOWN:
+        #     return 'UNKNOWN'
         #
-        # elif self.type == ReportItem.TYPE_INVESTED_SUMMARY:
-        #     return 'INV_SUMMARY'
-
-        return '<ERROR>'
+        # elif self.type == ReportItem.TYPE_INSTRUMENT:
+        #     return 'INSTR'
+        #
+        # elif self.type == ReportItem.TYPE_CURRENCY:
+        #     return 'CCY'
+        #
+        # elif self.type == ReportItem.TYPE_TRANSACTION_PL:
+        #     return 'TRN_PL'
+        #
+        # elif self.type == ReportItem.TYPE_FX_TRADE:
+        #     return 'FX_TRADE'
+        #
+        # elif self.type == ReportItem.TYPE_CASH_IN_OUT:
+        #     return 'CASH_IN_OUT'
+        #
+        # elif self.type == ReportItem.TYPE_MISMATCH:
+        #     return 'MISMATCH'
+        #
+        # elif self.type == ReportItem.TYPE_SUMMARY:
+        #     return 'SUMMARY'
+        #
+        # elif self.type == ReportItem.TYPE_ALLOCATION:
+        #     return 'ALLOCATION'
+        #
+        # return '<ERROR>'
+        return self._find_code(self.type, ReportItem.TYPE_CODES)
 
     @property
     def subtype_name(self):
-        for i, n in ReportItem.SUBTYPE_CHOICES:
-            if i == self.subtype:
-                return n
-        return '<ERROR>'
+        # for i, n in ReportItem.SUBTYPE_CHOICES:
+        #     if i == self.subtype:
+        #         return n
+        # return '<ERROR>'
+        return self._find_code(self.subtype, ReportItem.SUBTYPE_CHOICES)
 
     @property
     def subtype_code(self):
-        if self.subtype == ReportItem.SUBTYPE_DEFAULT:
-            return 'DEFAULT'
-
-        elif self.subtype == ReportItem.SUBTYPE_CLOSED:
-            return 'CLOSED'
-
-        elif self.subtype == ReportItem.SUBTYPE_OPENED:
-            return 'OPENED'
-
-        # elif self.subtype == ReportItem.SUBTYPE_TOTAL:
-        #     return 'TOTAL'
-
-        return '<ERROR>'
+        # if self.subtype == ReportItem.SUBTYPE_DEFAULT:
+        #     return 'DEFAULT'
+        #
+        # elif self.subtype == ReportItem.SUBTYPE_CLOSED:
+        #     return 'CLOSED'
+        #
+        # elif self.subtype == ReportItem.SUBTYPE_OPENED:
+        #     return 'OPENED'
+        #
+        # # elif self.subtype == ReportItem.SUBTYPE_TOTAL:
+        # #     return 'TOTAL'
+        #
+        # return '<ERROR>'
+        return self._find_code(self.subtype, ReportItem.SUBTYPE_CODES)
 
     @property
     def user_code(self):
