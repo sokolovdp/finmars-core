@@ -368,6 +368,7 @@ class ReportSerializer(serializers.Serializer):
     show_transaction_details = serializers.BooleanField(default=False, initial=False)
     approach_multiplier = serializers.FloatField(default=0.5, initial=0.5, min_value=0.0, max_value=1.0, required=False)
     allocation_detailing = serializers.BooleanField(default=True, initial=True)
+    pl_include_zero = serializers.BooleanField(default=False, initial=False)
 
     custom_fields = CustomFieldField(many=True, allow_empty=True, allow_null=True, required=False)
 

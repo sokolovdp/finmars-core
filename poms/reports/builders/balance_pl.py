@@ -44,18 +44,17 @@ class ReportBuilder(BaseReportBuilder):
 
         self.instance.report_type = Report.TYPE_BALANCE
         self.instance.pl_first_date = None
-        res = self.build(full=full)
+        self.build(full=full)
 
         def _accepted(item):
             return item.type in [ReportItem.TYPE_INSTRUMENT, ReportItem.TYPE_CURRENCY] and \
                    not isclose(item.pos_size, 0.0)
-
         self.instance.items = [item for item in self.instance.items if _accepted(item)]
 
         self._alloc_aggregation()
 
         _l.debug('done: %s', (time.perf_counter() - st))
-        return res
+        return self.instance
 
     def build_pl(self, full=True):
         st = time.perf_counter()
@@ -63,6 +62,10 @@ class ReportBuilder(BaseReportBuilder):
 
         self.instance.report_type = Report.TYPE_PL
         self.build(full=full)
+
+        def _accepted(item):
+            return item.type not in [ReportItem.TYPE_CURRENCY]
+        self.instance.items = [item for item in self.instance.items if _accepted(item)]
 
         self._alloc_aggregation()
 
@@ -1467,28 +1470,32 @@ class ReportBuilder(BaseReportBuilder):
         self.instance.items = res_items
 
     def _pnl_regrouping(self):
+        # return
+
         _l.debug('p&l regrouping')
 
-        # items = []
-        # for oitem in self.instance.items:
-        #     if oitem.type in [ReportItem.TYPE_INSTRUMENT]:
-        #         # nitem = oitem.clone()
-        #         # nitem.subtype = ReportItem.SUBTYPE_TOTAL
-        #         # nitem.overwrite_pl_fields_by_subtype()
-        #         # items.append(nitem)
-        #
-        #         nitem = oitem.clone()
-        #         nitem.subtype = ReportItem.SUBTYPE_CLOSED
-        #         nitem.overwrite_pl_fields_by_subtype()
-        #         items.append(nitem)
-        #
-        #         nitem = oitem.clone()
-        #         nitem.subtype = ReportItem.SUBTYPE_OPENED
-        #         nitem.overwrite_pl_fields_by_subtype()
-        #         items.append(nitem)
-        #
-        #     else:
-        #         items.append(oitem)
-        #
-        # self.instance.items = items
-        pass
+        res_items = []
+
+        for item in self.instance.items:
+            if item.type in [ReportItem.TYPE_CURRENCY, ReportItem.TYPE_CASH_IN_OUT]:
+                res_items.append(item)
+            elif item.type in [ReportItem.TYPE_INSTRUMENT, ReportItem.TYPE_ALLOCATION]:
+                if self.instance.pl_include_zero or not item.is_pl_is_zero(closed=True):
+                    res_item = item.clone()
+                    res_item.subtype = ReportItem.SUBTYPE_CLOSED
+                    res_item.set_fields_by_subtype()
+                    res_items.append(res_item)
+
+                res_item = item.clone()
+                res_item.subtype = ReportItem.SUBTYPE_OPENED
+                res_item.set_fields_by_subtype()
+                res_items.append(res_item)
+            elif item.type in [ReportItem.TYPE_TRANSACTION_PL, ReportItem.TYPE_FX_TRADE, ReportItem.TYPE_CASH_IN_OUT,
+                               ReportItem.TYPE_MISMATCH]:
+                res_item = item.clone()
+                res_item.subtype = ReportItem.SUBTYPE_CLOSED
+                res_item.set_fields_by_subtype()
+                res_item.subtype = ReportItem.SUBTYPE_DEFAULT
+                res_items.append(res_item)
+
+        self.instance.items = res_items

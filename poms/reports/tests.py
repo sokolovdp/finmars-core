@@ -1906,23 +1906,53 @@ class ReportTestCase(TestCase):
 
     def test_allocation_detailing(self):
         self._t_buy(instr=self.bond0, position=1, stl_ccy=self.usd, principal=-10., carry=-0., overheads=-0.)
-        self._t_buy(instr=self.bond1, position=1, stl_ccy=self.usd, principal=-10., carry=-0., overheads=-0.)
-
         self._t_buy(instr=self.bond0, position=1, stl_ccy=self.usd, principal=-10., carry=-0., overheads=-0.,
                     alloc_bl=self.bond2, alloc_pl=self.bond2)
+
+        self._t_buy(instr=self.bond1, position=1, stl_ccy=self.usd, principal=-10., carry=-0., overheads=-0.)
         self._t_buy(instr=self.bond1, position=1, stl_ccy=self.usd, principal=-10., carry=-0., overheads=-0.,
                     alloc_bl=self.bond2, alloc_pl=self.bond2)
 
+        self._t_cash_in(trn_ccy=self.usd, stl_ccy=self.usd, position=1000, fx_rate=1.3, notes='N1')
+        self._t_cash_in(trn_ccy=self.usd, stl_ccy=self.usd, position=1000, fx_rate=1.3, notes='N1',
+                        alloc_bl=self.bond2, alloc_pl=self.bond2)
+
+        self._t_cash_out(trn_ccy=self.usd, stl_ccy=self.usd, position=-1000, fx_rate=1.0,  notes='N1')
+        self._t_cash_out(trn_ccy=self.usd, stl_ccy=self.usd, position=-1000, fx_rate=1.0,  notes='N1',
+                         alloc_bl=self.bond2, alloc_pl=self.bond2)
+
+        self._t_fx_tade(trn_ccy=self.usd, position=100, stl_ccy=self.usd, principal=-140,  notes='N1')
+        self._t_fx_tade(trn_ccy=self.usd, position=100, stl_ccy=self.usd, principal=-140,  notes='N1',
+                        alloc_bl=self.bond2, alloc_pl=self.bond2)
+
+        self._t_trn_pl(stl_ccy=self.usd, principal=0., carry=-900., overheads=-100., notes='N1')
+        self._t_trn_pl(stl_ccy=self.usd, principal=0., carry=-900., overheads=-100., notes='N1',
+                       alloc_bl=self.bond2, alloc_pl=self.bond2)
+
+
         trn_cols = ['pk', 'trn_cls', 'instr', 'pos_size', 'alloc_bl', 'alloc_pl']
-        item_cols = ['type_code', 'subtype_code', 'user_code', 'instr', 'alloc', 'pos_size', 'market_value_res', 'total_res']
+        item_cols = ['type_code', 'subtype_code', 'user_code', 'instr', 'alloc', 'pos_size', 'market_value_res',
+                     'total_res']
 
-        self._simple_run('test_allocation_detailing - True', report_currency=self.cad, report_date=self._d(14),
+        self._simple_run('test_allocation_detailing - balance - allocation_detailing', report_type=Report.TYPE_BALANCE,
+                         report_currency=self.cad, report_date=self._d(14),
                          trn_dump_all=False, trn_cols=trn_cols, item_cols=item_cols,
-                         allocation_detailing=True)
+                         allocation_detailing=True, pl_include_zero=True)
 
-        self._simple_run('test_allocation_detailing - False', report_currency=self.cad, report_date=self._d(14),
+        self._simple_run('test_allocation_detailing - balance - no_allocation_detailing', report_type=Report.TYPE_BALANCE,
+                         report_currency=self.cad, report_date=self._d(14),
                          trn_dump_all=False, trn_cols=trn_cols, item_cols=item_cols,
-                         allocation_detailing=False)
+                         allocation_detailing=False, pl_include_zero=True)
+
+        self._simple_run('test_allocation_detailing - p&l - allocation_detailing', report_type=Report.TYPE_PL,
+                         report_currency=self.cad, report_date=self._d(14),
+                         trn_dump_all=False, trn_cols=trn_cols, item_cols=item_cols,
+                         allocation_detailing=True, pl_include_zero=True)
+
+        self._simple_run('test_allocation_detailing - p&l - no_allocation_detailing', report_type=Report.TYPE_PL,
+                         report_currency=self.cad, report_date=self._d(14),
+                         trn_dump_all=False, trn_cols=trn_cols, item_cols=item_cols,
+                         allocation_detailing=False, pl_include_zero=True)
 
     # ------------------------------------------------------------------------------------------------------------------
 

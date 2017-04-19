@@ -3,7 +3,6 @@ from datetime import timedelta
 
 from django.utils.translation import ugettext_lazy, ugettext
 
-from poms.common import formula
 from poms.common.formula_accruals import f_duration
 from poms.common.formula_accruals import f_xirr
 from poms.common.utils import isclose, date_now
@@ -40,14 +39,14 @@ class ReportItem(BaseReportItem):
     )
 
     SUBTYPE_DEFAULT = 0
-    SUBTYPE_TOTAL = 1
-    SUBTYPE_CLOSED = 2
-    SUBTYPE_OPENED = 3
+    SUBTYPE_CLOSED = 1
+    SUBTYPE_OPENED = 2
+    # SUBTYPE_TOTAL = 3
     SUBTYPE_CHOICES = (
         (SUBTYPE_DEFAULT, ugettext_lazy('Default')),
         (SUBTYPE_CLOSED, ugettext_lazy('Closed')),
         (SUBTYPE_OPENED, ugettext_lazy('Opened')),
-        (SUBTYPE_TOTAL, ugettext_lazy('Total')),
+        # (SUBTYPE_TOTAL, ugettext_lazy('Total')),
     )
 
     type = TYPE_UNKNOWN
@@ -232,106 +231,106 @@ class ReportItem(BaseReportItem):
     overheads_fixed_opened_loc = 0.0
     total_fixed_opened_loc = 0.0
 
-    pl_total_fields = [
-        # full ----------------------------------------------------
-        ('principal_res', None),
-        ('carry_res', None),
-        ('overheads_res', None),
-        ('total_res', None),
-
-        ('principal_loc', None),
-        ('carry_loc', None),
-        ('overheads_loc', None),
-        ('total_loc', None),
-
-        # fx ----------------------------------------------------
-        ('principal_fx_res', None),
-        ('carry_fx_res', None),
-        ('overheads_fx_res', None),
-        ('total_fx_res', None),
-
-        ('principal_fx_loc', None),
-        ('carry_fx_loc', None),
-        ('overheads_fx_loc', None),
-        ('total_fx_loc', None),
-        # fixed ----------------------------------------------------
-        ('principal_fixed_res', None),
-        ('carry_fixed_res', None),
-        ('overheads_fixed_res', None),
-        ('total_fixed_res', None),
-
-        ('principal_fixed_loc', None),
-        ('carry_fixed_loc', None),
-        ('overheads_fixed_loc', None),
-        ('total_fixed_loc', None),
-    ]
-    pl_closed_fields = [
-        # full / closed ----------------------------------------------------
-        ('principal_closed_res', None),
-        ('carry_closed_res', None),
-        ('overheads_closed_res', None),
-        ('total_closed_res', None),
-
-        ('principal_closed_loc', None),
-        ('carry_closed_loc', None),
-        ('overheads_closed_loc', None),
-        ('total_closed_loc', None),
-
-        # fx / closed ----------------------------------------------------
-        ('principal_fx_closed_res', None),
-        ('carry_fx_closed_res', None),
-        ('overheads_fx_closed_res', None),
-        ('total_fx_closed_res', None),
-
-        ('principal_fx_closed_loc', None),
-        ('carry_fx_closed_loc', None),
-        ('overheads_fx_closed_loc', None),
-        ('total_fx_closed_loc', None),
-        # fixed / closed ----------------------------------------------------
-        ('principal_fixed_closed_res', None),
-        ('carry_fixed_closed_res', None),
-        ('overheads_fixed_closed_res', None),
-        ('total_fixed_closed_res', None),
-
-        ('principal_fixed_closed_loc', None),
-        ('carry_fixed_closed_loc', None),
-        ('overheads_fixed_closed_loc', None),
-        ('total_fixed_closed_loc', None),
-    ]
-    pl_opened_fields = [
-        # full / opened ----------------------------------------------------
-        ('principal_opened_res', None),
-        ('carry_opened_res', None),
-        ('overheads_opened_res', None),
-        ('total_opened_res', None),
-
-        ('principal_opened_loc', None),
-        ('carry_opened_loc', None),
-        ('overheads_opened_loc', None),
-        ('total_opened_loc', None),
-
-        # fx / opened ----------------------------------------------------
-        ('principal_fx_opened_res', None),
-        ('carry_fx_opened_res', None),
-        ('overheads_fx_opened_res', None),
-        ('total_fx_opened_res', None),
-
-        ('principal_fx_opened_loc', None),
-        ('carry_fx_opened_loc', None),
-        ('overheads_fx_opened_loc', None),
-        ('total_fx_opened_loc', None),
-
-        # fixed / opened ----------------------------------------------------
-        ('principal_fixed_opened_res', None),
-        ('carry_fixed_opened_res', None),
-        ('overheads_fixed_opened_res', None),
-        ('total_fixed_opened_res', None),
-
-        ('principal_fixed_opened_loc', None),
-        ('carry_fixed_opened_loc', None),
-        ('overheads_fixed_opened_loc', None),
-        ('total_fixed_opened_loc', None),
-    ]
+    # pl_total_fields = [
+    #     # full ----------------------------------------------------
+    #     ('principal_res', None),
+    #     ('carry_res', None),
+    #     ('overheads_res', None),
+    #     ('total_res', None),
+    #
+    #     ('principal_loc', None),
+    #     ('carry_loc', None),
+    #     ('overheads_loc', None),
+    #     ('total_loc', None),
+    #
+    #     # fx ----------------------------------------------------
+    #     ('principal_fx_res', None),
+    #     ('carry_fx_res', None),
+    #     ('overheads_fx_res', None),
+    #     ('total_fx_res', None),
+    #
+    #     ('principal_fx_loc', None),
+    #     ('carry_fx_loc', None),
+    #     ('overheads_fx_loc', None),
+    #     ('total_fx_loc', None),
+    #     # fixed ----------------------------------------------------
+    #     ('principal_fixed_res', None),
+    #     ('carry_fixed_res', None),
+    #     ('overheads_fixed_res', None),
+    #     ('total_fixed_res', None),
+    #
+    #     ('principal_fixed_loc', None),
+    #     ('carry_fixed_loc', None),
+    #     ('overheads_fixed_loc', None),
+    #     ('total_fixed_loc', None),
+    # ]
+    # pl_closed_fields = [
+    #     # full / closed ----------------------------------------------------
+    #     ('principal_closed_res', None),
+    #     ('carry_closed_res', None),
+    #     ('overheads_closed_res', None),
+    #     ('total_closed_res', None),
+    #
+    #     ('principal_closed_loc', None),
+    #     ('carry_closed_loc', None),
+    #     ('overheads_closed_loc', None),
+    #     ('total_closed_loc', None),
+    #
+    #     # fx / closed ----------------------------------------------------
+    #     ('principal_fx_closed_res', None),
+    #     ('carry_fx_closed_res', None),
+    #     ('overheads_fx_closed_res', None),
+    #     ('total_fx_closed_res', None),
+    #
+    #     ('principal_fx_closed_loc', None),
+    #     ('carry_fx_closed_loc', None),
+    #     ('overheads_fx_closed_loc', None),
+    #     ('total_fx_closed_loc', None),
+    #     # fixed / closed ----------------------------------------------------
+    #     ('principal_fixed_closed_res', None),
+    #     ('carry_fixed_closed_res', None),
+    #     ('overheads_fixed_closed_res', None),
+    #     ('total_fixed_closed_res', None),
+    #
+    #     ('principal_fixed_closed_loc', None),
+    #     ('carry_fixed_closed_loc', None),
+    #     ('overheads_fixed_closed_loc', None),
+    #     ('total_fixed_closed_loc', None),
+    # ]
+    # pl_opened_fields = [
+    #     # full / opened ----------------------------------------------------
+    #     ('principal_opened_res', None),
+    #     ('carry_opened_res', None),
+    #     ('overheads_opened_res', None),
+    #     ('total_opened_res', None),
+    #
+    #     ('principal_opened_loc', None),
+    #     ('carry_opened_loc', None),
+    #     ('overheads_opened_loc', None),
+    #     ('total_opened_loc', None),
+    #
+    #     # fx / opened ----------------------------------------------------
+    #     ('principal_fx_opened_res', None),
+    #     ('carry_fx_opened_res', None),
+    #     ('overheads_fx_opened_res', None),
+    #     ('total_fx_opened_res', None),
+    #
+    #     ('principal_fx_opened_loc', None),
+    #     ('carry_fx_opened_loc', None),
+    #     ('overheads_fx_opened_loc', None),
+    #     ('total_fx_opened_loc', None),
+    #
+    #     # fixed / opened ----------------------------------------------------
+    #     ('principal_fixed_opened_res', None),
+    #     ('carry_fixed_opened_res', None),
+    #     ('overheads_fixed_opened_res', None),
+    #     ('total_fixed_opened_res', None),
+    #
+    #     ('principal_fixed_opened_loc', None),
+    #     ('carry_fixed_opened_loc', None),
+    #     ('overheads_fixed_opened_loc', None),
+    #     ('total_fixed_opened_loc', None),
+    # ]
 
     dump_columns = [
         # 'is_cloned',
@@ -1153,6 +1152,174 @@ class ReportItem(BaseReportItem):
         self.overheads_fixed_opened_res -= o.overheads_fixed_opened_res
         self.total_fixed_opened_res -= o.total_fixed_opened_res
 
+    def eval_custom_fields(self):
+        # use optimization inside serialization
+        res = []
+        # for cf in self.report.custom_fields:
+        #     if cf.expr and self.report.member:
+        #         try:
+        #             names = {
+        #                 'item': self
+        #             }
+        #             value = formula.safe_eval(cf.expr, names=names, context=self.report.context)
+        #         except formula.InvalidExpression:
+        #             value = ugettext('Invalid expression')
+        #     else:
+        #         value = None
+        #     res.append({
+        #         'custom_field': cf,
+        #         'value': value
+        #     })
+        self.custom_fields = res
+
+    def set_fields_by_subtype(self):
+        if self.subtype == ReportItem.SUBTYPE_CLOSED:
+            self.pos_size = 0.0
+            self.market_value_res = 0.0
+            self.market_value_loc = 0.0
+            self.cost_res = 0.0
+            self.ytm = 0.0
+            self.modified_duration = 0.0
+            self.ytm_at_cost = 0.0
+            self.time_invested_days = 0.0
+            self.time_invested = 0.0
+            self.gross_cost_res = 0.0
+            self.gross_cost_loc = 0.0
+            self.net_cost_res = 0.0
+            self.net_cost_loc = 0.0
+            self.principal_invested_res = 0.0
+            self.principal_invested_loc = 0.0
+            self.amount_invested_res = 0.0
+            self.amount_invested_loc = 0.0
+            self.pos_return_res = 0.0
+            self.pos_return_loc = 0.0
+            self.net_pos_return_res = 0.0
+            self.net_pos_return_loc = 0.0
+            self.daily_price_change = 0.0
+            self.mtd_price_change = 0.0
+
+            self.principal_res = self.principal_closed_res
+            self.carry_res = self.carry_closed_res
+            self.overheads_res = self.overheads_closed_res
+            self.total_res = self.total_closed_res
+
+            self.principal_fx_res = self.principal_fx_closed_res
+            self.carry_fx_res = self.carry_fx_closed_res
+            self.overheads_fx_res = self.overheads_fx_closed_res
+            self.total_fx_res = self.total_fx_closed_res
+
+            self.principal_fixed_res = self.principal_fixed_closed_res
+            self.carry_fixed_res = self.carry_fixed_closed_res
+            self.overheads_fixed_res = self.overheads_fixed_closed_res
+            self.total_fixed_res = self.total_fixed_closed_res
+
+            self.principal_loc = self.principal_closed_loc
+            self.carry_loc = self.carry_closed_loc
+            self.overheads_loc = self.overheads_closed_loc
+            self.total_loc = self.total_closed_loc
+
+            self.principal_fx_loc = self.principal_fx_closed_loc
+            self.carry_fx_loc = self.carry_fx_closed_loc
+            self.overheads_fx_loc = self.overheads_fx_closed_loc
+            self.total_fx_loc = self.total_fx_closed_loc
+
+            self.principal_fixed_loc = self.principal_fixed_closed_loc
+            self.carry_fixed_loc = self.carry_fixed_closed_loc
+            self.overheads_fixed_loc = self.overheads_fixed_closed_loc
+            self.total_fixed_loc = self.total_fixed_closed_loc
+
+        elif self.subtype == ReportItem.SUBTYPE_OPENED:
+            self.principal_res = self.principal_opened_res
+            self.carry_res = self.carry_opened_res
+            self.overheads_res = self.overheads_opened_res
+            self.total_res = self.total_opened_res
+
+            self.principal_fx_res = self.principal_fx_opened_res
+            self.carry_fx_res = self.carry_fx_opened_res
+            self.overheads_fx_res = self.overheads_fx_opened_res
+            self.total_fx_res = self.total_fx_opened_res
+
+            self.principal_fixed_res = self.principal_fixed_opened_res
+            self.carry_fixed_res = self.carry_fixed_opened_res
+            self.overheads_fixed_res = self.overheads_fixed_opened_res
+            self.total_fixed_res = self.total_fixed_opened_res
+
+            self.principal_loc = self.principal_opened_loc
+            self.carry_loc = self.carry_opened_loc
+            self.overheads_loc = self.overheads_opened_loc
+            self.total_loc = self.total_opened_loc
+
+            self.principal_fx_loc = self.principal_fx_opened_loc
+            self.carry_fx_loc = self.carry_fx_opened_loc
+            self.overheads_fx_loc = self.overheads_fx_opened_loc
+            self.total_fx_loc = self.total_fx_opened_loc
+
+            self.principal_fixed_loc = self.principal_fixed_opened_loc
+            self.carry_fixed_loc = self.carry_fixed_opened_loc
+            self.overheads_fixed_loc = self.overheads_fixed_opened_loc
+            self.total_fixed_loc = self.total_fixed_opened_loc
+
+        if self.subtype in [ReportItem.SUBTYPE_CLOSED, ReportItem.SUBTYPE_OPENED]:
+            self.principal_closed_res = float('nan')
+            self.carry_closed_res = float('nan')
+            self.overheads_closed_res = float('nan')
+            self.total_closed_res = float('nan')
+
+            self.principal_opened_res = float('nan')
+            self.carry_opened_res = float('nan')
+            self.overheads_opened_res = float('nan')
+            self.total_opened_res = float('nan')
+
+            self.principal_fx_closed_res = float('nan')
+            self.carry_fx_closed_res = float('nan')
+            self.overheads_fx_closed_res = float('nan')
+            self.total_fx_closed_res = float('nan')
+
+            self.principal_fx_opened_res = float('nan')
+            self.carry_fx_opened_res = float('nan')
+            self.overheads_fx_opened_res = float('nan')
+            self.total_fx_opened_res = float('nan')
+
+            self.principal_fixed_closed_res = float('nan')
+            self.carry_fixed_closed_res = float('nan')
+            self.overheads_fixed_closed_res = float('nan')
+            self.total_fixed_closed_res = float('nan')
+
+            self.principal_fixed_opened_res = float('nan')
+            self.carry_fixed_opened_res = float('nan')
+            self.overheads_fixed_opened_res = float('nan')
+            self.total_fixed_opened_res = float('nan')
+
+            self.principal_closed_loc = float('nan')
+            self.carry_closed_loc = float('nan')
+            self.overheads_closed_loc = float('nan')
+            self.total_closed_loc = float('nan')
+
+            self.principal_opened_loc = float('nan')
+            self.carry_opened_loc = float('nan')
+            self.overheads_opened_loc = float('nan')
+            self.total_opened_loc = float('nan')
+
+            self.principal_fx_closed_loc = float('nan')
+            self.carry_fx_closed_loc = float('nan')
+            self.overheads_fx_closed_loc = float('nan')
+            self.total_fx_closed_loc = float('nan')
+
+            self.principal_fx_opened_loc = float('nan')
+            self.carry_fx_opened_loc = float('nan')
+            self.overheads_fx_opened_loc = float('nan')
+            self.total_fx_opened_loc = float('nan')
+
+            self.principal_fixed_closed_loc = float('nan')
+            self.carry_fixed_closed_loc = float('nan')
+            self.overheads_fixed_closed_loc = float('nan')
+            self.total_fixed_closed_loc = float('nan')
+
+            self.principal_fixed_opened_loc = float('nan')
+            self.carry_fixed_opened_loc = float('nan')
+            self.overheads_fixed_opened_loc = float('nan')
+            self.total_fixed_opened_loc = float('nan')
+
     # ----------------------------------------------------
     @property
     def pk(self):
@@ -1357,49 +1524,150 @@ class ReportItem(BaseReportItem):
             return self.trn
         return None
 
-    def eval_custom_fields(self):
-        # use optimization inside serialization
-        res = []
-        # for cf in self.report.custom_fields:
-        #     if cf.expr and self.report.member:
-        #         try:
-        #             names = {
-        #                 'item': self
-        #             }
-        #             value = formula.safe_eval(cf.expr, names=names, context=self.report.context)
-        #         except formula.InvalidExpression:
-        #             value = ugettext('Invalid expression')
-        #     else:
-        #         value = None
-        #     res.append({
-        #         'custom_field': cf,
-        #         'value': value
-        #     })
-        self.custom_fields = res
+    def is_pl_is_zero(self, full=False, opened=False, closed=False):
+        values = []
+        if full:
+            values += [
+                self.principal_res,
+                self.carry_res,
+                self.overheads_res,
+                self.total_res,
 
-    def overwrite_pl_fields_by_subtype(self):
-        if self.subtype == ReportItem.SUBTYPE_TOTAL:
-            pass
+                # self.principal_closed_res,
+                # self.carry_closed_res,
+                # self.overheads_closed_res,
+                # self.total_closed_res,
 
-        elif self.subtype == ReportItem.SUBTYPE_CLOSED:
-            for sitem, ditem in self.pl_closed_fields:
-                if ditem is None:
-                    ditem = str(sitem).replace('closed_', '')
-                val = getattr(self, sitem)
-                setattr(self, ditem, val)
+                # self.principal_opened_res,
+                # self.carry_opened_res,
+                # self.overheads_opened_res,
+                # self.total_opened_res,
 
-        elif self.subtype == ReportItem.SUBTYPE_OPENED:
-            for sitem, ditem in self.pl_opened_fields:
-                if ditem is None:
-                    ditem = str(sitem).replace('opene_', '')
-                val = getattr(self, sitem)
-                setattr(self, ditem, val)
+                self.principal_fx_res,
+                self.carry_fx_res,
+                self.overheads_fx_res,
+                self.total_fx_res,
 
-        for sitem, ditem in self.pl_closed_fields:
-            setattr(self, sitem, float('nan'))
+                # self.principal_fx_closed_res,
+                # self.carry_fx_closed_res,
+                # self.overheads_fx_closed_res,
+                # self.total_fx_closed_res,
 
-        for sitem, ditem in self.pl_opened_fields:
-            setattr(self, sitem, float('nan'))
+                # self.principal_fx_opened_res,
+                # self.carry_fx_opened_res,
+                # self.overheads_fx_opened_res,
+                # self.total_fx_opened_res,
+
+                self.principal_fixed_res,
+                self.carry_fixed_res,
+                self.overheads_fixed_res,
+                self.total_fixed_res,
+
+                # self.principal_fixed_closed_res,
+                # self.carry_fixed_closed_res,
+                # self.overheads_fixed_closed_res,
+                # self.total_fixed_closed_res,
+
+                # self.principal_fixed_opened_res,
+                # self.carry_fixed_opened_res,
+                # self.overheads_fixed_opened_res,
+                # self.total_fixed_opened_res,
+            ]
+        if closed:
+            values += [
+                # self.principal_res,
+                # self.carry_res,
+                # self.overheads_res,
+                # self.total_res,
+
+                self.principal_closed_res,
+                self.carry_closed_res,
+                self.overheads_closed_res,
+                self.total_closed_res,
+
+                # self.principal_opened_res,
+                # self.carry_opened_res,
+                # self.overheads_opened_res,
+                # self.total_opened_res,
+
+                # self.principal_fx_res,
+                # self.carry_fx_res,
+                # self.overheads_fx_res,
+                # self.total_fx_res,
+
+                self.principal_fx_closed_res,
+                self.carry_fx_closed_res,
+                self.overheads_fx_closed_res,
+                self.total_fx_closed_res,
+
+                # self.principal_fx_opened_res,
+                # self.carry_fx_opened_res,
+                # self.overheads_fx_opened_res,
+                # self.total_fx_opened_res,
+
+                # self.principal_fixed_res,
+                # self.carry_fixed_res,
+                # self.overheads_fixed_res,
+                # self.total_fixed_res,
+
+                self.principal_fixed_closed_res,
+                self.carry_fixed_closed_res,
+                self.overheads_fixed_closed_res,
+                self.total_fixed_closed_res,
+
+                # self.principal_fixed_opened_res,
+                # self.carry_fixed_opened_res,
+                # self.overheads_fixed_opened_res,
+                # self.total_fixed_opened_res,
+            ]
+        if opened:
+            values += [
+                # self.principal_res,
+                # self.carry_res,
+                # self.overheads_res,
+                # self.total_res,
+
+                # self.principal_closed_res,
+                # self.carry_closed_res,
+                # self.overheads_closed_res,
+                # self.total_closed_res,
+
+                self.principal_opened_res,
+                self.carry_opened_res,
+                self.overheads_opened_res,
+                self.total_opened_res,
+
+                # self.principal_fx_res,
+                # self.carry_fx_res,
+                # self.overheads_fx_res,
+                # self.total_fx_res,
+
+                # self.principal_fx_closed_res,
+                # self.carry_fx_closed_res,
+                # self.overheads_fx_closed_res,
+                # self.total_fx_closed_res,
+
+                self.principal_fx_opened_res,
+                self.carry_fx_opened_res,
+                self.overheads_fx_opened_res,
+                self.total_fx_opened_res,
+
+                # self.principal_fixed_res,
+                # self.carry_fixed_res,
+                # self.overheads_fixed_res,
+                # self.total_fixed_res,
+
+                # self.principal_fixed_closed_res,
+                # self.carry_fixed_closed_res,
+                # self.overheads_fixed_closed_res,
+                # self.total_fixed_closed_res,
+
+                self.principal_fixed_opened_res,
+                self.carry_fixed_opened_res,
+                self.overheads_fixed_opened_res,
+                self.total_fixed_opened_res,
+            ]
+        return all(isclose(v, 0) for v in values)
 
 
 class Report(object):
@@ -1440,6 +1708,7 @@ class Report(object):
                  show_transaction_details=False,
                  approach_multiplier=0.5,
                  allocation_detailing=True,
+                 pl_include_zero=True,
                  instruments=None,
                  portfolios=None,
                  accounts=None,
@@ -1476,6 +1745,7 @@ class Report(object):
         self.show_transaction_details = show_transaction_details
         self.approach_multiplier = approach_multiplier
         self.allocation_detailing = allocation_detailing
+        self.pl_include_zero = pl_include_zero
 
         self.instruments = instruments or []
         self.portfolios = portfolios or []
@@ -1518,63 +1788,63 @@ class Report(object):
         for item in self.items:
             item.eval_custom_fields()
 
-        # item_instruments = {}
-        # item_currencies = {}
-        # item_portfolios = {}
-        # item_accounts = {}
-        # item_strategies1 = {}
-        # item_strategies2 = {}
-        # item_strategies3 = {}
-        # item_currency_fx_rates = {}
-        # item_instrument_pricings = {}
-        # item_instrument_accruals = {}
-        #
-        # for item in self.items:
-        #     if item.instr:
-        #         item_instruments[item.instr.id] = item.instr
-        #     if item.ccy:
-        #         item_currencies[item.ccy.id] = item.ccy
-        #     if item.prtfl:
-        #         item_portfolios[item.prtfl.id] = item.prtfl
-        #     if item.acc:
-        #         item_accounts[item.acc.id] = item.acc
-        #     if item.str1:
-        #         item_strategies1[item.str1.id] = item.str1
-        #     if item.str2:
-        #         item_strategies2[item.str2.id] = item.str2
-        #     if item.str3:
-        #         item_strategies3[item.str3.id] = item.str3
-        #     if item.mismatch_prtfl:
-        #         item_portfolios[item.mismatch_prtfl.id] = item.mismatch_prtfl
-        #     if item.mismatch_acc:
-        #         item_accounts[item.mismatch_acc.id] = item.mismatch_acc
-        #     if item.alloc:
-        #         item_instruments[item.alloc.id] = item.alloc
-        #     if item.report_ccy_cur:
-        #         item_currency_fx_rates[item.report_ccy_cur.id] = item.report_ccy_cur
-        #     if item.instr_price_cur:
-        #         item_instrument_pricings[item.instr_price_cur.id] = item.instr_price_cur
-        #     if item.instr_pricing_ccy_cur:
-        #         item_currency_fx_rates[item.instr_pricing_ccy_cur.id] = item.instr_pricing_ccy_cur
-        #     if item.instr_accrued_ccy_cur:
-        #         item_currency_fx_rates[item.instr_accrued_ccy_cur.id] = item.instr_accrued_ccy_cur
-        #     if item.ccy_cur:
-        #         item_currency_fx_rates[item.ccy_cur.id] = item.ccy_cur
-        #     if item.pricing_ccy_cur:
-        #         item_currency_fx_rates[item.pricing_ccy_cur.id] = item.pricing_ccy_cur
-        #     if item.instr_accrual:
-        #         item_instrument_accruals[item.instr_accrual.id] = item.instr_accrual
-        #
-        # self.item_instruments = list(item_instruments.values())
-        # self.item_currencies = list(item_currencies.values())
-        # self.item_portfolios = list(item_portfolios.values())
-        # self.item_accounts = list(item_accounts.values())
-        # self.item_strategies1 = list(item_strategies1.values())
-        # self.item_strategies2 = list(item_strategies2.values())
-        # self.item_strategies3 = list(item_strategies3.values())
-        # self.item_currency_fx_rates = list(item_currency_fx_rates.values())
-        # self.item_instrument_pricings = list(item_instrument_pricings.values())
-        # self.item_instrument_accruals = list(item_instrument_accruals.values())
+            # item_instruments = {}
+            # item_currencies = {}
+            # item_portfolios = {}
+            # item_accounts = {}
+            # item_strategies1 = {}
+            # item_strategies2 = {}
+            # item_strategies3 = {}
+            # item_currency_fx_rates = {}
+            # item_instrument_pricings = {}
+            # item_instrument_accruals = {}
+            #
+            # for item in self.items:
+            #     if item.instr:
+            #         item_instruments[item.instr.id] = item.instr
+            #     if item.ccy:
+            #         item_currencies[item.ccy.id] = item.ccy
+            #     if item.prtfl:
+            #         item_portfolios[item.prtfl.id] = item.prtfl
+            #     if item.acc:
+            #         item_accounts[item.acc.id] = item.acc
+            #     if item.str1:
+            #         item_strategies1[item.str1.id] = item.str1
+            #     if item.str2:
+            #         item_strategies2[item.str2.id] = item.str2
+            #     if item.str3:
+            #         item_strategies3[item.str3.id] = item.str3
+            #     if item.mismatch_prtfl:
+            #         item_portfolios[item.mismatch_prtfl.id] = item.mismatch_prtfl
+            #     if item.mismatch_acc:
+            #         item_accounts[item.mismatch_acc.id] = item.mismatch_acc
+            #     if item.alloc:
+            #         item_instruments[item.alloc.id] = item.alloc
+            #     if item.report_ccy_cur:
+            #         item_currency_fx_rates[item.report_ccy_cur.id] = item.report_ccy_cur
+            #     if item.instr_price_cur:
+            #         item_instrument_pricings[item.instr_price_cur.id] = item.instr_price_cur
+            #     if item.instr_pricing_ccy_cur:
+            #         item_currency_fx_rates[item.instr_pricing_ccy_cur.id] = item.instr_pricing_ccy_cur
+            #     if item.instr_accrued_ccy_cur:
+            #         item_currency_fx_rates[item.instr_accrued_ccy_cur.id] = item.instr_accrued_ccy_cur
+            #     if item.ccy_cur:
+            #         item_currency_fx_rates[item.ccy_cur.id] = item.ccy_cur
+            #     if item.pricing_ccy_cur:
+            #         item_currency_fx_rates[item.pricing_ccy_cur.id] = item.pricing_ccy_cur
+            #     if item.instr_accrual:
+            #         item_instrument_accruals[item.instr_accrual.id] = item.instr_accrual
+            #
+            # self.item_instruments = list(item_instruments.values())
+            # self.item_currencies = list(item_currencies.values())
+            # self.item_portfolios = list(item_portfolios.values())
+            # self.item_accounts = list(item_accounts.values())
+            # self.item_strategies1 = list(item_strategies1.values())
+            # self.item_strategies2 = list(item_strategies2.values())
+            # self.item_strategies3 = list(item_strategies3.values())
+            # self.item_currency_fx_rates = list(item_currency_fx_rates.values())
+            # self.item_instrument_pricings = list(item_instrument_pricings.values())
+            # self.item_instrument_accruals = list(item_instrument_accruals.values())
 
     @property
     def report_type_str(self):
