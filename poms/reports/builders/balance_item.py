@@ -1342,7 +1342,7 @@ class ReportItem(BaseReportItem):
         for i, n in ReportItem.TYPE_CHOICES:
             if i == self.type:
                 return n
-        return 'ERR'
+        return '<ERROR>'
 
     @property
     def type_code(self):
@@ -1379,14 +1379,14 @@ class ReportItem(BaseReportItem):
         # elif self.type == ReportItem.TYPE_INVESTED_SUMMARY:
         #     return 'INV_SUMMARY'
 
-        return 'ERR'
+        return '<ERROR>'
 
     @property
     def subtype_name(self):
         for i, n in ReportItem.SUBTYPE_CHOICES:
             if i == self.subtype:
                 return n
-        return 'ERR'
+        return '<ERROR>'
 
     @property
     def subtype_code(self):
@@ -1399,10 +1399,10 @@ class ReportItem(BaseReportItem):
         elif self.subtype == ReportItem.SUBTYPE_OPENED:
             return 'OPENED'
 
-        elif self.subtype == ReportItem.SUBTYPE_TOTAL:
-            return 'TOTAL'
+        # elif self.subtype == ReportItem.SUBTYPE_TOTAL:
+        #     return 'TOTAL'
 
-        return 'ERR'
+        return '<ERROR>'
 
     @property
     def user_code(self):
