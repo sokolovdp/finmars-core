@@ -134,9 +134,9 @@ class TransactionReportSerializer(serializers.Serializer):
     def to_representation(self, instance):
         data = super(TransactionReportSerializer, self).to_representation(instance)
 
+        items = data['items']
         custom_fields = data['custom_fields_object']
-        if custom_fields:
-            items = data['items']
+        if custom_fields and items:
             item_transaction_classes = {o['id']: o for o in data['item_transaction_classes']}
             item_complex_transactions = {o['id']: o for o in data['item_complex_transactions']}
             item_instruments = {o['id']: o for o in data['item_instruments']}
