@@ -121,6 +121,9 @@ class ReportBuilder(BaseReportBuilder):
         st = time.perf_counter()
         _l.debug('build position only report: %s', self.instance)
 
+        self.instance.report_type = Report.TYPE_BALANCE
+        self.instance.pl_first_date = None
+
         self._load_transactions()
         self.instance.transactions = self._transactions
         if not self._transactions:
