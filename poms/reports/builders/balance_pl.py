@@ -52,6 +52,8 @@ class ReportBuilder(BaseReportBuilder):
 
         self.instance.items = [item for item in self.instance.items if _accepted(item)]
 
+        self._alloc_aggregation()
+
         _l.debug('done: %s', (time.perf_counter() - st))
         return res
 
@@ -62,28 +64,9 @@ class ReportBuilder(BaseReportBuilder):
         self.instance.report_type = Report.TYPE_PL
         self.build(full=full)
 
-        # items = []
-        # for oitem in self.instance.items:
-        #     if oitem.type in [ReportItem.TYPE_INSTRUMENT]:
-        #         # nitem = oitem.clone()
-        #         # nitem.subtype = ReportItem.SUBTYPE_TOTAL
-        #         # nitem.overwrite_pl_fields_by_subtype()
-        #         # items.append(nitem)
-        #
-        #         nitem = oitem.clone()
-        #         nitem.subtype = ReportItem.SUBTYPE_CLOSED
-        #         nitem.overwrite_pl_fields_by_subtype()
-        #         items.append(nitem)
-        #
-        #         nitem = oitem.clone()
-        #         nitem.subtype = ReportItem.SUBTYPE_OPENED
-        #         nitem.overwrite_pl_fields_by_subtype()
-        #         items.append(nitem)
-        #
-        #     else:
-        #         items.append(oitem)
-        #
-        # self.instance.items = items
+        self._alloc_aggregation()
+
+        self._pnl_regrouping()
 
         _l.debug('done: %s', (time.perf_counter() - st))
         return self.instance
@@ -125,6 +108,8 @@ class ReportBuilder(BaseReportBuilder):
         self.instance.pl_first_date = None
 
         self._load_transactions()
+        self._clone_transactions_if_need()
+
         self.instance.transactions = self._transactions
         if not self._transactions:
             return
@@ -499,7 +484,8 @@ class ReportBuilder(BaseReportBuilder):
             elif trn.trn_cls.id == TransactionClass.FX_TRANSFER:
                 trn.is_hidden = True
 
-                trn1, trn2 = trn.fx_transfer_clone(trn_cls_out=self._trn_cls_cash_out, trn_cls_in=self._trn_cls_cash_out)
+                trn1, trn2 = trn.fx_transfer_clone(trn_cls_out=self._trn_cls_cash_out,
+                                                   trn_cls_in=self._trn_cls_cash_out)
                 res.append(trn1)
                 res.append(trn2)
 
@@ -1443,4 +1429,66 @@ class ReportBuilder(BaseReportBuilder):
         #     #     if i.alloc_pl.accrued_currency_id:
         #     #         i.alloc_pl.accrued_currency = ccys[i.alloc_pl.accrued_currency_id]
         #     pass
+        pass
+
+    def _alloc_aggregation(self):
+        _l.debug('aggregate by allocation: %s', self.instance.allocation_detailing)
+
+        if self.instance.allocation_detailing:
+            return
+
+        def _group_key(x):
+            return (
+                x.alloc.id,
+                x.subtype,
+            )
+
+        no_alloc = self.instance.master_user.instrument
+
+        res_items = []
+        sorted_items = sorted(self.instance.items, key=_group_key)
+        for k, g in groupby(sorted_items, key=_group_key):
+            if k[0] == no_alloc.id:
+                for item in g:
+                    res_items.append(item)
+            else:
+                res_item = None
+                for item in g:
+                    if res_item is None:
+                        res_item = ReportItem.alloc_from_item(item)
+                        res_item.pricing()
+
+                    res_item.add(item)
+
+                if res_item:
+                    res_item.close()
+                    res_items.append(res_item)
+
+        self.instance.items = res_items
+
+    def _pnl_regrouping(self):
+        _l.debug('p&l regrouping')
+
+        # items = []
+        # for oitem in self.instance.items:
+        #     if oitem.type in [ReportItem.TYPE_INSTRUMENT]:
+        #         # nitem = oitem.clone()
+        #         # nitem.subtype = ReportItem.SUBTYPE_TOTAL
+        #         # nitem.overwrite_pl_fields_by_subtype()
+        #         # items.append(nitem)
+        #
+        #         nitem = oitem.clone()
+        #         nitem.subtype = ReportItem.SUBTYPE_CLOSED
+        #         nitem.overwrite_pl_fields_by_subtype()
+        #         items.append(nitem)
+        #
+        #         nitem = oitem.clone()
+        #         nitem.subtype = ReportItem.SUBTYPE_OPENED
+        #         nitem.overwrite_pl_fields_by_subtype()
+        #         items.append(nitem)
+        #
+        #     else:
+        #         items.append(oitem)
+        #
+        # self.instance.items = items
         pass

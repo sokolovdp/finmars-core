@@ -25,6 +25,7 @@ class ReportItem(BaseReportItem):
     TYPE_SUMMARY = 200
     # TYPE_INVESTED_CURRENCY = 300
     # TYPE_INVESTED_SUMMARY = 301
+    TYPE_ALLOCATION = 400
     TYPE_CHOICES = (
         (TYPE_UNKNOWN, ugettext_lazy('Unknown')),
         (TYPE_INSTRUMENT, ugettext_lazy('Instrument')),
@@ -38,21 +39,19 @@ class ReportItem(BaseReportItem):
         # (TYPE_INVESTED_SUMMARY, 'Invested summary'),
     )
 
-    SUBTYPE_UNKNOWN = 0
+    SUBTYPE_DEFAULT = 0
     SUBTYPE_TOTAL = 1
     SUBTYPE_CLOSED = 2
     SUBTYPE_OPENED = 3
-    SUBTYPE_ALLOCATION = 3
     SUBTYPE_CHOICES = (
-        (SUBTYPE_UNKNOWN, ugettext_lazy('Unknown')),
-        (SUBTYPE_TOTAL, ugettext_lazy('Total')),
+        (SUBTYPE_DEFAULT, ugettext_lazy('Default')),
         (SUBTYPE_CLOSED, ugettext_lazy('Closed')),
         (SUBTYPE_OPENED, ugettext_lazy('Opened')),
-        (SUBTYPE_ALLOCATION, ugettext_lazy('Allocation')),
+        (SUBTYPE_TOTAL, ugettext_lazy('Total')),
     )
 
     type = TYPE_UNKNOWN
-    subtype = SUBTYPE_UNKNOWN
+    subtype = SUBTYPE_DEFAULT
     trn = None
 
     instr = None
@@ -687,6 +686,32 @@ class ReportItem(BaseReportItem):
 
         return item
 
+    @classmethod
+    def alloc_from_item(cls, src):
+        item = cls(src.report, src.pricing_provider, src.fx_rate_provider, ReportItem.TYPE_ALLOCATION)
+
+        item.instr = src.alloc  # -> Instrument
+        item.ccy = None  # -> Currency
+        # item.trn_ccy = src.trn_ccy  # -> Currency
+        item.prtfl = src.prtfl  # -> Portfolio if use_portfolio
+        # item.instr = src.instr
+        item.acc = src.acc  # -> Account if use_account
+        item.str1 = src.str1  # -> Strategy1 if use_strategy1
+        item.str2 = src.str2  # -> Strategy2 if use_strategy2
+        item.str3 = src.str3  # -> Strategy3 if use_strategy3
+        item.notes = None
+        item.pricing_ccy = item.instr.pricing_currency
+
+        item.alloc = src.alloc
+        item.alloc_bl = src.alloc_bl
+        item.alloc_pl = src.alloc_pl
+
+        # item.mismatch_ccy = src.mismatch_ccy
+        # item.mismatch_prtfl = src.mismatch_prtfl
+        # item.mismatch_acc = src.mismatch_acc
+
+        return item
+
     def pricing(self):
         self.report_ccy_cur = self.fx_rate_provider[self.report.report_currency]
         self.report_ccy_cur_fx = self.report_ccy_cur.fx_rate
@@ -802,6 +827,9 @@ class ReportItem(BaseReportItem):
 
         elif self.type == ReportItem.TYPE_MISMATCH:
             self.mismatch += o.mismatch
+
+        elif self.type == ReportItem.TYPE_ALLOCATION:
+            self.market_value_res += o.market_value_res
 
     # def add_pass2(self, trn):
     #     if not trn.is_cloned and self.type == ReportItem.TYPE_INSTRUMENT:
@@ -1130,8 +1158,12 @@ class ReportItem(BaseReportItem):
     def pk(self):
         return (
             self.type,
+            getattr(self.alloc, 'id', -1),
             getattr(self.prtfl, 'id', -1),
             getattr(self.acc, 'id', -1),
+            getattr(self.str1, 'id', -1),
+            getattr(self.str2, 'id', -1),
+            getattr(self.str3, 'id', -1),
             getattr(self.instr, 'id', -1),
             getattr(self.ccy, 'id', -1),
             getattr(self.mismatch_prtfl, 'id', -1),
@@ -1171,6 +1203,9 @@ class ReportItem(BaseReportItem):
         elif self.type == ReportItem.TYPE_SUMMARY:
             return 'SUMMARY'
 
+        elif self.type == ReportItem.TYPE_ALLOCATION:
+            return 'ALLOCATION'
+
         # elif self.type == ReportItem.TYPE_INVESTED_CURRENCY:
         #     return 'INV_CCY'
         #
@@ -1188,17 +1223,17 @@ class ReportItem(BaseReportItem):
 
     @property
     def subtype_code(self):
-        if self.subtype == ReportItem.SUBTYPE_UNKNOWN:
-            return 'UNKNOWN'
-
-        elif self.subtype == ReportItem.SUBTYPE_TOTAL:
-            return 'TOTAL'
+        if self.subtype == ReportItem.SUBTYPE_DEFAULT:
+            return 'DEFAULT'
 
         elif self.subtype == ReportItem.SUBTYPE_CLOSED:
             return 'CLOSED'
 
         elif self.subtype == ReportItem.SUBTYPE_OPENED:
             return 'OPENED'
+
+        elif self.subtype == ReportItem.SUBTYPE_TOTAL:
+            return 'TOTAL'
 
         return 'ERR'
 
@@ -1232,6 +1267,9 @@ class ReportItem(BaseReportItem):
 
         elif self.type == ReportItem.TYPE_SUMMARY:
             return 'SUMMARY'
+
+        elif self.type == ReportItem.TYPE_ALLOCATION:
+            return getattr(self.instr, 'user_code', None)
 
         return '<ERROR>'
 
@@ -1267,6 +1305,9 @@ class ReportItem(BaseReportItem):
         elif self.type == ReportItem.TYPE_SUMMARY:
             return ugettext('Summary')
 
+        elif self.type == ReportItem.TYPE_ALLOCATION:
+            return getattr(self.instr, 'short_name', None)
+
         return '<ERROR>'
 
     @property
@@ -1300,6 +1341,9 @@ class ReportItem(BaseReportItem):
 
         elif self.type == ReportItem.TYPE_SUMMARY:
             return ugettext('Summary')
+
+        elif self.type == ReportItem.TYPE_ALLOCATION:
+            return getattr(self.instr, 'name', None)
 
         return '<ERROR>'
 

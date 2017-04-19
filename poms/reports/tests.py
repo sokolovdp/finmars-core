@@ -4,9 +4,9 @@ import logging
 import os
 import random
 import time
+import zlib
 from datetime import date, timedelta, datetime
 
-import zlib
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.serializers.json import DjangoJSONEncoder
@@ -17,8 +17,7 @@ from poms.accounts.models import AccountType, Account
 from poms.counterparties.models import Counterparty, Responsible, CounterpartyGroup, ResponsibleGroup
 from poms.currencies.models import Currency, CurrencyHistory
 from poms.instruments.models import Instrument, PriceHistory, PricingPolicy, CostMethod, InstrumentType, \
-    InstrumentClass, \
-    AccrualCalculationSchedule, AccrualCalculationModel, Periodicity, PaymentSizeDetail
+    InstrumentClass, AccrualCalculationSchedule, AccrualCalculationModel, Periodicity, PaymentSizeDetail
 from poms.portfolios.models import Portfolio
 from poms.reports.builders.balance_item import ReportItem, Report
 from poms.reports.builders.balance_pl import ReportBuilder
@@ -1435,7 +1434,7 @@ class ReportTestCase(TestCase):
         #                 ccys=(self.gbp, self.chf, self.cad, self.rub),
         #                 instrs=False)
 
-    def test_instrument_pl(self):
+    def _test_instrument_pl(self):
         # self._t_buy(instr=self.bond0, position=5,
         #             stl_ccy=self.usd, principal=-10., carry=-0., overheads=-0.,
         #             days=1)
@@ -1501,9 +1500,9 @@ class ReportTestCase(TestCase):
         self._t_sell(instr=self.bond0, position=-1, stl_ccy=self.usd, principal=20., carry=0., overheads=0.)
         self._t_instr_pl(instr=self.bond0, position=0., stl_ccy=self.chf, principal=0., carry=20., overheads=0.)
 
-        trn_cols=['trn_code', 'trn_cls', 'instr', 'pos_size', 'multiplier', 'rolling_pos_size',
-                  'remaining_pos_size', 'sum_remaining_pos_size', 'balance_pos_size',]
-        item_cols=self.ITEM_COLS_ALL
+        trn_cols = ['trn_code', 'trn_cls', 'instr', 'pos_size', 'multiplier', 'rolling_pos_size',
+                    'remaining_pos_size', 'sum_remaining_pos_size', 'balance_pos_size', ]
+        item_cols = self.ITEM_COLS_ALL
 
         self._simple_run('instrument_pl', report_currency=self.cad, report_date=self._d(14),
                          trn_dump_all=False, trn_cols=trn_cols, item_cols=item_cols)
@@ -1904,6 +1903,26 @@ class ReportTestCase(TestCase):
             trn_cols=self.TRN_COLS_MINI,
             item_cols=self.ITEM_COLS_MINI,
         )
+
+    def test_allocation_detailing(self):
+        self._t_buy(instr=self.bond0, position=1, stl_ccy=self.usd, principal=-10., carry=-0., overheads=-0.)
+        self._t_buy(instr=self.bond1, position=1, stl_ccy=self.usd, principal=-10., carry=-0., overheads=-0.)
+
+        self._t_buy(instr=self.bond0, position=1, stl_ccy=self.usd, principal=-10., carry=-0., overheads=-0.,
+                    alloc_bl=self.bond2, alloc_pl=self.bond2)
+        self._t_buy(instr=self.bond1, position=1, stl_ccy=self.usd, principal=-10., carry=-0., overheads=-0.,
+                    alloc_bl=self.bond2, alloc_pl=self.bond2)
+
+        trn_cols = ['pk', 'trn_cls', 'instr', 'pos_size', 'alloc_bl', 'alloc_pl']
+        item_cols = ['type_code', 'subtype_code', 'user_code', 'instr', 'alloc', 'pos_size', 'market_value_res', 'total_res']
+
+        self._simple_run('test_allocation_detailing - True', report_currency=self.cad, report_date=self._d(14),
+                         trn_dump_all=False, trn_cols=trn_cols, item_cols=item_cols,
+                         allocation_detailing=True)
+
+        self._simple_run('test_allocation_detailing - False', report_currency=self.cad, report_date=self._d(14),
+                         trn_dump_all=False, trn_cols=trn_cols, item_cols=item_cols,
+                         allocation_detailing=False)
 
     # ------------------------------------------------------------------------------------------------------------------
 
