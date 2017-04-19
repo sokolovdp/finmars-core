@@ -46,6 +46,7 @@ class ObjectHistory4EntryFilterSet(FilterSet):
     content_type = ObjectHistory4ContentTypeMultipleChoiceFilter()
     object_id = django_filters.NumberFilter()
     object_repr = CharFilter()
+    field_name = django_filters.CharFilter()
     value = CharFilter()
     value_content_type = ObjectHistory4ContentTypeMultipleChoiceFilter()
     value_object_id = django_filters.NumberFilter()
@@ -60,14 +61,19 @@ class ObjectHistory4EntryFilterSet(FilterSet):
 
 class ObjectHistory4ViewSet(AbstractReadOnlyModelViewSet):
     queryset = ObjectHistory4Entry.objects.select_related(
+        # 'master_user',
+        # 'member',
+        # 'actor_content_type',
+        # 'content_type',
+        # 'value_content_type',
+        # 'old_value_content_type',
+    ).prefetch_related(
         'master_user',
         'member',
         'actor_content_type',
         'content_type',
         'value_content_type',
         'old_value_content_type',
-    ).prefetch_related(
-        # 'master_user', 'member', 'actor_content_type', 'content_type', 'value_content_type', 'old_value_content_type',
         # TODO: if enable then actor_content_type and other converted to None!!!
         # 'actor_content_object',
         # 'content_object',
