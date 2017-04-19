@@ -59,7 +59,11 @@ def generate_events(master_users=None):
         opened_instrument_items = []
         # instruments_pk = set()
 
-        report = Report(master_user=master_user, report_date=now)
+        report = Report(
+            master_user=master_user,
+            report_date=now,
+            allocation_mode=Report.MODE_IGNORE,
+        )
         builder = ReportBuilder(instance=report)
         # builder.build_balance()
         builder.build_position_only()
@@ -69,7 +73,7 @@ def generate_events(master_users=None):
                 opened_instrument_items.append(i)
                 # instruments_pk.add(i.instr.id)
 
-        _l.debug('opened_instrument_items: %s', {i.instr.id for i in opened_instrument_items})
+        _l.debug('opened instruments: %s', {i.instr.id for i in opened_instrument_items})
         if not opened_instrument_items:
             return
 
@@ -91,6 +95,10 @@ def generate_events(master_users=None):
         )
         # event_schedule_qs = event_schedule_qs.filter(instrument__in=instruments_pk)
 
+        if not event_schedule_qs.exists():
+            _l.debug('event schedules not found')
+            return
+
         event_schedule_cache = defaultdict(list)
         for event_schedule in event_schedule_qs:
             event_schedule_cache[event_schedule.instrument_id].append(event_schedule)
@@ -104,7 +112,7 @@ def generate_events(master_users=None):
             instrument = item.instr
             position = item.pos_size
 
-            event_schedules = event_schedule_cache.get(instrument.id) or []
+            event_schedules = event_schedule_cache.get(instrument.id, None)
 
             _l.debug('opened instrument: portfolio=%s, account=%s, strategy1=%s, strategy2=%s, strategy3=%s, '
                      'instrument=%s, position=%s, event_schedules=%s',
