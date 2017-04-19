@@ -139,21 +139,9 @@ class AbstractAsyncViewSet(AbstractViewSet):
         if task_id:
             res = AsyncResult(signer.unsign(task_id))
 
-            # _l.info('res.ready() -> %s', res.ready())
-            #
-            # _l.info('0.instance -> %s', instance)
-            # _l.info('0.instance.master_user -> %s', getattr(instance, 'master_user', None))
-
             if res.ready():
                 res.maybe_reraise()
                 instance = res.result
-
-            # _l.info('instance -> %s', instance)
-            # _l.info('instance.master_user -> %s', getattr(instance, 'master_user', None))
-            # _l.info('request.user -> %s', request.user)
-            # _l.info('request.user.master_user -> %s', getattr(request.user, 'master_user', None))
-            # _l.info('self.request.user -> %s', self.request.user)
-            # _l.info('self.request.user.master_user -> %s', getattr(self.request.user, 'master_user', None))
 
             if instance.master_user.id != request.user.master_user.id:
                 raise PermissionDenied()
