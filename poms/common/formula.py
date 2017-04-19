@@ -420,6 +420,8 @@ def _date_group(evaluator, val, ranges, default=None):
     # _l.info('_date_group: val=%s', val)
 
     def _make_name(begin, end, fmt):
+        if begin != datetime.date.min:
+            begin += datetime.timedelta(days=1)
         if isinstance(fmt, (list, tuple)):
             ifmt = iter(fmt)
             s1 = str(next(ifmt, '') or '')
@@ -1832,6 +1834,32 @@ accrual_NL_365_NO_EOM(date(2000, 1, 1), date(2000, 1, 25))
                                      '["","2001-01-01",None, "o1"],'
                                      '["2001-01-01","2002-01-01",10, "o2"],'
                                      '["2002-01-01","",None,"o3"]'
+                                     '], "o4")'))
+        _l.info('121: %s', safe_eval('date_group("2000-11-21", ['
+                                     '["","2001-01-01",None, "o1"],'
+                                     '["2001-01-01","2002-01-01",10, "o2"],'
+                                     '["2002-01-01","",None,"o3"]'
+                                     '], "o4")'))
+
+        # timedelta(years=0, months=0, days=0, leapdays=0, weeks=0,
+        #        year=None, month=None, day=None, weekday=None,
+        #        yearday=None, nlyearday=None)
+        # {id: 1, caption: "Daily", step: "timedelta(days=1)"},
+        # {id: 2, caption: "Weekly (+7d)", step: "timedelta(weeks=1)"},
+        # {id: 3, caption: "Weekly (EoW)"},
+        # {id: 4, caption: "Bi-weekly (+14d)", step: "timedelta(weeks=2)"},
+        # {id: 5, caption: "Bi-weekly (EoW)"},
+        # {id: 6, caption: "Monthly", step: "timedelta(months=1)"},
+        # {id: 7, caption: "Monthly (EoM)""},
+        # {id: 8, caption: "Monthly (Last business day)"},
+        # {id: 9, caption: "Quarterly (Calendar)"},
+        # {id: 10, caption: "Quarterly (+3m)", step: "timedelta(months=3)"},
+        # {id: 11, caption: "Yearly (+12m)", step: "timedelta(years=1)",
+        # {id: 12, caption: "Yearly (EoY)"}
+        _l.info('200: %s', safe_eval('date_group("2001-03-10", ['
+                                     '["","2001-02-01",None, "o1"],'
+                                     '["2001-02-01","2020-02-01", timedelta(years=1, month=12, day=31), ["<","%Y-%m-%d","/","","%Y-%m-%d",">"]],'
+                                     '["2020-02-01","",None,"o3"]'
                                      '], "o4")'))
 
         # simple_group("expr", [["begin","end","name"],...], default="Olala")
