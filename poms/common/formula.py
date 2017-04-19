@@ -435,13 +435,13 @@ def _date_group(evaluator, val, ranges, default=None):
             return str(fmt)
 
     for begin, end, step, fmt in ranges:
-        if begin is None:
+        if not begin:
             begin = datetime.date.min
             # start = datetime.date(1970, 1, 1)
         else:
             begin = _parse_date(begin)
 
-        if end is None:
+        if not end:
             end = datetime.date.max
         else:
             end = _parse_date(end)
@@ -1812,7 +1812,7 @@ accrual_NL_365_NO_EOM(date(2000, 1, 1), date(2000, 1, 25))
 
         _l.info('100: %s', safe_eval('date_group("2000-11-21", ['
                                      '["2000-01-01","2001-01-01",10,"o1"],'
-                                     '["2001-01-01","2002-01-01",timedelta(months=1, day=31),"o2"]'
+                                     '["2001-01-01","2002-01-01", timedelta(months=1, day=31),"o2"]'
                                      '], "o3")'))
         _l.info('101: %s', safe_eval('date_group("2002-11-21", ['
                                      '["2000-01-01","2001-01-01",10,"o1"],'
@@ -1827,6 +1827,12 @@ accrual_NL_365_NO_EOM(date(2000, 1, 1), date(2000, 1, 25))
                                      '["2000-01-01","2001-01-01",10, ["<","%Y-%m-%d-%B",">","<","%Y-%m-%d",">"]],'
                                      '["2000-01-01","2002-01-01",timedelta(months=1, day=31),"o2"]'
                                      '], "o3")'))
+
+        _l.info('120: %s', safe_eval('date_group("2002-11-21", ['
+                                     '["","2001-01-01",None, "o1"],'
+                                     '["2001-01-01","2002-01-01",10, "o2"],'
+                                     '["2002-01-01","",None,"o3"]'
+                                     '], "o4")'))
 
         # simple_group("expr", [["begin","end","name"],...], default="Olala")
         # date_group("expr", [["begin","end", "step" or None,"str" or ["str1","begin_date_fmt", "str3", "str4","end_date_fmt", "str6"]],...], default="Olala")
