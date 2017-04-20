@@ -112,7 +112,7 @@ def generate_events(master_users=None):
             instrument = item.instr
             position = item.pos_size
 
-            event_schedules = event_schedule_cache.get(instrument.id, None)
+            event_schedules = event_schedule_cache.get(instrument.id, None) or []
 
             _l.debug('opened instrument: portfolio=%s, account=%s, strategy1=%s, strategy2=%s, strategy3=%s, '
                      'instrument=%s, position=%s, event_schedules=%s',

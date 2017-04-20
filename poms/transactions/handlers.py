@@ -177,8 +177,9 @@ class TransactionTypeProcess(object):
                 if value is None:
                     if i.value:
                         try:
-                            value = formula.safe_eval(i.value, now=self._now, context=self._context)
+                            value = formula.safe_eval(i.value, names=self.values, now=self._now, context=self._context)
                         except formula.InvalidExpression:
+                            _l.debug('default value error', exc_info=True)
                             value = None
             self.values[i.name] = value
 

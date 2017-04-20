@@ -484,6 +484,20 @@ def _date_group(evaluator, val, ranges, default=None):
 _date_group.evaluator = True
 
 
+def _has_var(evaluator, name):
+    return evaluator.has_var(name)
+
+
+_has_var.evaluator = True
+
+
+def _get_var(evaluator, name, dafault=None):
+    return evaluator.get_var(name, dafault)
+
+
+_get_var.evaluator = True
+
+
 def _find_name(*args):
     for s in args:
         if s is not None:
@@ -665,6 +679,9 @@ FUNCTIONS = [
 
     SimpleEval2Def('simple_group', _simple_group),
     SimpleEval2Def('date_group', _date_group),
+
+    SimpleEval2Def('has_var', _has_var),
+    SimpleEval2Def('get_var', _get_var),
 ]
 
 empty = object()
@@ -730,6 +747,15 @@ class SimpleEval2(object):
             return True
         except:
             return False
+
+    def has_var(self, name):
+        return name in self._table
+
+    def get_var(self, name, default):
+        try:
+            return self._find_name(name)
+        except NameNotDefined:
+            return default
 
     def _find_name(self, name):
         try:
