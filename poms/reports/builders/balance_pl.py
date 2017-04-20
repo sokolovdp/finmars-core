@@ -46,13 +46,13 @@ class ReportBuilder(BaseReportBuilder):
         self.instance.pl_first_date = None
         self.build(full=full)
 
-        def _accepted(item):
-            return item.type in [ReportItem.TYPE_INSTRUMENT, ReportItem.TYPE_CURRENCY] and \
-                   not isclose(item.pos_size, 0.0)
+        # def _accepted(item):
+        #     return item.type in [ReportItem.TYPE_INSTRUMENT, ReportItem.TYPE_CURRENCY] and \
+        #            not isclose(item.pos_size, 0.0)
+        #
+        # self.instance.items = [item for item in self.instance.items if _accepted(item)]
 
-        self.instance.items = [item for item in self.instance.items if _accepted(item)]
-
-        self._alloc_aggregation()
+        # self._alloc_aggregation()
 
         _l.debug('done: %s', (time.perf_counter() - st))
         return self.instance
