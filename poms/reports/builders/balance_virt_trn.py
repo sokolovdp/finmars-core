@@ -391,7 +391,7 @@ class VirtualTransaction(BaseReportItem):
             self.case = 0
 
     def __str__(self):
-        return str(self.pk)
+        return str(self.trn_code)
 
     def __repr__(self):
         return 'VT(%s)' % self.pk
@@ -901,15 +901,14 @@ class VirtualTransaction(BaseReportItem):
         t1.is_mismatch = False
         t1.is_hidden = False
         t1.trn_cls = t1_cls
-        t1.acc_pos = self.acc_pos
-        t1.acc_cash = self.acc_pos
-        t1.str1_pos = self.str1_pos
-        t1.str1_cash = self.str1_pos
-        t1.str2_pos = self.str2_pos
-        t1.str2_cash = self.str2_pos
-        t1.str3_pos = self.str3_pos
-        t1.str3_cash = self.str3_pos
-
+        t1.acc_pos = self.acc_cash
+        t1.acc_cash = self.acc_cash
+        t1.str1_pos = self.str1_cash
+        t1.str1_cash = self.str1_cash
+        t1.str2_pos = self.str2_cash
+        t1.str2_cash = self.str2_cash
+        t1.str3_pos = self.str3_cash
+        t1.str3_cash = self.str3_cash
         t1.pos_size = abs(self.pos_size) * t1_pos_sign
         t1.cash = abs(self.cash) * t1_cash_sign
         t1.principal = abs(self.principal) * t1_cash_sign
@@ -922,14 +921,14 @@ class VirtualTransaction(BaseReportItem):
         t2.is_mismatch = False
         t2.is_hidden = False
         t2.trn_cls = t2_cls
-        t2.acc_pos = self.acc_cash
-        t2.acc_cash = self.acc_cash
-        t2.str1_pos = self.str1_cash
-        t2.str1_cash = self.str1_cash
-        t2.str2_pos = self.str2_cash
-        t2.str2_cash = self.str2_cash
-        t2.str3_pos = self.str3_cash
-        t2.str3_cash = self.str3_cash
+        t2.acc_pos = self.acc_pos
+        t2.acc_cash = self.acc_pos
+        t2.str1_pos = self.str1_pos
+        t2.str1_cash = self.str1_pos
+        t2.str2_pos = self.str2_pos
+        t2.str2_cash = self.str2_pos
+        t2.str3_pos = self.str3_pos
+        t2.str3_cash = self.str3_pos
 
         t2.pos_size = -t1.pos_size
         t2.cash = -t1.cash

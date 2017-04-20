@@ -38,9 +38,13 @@ class ReportItemSerializer(serializers.Serializer):
     item_type_code = serializers.CharField(source='type_code', read_only=True)
     item_type_name = serializers.CharField(source='type_name', read_only=True)
 
-    item_subtype = serializers.ChoiceField(source='subtype', choices=ReportItem.TYPE_CHOICES, read_only=True)
+    item_subtype = serializers.ChoiceField(source='subtype', choices=ReportItem.SUBTYPE_CHOICES, read_only=True)
     item_subtype_code = serializers.CharField(source='subtype_code', read_only=True)
     item_subtype_name = serializers.CharField(source='subtype_name', read_only=True)
+
+    item_group = serializers.ChoiceField(source='group', choices=ReportItem.GROUP_CHOICES, read_only=True)
+    item_group_code = serializers.CharField(source='group_code', read_only=True)
+    item_group_name = serializers.CharField(source='group_name', read_only=True)
 
     user_code = serializers.CharField(read_only=True)
     name = serializers.CharField(read_only=True)
@@ -368,6 +372,7 @@ class ReportSerializer(serializers.Serializer):
     show_transaction_details = serializers.BooleanField(default=False, initial=False)
     approach_multiplier = serializers.FloatField(default=0.5, initial=0.5, min_value=0.0, max_value=1.0, required=False)
     allocation_detailing = serializers.BooleanField(default=True, initial=True)
+    pl_include_zero = serializers.BooleanField(default=False, initial=False)
 
     custom_fields = CustomFieldField(many=True, allow_empty=True, allow_null=True, required=False)
 

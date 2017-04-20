@@ -26,6 +26,7 @@ LOGGING['formatters']['verbose']['format'] = '[%(levelname)1.1s %(asctime)s %(na
 # LOGGING['loggers']['django.db'] = {'level': 'DEBUG'}
 LOGGING['loggers']['poms']['level'] = 'DEBUG'
 # LOGGING['loggers']['poms']['level'] = 'INFO'
+# LOGGING['loggers']['poms']['level'] = 'WARN'
 
 SECRET_KEY = 's#)m^ug%_jr0dtko#83_55rd_we&xu#f9p#!1gh@k&$=5&3e67'
 

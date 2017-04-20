@@ -7,4 +7,3 @@ transaction_code;transaction_class;instrument;transaction_currency;position_size
 7858;Transaction PL;-;USD;0;USD;-2 500,00;0,00;-2 500,00;0,00;;2017-03-06;2017-03-06;<FinMARS-2>;Julius Baer;Julius Baer;Trans Prov;-;-;-;-;-;-;-;-;-;-;-;1;ЛОЖЬ;1;0,00;0;0;0;0;Admin Fees
 7859;FX Trade;-;RUB;65000;USD;-1 000,00;-1 000,00;0,00;0,00;;2017-03-22;2017-03-22;<FinMARS-3>;Julius Baer;Julius Baer;FX trade Prov;-;-;-;-;-;-;-;-;-;-;-;65;ЛОЖЬ;1;65,00;0;0;0;0;Buy
 7860;FX Trade;-;GBP;-800;USD;1 000,00;1 000,00;0,00;0,00;;2017-03-22;2017-03-22;<FinMARS-3>;Julius Baer;Julius Baer;FX trade Prov;-;-;-;-;-;-;-;-;-;-;-;0,8;ЛОЖЬ;1;0,80;0;0;0;0;Sell
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
