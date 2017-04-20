@@ -1,13 +1,13 @@
 import csv
 import json
 import logging
+import math
 import os
 import random
 import time
 import zlib
 from datetime import date, timedelta, datetime
 
-import math
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.serializers.json import DjangoJSONEncoder
@@ -1402,6 +1402,10 @@ class ReportTestCase(TestCase):
 
             worksheet.merge_range(row, 0, row, 2, 'Approach:', header_fmt)
             worksheet.write(row, 3, _val(approach_map[r.approach_multiplier]))
+            row += 1
+
+            worksheet.merge_range(row, 0, row, 2, 'Show Transaction Details:', header_fmt)
+            worksheet.write(row, 3, _val(r.show_transaction_details))
             row += 1
 
             # worksheet.write(row, 0, 'Virtual Transactions', header_fmt)
@@ -2904,41 +2908,110 @@ class ReportTestCase(TestCase):
 
         cost_method = self._avco
 
-        report_dates = [
-            date(2017, 3, 10),  # 1,  2,  3
-            # date(2017, 3, 15),  # 4,  5,  6
-            # date(2017, 3, 25),  # 7,  8,  9
-            # date(2017, 3, 28),  # 10, 11, 12
-        ]
+        if test_prefix == 'td_1':
+            report_dates = [
+                date(2017, 3, 10),  # 1,  2,  3
+                date(2017, 3, 15),  # 4,  5,  6
+                date(2017, 3, 25),  # 7,  8,  9
+                date(2017, 3, 28),  # 10, 11, 12
+            ]
+        elif test_prefix == 'td_2':
+            report_dates = [
+                date(2017, 2, 3),  # 1,  2,  3
+                date(2017, 2, 7),  # 4,  5,  6
+                date(2017, 2, 15),  # 7,  8,  9
+                date(2017, 2, 23),  # 10, 11, 12
+            ]
+        else:
+            report_dates = []
         report_currencies = [
             Currency.objects.get(master_user=self.m, user_code='USD'),  # 1, 4, 7, 10
-            # Currency.objects.get(master_user=self.m, user_code='EUR'),  # 2, 5, 8, 11
-            # Currency.objects.get(master_user=self.m, user_code='GBP'),  # 3, 6, 9, 12
+            Currency.objects.get(master_user=self.m, user_code='EUR'),  # 2, 5, 8, 11
+            Currency.objects.get(master_user=self.m, user_code='GBP'),  # 3, 6, 9, 12
         ]
-        portfolio_modes = [
-            # Report.MODE_IGNORE,
-            Report.MODE_INDEPENDENT,
-        ]
-        account_modes = [
-            # Report.MODE_IGNORE,
-            Report.MODE_INDEPENDENT,
-        ]
-        strategy1_modes = [
-            # Report.MODE_IGNORE,
-            Report.MODE_INDEPENDENT,
-            # Report.MODE_INTERDEPENDENT,
-        ]
-        strategy2_modes = [
-            # Report.MODE_IGNORE,
-            Report.MODE_INDEPENDENT,
-            # Report.MODE_INTERDEPENDENT,
-        ]
-        strategy3_modes = [
-            # Report.MODE_IGNORE,
-            Report.MODE_INDEPENDENT,
-            # Report.MODE_INTERDEPENDENT,
-        ]
+        # portfolio_modes = [
+        #     Report.MODE_IGNORE,
+        #     Report.MODE_INDEPENDENT,
+        # ]
+        # account_modes = [
+        #     Report.MODE_IGNORE,
+        #     Report.MODE_INDEPENDENT,
+        # ]
+        # strategy1_modes = [
+        #     Report.MODE_IGNORE,
+        #     Report.MODE_INDEPENDENT,
+        #     Report.MODE_INTERDEPENDENT,
+        # ]
+        # strategy2_modes = [
+        #     Report.MODE_IGNORE,
+        #     Report.MODE_INDEPENDENT,
+        #     Report.MODE_INTERDEPENDENT,
+        # ]
+        # strategy3_modes = [
+        #     Report.MODE_IGNORE,
+        #     Report.MODE_INDEPENDENT,
+        #     Report.MODE_INTERDEPENDENT,
+        # ]
         approach_multipliers = [0.0, 0.5, 1.0]
+
+        approach_map = {
+            '0/100': 0.0,
+            '50/50': 0.5,
+            '100/0': 1.0,
+        }
+
+        bl_consolidations = [
+            # {
+            #     'portfolio_mode': Report.MODE_IGNORE,
+            #     'account_mode': Report.MODE_IGNORE,
+            #     'strategy1_mode': Report.MODE_IGNORE,
+            #     'strategy2_mode': Report.MODE_IGNORE,
+            #     'strategy3_mode': Report.MODE_IGNORE,
+            #     'show_transaction_details': True,
+            # },
+            {
+                'portfolio_mode': Report.MODE_INDEPENDENT,
+                'account_mode': Report.MODE_INDEPENDENT,
+                'strategy1_mode': Report.MODE_INDEPENDENT,
+                'strategy2_mode': Report.MODE_INDEPENDENT,
+                'strategy3_mode': Report.MODE_INDEPENDENT,
+                'show_transaction_details': True,
+            },
+            {
+                'portfolio_mode': Report.MODE_INDEPENDENT,
+                'account_mode': Report.MODE_INDEPENDENT,
+                'strategy1_mode': Report.MODE_IGNORE,
+                'strategy2_mode': Report.MODE_IGNORE,
+                'strategy3_mode': Report.MODE_IGNORE,
+                'show_transaction_details': True,
+            },
+            {
+                'portfolio_mode': Report.MODE_INDEPENDENT,
+                'account_mode': Report.MODE_IGNORE,
+                'strategy1_mode': Report.MODE_IGNORE,
+                'strategy2_mode': Report.MODE_IGNORE,
+                'strategy3_mode': Report.MODE_IGNORE,
+                'show_transaction_details': True,
+            },
+            {
+                'portfolio_mode': Report.MODE_IGNORE,
+                'account_mode': Report.MODE_INDEPENDENT,
+                'strategy1_mode': Report.MODE_IGNORE,
+                'strategy2_mode': Report.MODE_IGNORE,
+                'strategy3_mode': Report.MODE_IGNORE,
+                'show_transaction_details': True,
+            },
+        ]
+        pl_consolidations = bl_consolidations + [
+            {
+                'portfolio_mode': Report.MODE_INDEPENDENT,
+                'account_mode': Report.MODE_INDEPENDENT,
+                'strategy1_mode': Report.MODE_INTERDEPENDENT,
+                'strategy2_mode': Report.MODE_INTERDEPENDENT,
+                'strategy3_mode': Report.MODE_INTERDEPENDENT,
+                'show_transaction_details': True,
+            },
+        ]
 
         trn_cols = [
             'pk', 'trn_code', 'trn_cls', 'multiplier', 'instr', 'trn_ccy', 'pos_size', 'stl_ccy', 'cash', 'principal',
@@ -2977,7 +3050,7 @@ class ReportTestCase(TestCase):
             'overheads_fixed_closed_loc', 'total_fixed_closed_loc', 'principal_fixed_opened_res',
             'carry_fixed_opened_res', 'overheads_fixed_opened_res', 'total_fixed_opened_res',
             'principal_fixed_opened_loc', 'carry_fixed_opened_loc', 'overheads_fixed_opened_loc',
-            'total_fixed_opened_loc', 'group_code',
+            'total_fixed_opened_loc', 'group_code', 'detail_trn'
         ]
 
         # trn_cols = self.TRN_COLS_ALL
@@ -2999,59 +3072,113 @@ class ReportTestCase(TestCase):
         balance_reports = []
         pl_reports = []
 
-        iter = 1
-
         for report_date in report_dates:
+            _l.warn('%s', report_date)
             for report_currency in report_currencies:
-                for portfolio_mode in portfolio_modes:
-                    for account_mode in account_modes:
-                        for strategy1_mode in strategy1_modes:
-                            for strategy2_mode in strategy2_modes:
-                                for strategy3_mode in strategy3_modes:
+                _l.warn('\t%s', report_currency)
+                for bl_consolidation in bl_consolidations:
+                    consolidation = bl_consolidation.copy()
+                    _l.warn('\t\t%s', sorted(consolidation.items()))
+                    # _l.warn('1 bl: date=%s, ccy=%s, consolidation=%s',
+                    #         report_date, report_currency, sorted(consolidation.items()))
+                    bal = self._simple_run(
+                        None,
+                        report_type=Report.TYPE_BALANCE,
+                        report_currency=report_currency,
+                        report_date=report_date,
+                        cost_method=cost_method,
+                        trn_cols=trn_cols,
+                        item_cols=item_cols,
+                        **consolidation
+                    )
+                    balance_reports.append(bal)
 
-                                    if strategy1_mode == Report.MODE_INTERDEPENDENT or \
-                                                    strategy2_mode == Report.MODE_INTERDEPENDENT or \
-                                                    strategy3_mode == Report.MODE_INTERDEPENDENT:
-                                        approach_multipliers0 = approach_multipliers
-                                    else:
-                                        approach_multipliers0 = [0.5]
+                for pl_consolidation in pl_consolidations:
+                    consolidation = pl_consolidation.copy()
+                    _l.warn('\t\t%s', sorted(consolidation.items()))
+                    # _l.warn('2 pl: date=%s, ccy=%s, consolidation=%s',
+                    #         report_date, report_currency, sorted(consolidation.items()))
 
-                                    for approach_multiplier in approach_multipliers0:
-                                        iter +=1
-                                        bal = self._simple_run(
-                                            None,
-                                            report_type=Report.TYPE_BALANCE,
-                                            report_currency=report_currency,
-                                            report_date=report_date,
-                                            cost_method=cost_method,
-                                            portfolio_mode=portfolio_mode,
-                                            account_mode=account_mode,
-                                            strategy1_mode=strategy1_mode,
-                                            strategy2_mode=strategy2_mode,
-                                            strategy3_mode=strategy3_mode,
-                                            approach_multiplier=approach_multiplier,
-                                            trn_cols=trn_cols,
-                                            item_cols=item_cols
-                                        )
-                                        balance_reports.append(bal)
+                    strategy1_mode = consolidation['strategy1_mode']
+                    strategy2_mode = consolidation['strategy2_mode']
+                    strategy3_mode = consolidation['strategy3_mode']
+                    if strategy1_mode == Report.MODE_INTERDEPENDENT or \
+                                    strategy2_mode == Report.MODE_INTERDEPENDENT or \
+                                    strategy3_mode == Report.MODE_INTERDEPENDENT:
+                        approach_multipliers0 = approach_multipliers
+                    else:
+                        approach_multipliers0 = [0.5]
 
-                                        pl = self._simple_run(
-                                            None,
-                                            report_type=Report.TYPE_PL,
-                                            report_currency=report_currency,
-                                            report_date=report_date,
-                                            cost_method=cost_method,
-                                            portfolio_mode=portfolio_mode,
-                                            account_mode=account_mode,
-                                            strategy1_mode=strategy1_mode,
-                                            strategy2_mode=strategy2_mode,
-                                            strategy3_mode=strategy3_mode,
-                                            approach_multiplier=approach_multiplier,
-                                            trn_cols=trn_cols,
-                                            item_cols=item_cols
-                                        )
-                                        pl_reports.append(pl)
+                    for approach_multiplier in approach_multipliers0:
+                        # _l.warn('\tapproach=%s', approach_multiplier)
+                        _l.warn('\t\t\t%s', approach_multiplier)
+                        pl = self._simple_run(
+                            None,
+                            report_type=Report.TYPE_PL,
+                            report_currency=report_currency,
+                            report_date=report_date,
+                            cost_method=cost_method,
+                            trn_cols=trn_cols,
+                            item_cols=item_cols,
+                            approach_multiplier=approach_multiplier,
+                            **consolidation
+                        )
+                        pl_reports.append(pl)
 
+        # for report_date in report_dates:
+        #     for report_currency in report_currencies:
+        #         for portfolio_mode in portfolio_modes:
+        #             for account_mode in account_modes:
+        #                 for strategy1_mode in strategy1_modes:
+        #                     for strategy2_mode in strategy2_modes:
+        #                         for strategy3_mode in strategy3_modes:
+        #                             if strategy1_mode == Report.MODE_INTERDEPENDENT or \
+        #                                             strategy2_mode == Report.MODE_INTERDEPENDENT or \
+        #                                             strategy3_mode == Report.MODE_INTERDEPENDENT:
+        #                                 approach_multipliers0 = approach_multipliers
+        #                             else:
+        #                                 approach_multipliers0 = [0.5]
+        #
+        #                             for approach_multiplier in approach_multipliers0:
+        #                                 _l.warn(
+        #                                     'date=%s, ccy=%s, prtfl=%s, acc=%s, str1=%s, str2=%s, str3=%s, approach=%s',
+        #                                     report_date, report_currency, portfolio_mode, account_mode, strategy1_mode,
+        #                                     strategy2_mode, strategy3_mode, approach_multiplier)
+        #                                 bal = self._simple_run(
+        #                                     None,
+        #                                     report_type=Report.TYPE_BALANCE,
+        #                                     report_currency=report_currency,
+        #                                     report_date=report_date,
+        #                                     cost_method=cost_method,
+        #                                     portfolio_mode=portfolio_mode,
+        #                                     account_mode=account_mode,
+        #                                     strategy1_mode=strategy1_mode,
+        #                                     strategy2_mode=strategy2_mode,
+        #                                     strategy3_mode=strategy3_mode,
+        #                                     approach_multiplier=approach_multiplier,
+        #                                     trn_cols=trn_cols,
+        #                                     item_cols=item_cols
+        #                                 )
+        #                                 balance_reports.append(bal)
+        #
+        #                                 pl = self._simple_run(
+        #                                     None,
+        #                                     report_type=Report.TYPE_PL,
+        #                                     report_currency=report_currency,
+        #                                     report_date=report_date,
+        #                                     cost_method=cost_method,
+        #                                     portfolio_mode=portfolio_mode,
+        #                                     account_mode=account_mode,
+        #                                     strategy1_mode=strategy1_mode,
+        #                                     strategy2_mode=strategy2_mode,
+        #                                     strategy3_mode=strategy3_mode,
+        #                                     approach_multiplier=approach_multiplier,
+        #                                     trn_cols=trn_cols,
+        #                                     item_cols=item_cols
+        #                                 )
+        #                                 pl_reports.append(pl)
+
+        _l.warn('write results')
         self._write_results(balance_reports, '%s_balance.xlsx' % test_prefix,
                             trn_cols=trn_cols, item_cols=item_cols)
         self._write_results(pl_reports, '%s_pl_report.xlsx' % test_prefix,

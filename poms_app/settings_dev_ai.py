@@ -25,7 +25,8 @@ if 'redisboard' not in INSTALLED_APPS:
 LOGGING['formatters']['verbose']['format'] = '%(message)s'
 # LOGGING['loggers']['django.db'] = {'level': 'DEBUG'}
 # LOGGING['loggers']['poms']['level'] = 'DEBUG'
-LOGGING['loggers']['poms']['level'] = 'INFO'
+# LOGGING['loggers']['poms']['level'] = 'INFO'
+LOGGING['loggers']['poms']['level'] = 'WARN'
 
 SECRET_KEY = 's#)m^ug%_jr0dtko#83_55rd_we&xu#f9p#!1gh@k&$=5&3e67'
 

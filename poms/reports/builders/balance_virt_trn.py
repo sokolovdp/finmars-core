@@ -391,7 +391,7 @@ class VirtualTransaction(BaseReportItem):
             self.case = 0
 
     def __str__(self):
-        return str(self.pk)
+        return str(self.trn_code)
 
     def __repr__(self):
         return 'VT(%s)' % self.pk
