@@ -7,6 +7,7 @@ import time
 import zlib
 from datetime import date, timedelta, datetime
 
+import math
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.serializers.json import DjangoJSONEncoder
@@ -37,11 +38,25 @@ def load_from_csv(master_user, instr, instr_price_hist, ccy_fx_rate, trn):
     pricing_policy = PricingPolicy.objects.filter(master_user=master_user).first()
 
     account_type = AccountType.objects.get(master_user=master_user, user_code='-')
+    account_type_wdetails = AccountType.objects.create(master_user=master_user, name='wdatails',
+                                                       show_transaction_details=True)
     strategy1_subgroup = Strategy1Subgroup.objects.get(master_user=master_user, user_code='-')
     strategy2_subgroup = Strategy2Subgroup.objects.get(master_user=master_user, user_code='-')
     strategy3_subgroup = Strategy3Subgroup.objects.get(master_user=master_user, user_code='-')
     counterparty_group = CounterpartyGroup.objects.get(master_user=master_user, user_code='-')
     responsible_group = ResponsibleGroup.objects.get(master_user=master_user, user_code='-')
+
+    transaction_class_maps = {
+        'Buy': TransactionClass.objects.get(pk=TransactionClass.BUY),
+        'Sell': TransactionClass.objects.get(pk=TransactionClass.SELL),
+        'FX Trade': TransactionClass.objects.get(pk=TransactionClass.FX_TRADE),
+        'Instrument PL': TransactionClass.objects.get(pk=TransactionClass.INSTRUMENT_PL),
+        'Transaction PL': TransactionClass.objects.get(pk=TransactionClass.TRANSACTION_PL),
+        'Transfer': TransactionClass.objects.get(pk=TransactionClass.TRANSFER),
+        'FX Transfer': TransactionClass.objects.get(pk=TransactionClass.FX_TRANSFER),
+        'Cash-In': TransactionClass.objects.get(pk=TransactionClass.CASH_INFLOW),
+        'Cash-Out': TransactionClass.objects.get(pk=TransactionClass.CASH_OUTFLOW),
+    }
 
     def _float(s):
         if not s:
@@ -74,11 +89,15 @@ def load_from_csv(master_user, instr, instr_price_hist, ccy_fx_rate, trn):
         return obj
 
     def _account(user_code):
+        if user_code in ['Acc-Details-1', 'Acc-Details-2']:
+            atype = account_type_wdetails
+        else:
+            atype = account_type
         obj, created = Account.objects.get_or_create(
             master_user=master_user,
             user_code=user_code,
             defaults={
-                'type': account_type,
+                'type': atype,
             }
         )
         return obj
@@ -174,10 +193,11 @@ def load_from_csv(master_user, instr, instr_price_hist, ccy_fx_rate, trn):
 
     def _create_trn(data):
         # _l.debug('create transaction: %s', data)
+
         o = Transaction()
         o.master_user = master_user
         o.transaction_code = _int(data['transaction_code'])
-        o.transaction_class = TransactionClass.objects.get(name__icontains=data['transaction_class'])
+        o.transaction_class = transaction_class_maps[data['transaction_class']]
         o.instrument = Instrument.objects.get(master_user=master_user, user_code=data['instrument'])
         o.transaction_currency = Currency.objects.get(master_user=master_user, user_code=data['transaction_currency'])
         o.position_size_with_sign = _float(data['position_size_with_sign'])
@@ -934,6 +954,12 @@ class ReportTestCase(TestCase):
         self.p3 = Portfolio.objects.create(master_user=self.m, name='p3')
         self.p4 = Portfolio.objects.create(master_user=self.m, name='p4')
 
+        self.mismatch_p = Portfolio.objects.create(master_user=self.m, name='mismatch-prtfl')
+        self.mismatch_a = Account.objects.create(master_user=self.m, name='mismatch-acc', type=self.m.account_type)
+        self.m.mismatch_portfolio = self.mismatch_p
+        self.m.mismatch_account = self.mismatch_a
+        self.m.save()
+
         self.s1_1 = Strategy1Group.objects.create(master_user=self.m, name='1')
         self.s1_1_1 = Strategy1Subgroup.objects.create(master_user=self.m, group=self.s1_1, name='1-1')
         self.s1_1_1_1 = Strategy1.objects.create(master_user=self.m, subgroup=self.s1_1_1, name='1-1-1')
@@ -1178,7 +1204,7 @@ class ReportTestCase(TestCase):
             if show_trns:
                 trn_cols = trn_cols or self.TRN_COLS
                 s += '\nVirtual transactions: \n%s\n' % (
-                    VirtualTransaction.sdumps(builder.instance.transactions, columns=trn_cols, filter=trn_filter,
+                    VirtualTransaction.sdumps(builder.transactions, columns=trn_cols, filter=trn_filter,
                                               in_csv=in_csv, transpose=transpose, showindex=showindex)
                 )
 
@@ -1247,6 +1273,7 @@ class ReportTestCase(TestCase):
             b.build_balance(full=True)
         elif r.report_type == Report.TYPE_PL:
             b.build_pl(full=True)
+        r.transactions = b.transactions
 
         # mode_names = {
         #     Report.MODE_IGNORE: 'IGNORE_________',
@@ -1296,11 +1323,11 @@ class ReportTestCase(TestCase):
         self._dump(b, name, trn_cols=trn_cols, item_cols=item_cols, trn_filter=trn_filter, in_csv=in_csv)
         return r
 
-    def _write_results(self, reports, ):
+    def _write_results(self, reports, file_name=None, trn_cols=None, item_cols=None):
         import xlsxwriter
 
-        trn_cols = self.TRN_COLS_MINI
-        item_cols = self.ITEM_COLS_ALL
+        trn_cols = trn_cols or self.TRN_COLS_MINI
+        item_cols = item_cols or self.ITEM_COLS_ALL
 
         def _val(val):
             # if isinstance(val, (bool, int, float, str, date, datetime)):
@@ -1314,7 +1341,7 @@ class ReportTestCase(TestCase):
             return str(val)
 
         # data_path = os.path.join(tempfile.gettempdir(), 'data.xlsx')
-        data_path = os.path.join('/Users', 'ailyukhin', 'tmp', 'data.xlsx')
+        data_path = os.path.join('/Users', 'ailyukhin', 'tmp', file_name or 'data.xlsx')
 
         workbook = xlsxwriter.Workbook(data_path)
         header_fmt = workbook.add_format({'bold': True})
@@ -1323,6 +1350,18 @@ class ReportTestCase(TestCase):
         delim_fmt = workbook.add_format({'bg_color': 'gray'})
         # num_fmt = workbook.add_format({'num_format': '#,###.###'})
         num_fmt = None
+
+        modes_map = {
+            Report.MODE_IGNORE: 'Ignore',
+            Report.MODE_INDEPENDENT: 'Independent',
+            Report.MODE_INTERDEPENDENT: 'Offsetting/Interdependent',
+        }
+
+        approach_map = {
+            0.0: '0/100',
+            0.5: '50/50',
+            1.0: '100/0',
+        }
 
         worksheet = workbook.add_worksheet()
 
@@ -1339,6 +1378,30 @@ class ReportTestCase(TestCase):
             # worksheet.write(row, 0, 'Report currency:', header_fmt)
             worksheet.merge_range(row, 0, row, 2, 'Report currency:', header_fmt)
             worksheet.write(row, 3, _val(r.report_currency))
+            row += 1
+
+            worksheet.merge_range(row, 0, row, 2, 'Portfolio:', header_fmt)
+            worksheet.write(row, 3, _val(modes_map[r.portfolio_mode]))
+            row += 1
+
+            worksheet.merge_range(row, 0, row, 2, 'Account:', header_fmt)
+            worksheet.write(row, 3, _val(modes_map[r.account_mode]))
+            row += 1
+
+            worksheet.merge_range(row, 0, row, 2, 'Strategy1:', header_fmt)
+            worksheet.write(row, 3, _val(modes_map[r.strategy1_mode]))
+            row += 1
+
+            worksheet.merge_range(row, 0, row, 2, 'Strategy2:', header_fmt)
+            worksheet.write(row, 3, _val(modes_map[r.strategy2_mode]))
+            row += 1
+
+            worksheet.merge_range(row, 0, row, 2, 'Strategy3:', header_fmt)
+            worksheet.write(row, 3, _val(modes_map[r.strategy3_mode]))
+            row += 1
+
+            worksheet.merge_range(row, 0, row, 2, 'Approach:', header_fmt)
+            worksheet.write(row, 3, _val(approach_map[r.approach_multiplier]))
             row += 1
 
             # worksheet.write(row, 0, 'Virtual Transactions', header_fmt)
@@ -1371,6 +1434,8 @@ class ReportTestCase(TestCase):
                 for col, val in enumerate(ReportItem.dump_values(item, item_cols)):
                     val = _val(val)
                     if isinstance(val, (int, float)):
+                        if math.isnan(val):
+                            val = 0.0
                         worksheet.write_number(row, col, val, num_fmt)
                     else:
                         worksheet.write(row, col, val)
@@ -1904,7 +1969,7 @@ class ReportTestCase(TestCase):
             item_cols=self.ITEM_COLS_MINI,
         )
 
-    def test_allocation_detailing(self):
+    def _test_allocation_detailing(self):
         self._t_buy(instr=self.bond0, position=1, stl_ccy=self.usd, principal=-10., carry=-0., overheads=-0.)
         self._t_buy(instr=self.bond0, position=1, stl_ccy=self.usd, principal=-10., carry=-0., overheads=-0.,
                     alloc_bl=self.bond2, alloc_pl=self.bond2)
@@ -1917,12 +1982,12 @@ class ReportTestCase(TestCase):
         self._t_cash_in(trn_ccy=self.usd, stl_ccy=self.usd, position=1000, fx_rate=1.3, notes='N1',
                         alloc_bl=self.bond2, alloc_pl=self.bond2)
 
-        self._t_cash_out(trn_ccy=self.usd, stl_ccy=self.usd, position=-1000, fx_rate=1.0,  notes='N1')
-        self._t_cash_out(trn_ccy=self.usd, stl_ccy=self.usd, position=-1000, fx_rate=1.0,  notes='N1',
+        self._t_cash_out(trn_ccy=self.usd, stl_ccy=self.usd, position=-1000, fx_rate=1.0, notes='N1')
+        self._t_cash_out(trn_ccy=self.usd, stl_ccy=self.usd, position=-1000, fx_rate=1.0, notes='N1',
                          alloc_bl=self.bond2, alloc_pl=self.bond2)
 
-        self._t_fx_tade(trn_ccy=self.usd, position=100, stl_ccy=self.usd, principal=-140,  notes='N1')
-        self._t_fx_tade(trn_ccy=self.usd, position=100, stl_ccy=self.usd, principal=-140,  notes='N1',
+        self._t_fx_tade(trn_ccy=self.usd, position=100, stl_ccy=self.usd, principal=-140, notes='N1')
+        self._t_fx_tade(trn_ccy=self.usd, position=100, stl_ccy=self.usd, principal=-140, notes='N1',
                         alloc_bl=self.bond2, alloc_pl=self.bond2)
 
         self._t_trn_pl(stl_ccy=self.usd, principal=0., carry=-900., overheads=-100., notes='N1')
@@ -1933,7 +1998,8 @@ class ReportTestCase(TestCase):
         item_cols = self.ITEM_COLS_ALL
 
         trn_cols = ['pk', 'trn_cls', 'instr', 'pos_size', 'alloc_bl', 'alloc_pl']
-        item_cols = ['group_code', 'type_code', 'subtype_code', 'user_code', 'instr', 'alloc', 'pos_size', 'market_value_res',
+        item_cols = ['group_code', 'type_code', 'subtype_code', 'user_code', 'instr', 'alloc', 'pos_size',
+                     'market_value_res',
                      'total_res']
 
         self._simple_run('test_allocation_detailing - balance - allocation_detailing', report_type=Report.TYPE_BALANCE,
@@ -1941,7 +2007,8 @@ class ReportTestCase(TestCase):
                          trn_dump_all=False, trn_cols=trn_cols, item_cols=item_cols,
                          allocation_detailing=True, pl_include_zero=True)
 
-        self._simple_run('test_allocation_detailing - balance - no_allocation_detailing', report_type=Report.TYPE_BALANCE,
+        self._simple_run('test_allocation_detailing - balance - no_allocation_detailing',
+                         report_type=Report.TYPE_BALANCE,
                          report_currency=self.cad, report_date=self._d(14),
                          trn_dump_all=False, trn_cols=trn_cols, item_cols=item_cols,
                          allocation_detailing=False, pl_include_zero=True)
@@ -2822,14 +2889,15 @@ class ReportTestCase(TestCase):
         # as_json(r)
         pass
 
-    def _test_from_csv_td_1(self):
+    def test_from_csv_td_1(self):
+        test_prefix = 'td_2'
         base_path = os.path.join(settings.BASE_DIR, 'poms', 'reports', 'tests_data')
         load_from_csv(
             master_user=self.m,
-            instr=os.path.join(base_path, 'td_1_instrument.csv'),
-            instr_price_hist=os.path.join(base_path, 'td_1_price_history.csv'),
-            ccy_fx_rate=os.path.join(base_path, 'td_1_fx_history.csv'),
-            trn=os.path.join(base_path, 'td_1_transactions.csv')
+            instr=os.path.join(base_path, '%s_instrument.csv' % test_prefix),
+            instr_price_hist=os.path.join(base_path, '%s_price_history.csv' % test_prefix),
+            ccy_fx_rate=os.path.join(base_path, '%s_fx_history.csv' % test_prefix),
+            trn=os.path.join(base_path, '%s_transactions.csv' % test_prefix)
         )
         # Transaction.objects.filter(master_user=self.m).exclude(transaction_class_id=TransactionClass.TRANSACTION_PL).delete()
         # Transaction.objects.filter(master_user=self.m).exclude(transaction_code__in=[7859, 7860]).delete()
@@ -2858,7 +2926,19 @@ class ReportTestCase(TestCase):
         strategy1_modes = [
             # Report.MODE_IGNORE,
             Report.MODE_INDEPENDENT,
+            # Report.MODE_INTERDEPENDENT,
         ]
+        strategy2_modes = [
+            # Report.MODE_IGNORE,
+            Report.MODE_INDEPENDENT,
+            # Report.MODE_INTERDEPENDENT,
+        ]
+        strategy3_modes = [
+            # Report.MODE_IGNORE,
+            Report.MODE_INDEPENDENT,
+            # Report.MODE_INTERDEPENDENT,
+        ]
+        approach_multipliers = [0.0, 0.5, 1.0]
 
         trn_cols = [
             'pk', 'trn_code', 'trn_cls', 'multiplier', 'instr', 'trn_ccy', 'pos_size', 'stl_ccy', 'cash', 'principal',
@@ -2897,7 +2977,7 @@ class ReportTestCase(TestCase):
             'overheads_fixed_closed_loc', 'total_fixed_closed_loc', 'principal_fixed_opened_res',
             'carry_fixed_opened_res', 'overheads_fixed_opened_res', 'total_fixed_opened_res',
             'principal_fixed_opened_loc', 'carry_fixed_opened_loc', 'overheads_fixed_opened_loc',
-            'total_fixed_opened_loc'
+            'total_fixed_opened_loc', 'group_code',
         ]
 
         # trn_cols = self.TRN_COLS_ALL
@@ -2916,25 +2996,64 @@ class ReportTestCase(TestCase):
         # item_cols = ['type_code', 'instr', 'ccy', 'trn_ccy', 'prtfl', 'acc', 'str1', 'pricing_ccy',]
         # item_cols += ['pos_return_loc', 'net_pos_return_loc',]
 
-        reports = []
+        balance_reports = []
+        pl_reports = []
+
+        iter = 1
+
         for report_date in report_dates:
             for report_currency in report_currencies:
                 for portfolio_mode in portfolio_modes:
                     for account_mode in account_modes:
                         for strategy1_mode in strategy1_modes:
-                            r = self._simple_run(
-                                None,
-                                report_currency=report_currency,
-                                report_date=report_date,
-                                cost_method=cost_method,
-                                portfolio_mode=portfolio_mode,
-                                account_mode=account_mode,
-                                strategy1_mode=strategy1_mode,
-                                strategy2_mode=Report.MODE_IGNORE,
-                                strategy3_mode=Report.MODE_IGNORE,
-                                trn_cols=trn_cols,
-                                item_cols=item_cols
-                            )
-                            reports.append(r)
-        # self._write_results(reports)
+                            for strategy2_mode in strategy2_modes:
+                                for strategy3_mode in strategy3_modes:
+
+                                    if strategy1_mode == Report.MODE_INTERDEPENDENT or \
+                                                    strategy2_mode == Report.MODE_INTERDEPENDENT or \
+                                                    strategy3_mode == Report.MODE_INTERDEPENDENT:
+                                        approach_multipliers0 = approach_multipliers
+                                    else:
+                                        approach_multipliers0 = [0.5]
+
+                                    for approach_multiplier in approach_multipliers0:
+                                        iter +=1
+                                        bal = self._simple_run(
+                                            None,
+                                            report_type=Report.TYPE_BALANCE,
+                                            report_currency=report_currency,
+                                            report_date=report_date,
+                                            cost_method=cost_method,
+                                            portfolio_mode=portfolio_mode,
+                                            account_mode=account_mode,
+                                            strategy1_mode=strategy1_mode,
+                                            strategy2_mode=strategy2_mode,
+                                            strategy3_mode=strategy3_mode,
+                                            approach_multiplier=approach_multiplier,
+                                            trn_cols=trn_cols,
+                                            item_cols=item_cols
+                                        )
+                                        balance_reports.append(bal)
+
+                                        pl = self._simple_run(
+                                            None,
+                                            report_type=Report.TYPE_PL,
+                                            report_currency=report_currency,
+                                            report_date=report_date,
+                                            cost_method=cost_method,
+                                            portfolio_mode=portfolio_mode,
+                                            account_mode=account_mode,
+                                            strategy1_mode=strategy1_mode,
+                                            strategy2_mode=strategy2_mode,
+                                            strategy3_mode=strategy3_mode,
+                                            approach_multiplier=approach_multiplier,
+                                            trn_cols=trn_cols,
+                                            item_cols=item_cols
+                                        )
+                                        pl_reports.append(pl)
+
+        self._write_results(balance_reports, '%s_balance.xlsx' % test_prefix,
+                            trn_cols=trn_cols, item_cols=item_cols)
+        self._write_results(pl_reports, '%s_pl_report.xlsx' % test_prefix,
+                            trn_cols=trn_cols, item_cols=item_cols)
         pass
