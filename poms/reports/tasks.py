@@ -27,7 +27,7 @@ def balance_report(instance):
         try:
             builder = ReportBuilder(instance=instance)
             instance = builder.build_balance()
-            instance.transactions = None
+            # instance.transactions = None
             return instance
         except:
             _l.error('balance report failed', exc_info=True)
@@ -44,7 +44,7 @@ def pl_report(instance):
         try:
             builder = ReportBuilder(instance=instance)
             instance = builder.build_pl()
-            instance.transactions = None
+            # instance.transactions = None
             return instance
         except:
             _l.error('pl report failed', exc_info=True)
@@ -61,7 +61,7 @@ def transaction_report(instance):
         try:
             builder = TransactionReportBuilder(instance)
             builder.build()
-            instance.transactions = None
+            # instance.transactions = None
             return builder.instance
         except:
             _l.error('transaction report failed', exc_info=True)
@@ -78,7 +78,7 @@ def cash_flow_projection_report(instance):
         try:
             builder = CashFlowProjectionReportBuilder(instance)
             builder.build()
-            instance.transactions = None
+            # instance.transactions = None
             return builder.instance
         except:
             _l.error('cash flow projection report failed', exc_info=True)

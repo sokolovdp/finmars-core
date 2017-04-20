@@ -85,7 +85,7 @@ class ReportBuilder(BaseReportBuilder):
         self._transaction_multipliers()
         self._transaction_calc()
         self._clone_transactions_if_need()
-        self.instance.transactions = self._transactions
+        # self.instance.transactions = self._transactions
         self._generate_items()
         self._aggregate_items()
         # self._calc_pass2()
@@ -115,7 +115,7 @@ class ReportBuilder(BaseReportBuilder):
         self._load_transactions()
         self._clone_transactions_if_need()
 
-        self.instance.transactions = self._transactions
+        # self.instance.transactions = self._transactions
         if not self._transactions:
             return
 
@@ -142,6 +142,10 @@ class ReportBuilder(BaseReportBuilder):
 
         _l.debug('done: %s', (time.perf_counter() - st))
         return self.instance
+
+    @property
+    def transactions(self):
+        return self._transactions
 
     @cached_property
     def _trn_cls_sell(self):
