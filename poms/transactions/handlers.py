@@ -69,11 +69,6 @@ class TransactionTypeProcess(object):
         self._now = now or date_now()
         self._context = context
 
-        if values is None:
-            self._set_values()
-        else:
-            self.values = values
-
         self.recalculate_inputs = recalculate_inputs or []
 
         self.has_errors = has_errors
@@ -89,6 +84,13 @@ class TransactionTypeProcess(object):
 
         self.next_fake_id = fake_id_gen or self._next_fake_id_default
         self.next_transaction_order = transaction_order_gen or self._next_transaction_order_default
+
+        if values is None:
+            self._set_values()
+        else:
+            self.values = values
+
+        self._set_has_errors()
 
     @property
     def is_book(self):
@@ -176,10 +178,12 @@ class TransactionTypeProcess(object):
                     value = self.default_values[i.name]
                 if value is None:
                     if i.value:
+                        errors = {}
                         try:
                             value = formula.safe_eval(i.value, names=self.values, now=self._now, context=self._context)
-                        except formula.InvalidExpression:
-                            _l.debug('default value error', exc_info=True)
+                        except formula.InvalidExpression as e:
+                            self._set_eval_error(errors, i.name, i.value, e)
+                            self.value_errors.append(errors)
                             value = None
             self.values[i.name] = value
 
