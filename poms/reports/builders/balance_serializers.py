@@ -400,9 +400,9 @@ class ReportSerializer(serializers.Serializer):
     strategies2_object = Strategy2ViewSerializer(source='strategies2', read_only=True, many=True)
     strategies3_object = Strategy3ViewSerializer(source='strategies3', read_only=True, many=True)
     custom_fields_object = CustomFieldViewSerializer(source='custom_fields', read_only=True,
-                                                                    many=True)
+                                                     many=True)
     transaction_classes_object = TransactionClassSerializer(source='transaction_classes',
-                                                                           read_only=True, many=True)
+                                                            read_only=True, many=True)
 
     # transactions = ReportTransactionSerializer(many=True, read_only=True)
     items = ReportItemSerializer(many=True, read_only=True)
@@ -511,10 +511,7 @@ class ReportSerializer(serializers.Serializer):
 
                     if expr:
                         try:
-                            names = {
-                                'item': names
-                            }
-                            value = formula.safe_eval(expr, names=names, context=self.context)
+                            value = formula.safe_eval(expr, names={'item': names}, context=self.context)
                         except formula.InvalidExpression:
                             value = ugettext('Invalid expression')
                     else:
@@ -527,6 +524,7 @@ class ReportSerializer(serializers.Serializer):
                 item['custom_fields'] = cfv
 
         return data
+
 
 class BalanceReportSerializer(ReportSerializer):
     pass
