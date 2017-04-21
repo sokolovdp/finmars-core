@@ -37,20 +37,20 @@ MEDIA_SERVE = False
 # CELERY ------------------------------------------------
 
 CELERY_WORKER_CONCURRENCY = 2
-CELERY_BEAT_SCHEDULE = {
-    # 'integrations.download_pricing_auto_scheduler': {
-    #     'task': 'integrations.download_pricing_auto_scheduler',
-    #     'schedule': 10,
-    # },
-    # 'instruments.generate_events': {
-    #     'task': 'instruments.generate_events',
-    #     'schedule': 10,
-    # },
-    # 'instruments.process_events': {
-    #     'task': 'instruments.process_events',
-    #     'schedule': 10,
-    # },
-}
+# CELERY_BEAT_SCHEDULE = {
+#     # 'integrations.download_pricing_auto_scheduler': {
+#     #     'task': 'integrations.download_pricing_auto_scheduler',
+#     #     'schedule': 10,
+#     # },
+#     # 'instruments.generate_events': {
+#     #     'task': 'instruments.generate_events',
+#     #     'schedule': 10,
+#     # },
+#     # 'instruments.process_events': {
+#     #     'task': 'instruments.process_events',
+#     #     'schedule': 10,
+#     # },
+# }
 
 
 # INTEGRATIONS ------------------------------------------------
