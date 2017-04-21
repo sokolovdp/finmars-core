@@ -420,8 +420,8 @@ def _date_group(evaluator, val, ranges, default=None):
     # _l.info('_date_group: val=%s', val)
 
     def _make_name(begin, end, fmt):
-        if begin != datetime.date.min:
-            begin += datetime.timedelta(days=1)
+        if end != datetime.date.max:
+            end -= datetime.timedelta(days=1)
         if isinstance(fmt, (list, tuple)):
             ifmt = iter(fmt)
             s1 = str(next(ifmt, '') or '')
@@ -438,13 +438,14 @@ def _date_group(evaluator, val, ranges, default=None):
 
     for begin, end, step, fmt in ranges:
         if not begin:
-            begin = datetime.date.min
-            # start = datetime.date(1970, 1, 1)
+            # begin = datetime.date.min
+            begin = datetime.date(1900, 1, 1)
         else:
             begin = _parse_date(begin)
 
         if not end:
-            end = datetime.date.max
+            # end = datetime.date.max
+            end = datetime.date(2100, 12, 31)
         else:
             end = _parse_date(end)
 
