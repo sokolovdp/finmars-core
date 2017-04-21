@@ -36,7 +36,7 @@ MEDIA_SERVE = False
 
 # CELERY ------------------------------------------------
 
-CELERY_WORKER_CONCURRENCY = 1
+CELERY_WORKER_CONCURRENCY = 2
 CELERY_BEAT_SCHEDULE = {
     # 'integrations.download_pricing_auto_scheduler': {
     #     'task': 'integrations.download_pricing_auto_scheduler',
