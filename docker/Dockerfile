@@ -36,9 +36,10 @@ RUN chmod 777 /var/app-data/
 #COPY docker/supervisor-celerybeat.conf /etc/supervisor/conf.d/celerybeat.conf
 #COPY docker/supervisor-devserver.conf /etc/supervisor/conf.d/devserver.conf
 
-COPY docker/uwsgi-celery.ini /etc/uwsgi/apps-enabled/finmars-celery.ini
-COPY docker/uwsgi-celerybeat.ini /etc/uwsgi/apps-enabled/finmars-celerybeat.ini
-COPY docker/uwsgi-www.ini /etc/uwsgi/apps-enabled/finmars-www.ini
+COPY docker/uwsgi-celery.ini /etc/uwsgi/finmars-vassals/finmars-celery.ini
+COPY docker/uwsgi-celerybeat.ini /etc/uwsgi/finmars-vassals/finmars-celerybeat.ini
+COPY docker/uwsgi-www.ini /etc/uwsgi/finmars-vassals/finmars-www.ini
+COPY docker/uwsgi-emperor.ini /etc/uwsgi/apps-enabled/finmars.ini
 
 RUN chmod +x /var/app/docker/finmars-run.sh
 

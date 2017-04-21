@@ -17,4 +17,8 @@ echo "Finmars"
 
 #/usr/bin/uwsgi /etc/uwsgi/apps-enabled/finmars-www.ini
 
+#/usr/bin/uwsgi /etc/uwsgi/apps-enabled/finmars.ini
+
+#/usr/bin/uwsgi /etc/uwsgi/finmars-vassals/finmars-celery.ini
+
 #run()
