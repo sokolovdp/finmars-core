@@ -8,6 +8,8 @@ from .settings import *
 
 # DATABASES['default']['NAME'] = 'test_poms_dev2'
 
+ROOT_URLCONF = 'poms_app.urls_standalone'
+
 if 'crispy_forms' not in INSTALLED_APPS:
     INSTALLED_APPS += ['crispy_forms', ]
 if 'redisboard' not in INSTALLED_APPS:
