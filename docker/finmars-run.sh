@@ -13,12 +13,6 @@ echo "Finmars"
 
 /var/app-venv/bin/python /var/app/manage.py initstandalone -noinput
 
-#/var/app-venv/bin/python /var/app/manage.py runserver 0.0.0.0:8080
-
-#/usr/bin/uwsgi /etc/uwsgi/apps-enabled/finmars-www.ini
-
 #/usr/bin/uwsgi /etc/uwsgi/apps-enabled/finmars.ini
-
-#/usr/bin/uwsgi /etc/uwsgi/finmars-vassals/finmars-celery.ini
 
 #run()
