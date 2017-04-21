@@ -1,16 +1,20 @@
 
+# /var/app/docker/finmars-run.sh
+
+#source /var/app-venv/bin/activate
+#cd /var/app/
+
 echo "Finmars"
 
-source /var/app-venv/bin/activate
-cd /var/app/
+/var/app-venv/bin/python /var/app/manage.py migrate -noinput
+/var/app-venv/bin/python /var/app/manage.py createcachetable -noinput
+/var/app-venv/bin/python /var/app/manage.py clearsessions -noinput
+/var/app-venv/bin/python /var/app/manage.py collectstatic -c --noinput
 
+/var/app-venv/bin/python /var/app/manage.py initstandalone -noinput
 
-function migrate {
-    ./manage.py migrate
-}
+#/var/app-venv/bin/python /var/app/manage.py runserver 0.0.0.0:8080
 
-function createsuperuser {
-    ./manage.py initstandalone
-}
+#/usr/bin/uwsgi /etc/uwsgi/apps-enabled/finmars-www.ini
 
-./manage.py runserver 0.0.0.0:8080
+#run()

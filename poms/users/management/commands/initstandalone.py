@@ -23,13 +23,13 @@ class Command(BaseCommand):
                 user.set_password('finmars')
                 user.save()
 
-            # if MasterUser.objects.count() == 0:
-            user, created = User.objects.get_or_create(
-                username='finmars',
-                defaults={}
-            )
-            if created:
-                user.set_password('finmars')
-                user.save()
-            master_user = MasterUser.objects.create_master_user(name='default')
-            Member.objects.create(master_user=master_user, user=user, is_owner=True, is_admin=True)
+            if MasterUser.objects.count() == 0:
+                user, created = User.objects.get_or_create(
+                    username='finmars',
+                    defaults={}
+                )
+                if created:
+                    user.set_password('finmars')
+                    user.save()
+                master_user = MasterUser.objects.create_master_user(name='default')
+                Member.objects.create(master_user=master_user, user=user, is_owner=True, is_admin=True)
