@@ -13,6 +13,5 @@ echo "Finmars"
 
 /var/app-venv/bin/python /var/app/manage.py initstandalone
 
-#/usr/bin/uwsgi /etc/uwsgi/apps-enabled/finmars.ini
+/usr/bin/uwsgi /etc/uwsgi/apps-enabled/finmars.ini
 
-#run()
