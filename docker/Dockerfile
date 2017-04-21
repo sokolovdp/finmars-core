@@ -45,11 +45,11 @@ ENV RDS_HOSTNAME finmars-db
 
 ENV REDIS_HOST finmars-redis:6379
 
-ENV POMS_DEV True
+ENV POMS_DEV False
 ENV POMS_BLOOMBERG_SANDBOX True
 ENV POMS_PRICING_AUTO_DOWNLOAD_DISABLED True
 
 EXPOSE 8080
 
-#CMD ["/bin/bash", "/var/app/docker/finmars-run.sh"]
-CMD ["/bin/bash"]
+CMD ["/bin/bash", "/var/app/docker/finmars-run.sh"]
+#CMD ["/bin/bash"]

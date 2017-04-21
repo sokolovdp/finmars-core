@@ -4,7 +4,7 @@ from __future__ import unicode_literals
 import os
 from .settings import *
 
-DEBUG = True
+# DEBUG = True
 
 # DATABASES['default']['NAME'] = 'test_poms_dev2'
 
