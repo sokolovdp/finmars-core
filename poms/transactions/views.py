@@ -366,12 +366,15 @@ class TransactionTypeViewSet(AbstractWithObjectPermissionViewSet):
             serializer = self.get_serializer(instance=instance)
             return Response(serializer.data)
         else:
-            history.set_flag_addition()
-            history.set_actor_content_object(instance.transaction_type)
             try:
+                history.set_flag_addition()
+
                 serializer = self.get_serializer(instance=instance, data=request.data)
                 serializer.is_valid(raise_exception=True)
                 serializer.save()
+
+                history.set_actor_content_object(instance.complex_transaction)
+
                 return Response(serializer.data)
             finally:
                 if instance.has_errors:
@@ -973,12 +976,15 @@ class ComplexTransactionViewSet(AbstractModelViewSet):
             serializer = self.get_serializer(instance=instance)
             return Response(serializer.data)
         else:
-            history.set_flag_change()
-            history.set_actor_content_object(complex_transaction)
             try:
+                history.set_flag_change()
+
                 serializer = self.get_serializer(instance=instance, data=request.data)
                 serializer.is_valid(raise_exception=True)
                 serializer.save()
+
+                history.set_actor_content_object(complex_transaction)
+
                 return Response(serializer.data)
             finally:
                 if instance.has_errors:

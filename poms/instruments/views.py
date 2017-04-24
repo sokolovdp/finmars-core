@@ -515,9 +515,9 @@ class GeneratedEventViewSet(UpdateModelMixinExt, AbstractReadOnlyModelViewSet):
             serializer = self.get_serializer(instance=instance)
             return Response(serializer.data)
         else:
-            history.set_flag_addition()
-            history.set_actor_content_object(instance.transaction_type)
             try:
+                history.set_flag_addition()
+
                 serializer = self.get_serializer(instance=instance, data=request.data)
                 serializer.is_valid(raise_exception=True)
                 serializer.save()
@@ -525,6 +525,8 @@ class GeneratedEventViewSet(UpdateModelMixinExt, AbstractReadOnlyModelViewSet):
                 if not instance.has_errors:
                     generated_event.processed(self.request.user.member, action, instance.complex_transaction)
                     generated_event.save()
+
+                history.set_actor_content_object(instance.complex_transaction)
 
                 return Response(serializer.data)
             finally:
