@@ -71,7 +71,7 @@ class CashFlowProjectionReportBuilder(TransactionReportBuilder):
         self._transaction_order_seq += 1
         return self._transaction_order_seq
 
-    def _trn_key(self, trn, acc=empty):
+    def _balance_trn_key(self, trn, acc=empty):
         if acc is empty:
             acc = trn.account_cash
         return (
@@ -81,9 +81,16 @@ class CashFlowProjectionReportBuilder(TransactionReportBuilder):
             # getattr(trn.instrument, 'id', -1),
         )
 
+    def _instr_rolling_trn_key(self, trn):
+        return (
+            getattr(trn.portfolio, 'id', None),
+            getattr(trn.account_position, 'id', None),
+            getattr(trn.instrument, 'id', -1),
+        )
+
     def _item(self, cache, trn, key, itype=CashFlowProjectionReportItem.DEFAULT):
         if key is None:
-            key = self._trn_key(trn)
+            raise RuntimeError('key must be specified')
         item = cache.get(key, None)
         if item is None:
             # override by '-'
@@ -142,13 +149,18 @@ class CashFlowProjectionReportBuilder(TransactionReportBuilder):
                     item.cash_date = datetime.date.max
             else:
                 item = CashFlowProjectionReportItem(self.instance, type=itype, trn=trn)
+            item.key = key
             cache[key] = item
         return item
 
     def _balance(self, trn, key=None):
+        if key is None:
+            key = self._balance_trn_key(trn)
         return self._item(self._balance_items, trn, key, itype=CashFlowProjectionReportItem.BALANCE)
 
     def _rolling(self, trn, key=None):
+        if key is None:
+            key = self._instr_rolling_trn_key(trn)
         return self._item(self._rolling_items, trn, key, itype=CashFlowProjectionReportItem.ROLLING)
 
     def _calc_balance(self):
@@ -160,13 +172,11 @@ class CashFlowProjectionReportBuilder(TransactionReportBuilder):
             self._transactions_by_date[d].append(t)
 
             if d <= self.instance.balance_date:
-                key = self._trn_key(t)
-                bitem = self._balance(t, key)
+                bitem = self._balance(t)
                 bitem.add_balance(t)
 
                 if t.transaction_class_id in [TransactionClass.BUY, TransactionClass.SELL]:
-                    key = self._trn_key(t)
-                    ritem = self._rolling(t, key)
+                    ritem = self._rolling(t)
                     ritem.add_balance(t)
                 elif t.transaction_class_id in [TransactionClass.TRANSFER]:
                     raise RuntimeError('implement me please')
@@ -274,14 +284,12 @@ class CashFlowProjectionReportBuilder(TransactionReportBuilder):
             if now in self._transactions_by_date:
                 for t in self._transactions_by_date[now]:
                     _l.debug('trn=%s', t.id)
-                    key = self._trn_key(t)
-
                     item = CashFlowProjectionReportItem(self.instance, trn=t)
                     self._items.append(item)
 
                     ritem = None
                     if t.transaction_class_id in [TransactionClass.BUY, TransactionClass.SELL]:
-                        ritem = self._rolling(t, key)
+                        ritem = self._rolling(t)
                         ritem.add_balance(t)
                     elif t.transaction_class_id in [TransactionClass.TRANSFER]:
                         # TODO: implement me please
@@ -291,6 +299,7 @@ class CashFlowProjectionReportBuilder(TransactionReportBuilder):
                     if ritem:
                         _l.debug('instr del or not: position=%s', ritem.position_size_with_sign)
                         if isclose(ritem.position_size_with_sign, 0.0):
+                            key = self._instr_rolling_trn_key(t)
                             del self._rolling_items[key]
 
     def _calc_before_after(self):
