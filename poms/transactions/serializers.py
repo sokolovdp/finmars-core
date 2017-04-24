@@ -1270,6 +1270,7 @@ class TransactionTypeProcessSerializer(serializers.Serializer):
         for key, value in validated_data.items():
             if key not in ['complex_transaction', ]:
                 setattr(instance, key, value)
+        instance.value_errors = []
 
         if instance.is_book:
             ctrn_values = validated_data.get('complex_transaction', None)

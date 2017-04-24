@@ -184,10 +184,7 @@ class TransactionReportSerializer(serializers.Serializer):
 
                     if expr:
                         try:
-                            names = {
-                                'item': names
-                            }
-                            value = formula.safe_eval(expr, names=names, context=self.context)
+                            value = formula.safe_eval(expr, names={'item': names}, context=self.context)
                         except formula.InvalidExpression:
                             value = ugettext('Invalid expression')
                     else:

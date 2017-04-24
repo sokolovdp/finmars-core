@@ -6,6 +6,7 @@ from threading import local
 from django.apps import apps
 from django.contrib.contenttypes.models import ContentType
 from django.core import serializers
+from django.db import transaction
 from django.db.models.signals import post_init, post_save, post_delete, m2m_changed
 from django.dispatch import receiver
 from django.utils.decorators import ContextDecorator
@@ -59,6 +60,8 @@ def activate():
 def deactivate():
     if getattr(_state, "active", True) and _state.entries4:
         if _state.actor_content_object:
+            if transaction.get_rollback():
+                return
             group_id = 0
             actor_content_type = ContentType.objects.get_for_model(_state.actor_content_object)
             actor_object_id = _state.actor_content_object_id
