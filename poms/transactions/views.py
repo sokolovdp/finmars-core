@@ -9,6 +9,7 @@ from rest_framework.filters import FilterSet
 from rest_framework.response import Response
 
 from poms.accounts.models import Account, AccountType
+from poms.audit import history
 from poms.common.filters import CharFilter, ModelExtWithPermissionMultipleChoiceFilter, ModelExtMultipleChoiceFilter, \
     NoOpFilter
 from poms.common.views import AbstractClassModelViewSet, AbstractModelViewSet
@@ -365,6 +366,8 @@ class TransactionTypeViewSet(AbstractWithObjectPermissionViewSet):
             serializer = self.get_serializer(instance=instance)
             return Response(serializer.data)
         else:
+            history.set_flag_addition()
+            history.set_actor_content_object(instance.transaction_type)
             try:
                 serializer = self.get_serializer(instance=instance, data=request.data)
                 serializer.is_valid(raise_exception=True)
@@ -970,6 +973,8 @@ class ComplexTransactionViewSet(AbstractModelViewSet):
             serializer = self.get_serializer(instance=instance)
             return Response(serializer.data)
         else:
+            history.set_flag_change()
+            history.set_actor_content_object(complex_transaction)
             try:
                 serializer = self.get_serializer(instance=instance, data=request.data)
                 serializer.is_valid(raise_exception=True)
