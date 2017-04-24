@@ -13,6 +13,7 @@ from rest_framework.response import Response
 
 from poms.accounts.models import Account
 from poms.accounts.models import AccountType
+from poms.audit import history
 from poms.common.filters import CharFilter, ModelExtWithPermissionMultipleChoiceFilter, NoOpFilter, \
     ModelExtMultipleChoiceFilter
 from poms.common.mixins import UpdateModelMixinExt
@@ -485,6 +486,7 @@ class GeneratedEventViewSet(UpdateModelMixinExt, AbstractReadOnlyModelViewSet):
         return qs
 
     @detail_route(methods=['get', 'put'], url_path='book', serializer_class=TransactionTypeProcessSerializer)
+    @history.enable
     def process(self, request, pk=None):
         generated_event = self.get_object()
 
@@ -514,6 +516,8 @@ class GeneratedEventViewSet(UpdateModelMixinExt, AbstractReadOnlyModelViewSet):
             serializer = self.get_serializer(instance=instance)
             return Response(serializer.data)
         else:
+            history.set_flag_addition()
+            history.set_actor_content_object(instance.transaction_type)
             try:
                 serializer = self.get_serializer(instance=instance, data=request.data)
                 serializer.is_valid(raise_exception=True)

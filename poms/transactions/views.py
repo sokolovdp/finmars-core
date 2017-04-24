@@ -9,6 +9,7 @@ from rest_framework.filters import FilterSet
 from rest_framework.response import Response
 
 from poms.accounts.models import Account, AccountType
+from poms.audit import history
 from poms.common.filters import CharFilter, ModelExtWithPermissionMultipleChoiceFilter, ModelExtMultipleChoiceFilter, \
     NoOpFilter
 from poms.common.views import AbstractClassModelViewSet, AbstractModelViewSet
@@ -359,12 +360,15 @@ class TransactionTypeViewSet(AbstractWithObjectPermissionViewSet):
     ]
 
     @detail_route(methods=['get', 'put'], url_path='book', serializer_class=TransactionTypeProcessSerializer)
+    @history.enable
     def book(self, request, pk=None):
         instance = TransactionTypeProcess(transaction_type=self.get_object(), context=self.get_serializer_context())
         if request.method == 'GET':
             serializer = self.get_serializer(instance=instance)
             return Response(serializer.data)
         else:
+            history.set_flag_addition()
+            history.set_actor_content_object(instance.transaction_type)
             try:
                 serializer = self.get_serializer(instance=instance, data=request.data)
                 serializer.is_valid(raise_exception=True)
@@ -961,6 +965,7 @@ class ComplexTransactionViewSet(AbstractModelViewSet):
         )
 
     @detail_route(methods=['get', 'put'], url_path='book', serializer_class=TransactionTypeProcessSerializer)
+    @history.enable
     def book(self, request, pk=None):
         complex_transaction = self.get_object()
         instance = TransactionTypeProcess(transaction_type=complex_transaction.transaction_type,
@@ -970,6 +975,8 @@ class ComplexTransactionViewSet(AbstractModelViewSet):
             serializer = self.get_serializer(instance=instance)
             return Response(serializer.data)
         else:
+            history.set_flag_change()
+            history.set_actor_content_object(complex_transaction)
             try:
                 serializer = self.get_serializer(instance=instance, data=request.data)
                 serializer.is_valid(raise_exception=True)
