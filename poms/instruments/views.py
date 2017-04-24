@@ -486,7 +486,6 @@ class GeneratedEventViewSet(UpdateModelMixinExt, AbstractReadOnlyModelViewSet):
         return qs
 
     @detail_route(methods=['get', 'put'], url_path='book', serializer_class=TransactionTypeProcessSerializer)
-    @history.enable
     def process(self, request, pk=None):
         generated_event = self.get_object()
 

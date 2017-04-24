@@ -360,7 +360,6 @@ class TransactionTypeViewSet(AbstractWithObjectPermissionViewSet):
     ]
 
     @detail_route(methods=['get', 'put'], url_path='book', serializer_class=TransactionTypeProcessSerializer)
-    @history.enable
     def book(self, request, pk=None):
         instance = TransactionTypeProcess(transaction_type=self.get_object(), context=self.get_serializer_context())
         if request.method == 'GET':
@@ -965,7 +964,6 @@ class ComplexTransactionViewSet(AbstractModelViewSet):
         )
 
     @detail_route(methods=['get', 'put'], url_path='book', serializer_class=TransactionTypeProcessSerializer)
-    @history.enable
     def book(self, request, pk=None):
         complex_transaction = self.get_object()
         instance = TransactionTypeProcess(transaction_type=complex_transaction.transaction_type,
