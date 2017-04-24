@@ -13,6 +13,7 @@ from rest_framework.response import Response
 
 from poms.accounts.models import Account
 from poms.accounts.models import AccountType
+from poms.audit import history
 from poms.common.filters import CharFilter, ModelExtWithPermissionMultipleChoiceFilter, NoOpFilter, \
     ModelExtMultipleChoiceFilter
 from poms.common.mixins import UpdateModelMixinExt
@@ -515,6 +516,8 @@ class GeneratedEventViewSet(UpdateModelMixinExt, AbstractReadOnlyModelViewSet):
             return Response(serializer.data)
         else:
             try:
+                history.set_flag_addition()
+
                 serializer = self.get_serializer(instance=instance, data=request.data)
                 serializer.is_valid(raise_exception=True)
                 serializer.save()
@@ -522,6 +525,8 @@ class GeneratedEventViewSet(UpdateModelMixinExt, AbstractReadOnlyModelViewSet):
                 if not instance.has_errors:
                     generated_event.processed(self.request.user.member, action, instance.complex_transaction)
                     generated_event.save()
+
+                history.set_actor_content_object(instance.complex_transaction)
 
                 return Response(serializer.data)
             finally:

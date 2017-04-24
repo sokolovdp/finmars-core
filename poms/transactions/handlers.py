@@ -69,14 +69,8 @@ class TransactionTypeProcess(object):
         self._now = now or date_now()
         self._context = context
 
-        if values is None:
-            self._set_values()
-        else:
-            self.values = values
-
         self.recalculate_inputs = recalculate_inputs or []
 
-        self.has_errors = has_errors
         self.value_errors = value_errors or []
         self.transactions = transactions or []
         self.instruments = instruments or []
@@ -89,6 +83,11 @@ class TransactionTypeProcess(object):
 
         self.next_fake_id = fake_id_gen or self._next_fake_id_default
         self.next_transaction_order = transaction_order_gen or self._next_transaction_order_default
+
+        if values is None:
+            self._set_values()
+        else:
+            self.values = values
 
     @property
     def is_book(self):
@@ -176,9 +175,12 @@ class TransactionTypeProcess(object):
                     value = self.default_values[i.name]
                 if value is None:
                     if i.value:
+                        errors = {}
                         try:
-                            value = formula.safe_eval(i.value, now=self._now, context=self._context)
-                        except formula.InvalidExpression:
+                            value = formula.safe_eval(i.value, names=self.values, now=self._now, context=self._context)
+                        except formula.InvalidExpression as e:
+                            self._set_eval_error(errors, i.name, i.value, e)
+                            self.value_errors.append(errors)
                             value = None
             self.values[i.name] = value
 
@@ -458,8 +460,6 @@ class TransactionTypeProcess(object):
                 finally:
                     self.transactions_errors.append(errors)
 
-        self._set_has_errors()
-
         if not self.has_errors and self.transactions:
             for trn in self.transactions:
                 trn.calc_cash_by_formulas()
@@ -481,13 +481,12 @@ class TransactionTypeProcess(object):
                     self._set_eval_error(errors, inp.name, inp.value_expr, e)
                     self.value_errors.append(errors)
 
-        self._set_has_errors()
-
-    def _set_has_errors(self):
-        self.has_errors = bool(self.instruments_errors) or \
-                          any(bool(e) for e in self.value_errors) or \
-                          any(bool(e) for e in self.complex_transaction_errors) or \
-                          any(bool(e) for e in self.transactions_errors)
+    @property
+    def has_errors(self):
+        return bool(self.instruments_errors) or \
+               any(bool(e) for e in self.value_errors) or \
+               any(bool(e) for e in self.complex_transaction_errors) or \
+               any(bool(e) for e in self.transactions_errors)
 
     def _set_val(self, errors, values, default_value, target, target_attr_name, source, source_attr_name):
         value = getattr(source, source_attr_name)
