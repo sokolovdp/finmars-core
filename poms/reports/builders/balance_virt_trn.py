@@ -400,9 +400,9 @@ class VirtualTransaction(BaseReportItem):
         # report ccy ----------------------------------------------------
         self.report_ccy_cur = self.fx_rate_provider[self.report.report_currency]
         self.report_ccy_cur_fx = self.report_ccy_cur.fx_rate
-        self.report_ccy_cash_hist = self.fx_rate_provider[self.report.report_currency, self.acc_date]
+        self.report_ccy_cash_hist = self.fx_rate_provider[self.report.report_currency, self.cash_date]
         self.report_ccy_cash_hist_fx = self.report_ccy_cash_hist.fx_rate
-        self.report_ccy_acc_hist = self.fx_rate_provider[self.report.report_currency, self.cash_date]
+        self.report_ccy_acc_hist = self.fx_rate_provider[self.report.report_currency, self.acc_date]
         self.report_ccy_acc_hist_fx = self.report_ccy_acc_hist.fx_rate
 
         try:
