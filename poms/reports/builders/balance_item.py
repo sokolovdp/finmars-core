@@ -1010,6 +1010,10 @@ class ReportItem(BaseReportItem):
         # if self.type == ReportItem.TYPE_CURRENCY or self.type == ReportItem.TYPE_INVESTED_CURRENCY:
         if self.type == ReportItem.TYPE_CURRENCY:
             self.market_value_res = self.pos_size * self.ccy_cur_fx
+            self.market_value_loc = self.market_value_res * res_to_loc_fx
+
+            self.exposure_res = self.market_value_res
+            self.exposure_loc = self.market_value_loc
 
         elif self.type == ReportItem.TYPE_INSTRUMENT:
             if self.instr:
@@ -1039,6 +1043,7 @@ class ReportItem(BaseReportItem):
             self.exposure_loc = self.exposure_res * res_to_loc_fx
 
             self.market_value_res = self.instr_principal_res + self.instr_accrued_res
+            self.market_value_loc = self.market_value_res * res_to_loc_fx
 
             # self.total_unreal_res = self.market_value_res + self.cost_res
 
@@ -1122,17 +1127,25 @@ class ReportItem(BaseReportItem):
 
             try:
                 self.pos_return_res = (self.principal_opened_res + self.carry_opened_res) \
-                                      / self.principal_invested_res / self.instr_pricing_ccy_cur_fx
+                                      / -self.principal_invested_res
             except ArithmeticError:
                 self.pos_return_res = 0
-            self.pos_return_loc = self.pos_return_res * res_to_loc_fx
+            try:
+                self.pos_return_loc = (self.principal_opened_loc + self.carry_opened_loc) \
+                                      / -self.principal_invested_loc
+            except ArithmeticError:
+                self.pos_return_loc = 0
 
             try:
                 self.net_pos_return_res = (self.principal_opened_res + self.carry_opened_res + self.overheads_opened_res) \
-                                          / self.principal_invested_res
+                                          / -self.principal_invested_res
             except ArithmeticError:
                 self.net_pos_return_res = 0.0
-            self.net_pos_return_loc = self.net_pos_return_res * res_to_loc_fx
+            try:
+                self.net_pos_return_loc = (self.principal_opened_loc + self.carry_opened_loc + self.overheads_opened_loc) \
+                                          / -self.principal_invested_loc
+            except ArithmeticError:
+                self.net_pos_return_loc = 0.0
 
             if self.instr:
                 # YTM/Duration - берем price из price history на дату репорта.
