@@ -1043,7 +1043,10 @@ if __name__ == "__main__":
             _l.info('    %s, is_cpn=%s', cpn_val, is_cpn)
         cpn_date += timedelta(days=1)
 
-    _l.info('get_future_coupons: %s', i.get_future_coupons(begin_date=date(2000, 1, 1), accruals=accruals))
+    _l.info('get_future_coupons: %s',
+            [(str(d), v) for d, v in i.get_future_coupons(begin_date=date(2000, 1, 1), accruals=accruals)])
+    _l.info('get_future_coupons: %s',
+            [(str(d), v) for d, v in i.get_future_coupons(begin_date=date(2007, 1, 1), accruals=accruals)])
 
     _l.info('-' * 10)
     accruals = [
@@ -1077,4 +1080,5 @@ if __name__ == "__main__":
             _l.info('    %s, is_cpn=%s', cpn_val, is_cpn)
         cpn_date += timedelta(days=1)
 
-    _l.info('get_future_coupons: %s', i.get_future_coupons(begin_date=date(2000, 1, 1), accruals=accruals))
+    _l.info('get_future_coupons: %s',
+            [(str(d), v) for d, v in i.get_future_coupons(begin_date=date(2000, 1, 1), accruals=accruals)])

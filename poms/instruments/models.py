@@ -720,7 +720,7 @@ class Instrument(NamedModel, FakeDeletableModel):
         accruals = self.get_accrual_calculation_schedules_all(accruals=accruals)
 
         if cpn_date == self.maturity_date:
-            _l.info('  %s, d=%s', cpn_date == self.maturity_date, cpn_date,)
+            # _l.info('  %s, d=%s', cpn_date == self.maturity_date, cpn_date,)
             return self.maturity_price, True
 
         elif cpn_date > self.maturity_date:
@@ -749,21 +749,8 @@ class Instrument(NamedModel, FakeDeletableModel):
                     prev_d = d
 
                 if d == cpn_date:
-                    _l.info('  %s, d=%s, prev_d=%s', d == cpn_date, d, prev_d)
+                    # _l.info('  %s, d=%s, prev_d=%s', d == cpn_date, d, prev_d)
                     return 0.0, True
-
-
-                # accrual_start_date = models.DateField(default=date_now, verbose_name=ugettext_lazy('accrual start date'))
-                # accrual_end_date = None
-                # first_payment_date = models.DateField(default=date_now, verbose_name=ugettext_lazy('first payment date'))
-                # # TODO: is %
-                # accrual_size = models.FloatField(default=0.0, verbose_name=ugettext_lazy('accrual size'))
-                # accrual_calculation_model = models.ForeignKey(AccrualCalculationModel, on_delete=models.PROTECT,
-                #                                               verbose_name=ugettext_lazy('accrual calculation model'))
-                # periodicity = models.ForeignKey(Periodicity, on_delete=models.PROTECT, null=True, blank=True,
-                #                                 verbose_name=ugettext_lazy('periodicity'))
-                # periodicity_n = models.IntegerField(default=0, verbose_name=ugettext_lazy('periodicity n'))
-                # notes = models.TextField(blank=True, default='', verbose_name=ugettext_lazy('notes'))
 
         return 0.0, False
 
