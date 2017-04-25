@@ -1130,7 +1130,7 @@ class ReportItem(BaseReportItem):
                                       / -self.principal_invested_loc
             except ArithmeticError:
                 self.pos_return_loc = 0
-                
+
             try:
                 self.net_pos_return_res = (self.principal_opened_res + self.carry_opened_res + self.overheads_opened_res) \
                                           / -self.principal_invested_res
