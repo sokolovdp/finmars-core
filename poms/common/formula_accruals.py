@@ -469,6 +469,14 @@ def get_coupon(accrual_calculation_model):
     #
     # '2007-02-01', 100, # maturity_date, maturity_price
 
+    # GetCoupon – имя функции, куда записывается результат вычислений
+    # Dt1 – предыдущая купонная дата или Accrual start Date, если это первый купон из текущей строчки
+    # Accrual Schedule  (т.е. если в Accrual Schedule 2 строчки, например один период Accrual Size был 5,
+    # а потом стал 10, то для расчета первого купона с Accrual Size = 10 используем Accrual Start Date из 2-ой строчки,
+    # но не дату выплаты последнего купона = 5)
+    #
+    # Dt2 – текущая купонная дата
+    #
     # If Not CpnDate Then
     #     GetCoupon = 0
     #     Exit Function
@@ -1003,19 +1011,22 @@ if __name__ == "__main__":
 
     i = Instrument.objects.get(pk=19)
 
+    _l.info('-' * 10)
     accruals = [
         AccrualCalculationSchedule(
-            accrual_start_date=date(2001,1,1),
+            accrual_start_date=date(2001, 1, 1),
             first_payment_date=date(2001, 7, 1),
             accrual_size=10,
-            accrual_calculation_model=AccrualCalculationModel.objects.get(pk=AccrualCalculationModel.ISMA_30_360_NO_EOM),
+            accrual_calculation_model=AccrualCalculationModel.objects.get(
+                pk=AccrualCalculationModel.ISMA_30_360_NO_EOM),
             periodicity=Periodicity.objects.get(pk=Periodicity.SEMI_ANNUALLY),
         ),
         AccrualCalculationSchedule(
-            accrual_start_date=date(2003,1,1),
+            accrual_start_date=date(2003, 1, 1),
             first_payment_date=date(2003, 7, 1),
             accrual_size=20,
-            accrual_calculation_model=AccrualCalculationModel.objects.get(pk=AccrualCalculationModel.ISMA_30_360_NO_EOM),
+            accrual_calculation_model=AccrualCalculationModel.objects.get(
+                pk=AccrualCalculationModel.ISMA_30_360_NO_EOM),
             periodicity=Periodicity.objects.get(pk=Periodicity.SEMI_ANNUALLY),
         ),
     ]
@@ -1026,28 +1037,44 @@ if __name__ == "__main__":
     ed = i.maturity_date + timedelta(days=4)
     cpn_date = sd
     while cpn_date <= ed:
-        _l.info('%s', cpn_date)
-        cpn_val = i.get_coupon(cpn_date=cpn_date, accruals=accruals)
-        _l.info('  %s', cpn_val)
+        # _l.info('%s', cpn_date)
+        cpn_val, is_cpn = i.get_coupon(cpn_date=cpn_date, accruals=accruals)
+        if is_cpn:
+            _l.info('    %s, is_cpn=%s', cpn_val, is_cpn)
         cpn_date += timedelta(days=1)
 
+    _l.info('get_future_coupons: %s', i.get_future_coupons(begin_date=date(2000, 1, 1), accruals=accruals))
 
-
+    _l.info('-' * 10)
     accruals = [
         AccrualCalculationSchedule(
-            accrual_start_date=date(2001,1,1),
+            accrual_start_date=date(2001, 1, 1),
             first_payment_date=date(2001, 7, 1),
             accrual_size=10,
-            accrual_calculation_model=AccrualCalculationModel.objects.get(pk=AccrualCalculationModel.ISMA_30_360_NO_EOM),
+            accrual_calculation_model=AccrualCalculationModel.objects.get(
+                pk=AccrualCalculationModel.ISMA_30_360_NO_EOM),
             periodicity=Periodicity.objects.get(pk=Periodicity.SEMI_ANNUALLY),
         ),
         AccrualCalculationSchedule(
-            accrual_start_date=date(2003, 2,1),
+            accrual_start_date=date(2003, 2, 1),
             first_payment_date=date(2004, 1, 1),
             accrual_size=20,
-            accrual_calculation_model=AccrualCalculationModel.objects.get(pk=AccrualCalculationModel.ISMA_30_360_NO_EOM),
+            accrual_calculation_model=AccrualCalculationModel.objects.get(
+                pk=AccrualCalculationModel.ISMA_30_360_NO_EOM),
             periodicity=Periodicity.objects.get(pk=Periodicity.ANNUALLY),
         ),
     ]
     i.maturity_date = date(2007, 2, 1)
     i.maturity_price = 100
+
+    sd = accruals[0].accrual_start_date - timedelta(days=4)
+    ed = i.maturity_date + timedelta(days=4)
+    cpn_date = sd
+    while cpn_date <= ed:
+        # _l.info('%s', cpn_date)
+        cpn_val, is_cpn = i.get_coupon(cpn_date=cpn_date, accruals=accruals)
+        if is_cpn:
+            _l.info('    %s, is_cpn=%s', cpn_val, is_cpn)
+        cpn_date += timedelta(days=1)
+
+    _l.info('get_future_coupons: %s', i.get_future_coupons(begin_date=date(2000, 1, 1), accruals=accruals))

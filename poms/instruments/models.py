@@ -652,51 +652,6 @@ class Instrument(NamedModel, FakeDeletableModel):
 
         return accrual.accrual_size * factor
 
-    def get_coupon(self, cpn_date, accruals=None):
-        accruals = self.get_accrual_calculation_schedules_all(accruals=accruals)
-
-        if cpn_date == self.maturity_date:
-            return self.maturity_price
-        elif cpn_date > self.maturity_date:
-            return 0.0
-
-        for accrual in accruals:
-            if accrual.accrual_start_date <= cpn_date < accrual.accrual_end_date:
-
-                periodicity = accrual.periodicity
-
-                k = 0
-                stop = False
-                d = None
-                while True:
-                    d = accrual.first_payment_date + periodicity.to_timedelta(i=k)
-                    if d >= accrual.accrual_end_date:
-                        stop = True
-                        d = accrual.accrual_end_date - timedelta(days=1)
-                    if d == cpn_date:
-                        pass
-                    if stop:
-                        break
-
-                    k += 1
-
-                _l.info('  [d]', d)
-
-
-                # accrual_start_date = models.DateField(default=date_now, verbose_name=ugettext_lazy('accrual start date'))
-                # accrual_end_date = None
-                # first_payment_date = models.DateField(default=date_now, verbose_name=ugettext_lazy('first payment date'))
-                # # TODO: is %
-                # accrual_size = models.FloatField(default=0.0, verbose_name=ugettext_lazy('accrual size'))
-                # accrual_calculation_model = models.ForeignKey(AccrualCalculationModel, on_delete=models.PROTECT,
-                #                                               verbose_name=ugettext_lazy('accrual calculation model'))
-                # periodicity = models.ForeignKey(Periodicity, on_delete=models.PROTECT, null=True, blank=True,
-                #                                 verbose_name=ugettext_lazy('periodicity'))
-                # periodicity_n = models.IntegerField(default=0, verbose_name=ugettext_lazy('periodicity n'))
-                # notes = models.TextField(blank=True, default='', verbose_name=ugettext_lazy('notes'))
-
-        return 0.0
-
     def get_future_accrual_payments(self, data=None, d0=None, v0=None, begin_date=None, accruals=None,
                                     principal_ccy_fx=1.0, accrual_ccy_fx=1.0):
         accruals = self.get_accrual_calculation_schedules_all(accruals=accruals)
@@ -758,6 +713,86 @@ class Instrument(NamedModel, FakeDeletableModel):
                     data.append((self.maturity_date, self.maturity_price))
             else:
                 data.append((self.maturity_date, self.maturity_price))
+
+        return data
+
+    def get_coupon(self, cpn_date, accruals=None):
+        accruals = self.get_accrual_calculation_schedules_all(accruals=accruals)
+
+        if cpn_date == self.maturity_date:
+            _l.info('  %s, d=%s', cpn_date == self.maturity_date, cpn_date,)
+            return self.maturity_price, True
+
+        elif cpn_date > self.maturity_date:
+            return 0.0, False
+
+        for accrual in accruals:
+            if accrual.accrual_start_date <= cpn_date < accrual.accrual_end_date:
+                periodicity = accrual.periodicity
+
+                prev_d = accrual.accrual_start_date
+                d = accrual.first_payment_date
+
+                # 3652058 == (date.max-date.min).days
+                for k in range(0, 3652058):
+                    if k > 0:
+                        d = accrual.first_payment_date + periodicity.to_timedelta(i=k)
+                        if d >= accrual.accrual_end_date:
+                            d = accrual.accrual_end_date - timedelta(days=1)
+
+                    if d == cpn_date:
+                        break
+
+                    if d >= accrual.accrual_end_date - timedelta(days=1):
+                        break
+
+                    prev_d = d
+
+                if d == cpn_date:
+                    _l.info('  %s, d=%s, prev_d=%s', d == cpn_date, d, prev_d)
+                    return 0.0, True
+
+
+                # accrual_start_date = models.DateField(default=date_now, verbose_name=ugettext_lazy('accrual start date'))
+                # accrual_end_date = None
+                # first_payment_date = models.DateField(default=date_now, verbose_name=ugettext_lazy('first payment date'))
+                # # TODO: is %
+                # accrual_size = models.FloatField(default=0.0, verbose_name=ugettext_lazy('accrual size'))
+                # accrual_calculation_model = models.ForeignKey(AccrualCalculationModel, on_delete=models.PROTECT,
+                #                                               verbose_name=ugettext_lazy('accrual calculation model'))
+                # periodicity = models.ForeignKey(Periodicity, on_delete=models.PROTECT, null=True, blank=True,
+                #                                 verbose_name=ugettext_lazy('periodicity'))
+                # periodicity_n = models.IntegerField(default=0, verbose_name=ugettext_lazy('periodicity n'))
+                # notes = models.TextField(blank=True, default='', verbose_name=ugettext_lazy('notes'))
+
+        return 0.0, False
+
+    def get_future_coupons(self, data=None, d0=None, v0=None, begin_date=None, accruals=None,
+                                    principal_ccy_fx=1.0, accrual_ccy_fx=1.0):
+        accruals = self.get_accrual_calculation_schedules_all(accruals=accruals)
+
+        if data is None:
+            data = []
+
+        if d0 is not None and v0 is not None:
+            data.append((d0, v0))
+
+        if begin_date is None:
+            if data:
+                d0, v0 = data[-1]
+                begin_date = d0
+            else:
+                begin_date = date.min
+
+        a_to_p_mul = None  # lazy
+
+        d = begin_date
+        td1 = timedelta(days=1)
+        while d <= self.maturity_date:
+            cpn_val, is_cpn = self.get_coupon(cpn_date=d, accruals=accruals)
+            if is_cpn:
+                data.append((d, cpn_val))
+            d += td1
 
         return data
 
