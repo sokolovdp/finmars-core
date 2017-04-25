@@ -891,7 +891,7 @@ if __name__ == "__main__":
 
     django.setup()
 
-    from poms.instruments.models import AccrualCalculationModel, Instrument
+    from poms.instruments.models import AccrualCalculationModel, Instrument, Periodicity, AccrualCalculationSchedule
 
     # print('1 -> ', coupon_accrual_factor(
     #     accrual_calculation_model=AccrualCalculationModel.NONE,
@@ -991,12 +991,63 @@ if __name__ == "__main__":
     #         break
     # print(401, date.min, date.max, count, datetime.utcnow() - s)
 
+    # i = Instrument.objects.get(pk=19)
+    # _l.debug('> instr_accrual: instr=%s', i.id)
+    # d = date(2016, 4, 7)
+    # instr_accrual = i.find_accrual(d)
+    # _l.debug('< instr_accrual: %s', instr_accrual)
+    # if instr_accrual:
+    #     _l.debug('> instr_accrual_accrued_price: instr=%s', i.id)
+    #     instr_accrual_accrued_price = i.get_accrued_price(d, accrual=instr_accrual)
+    #     _l.debug('< instr_accrual_accrued_price: %s', instr_accrual_accrued_price)
+
     i = Instrument.objects.get(pk=19)
-    _l.debug('> instr_accrual: instr=%s', i.id)
-    d = date(2016, 4, 7)
-    instr_accrual = i.find_accrual(d)
-    _l.debug('< instr_accrual: %s', instr_accrual)
-    if instr_accrual:
-        _l.debug('> instr_accrual_accrued_price: instr=%s', i.id)
-        instr_accrual_accrued_price = i.get_accrued_price(d, accrual=instr_accrual)
-        _l.debug('< instr_accrual_accrued_price: %s', instr_accrual_accrued_price)
+
+    accruals = [
+        AccrualCalculationSchedule(
+            accrual_start_date=date(2001,1,1),
+            first_payment_date=date(2001, 7, 1),
+            accrual_size=10,
+            accrual_calculation_model=AccrualCalculationModel.objects.get(pk=AccrualCalculationModel.ISMA_30_360_NO_EOM),
+            periodicity=Periodicity.objects.get(pk=Periodicity.SEMI_ANNUALLY),
+        ),
+        AccrualCalculationSchedule(
+            accrual_start_date=date(2003,1,1),
+            first_payment_date=date(2003, 7, 1),
+            accrual_size=20,
+            accrual_calculation_model=AccrualCalculationModel.objects.get(pk=AccrualCalculationModel.ISMA_30_360_NO_EOM),
+            periodicity=Periodicity.objects.get(pk=Periodicity.SEMI_ANNUALLY),
+        ),
+    ]
+    i.maturity_date = date(2005, 1, 1)
+    i.maturity_price = 100
+
+    sd = accruals[0].accrual_start_date - timedelta(days=4)
+    ed = i.maturity_date + timedelta(days=4)
+    cpn_date = sd
+    while cpn_date <= ed:
+        _l.info('%s', cpn_date)
+        cpn_val = i.get_coupon(cpn_date=cpn_date, accruals=accruals)
+        _l.info('  %s', cpn_val)
+        cpn_date += timedelta(days=1)
+
+
+
+    accruals = [
+        AccrualCalculationSchedule(
+            accrual_start_date=date(2001,1,1),
+            first_payment_date=date(2001, 7, 1),
+            accrual_size=10,
+            accrual_calculation_model=AccrualCalculationModel.objects.get(pk=AccrualCalculationModel.ISMA_30_360_NO_EOM),
+            periodicity=Periodicity.objects.get(pk=Periodicity.SEMI_ANNUALLY),
+        ),
+        AccrualCalculationSchedule(
+            accrual_start_date=date(2003, 2,1),
+            first_payment_date=date(2004, 1, 1),
+            accrual_size=20,
+            accrual_calculation_model=AccrualCalculationModel.objects.get(pk=AccrualCalculationModel.ISMA_30_360_NO_EOM),
+            periodicity=Periodicity.objects.get(pk=Periodicity.ANNUALLY),
+        ),
+    ]
+    i.maturity_date = date(2007, 2, 1)
+    i.maturity_price = 100

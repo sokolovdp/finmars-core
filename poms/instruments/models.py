@@ -1,5 +1,6 @@
 from __future__ import unicode_literals
 
+import logging
 from datetime import date, timedelta
 
 from dateutil import relativedelta, rrule
@@ -21,6 +22,9 @@ from poms.obj_attrs.models import GenericAttribute
 from poms.obj_perms.models import GenericObjectPermission
 from poms.tags.models import TagLink
 from poms.users.models import MasterUser, Member
+
+
+_l = logging.getLogger('poms.instruments')
 
 
 class InstrumentClass(AbstractClassModel):
@@ -648,24 +652,36 @@ class Instrument(NamedModel, FakeDeletableModel):
 
         return accrual.accrual_size * factor
 
-    def get_coupon(self, cpn_date, accruals=None, accrual=None):
+    def get_coupon(self, cpn_date, accruals=None):
         accruals = self.get_accrual_calculation_schedules_all(accruals=accruals)
 
         if cpn_date == self.maturity_date:
             return self.maturity_price
+        elif cpn_date > self.maturity_date:
+            return 0.0
 
         for accrual in accruals:
             if accrual.accrual_start_date <= cpn_date < accrual.accrual_end_date:
-                pass
 
                 periodicity = accrual.periodicity
 
-                d1 = accrual.first_payment_date
                 k = 0
-                while (d1 + periodicity.to_timedelta(i=k)) < accrual.accrual_end_date:
+                stop = False
+                d = None
+                while True:
+                    d = accrual.first_payment_date + periodicity.to_timedelta(i=k)
+                    if d >= accrual.accrual_end_date:
+                        stop = True
+                        d = accrual.accrual_end_date - timedelta(days=1)
+                    if d == cpn_date:
+                        pass
+                    if stop:
+                        break
+
                     k += 1
 
-                d1 = periodicity.to_timedelta(i=k - 1)
+                _l.info('  [d]', d)
+
 
                 # accrual_start_date = models.DateField(default=date_now, verbose_name=ugettext_lazy('accrual start date'))
                 # accrual_end_date = None
