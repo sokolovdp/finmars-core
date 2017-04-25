@@ -1122,17 +1122,25 @@ class ReportItem(BaseReportItem):
 
             try:
                 self.pos_return_res = (self.principal_opened_res + self.carry_opened_res) \
-                                      / self.principal_invested_res / self.instr_pricing_ccy_cur_fx
+                                      / -self.principal_invested_res
             except ArithmeticError:
                 self.pos_return_res = 0
-            self.pos_return_loc = self.pos_return_res * res_to_loc_fx
-
+            try:
+                self.pos_return_loc = (self.principal_opened_loc + self.carry_opened_loc) \
+                                      / -self.principal_invested_loc
+            except ArithmeticError:
+                self.pos_return_loc = 0
+                
             try:
                 self.net_pos_return_res = (self.principal_opened_res + self.carry_opened_res + self.overheads_opened_res) \
-                                          / self.principal_invested_res
+                                          / -self.principal_invested_res
             except ArithmeticError:
                 self.net_pos_return_res = 0.0
-            self.net_pos_return_loc = self.net_pos_return_res * res_to_loc_fx
+            try:
+                self.net_pos_return_loc = (self.principal_opened_loc + self.carry_opened_loc + self.overheads_opened_loc) \
+                                          / -self.principal_invested_loc
+            except ArithmeticError:
+                self.net_pos_return_loc = 0.0
 
             if self.instr:
                 # YTM/Duration - берем price из price history на дату репорта.
