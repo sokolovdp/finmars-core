@@ -610,11 +610,12 @@ class Instrument(NamedModel, FakeDeletableModel):
     def get_accrued_price(self, price_date, accruals=None, accrual=None):
         from poms.common.formula_accruals import coupon_accrual_factor
         if price_date >= self.maturity_date:
-            return self.maturity_price
+            # return self.maturity_price
+            return 0.0
         if accrual is None:
             accrual = self.find_accrual(price_date, accruals=accruals)
         if accrual is None:
-            return None
+            return 0.0
         factor = coupon_accrual_factor(accrual_calculation_schedule=accrual,
                                        dt1=accrual.accrual_start_date,
                                        dt2=price_date,
