@@ -374,6 +374,71 @@ def coupon_accrual_factor(
 
 
 def get_coupon(accrual_calculation_model):
+    # accruals = [
+    #     {
+    #         'accrual_start_date': '2001-01-01',
+    #         'first_payment_date': '2001-07-01',
+    #         'accrual_size': 10,
+    #         'accrual_calculation_model': 'ISMA_30_360_NO_EOM',
+    #         'periodicity': 'SEMI_ANNUALLY',
+    #     },
+    #     {
+    #         'accrual_start_date': '2003-01-01',
+    #         'first_payment_date': '2003-07-01',
+    #         'accrual_size': 20,
+    #         'accrual_calculation_model': 'ISMA_30_360_NO_EOM',
+    #         'periodicity':'SEMI_ANNUALLY',
+    #     }
+    # ]
+    # maturity_date = '2005-01-01'
+    # maturity_price = 100
+    # cpns = (
+    #     '2001-07-01', 5, # used accrual[0], first_payment_date
+    #     '2002-01-01', 5, # used accrual[0], first_payment_date + interval
+    #     '2002-07-01', 5, # used accrual[0], first_payment_date + interval * 2
+    #     '2003-01-01', 5, # used accrual[0], first_payment_date + interval * 3
+    #
+    #     '2003-07-01', 10, # used accrual[1], first_payment_date
+    #     '2004-01-01', 10, # used accrual[1], first_payment_date + interval
+    #     '2004-07-01', 10, # used accrual[1], first_payment_date + interval * 2
+    #
+    #     '2005-01-01', 100, # maturity_date, maturity_price
+    # )
+    #
+    #
+    #
+    # accruals = [
+    #     {
+    #         'accrual_start_date': '2001-01-01',
+    #         'first_payment_date': '2001-07-01',
+    #         'accrual_size': 10,
+    #         'accrual_calculation_model': 'ISMA_30_360_NO_EOM',
+    #         'periodicity': 'SEMI_ANNUALLY',
+    #     },
+    #     {
+    #         'accrual_start_date': '2003-02-01',
+    #         'first_payment_date': '2004-01-01',
+    #         'accrual_size': 20,
+    #         'accrual_calculation_model': 'ISMA_30_360_NO_EOM',
+    #         'periodicity':'ANNUALLY',
+    #     }
+    # ]
+    # maturity_date = '2007-02-01'
+    # maturity_price = 100
+    # cpns = (
+    #     '2001-07-01', 5, # used accrual[0], first_payment_date
+    #     '2002-01-01', 5, # used accrual[0], first_payment_date + interval
+    #     '2002-07-01', 5, # used accrual[0], first_payment_date + interval * 2
+    #     '2003-01-01', 5, # used accrual[0], first_payment_date + interval * 3
+    #
+    #     '2004-01-01', 20, # used accrual[1], first_payment_date
+    #     '2005-01-01', 20, # used accrual[1], first_payment_date + interval
+    #     '2006-01-01', 20, # used accrual[1], first_payment_date + interval * 2
+    #     '2007-01-01', 20, # used accrual[1], first_payment_date + interval * 2
+    #
+    #     '2007-02-01', 100, # maturity_date, maturity_price
+    # )
+
     # If Not CpnDate Then
     #     GetCoupon = 0
     #     Exit Function
