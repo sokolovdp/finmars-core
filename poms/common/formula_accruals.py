@@ -439,6 +439,36 @@ def get_coupon(accrual_calculation_model):
     #     '2007-02-01', 100, # maturity_date, maturity_price
     # )
 
+    # Пример 1
+    #
+    # '2001-07-01', 5, # used accrual[0], first_payment_date
+    # '2002-01-01', 5, # used accrual[0], first_payment_date + interval
+    # '2002-07-01', 5, # used accrual[0], first_payment_date + interval * 2
+    # '2002-12-31', 4.9.., #
+    #
+    # '2003-07-01', 10, # used accrual[1], first_payment_date
+    # '2004-01-01', 10, # used accrual[1], first_payment_date + interval
+    # '2004-07-01', 10, # used accrual[1], first_payment_date + interval * 2
+    # '2005-07-01', 10,
+    #
+    # '2005-01-01', 100, # maturity_date, maturity_price
+    #
+    # Пример 2
+    #
+    # '2001-07-01', 5, # used accrual[0], first_payment_date
+    # '2002-01-01', 5, # used accrual[0], first_payment_date + interval
+    # '2002-07-01', 5, # used accrual[0], first_payment_date + interval * 2
+    # '2003-01-01', 5, # used accrual[0], first_payment_date + interval * 3
+    # '2003-01-31', 5*1/6,
+    #
+    # '2004-01-01', 20*11/12, # used accrual[1], first_payment_date
+    # '2005-01-01', 20, # used accrual[1], first_payment_date + interval
+    # '2006-01-01', 20, # used accrual[1], first_payment_date + interval * 2
+    # '2007-01-01', 20, # used accrual[1], first_payment_date + interval * 2
+    # '2007-02-01', 20*1/12,
+    #
+    # '2007-02-01', 100, # maturity_date, maturity_price
+
     # If Not CpnDate Then
     #     GetCoupon = 0
     #     Exit Function
