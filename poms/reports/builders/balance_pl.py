@@ -494,7 +494,7 @@ class ReportBuilder(BaseReportBuilder):
                 trn.is_hidden = True
 
                 trn1, trn2 = trn.fx_transfer_clone(trn_cls_out=self._trn_cls_cash_out,
-                                                   trn_cls_in=self._trn_cls_cash_out)
+                                                   trn_cls_in=self._trn_cls_cash_in)
                 res.append(trn1)
                 res.append(trn2)
 
