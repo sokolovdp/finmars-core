@@ -1010,6 +1010,10 @@ class ReportItem(BaseReportItem):
         # if self.type == ReportItem.TYPE_CURRENCY or self.type == ReportItem.TYPE_INVESTED_CURRENCY:
         if self.type == ReportItem.TYPE_CURRENCY:
             self.market_value_res = self.pos_size * self.ccy_cur_fx
+            self.market_value_loc = self.market_value_res * res_to_loc_fx
+
+            self.exposure_res = self.market_value_res
+            self.exposure_loc = self.market_value_loc
 
         elif self.type == ReportItem.TYPE_INSTRUMENT:
             if self.instr:
@@ -1039,6 +1043,7 @@ class ReportItem(BaseReportItem):
             self.exposure_loc = self.exposure_res * res_to_loc_fx
 
             self.market_value_res = self.instr_principal_res + self.instr_accrued_res
+            self.market_value_loc = self.market_value_res * res_to_loc_fx
 
             # self.total_unreal_res = self.market_value_res + self.cost_res
 
