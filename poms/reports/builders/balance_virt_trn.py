@@ -767,8 +767,8 @@ class VirtualTransaction(BaseReportItem):
             self.principal_fx_res = self.principal_res
             self.principal_fx_closed_res = self.principal_res
 
-        elif self.trn_cls.id in [TransactionClass.CASH_INFLOW, TransactionClass.CASH_OUTFLOW]:
             self.mismatch = 0.0
+
         else:
             self.mismatch = self.cash - self.total
 
