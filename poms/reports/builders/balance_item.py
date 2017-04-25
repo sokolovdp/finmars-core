@@ -1002,6 +1002,11 @@ class ReportItem(BaseReportItem):
     #         self.pos_size += o.pos_size
 
     def close(self):
+        try:
+            res_to_loc_fx = 1.0 / self.pricing_ccy_cur_fx
+        except ArithmeticError:
+            res_to_loc_fx = 0.0
+
         # if self.type == ReportItem.TYPE_CURRENCY or self.type == ReportItem.TYPE_INVESTED_CURRENCY:
         if self.type == ReportItem.TYPE_CURRENCY:
             self.market_value_res = self.pos_size * self.ccy_cur_fx
@@ -1031,6 +1036,7 @@ class ReportItem(BaseReportItem):
                 self.instr_accrual_accrued_price = 0.0
 
             self.exposure_res = self.instr_principal_res + self.instr_accrued_res
+            self.exposure_loc = self.exposure_res * res_to_loc_fx
 
             self.market_value_res = self.instr_principal_res + self.instr_accrued_res
 
@@ -1107,16 +1113,26 @@ class ReportItem(BaseReportItem):
             # ------------------
             # Other
             # ------------------
+            self.gross_cost_res = -self.gross_cost_res
+            self.gross_cost_loc = self.gross_cost_res * res_to_loc_fx
+            self.net_cost_res = -self.net_cost_res
+            self.net_cost_loc = self.net_cost_res * res_to_loc_fx
+            self.principal_invested_loc = self.principal_invested_res * res_to_loc_fx
+            self.amount_invested_loc = self.amount_invested_res * res_to_loc_fx
+
             try:
-                self.pos_return_res = (self.principal_opened_res + self.carry_opened_res) / \
-                                      self.principal_invested_res / self.instr_pricing_ccy_cur_fx
+                self.pos_return_res = (self.principal_opened_res + self.carry_opened_res) \
+                                      / self.principal_invested_res / self.instr_pricing_ccy_cur_fx
             except ArithmeticError:
                 self.pos_return_res = 0
+            self.pos_return_loc = self.pos_return_res * res_to_loc_fx
+
             try:
-                self.net_pos_return_res = (
-                                              self.principal_opened_res + self.carry_opened_res + self.overheads_opened_res) / self.principal_invested_res
+                self.net_pos_return_res = (self.principal_opened_res + self.carry_opened_res + self.overheads_opened_res) \
+                                          / self.principal_invested_res
             except ArithmeticError:
                 self.net_pos_return_res = 0.0
+            self.net_pos_return_loc = self.net_pos_return_res * res_to_loc_fx
 
             if self.instr:
                 # YTM/Duration - берем price из price history на дату репорта.
@@ -1143,16 +1159,16 @@ class ReportItem(BaseReportItem):
                     #  = (Current Price - Gross Cost Price) / Gross Cost Price, if Time Invested in days= 1 day
                     # self.pricing()
                     try:
-                        self.daily_price_change = (
-                                                      self.instr_price_cur_principal_price - self.gross_cost_loc) / self.gross_cost_loc
+                        self.daily_price_change = (self.instr_price_cur_principal_price - self.gross_cost_loc) \
+                                                  / self.gross_cost_loc
                     except ArithmeticError:
                         self.daily_price_change = 0.0
                 else:
                     #  = (Current Price at T -  Price from Price History at T-1) / (Price from Price History at T-1) , if Time Invested > 1 day
                     price_yest = self.pricing_provider[self.instr, self.report.report_date - timedelta(days=1)]
                     try:
-                        self.daily_price_change = (
-                                                      self.instr_price_cur_principal_price - price_yest.principal_price) / price_yest.principal_price
+                        self.daily_price_change = (self.instr_price_cur_principal_price - price_yest.principal_price) \
+                                                  / price_yest.principal_price
                     except ArithmeticError:
                         self.daily_price_change = 0.0
 
@@ -1161,17 +1177,17 @@ class ReportItem(BaseReportItem):
                     # T - report date
                     #  = (Current Price - Gross Cost Price) / Gross Cost Price, if Time Invested in days <= Day(Report Date)
                     try:
-                        self.mtd_price_change = (
-                                                    self.instr_price_cur_principal_price - self.gross_cost_loc) / self.gross_cost_loc
+                        self.mtd_price_change = (self.instr_price_cur_principal_price - self.gross_cost_loc) \
+                                                / self.gross_cost_loc
                     except ArithmeticError:
                         self.mtd_price_change = 0.0
                 else:
-                    #  = (Current Price -  Price from Price History at end_of_previous_month (Report Date)) / (Price from Price History at end_of_previous_month (Report Date)) , if Time Invested > Day(Report Date)
+                    # = (Current Price -  Price from Price History at end_of_previous_month (Report Date)) / (Price from Price History at end_of_previous_month (Report Date)) , if Time Invested > Day(Report Date)
                     price_eom = self.pricing_provider[
                         self.instr, self.report.report_date - timedelta(days=self.report.report_date.day)]
                     try:
-                        self.mtd_price_change = (
-                                                    self.instr_price_cur_principal_price - price_eom.principal_price) / price_eom.principal_price
+                        self.mtd_price_change = (self.instr_price_cur_principal_price - price_eom.principal_price) \
+                                                / price_eom.principal_price
                     except ArithmeticError:
                         self.mtd_price_change = 0.0
 
@@ -1203,21 +1219,7 @@ class ReportItem(BaseReportItem):
 
         # values in pricing ccy ---
 
-        try:
-            res_to_loc_fx = 1.0 / self.pricing_ccy_cur_fx
-        except ArithmeticError:
-            res_to_loc_fx = 0.0
-
         self.market_value_loc = self.market_value_res * res_to_loc_fx
-        self.exposure_loc = self.exposure_res * res_to_loc_fx
-        self.gross_cost_res = -self.gross_cost_res
-        self.gross_cost_loc = self.gross_cost_res * res_to_loc_fx
-        self.net_cost_res = -self.net_cost_res
-        self.net_cost_loc = self.net_cost_res * res_to_loc_fx
-        self.principal_invested_loc = self.principal_invested_res * res_to_loc_fx
-        self.amount_invested_loc = self.amount_invested_res * res_to_loc_fx
-        self.pos_return_loc = self.pos_return_res * res_to_loc_fx
-        self.net_pos_return_loc = self.net_pos_return_res * res_to_loc_fx
 
         # # p & l
         # self.principal_loc = self.principal_res * res_to_loc_fx
