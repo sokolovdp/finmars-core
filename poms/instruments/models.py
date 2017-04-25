@@ -622,6 +622,9 @@ class Instrument(NamedModel, FakeDeletableModel):
                                        dt3=accrual.first_payment_date)
         return accrual.accrual_size * factor
 
+    def get_coupon(self, cpn_date, accruals=None, accrual=None):
+        return 0.0
+
     def get_future_accrual_payments(self, data=None, d0=None, v0=None, begin_date=None, accruals=None,
                                     principal_ccy_fx=1.0, accrual_ccy_fx=1.0):
         if accruals is None:

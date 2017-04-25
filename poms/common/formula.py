@@ -319,81 +319,169 @@ def _simple_price(date, date1, value1, date2, value2):
     return 0.0
 
 
-def _get_instrument_accrued_price(evaluator, instrument, date):
+def _safe_get_instrument(evaluator, instrument):
     from poms.users.utils import get_master_user_from_context, get_member_from_context
     from poms.instruments.models import Instrument
     from poms.obj_perms.utils import obj_perms_filter_objects, get_view_perms
 
+    if isinstance(instrument, Instrument):
+        return instrument
+
+    context = evaluator.context
+
+    if context is None:
+        raise InvalidExpression('Context must be specified')
+
+    pk = None
+    user_code = None
+
+    if isinstance(instrument, dict):
+        pk = int(instrument['id'])
+
+    elif isinstance(instrument, (int, float)):
+        pk = int(instrument)
+
+    elif isinstance(instrument, str):
+        user_code = instrument
+
+    if id is None and user_code is None:
+        raise ExpressionEvalError('Invalid instrument')
+
+    if pk is not None:
+        instrument = context.get(('_instrument_get_accrued_price', pk, None), None)
+
+    elif user_code is not None:
+        instrument = context.get(('_instrument_get_accrued_price', None, user_code), None)
+
+    if instrument is None:
+        master_user = get_master_user_from_context(context)
+        member = get_member_from_context(context)
+
+        if master_user is None:
+            raise ExpressionEvalError('master user in context does not find')
+
+        instrument_qs = Instrument.objects.filter(master_user=master_user)
+        instrument_qs = obj_perms_filter_objects(member, get_view_perms(Instrument), instrument_qs)
+
+        try:
+            if pk is not None:
+                instrument = instrument_qs.get(pk=pk)
+
+            elif user_code is not None:
+                instrument = instrument_qs.get(user_code=user_code)
+
+        except Instrument.DoesNotExist:
+            raise ExpressionEvalError()
+
+        context[('_instrument_get_accrued_price', instrument.pk, None)] = instrument
+        context[('_instrument_get_accrued_price', None, instrument.user_code)] = instrument
+
+        return instrument
+
+    raise ExpressionEvalError('Instrument does not find')
+
+
+def _get_instrument_accrued_price(evaluator, instrument, date):
+    # from poms.users.utils import get_master_user_from_context, get_member_from_context
+    # from poms.instruments.models import Instrument
+    # from poms.obj_perms.utils import obj_perms_filter_objects, get_view_perms
+
     if instrument is None or date is None:
         return 0.0
 
-    if isinstance(instrument, Instrument):
-        pass
-    else:
-        context = evaluator.context
-        if context is None:
-            raise InvalidExpression('context must be defined')
+    # if isinstance(instrument, Instrument):
+    #     pass
+    # else:
+    #     context = evaluator.context
+    #     if context is None:
+    #         raise InvalidExpression('context must be defined')
+    #
+    #     pk = None
+    #     user_code = None
+    #     if isinstance(instrument, dict):
+    #         pk = instrument['id']
+    #     elif isinstance(instrument, (int, float)):
+    #         pk = int(instrument)
+    #     elif isinstance(instrument, str):
+    #         user_code = instrument
+    #
+    #     if id is None and user_code is None:
+    #         raise ExpressionEvalError()
+    #
+    #     master_user = get_master_user_from_context(context)
+    #     if master_user is None:
+    #         return 0.0
+    #     instrument_qs = Instrument.objects.filter(master_user=master_user)
+    #
+    #     # if evaluator.imperial_mode:
+    #     #     pass
+    #     # else:
+    #     #     member = get_member_from_context(context)
+    #     #     if member is None:
+    #     #         return 0.0
+    #     #     instrument_qs = obj_perms_filter_objects(member, get_view_perms(Instrument), instrument_qs)
+    #     member = get_member_from_context(context)
+    #     instrument_qs = obj_perms_filter_objects(member, get_view_perms(Instrument), instrument_qs)
+    #
+    #     if pk is not None:
+    #         instrument = context.get(('_instrument_get_accrued_price', pk, None), None)
+    #     elif user_code is not None:
+    #         instrument = context.get(('_instrument_get_accrued_price', None, user_code), None)
+    #     # else:
+    #     #     raise ExpressionEvalError()
+    #     if instrument is None:
+    #         try:
+    #             if pk is not None:
+    #                 instrument = instrument_qs.get(pk=pk)
+    #             elif user_code is not None:
+    #                 instrument = instrument_qs.get(user_code=user_code)
+    #             if instrument is not None:
+    #                 context[('_instrument_get_accrued_price', instrument.pk, None)] = instrument
+    #                 context[('_instrument_get_accrued_price', None, instrument.user_code)] = instrument
+    #         except Instrument.DoesNotExist:
+    #             raise ExpressionEvalError()
+    #
+    # if instrument is None:
+    #     raise ExpressionEvalError()
 
-        pk = None
-        user_code = None
-        if isinstance(instrument, dict):
-            pk = instrument['id']
-        elif isinstance(instrument, (int, float)):
-            pk = int(instrument)
-        elif isinstance(instrument, str):
-            user_code = instrument
-
-        if id is None and user_code is None:
-            raise ExpressionEvalError()
-
-        master_user = get_master_user_from_context(context)
-        if master_user is None:
-            return 0.0
-        instrument_qs = Instrument.objects.filter(master_user=master_user)
-
-        # if evaluator.imperial_mode:
-        #     pass
-        # else:
-        #     member = get_member_from_context(context)
-        #     if member is None:
-        #         return 0.0
-        #     instrument_qs = obj_perms_filter_objects(member, get_view_perms(Instrument), instrument_qs)
-        member = get_member_from_context(context)
-        instrument_qs = obj_perms_filter_objects(member, get_view_perms(Instrument), instrument_qs)
-
-        if pk is not None:
-            instrument = context.get(('_instrument_get_accrued_price', pk, None), None)
-        elif user_code is not None:
-            instrument = context.get(('_instrument_get_accrued_price', None, user_code), None)
-        # else:
-        #     raise ExpressionEvalError()
-        if instrument is None:
-            try:
-                if pk is not None:
-                    instrument = instrument_qs.get(pk=pk)
-                elif user_code is not None:
-                    instrument = instrument_qs.get(user_code=user_code)
-                if instrument is not None:
-                    context[('_instrument_get_accrued_price', instrument.pk, None)] = instrument
-                    context[('_instrument_get_accrued_price', None, instrument.user_code)] = instrument
-            except Instrument.DoesNotExist:
-                raise ExpressionEvalError()
-
-    if instrument is None:
-        raise ExpressionEvalError()
+    instrument = _safe_get_instrument(evaluator, instrument)
 
     if isinstance(date, str):
         date = _parse_date(date)
+
     if not isinstance(date, datetime.date):
         date = _parse_date(str(date))
 
     val = instrument.get_accrued_price(date)
+
     if val is None:
         val = 0.0
     return val
 
 
 _get_instrument_accrued_price.evaluator = True
+
+
+def _get_instrument_coupon(evaluator, instrument, date):
+    if instrument is None or date is None:
+        return 0.0
+
+    instrument = _safe_get_instrument(evaluator, instrument)
+
+    if isinstance(date, str):
+        date = _parse_date(date)
+
+    if not isinstance(date, datetime.date):
+        date = _parse_date(str(date))
+
+    val = instrument.get_coupon(date)
+
+    if val is None:
+        val = 0.0
+    return val
+
+
+_get_instrument_coupon.evaluator = True
 
 
 def _simple_group(val, ranges, default=None):
@@ -675,6 +763,7 @@ FUNCTIONS = [
 
     SimpleEval2Def('simple_price', _simple_price),
     SimpleEval2Def('get_instrument_accrued_price', _get_instrument_accrued_price),
+    SimpleEval2Def('get_instrument_coupon', _get_instrument_coupon),
 
     SimpleEval2Def('find_name', _find_name),
 
