@@ -3091,7 +3091,8 @@ class ReportTestCase(TestCase):
             'overheads_fixed_closed_loc', 'total_fixed_closed_loc', 'principal_fixed_opened_res',
             'carry_fixed_opened_res', 'overheads_fixed_opened_res', 'total_fixed_opened_res',
             'principal_fixed_opened_loc', 'carry_fixed_opened_loc', 'overheads_fixed_opened_loc',
-            'total_fixed_opened_loc', 'group_code', 'detail_trn'
+            'total_fixed_opened_loc', 'group_code', 'detail_trn',
+            'user_code', 'name',
         ]
 
         # trn_cols = self.TRN_COLS_ALL
@@ -3223,6 +3224,6 @@ class ReportTestCase(TestCase):
         _l.warn('write results')
         self._write_results(balance_reports, '%s_balance.xlsx' % test_prefix,
                             trn_cols=trn_cols, item_cols=item_cols)
-        self._write_results(pl_reports, '%s_pl_report.xlsx' % test_prefix,
-                            trn_cols=trn_cols, item_cols=item_cols)
+        # self._write_results(pl_reports, '%s_pl_report.xlsx' % test_prefix,
+        #                     trn_cols=trn_cols, item_cols=item_cols)
         pass
