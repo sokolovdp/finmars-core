@@ -281,6 +281,7 @@ class ReportTestCase(TestCase):
         'trn_cls',
         'instr',
         'trn_ccy',
+        'pricing_ccy',
         'notes',
         'stl_ccy',
         'pos_size',
@@ -361,6 +362,9 @@ class ReportTestCase(TestCase):
         'weighted_time_invested',
         'cash_res',
         'total',
+
+        'pl_fx_mul',
+        'pl_fixed_mul',
         'principal_res',
         'carry_res',
         'overheads_res',
@@ -373,7 +377,6 @@ class ReportTestCase(TestCase):
         'carry_opened_res',
         'overheads_opened_res',
         'total_opened_res',
-        'pl_fx_mul',
         'principal_fx_res',
         'carry_fx_res',
         'overheads_fx_res',
@@ -386,7 +389,6 @@ class ReportTestCase(TestCase):
         'carry_fx_opened_res',
         'overheads_fx_opened_res',
         'total_fx_opened_res',
-        'pl_fixed_mul',
         'principal_fixed_res',
         'carry_fixed_res',
         'overheads_fixed_res',
@@ -399,7 +401,46 @@ class ReportTestCase(TestCase):
         'carry_fixed_opened_res',
         'overheads_fixed_opened_res',
         'total_fixed_opened_res',
-    ]
+
+        'pl_fx_mul_loc',
+        'pl_fixed_mul_loc',
+        'principal_loc',
+        'carry_loc',
+        'overheads_loc',
+        'total_loc',
+        'principal_closed_loc',
+        'carry_closed_loc',
+        'overheads_closed_loc',
+        'total_closed_loc',
+        'principal_opened_loc',
+        'carry_opened_loc',
+        'overheads_opened_loc',
+        'total_opened_loc',
+        'principal_fx_loc',
+        'carry_fx_loc',
+        'overheads_fx_loc',
+        'total_fx_loc',
+        'principal_fx_closed_loc',
+        'carry_fx_closed_loc',
+        'overheads_fx_closed_loc',
+        'total_fx_closed_loc',
+        'principal_fx_opened_loc',
+        'carry_fx_opened_loc',
+        'overheads_fx_opened_loc',
+        'total_fx_opened_loc',
+        'pl_fixed_mul',
+        'principal_fixed_loc',
+        'carry_fixed_loc',
+        'overheads_fixed_loc',
+        'total_fixed_loc',
+        'principal_fixed_closed_loc',
+        'carry_fixed_closed_loc',
+        'overheads_fixed_closed_loc',
+        'total_fixed_closed_loc',
+        'principal_fixed_opened_loc',
+        'carry_fixed_opened_loc',
+        'overheads_fixed_opened_loc',
+        'total_fixed_opened_loc',    ]
 
     TRN_COLS_MINI = [
         # 'is_cloned',
@@ -3054,6 +3095,7 @@ class ReportTestCase(TestCase):
         ]
 
         # trn_cols = self.TRN_COLS_ALL
+        # item_cols = self.ITEM_COLS_ALL
 
         # trn_cols = [x for x in trn_cols if x not in
         #             {'rolling_pos_size', 'remaining_pos_size', 'remaining_pos_size_percent', 'trn_date', 'str2_pos',

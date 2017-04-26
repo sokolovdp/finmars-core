@@ -71,7 +71,8 @@ class InstrumentPricingProvider(AbstractProvider):
         ).filter(
             Q(date__in=dates) | Q(date__in=transaction_queryset.values_list('accounting_date', flat=True))
         ).filter(
-            Q(instrument__in=transaction_queryset.values_list('instrument', flat=True))
+            Q(instrument__in=transaction_queryset.values_list('instrument', flat=True)) |
+            Q(instrument__in=transaction_queryset.values_list('linked_instrument', flat=True))
         )
 
         for h in qs:
@@ -127,7 +128,9 @@ class CurrencyFxRateProvider(AbstractProvider):
             Q(currency__in=transaction_queryset.values_list('transaction_currency', flat=True)) |
             Q(currency__in=transaction_queryset.values_list('settlement_currency', flat=True)) |
             Q(currency__in=transaction_queryset.values_list('instrument__pricing_currency', flat=True)) |
-            Q(currency__in=transaction_queryset.values_list('instrument__accrued_currency', flat=True))
+            Q(currency__in=transaction_queryset.values_list('instrument__accrued_currency', flat=True)) |
+            Q(currency__in=transaction_queryset.values_list('linked_instrument__pricing_currency', flat=True)) |
+            Q(currency__in=transaction_queryset.values_list('linked_instrument__accrued_currency', flat=True))
         )
 
         for h in qs:

@@ -43,7 +43,8 @@ SERVER_EMAIL = '"AI-ADMIN: FinMars" <no-reply@finmars.com>'
 ADMINS = MANAGERS = [
     ['ailyukhin', 'ailyukhin@vitaminsoft.ru'],
 ]
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+# EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+EMAIL_BACKEND = 'django.core.mail.backends.dummy.EmailBackend'
 
 MEDIA_URL = '/api/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'tmp', 'media')

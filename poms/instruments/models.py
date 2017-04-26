@@ -1,5 +1,6 @@
 from __future__ import unicode_literals
 
+import logging
 from datetime import date, timedelta
 
 from dateutil import relativedelta, rrule
@@ -14,13 +15,16 @@ from django.utils.translation import ugettext, ugettext_lazy
 from mptt.models import MPTTModel
 
 from poms.common import formula
-from poms.common.formula_accruals import f_xirr
+from poms.common.formula_accruals import f_xirr, get_coupon
 from poms.common.models import NamedModel, AbstractClassModel, FakeDeletableModel
 from poms.common.utils import date_now, isclose
 from poms.obj_attrs.models import GenericAttribute
 from poms.obj_perms.models import GenericObjectPermission
 from poms.tags.models import TagLink
 from poms.users.models import MasterUser, Member
+
+
+_l = logging.getLogger('poms.instruments')
 
 
 class InstrumentClass(AbstractClassModel):
@@ -550,30 +554,50 @@ class Instrument(NamedModel, FakeDeletableModel):
             if old_event:
                 processed.append(old_event.id)
 
-    def get_accrual_calculation_schedules_all(self):
-        return sorted(self.accrual_calculation_schedules.all(), key=lambda x: x.accrual_start_date)
+    def get_accrual_calculation_schedules_all(self, accruals=None):
+        if accruals is None:
+            accruals = list(self.accrual_calculation_schedules.all())
+
+        if not accruals:
+            return accruals
+
+        if getattr(accruals[0], 'accrual_end_date', None) is not None:
+            # already configured
+            return accruals
+
+        accruals = sorted(accruals, key=lambda x: x.accrual_start_date)
+
+        a = None
+        for next_a in accruals:
+            if a is not None:
+                a.accrual_end_date = next_a.accrual_start_date
+            a = next_a
+        if a:
+            a.accrual_end_date = self.maturity_date
+
+        return accruals
 
     def find_accrual(self, d, accruals=None):
         if d >= self.maturity_date:
             return None
-        if accruals is None:
-            # # TODO: verify that use queryset cache
-            # accruals = self.accrual_calculation_schedules.select_related(
-            #     'periodicity', 'accrual_calculation_model'
-            # ).order_by('accrual_start_date').all()
-            accruals = self.get_accrual_calculation_schedules_all()
+
+        accruals = self.get_accrual_calculation_schedules_all(accruals=accruals)
+
         accrual = None
         for a in accruals:
             if a.accrual_start_date <= d:
                 accrual = a
+
         return accrual
 
     def calculate_prices_accrued_price(self, begin_date=None, end_date=None):
-        # accruals = [a for a in self.accrual_calculation_schedules.order_by('accrual_start_date')]
         accruals = self.get_accrual_calculation_schedules_all()
+
         if not accruals:
             return
+
         existed_prices = PriceHistory.objects.filter(instrument=self, date__range=(begin_date, end_date))
+
         if begin_date is None and end_date is None:
             # used from admin
             for price in existed_prices:
@@ -584,6 +608,7 @@ class Instrument(NamedModel, FakeDeletableModel):
                     accrued_price = 0.0
                 price.accrued_price = accrued_price
                 price.save(update_fields=['accrued_price'])
+
         else:
             existed_prices = {(p.pricing_policy_id, p.date): p for p in existed_prices}
             for pp in PricingPolicy.objects.filter(master_user=self.master_user):
@@ -609,22 +634,27 @@ class Instrument(NamedModel, FakeDeletableModel):
 
     def get_accrued_price(self, price_date, accruals=None, accrual=None):
         from poms.common.formula_accruals import coupon_accrual_factor
+
         if price_date >= self.maturity_date:
-            return self.maturity_price
+            # return self.maturity_price
+            return 0.0
+
         if accrual is None:
             accrual = self.find_accrual(price_date, accruals=accruals)
+
         if accrual is None:
-            return None
+            return 0.0
+
         factor = coupon_accrual_factor(accrual_calculation_schedule=accrual,
                                        dt1=accrual.accrual_start_date,
                                        dt2=price_date,
                                        dt3=accrual.first_payment_date)
+
         return accrual.accrual_size * factor
 
     def get_future_accrual_payments(self, data=None, d0=None, v0=None, begin_date=None, accruals=None,
                                     principal_ccy_fx=1.0, accrual_ccy_fx=1.0):
-        if accruals is None:
-            accruals = self.get_accrual_calculation_schedules_all()
+        accruals = self.get_accrual_calculation_schedules_all(accruals=accruals)
 
         if data is None:
             data = []
@@ -639,13 +669,13 @@ class Instrument(NamedModel, FakeDeletableModel):
             else:
                 begin_date = date.min
 
-        a = None
-        for next_a in accruals:
-            if a is not None:
-                a.accrual_end_date = next_a.accrual_start_date
-            a = next_a
-        if a:
-            a.accrual_end_date = self.maturity_date
+        # a = None
+        # for next_a in accruals:
+        #     if a is not None:
+        #         a.accrual_end_date = next_a.accrual_start_date
+        #     a = next_a
+        # if a:
+        #     a.accrual_end_date = self.maturity_date
 
         a_to_p_mul = None  # lazy
 
@@ -683,6 +713,73 @@ class Instrument(NamedModel, FakeDeletableModel):
                     data.append((self.maturity_date, self.maturity_price))
             else:
                 data.append((self.maturity_date, self.maturity_price))
+
+        return data
+
+    def get_coupon(self, cpn_date, accruals=None):
+        accruals = self.get_accrual_calculation_schedules_all(accruals=accruals)
+
+        if cpn_date == self.maturity_date:
+            # _l.info('  %s, d=%s', cpn_date == self.maturity_date, cpn_date,)
+            return self.maturity_price, True
+
+        elif cpn_date > self.maturity_date:
+            return 0.0, False
+
+        for accrual in accruals:
+            if accrual.accrual_start_date <= cpn_date < accrual.accrual_end_date:
+                periodicity = accrual.periodicity
+
+                prev_d = accrual.accrual_start_date
+                d = accrual.first_payment_date
+
+                # 3652058 == (date.max-date.min).days
+                for k in range(0, 3652058):
+                    if k > 0:
+                        d = accrual.first_payment_date + periodicity.to_timedelta(i=k)
+                        if d >= accrual.accrual_end_date:
+                            d = accrual.accrual_end_date - timedelta(days=1)
+
+                    if d == cpn_date:
+                        break
+
+                    if d >= accrual.accrual_end_date - timedelta(days=1):
+                        break
+
+                    prev_d = d
+
+                if d == cpn_date:
+                    # _l.info('  %s, d=%s, prev_d=%s', d == cpn_date, d, prev_d)
+                    return get_coupon(accrual, prev_d, d, maturity_date=self.maturity_date), True
+
+        return 0.0, False
+
+    def get_future_coupons(self, data=None, d0=None, v0=None, begin_date=None, accruals=None,
+                                    principal_ccy_fx=1.0, accrual_ccy_fx=1.0):
+        accruals = self.get_accrual_calculation_schedules_all(accruals=accruals)
+
+        if data is None:
+            data = []
+
+        if d0 is not None and v0 is not None:
+            data.append((d0, v0))
+
+        if begin_date is None:
+            if data:
+                d0, v0 = data[-1]
+                begin_date = d0
+            else:
+                begin_date = date.min
+
+        a_to_p_mul = None  # lazy
+
+        d = begin_date
+        td1 = timedelta(days=1)
+        while d <= self.maturity_date:
+            cpn_val, is_cpn = self.get_coupon(cpn_date=d, accruals=accruals)
+            if is_cpn:
+                data.append((d, cpn_val))
+            d += td1
 
         return data
 

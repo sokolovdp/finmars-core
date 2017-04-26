@@ -494,7 +494,7 @@ class ReportBuilder(BaseReportBuilder):
                 trn.is_hidden = True
 
                 trn1, trn2 = trn.fx_transfer_clone(trn_cls_out=self._trn_cls_cash_out,
-                                                   trn_cls_in=self._trn_cls_cash_out)
+                                                   trn_cls_in=self._trn_cls_cash_in)
                 res.append(trn1)
                 res.append(trn2)
 
@@ -572,7 +572,7 @@ class ReportBuilder(BaseReportBuilder):
                 t.balance_pos_size = balances[t_key]
                 t.sum_remaining_pos_size = remaining_positions[t_key]
                 try:
-                    t.multiplier = abs(t.sum_remaining_pos_size / t.balance_pos_size)
+                    t.multiplier = 1.0 - abs(t.sum_remaining_pos_size / t.balance_pos_size)
                 except ArithmeticError:
                     t.multiplier = 0.0
 
