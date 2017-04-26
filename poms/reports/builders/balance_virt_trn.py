@@ -491,7 +491,7 @@ class VirtualTransaction(BaseReportItem):
         else:
             self.pricing_ccy = self.report.report_currency
 
-        if self.pricing_ccy.id == self.report.report_currency:
+        if self.pricing_ccy.id == self.report.report_currency.id:
             self.pricing_ccy_cur = self.report_ccy_cur
             self.pricing_ccy_cur_fx = self.report_ccy_cur_fx
             self.pricing_ccy_cash_hist = self.report_ccy_cash_hist
