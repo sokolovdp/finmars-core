@@ -1064,6 +1064,9 @@ class GeneratedEvent(models.Model):
             return self.notification_date == now and notification_class.is_notify_on_notification_date
         return False
 
+    def is_notify_on_date(self, now=None):
+        return self.is_notify_on_effective_date(now) or self.is_notify_on_notification_date(now)
+
     def is_apply_default_on_effective_date(self, now=None):
         from poms.transactions.models import NotificationClass
         if self.status == GeneratedEvent.NEW:
@@ -1098,6 +1101,9 @@ class GeneratedEvent(models.Model):
             notification_class = self.event_schedule.notification_class
             return self.notification_date == now and notification_class.is_need_reaction_on_notification_date
         return False
+
+    def is_need_reaction_on_date(self, now=None):
+        return self.is_need_reaction_on_effective_date(now) or self.is_need_reaction_on_notification_date(now)
 
     def get_default_action(self, actions=None):
         if actions is None:

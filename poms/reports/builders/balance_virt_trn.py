@@ -706,36 +706,35 @@ class VirtualTransaction(BaseReportItem):
             #
             if not self.is_cloned and self.instr:
 
-                # if not isclose(self.pos_size, 0.0):
-                try:
-                    self.gross_cost_res = self.principal_res * self.ref_fx * \
-                                          (self.trn_ccy_cur_fx / self.instr_pricing_ccy_cur_fx) * \
-                                          (1.0 - self.multiplier) / self.pos_size / self.instr.price_multiplier
-                except ArithmeticError:
-                    self.gross_cost_res = 0.0
-
-                try:
-                    self.net_cost_res = (self.principal_res + self.overheads_res) * self.ref_fx * \
-                                        (self.trn_ccy_cur_fx / self.instr_pricing_ccy_cur_fx) * \
-                                        (1.0 - self.multiplier) / self.pos_size / self.instr.price_multiplier
-                except ArithmeticError:
-                    self.net_cost_res = 0.0
-
-                try:
-                    self.principal_invested_res = self.principal_res * self.ref_fx * \
-                                                  (self.trn_ccy_cur_fx / self.instr_pricing_ccy_cur_fx) * \
-                                                  (1.0 - self.multiplier)
-                except ArithmeticError:
-                    self.principal_invested_res = 0.0
-
-                try:
-                    self.amount_invested_res = self.total_res * self.ref_fx * \
-                                               (self.trn_ccy_cur_fx / self.instr_pricing_ccy_cur_fx) * \
-                                               (1.0 - self.multiplier)
-                except ArithmeticError:
-                    self.amount_invested_res = 0.0
-
                 if self.trn_cls.id in [TransactionClass.BUY, TransactionClass.SELL] and self.instr:
+                    try:
+                        self.gross_cost_res = self.principal_res * self.ref_fx * \
+                                              (self.trn_ccy_cur_fx / self.instr_pricing_ccy_cur_fx) * \
+                                              (1.0 - self.multiplier) / self.pos_size / self.instr.price_multiplier
+                    except ArithmeticError:
+                        self.gross_cost_res = 0.0
+
+                    try:
+                        self.net_cost_res = (self.principal_res + self.overheads_res) * self.ref_fx * \
+                                            (self.trn_ccy_cur_fx / self.instr_pricing_ccy_cur_fx) * \
+                                            (1.0 - self.multiplier) / self.pos_size / self.instr.price_multiplier
+                    except ArithmeticError:
+                        self.net_cost_res = 0.0
+
+                    try:
+                        self.principal_invested_res = self.principal_res * self.ref_fx * \
+                                                      (self.trn_ccy_cur_fx / self.instr_pricing_ccy_cur_fx) * \
+                                                      (1.0 - self.multiplier)
+                    except ArithmeticError:
+                        self.principal_invested_res = 0.0
+
+                    try:
+                        self.amount_invested_res = self.total_res * self.ref_fx * \
+                                                   (self.trn_ccy_cur_fx / self.instr_pricing_ccy_cur_fx) * \
+                                                   (1.0 - self.multiplier)
+                    except ArithmeticError:
+                        self.amount_invested_res = 0.0
+
                     try:
                         future_accrual_payments = self.instr.get_future_accrual_payments(
                             d0=self.acc_date,

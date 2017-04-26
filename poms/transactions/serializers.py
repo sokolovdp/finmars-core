@@ -1392,10 +1392,16 @@ class TransactionTypeProcessSerializer(serializers.Serializer):
             ci.transaction_type_input = ti
 
             if ti.value_type == TransactionTypeInput.STRING:
+                if val is None:
+                    val = ''
                 ci.value_string = val
             elif ti.value_type == TransactionTypeInput.NUMBER:
+                if val is None:
+                    val = 0.0
                 ci.value_float = val
             elif ti.value_type == TransactionTypeInput.DATE:
+                if val is None:
+                    val = datetime.date.min
                 ci.value_date = val
             elif ti.value_type == TransactionTypeInput.RELATION:
                 model_class = ti.content_type.model_class()
