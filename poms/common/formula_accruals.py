@@ -489,6 +489,7 @@ def get_coupon(accrual, dt1, dt2, maturity_date=None):
     #    M2 = Month(dt2)
     #    y2 = Year(dt2)
 
+    from poms.instruments.models import AccrualCalculationModel
 
     accrual_calculation_model = accrual.accrual_calculation_model
     cpn = accrual.accrual_size
@@ -1115,7 +1116,7 @@ if __name__ == "__main__":
             first_payment_date=date(2001, 7, 1),
             accrual_size=10,
             accrual_calculation_model=AccrualCalculationModel.objects.get(
-                pk=AccrualCalculationModel.ISMA_30_360_NO_EOM),
+                pk=AccrualCalculationModel.ACT_ACT),
             periodicity=Periodicity.objects.get(pk=Periodicity.SEMI_ANNUALLY),
         ),
         AccrualCalculationSchedule(
@@ -1123,7 +1124,7 @@ if __name__ == "__main__":
             first_payment_date=date(2003, 7, 1),
             accrual_size=20,
             accrual_calculation_model=AccrualCalculationModel.objects.get(
-                pk=AccrualCalculationModel.ISMA_30_360_NO_EOM),
+                pk=AccrualCalculationModel.ACT_ACT),
             periodicity=Periodicity.objects.get(pk=Periodicity.SEMI_ANNUALLY),
         ),
     ]
@@ -1137,7 +1138,7 @@ if __name__ == "__main__":
         # _l.info('%s', cpn_date)
         cpn_val, is_cpn = i.get_coupon(cpn_date=cpn_date, accruals=accruals)
         if is_cpn:
-            _l.info('    %s, is_cpn=%s', cpn_val, is_cpn)
+            _l.info('    %s - %s (is_cpn=%s)', cpn_date, cpn_val, is_cpn)
         cpn_date += timedelta(days=1)
 
     _l.info('get_future_coupons: %s',
@@ -1152,7 +1153,7 @@ if __name__ == "__main__":
             first_payment_date=date(2001, 7, 1),
             accrual_size=10,
             accrual_calculation_model=AccrualCalculationModel.objects.get(
-                pk=AccrualCalculationModel.ISMA_30_360_NO_EOM),
+                pk=AccrualCalculationModel.ACT_ACT),
             periodicity=Periodicity.objects.get(pk=Periodicity.SEMI_ANNUALLY),
         ),
         AccrualCalculationSchedule(
@@ -1160,7 +1161,7 @@ if __name__ == "__main__":
             first_payment_date=date(2004, 1, 1),
             accrual_size=20,
             accrual_calculation_model=AccrualCalculationModel.objects.get(
-                pk=AccrualCalculationModel.ISMA_30_360_NO_EOM),
+                pk=AccrualCalculationModel.ACT_ACT),
             periodicity=Periodicity.objects.get(pk=Periodicity.ANNUALLY),
         ),
     ]

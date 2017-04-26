@@ -750,7 +750,7 @@ class Instrument(NamedModel, FakeDeletableModel):
 
                 if d == cpn_date:
                     # _l.info('  %s, d=%s, prev_d=%s', d == cpn_date, d, prev_d)
-                    return get_coupon(accrual, ), True
+                    return get_coupon(accrual, prev_d, d, maturity_date=self.maturity_date), True
 
         return 0.0, False
 
