@@ -572,7 +572,7 @@ class ReportBuilder(BaseReportBuilder):
                 t.balance_pos_size = balances[t_key]
                 t.sum_remaining_pos_size = remaining_positions[t_key]
                 try:
-                    t.multiplier = abs(t.sum_remaining_pos_size / t.balance_pos_size)
+                    t.multiplier = 1.0 - abs(t.sum_remaining_pos_size / t.balance_pos_size)
                 except ArithmeticError:
                     t.multiplier = 0.0
 
