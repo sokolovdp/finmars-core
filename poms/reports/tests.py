@@ -2935,7 +2935,7 @@ class ReportTestCase(TestCase):
         pass
 
     def test_from_csv_td_1(self):
-        test_prefix = 'td_2'
+        test_prefix = 'td_1'
         base_path = os.path.join(settings.BASE_DIR, 'poms', 'reports', 'tests_data')
         load_from_csv(
             master_user=self.m,
@@ -2946,7 +2946,7 @@ class ReportTestCase(TestCase):
         )
         # Transaction.objects.filter(master_user=self.m).exclude(transaction_class_id=TransactionClass.TRANSACTION_PL).delete()
         # Transaction.objects.filter(master_user=self.m).exclude(transaction_code__in=[7859, 7860]).delete()
-        Transaction.objects.filter(master_user=self.m).exclude(instrument__user_code__in=['CH0336352825']).delete()
+        # Transaction.objects.filter(master_user=self.m).exclude(instrument__user_code__in=['CH0336352825']).delete()
 
         cost_method = self._avco
 
@@ -2960,9 +2960,9 @@ class ReportTestCase(TestCase):
         elif test_prefix == 'td_2':
             report_dates = [
                 date(2017, 2, 3),  # 1,  2,  3
-                # date(2017, 2, 7),  # 4,  5,  6
-                # date(2017, 2, 15),  # 7,  8,  9
-                # date(2017, 2, 23),  # 10, 11, 12
+                date(2017, 2, 7),  # 4,  5,  6
+                date(2017, 2, 15),  # 7,  8,  9
+                date(2017, 2, 23),  # 10, 11, 12
             ]
         else:
             report_dates = []
@@ -3019,30 +3019,30 @@ class ReportTestCase(TestCase):
                 'strategy3_mode': Report.MODE_INDEPENDENT,
                 'show_transaction_details': True,
             },
-            # {
-            #     'portfolio_mode': Report.MODE_INDEPENDENT,
-            #     'account_mode': Report.MODE_INDEPENDENT,
-            #     'strategy1_mode': Report.MODE_IGNORE,
-            #     'strategy2_mode': Report.MODE_IGNORE,
-            #     'strategy3_mode': Report.MODE_IGNORE,
-            #     'show_transaction_details': True,
-            # },
-            # {
-            #     'portfolio_mode': Report.MODE_INDEPENDENT,
-            #     'account_mode': Report.MODE_IGNORE,
-            #     'strategy1_mode': Report.MODE_IGNORE,
-            #     'strategy2_mode': Report.MODE_IGNORE,
-            #     'strategy3_mode': Report.MODE_IGNORE,
-            #     'show_transaction_details': True,
-            # },
-            # {
-            #     'portfolio_mode': Report.MODE_IGNORE,
-            #     'account_mode': Report.MODE_INDEPENDENT,
-            #     'strategy1_mode': Report.MODE_IGNORE,
-            #     'strategy2_mode': Report.MODE_IGNORE,
-            #     'strategy3_mode': Report.MODE_IGNORE,
-            #     'show_transaction_details': True,
-            # },
+            {
+                'portfolio_mode': Report.MODE_INDEPENDENT,
+                'account_mode': Report.MODE_INDEPENDENT,
+                'strategy1_mode': Report.MODE_IGNORE,
+                'strategy2_mode': Report.MODE_IGNORE,
+                'strategy3_mode': Report.MODE_IGNORE,
+                'show_transaction_details': True,
+            },
+            {
+                'portfolio_mode': Report.MODE_INDEPENDENT,
+                'account_mode': Report.MODE_IGNORE,
+                'strategy1_mode': Report.MODE_IGNORE,
+                'strategy2_mode': Report.MODE_IGNORE,
+                'strategy3_mode': Report.MODE_IGNORE,
+                'show_transaction_details': True,
+            },
+            {
+                'portfolio_mode': Report.MODE_IGNORE,
+                'account_mode': Report.MODE_INDEPENDENT,
+                'strategy1_mode': Report.MODE_IGNORE,
+                'strategy2_mode': Report.MODE_IGNORE,
+                'strategy3_mode': Report.MODE_IGNORE,
+                'show_transaction_details': True,
+            },
         ]
         pl_consolidations = bl_consolidations + [
             {
