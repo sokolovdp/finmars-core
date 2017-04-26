@@ -1115,16 +1115,14 @@ if __name__ == "__main__":
             accrual_start_date=date(2001, 1, 1),
             first_payment_date=date(2001, 7, 1),
             accrual_size=10,
-            accrual_calculation_model=AccrualCalculationModel.objects.get(
-                pk=AccrualCalculationModel.ACT_ACT),
+            accrual_calculation_model=AccrualCalculationModel.objects.get(pk=AccrualCalculationModel.ACT_360),
             periodicity=Periodicity.objects.get(pk=Periodicity.SEMI_ANNUALLY),
         ),
         AccrualCalculationSchedule(
             accrual_start_date=date(2003, 1, 1),
             first_payment_date=date(2003, 7, 1),
             accrual_size=20,
-            accrual_calculation_model=AccrualCalculationModel.objects.get(
-                pk=AccrualCalculationModel.ACT_ACT),
+            accrual_calculation_model=AccrualCalculationModel.objects.get(pk=AccrualCalculationModel.ACT_360),
             periodicity=Periodicity.objects.get(pk=Periodicity.SEMI_ANNUALLY),
         ),
     ]
@@ -1152,16 +1150,14 @@ if __name__ == "__main__":
             accrual_start_date=date(2001, 1, 1),
             first_payment_date=date(2001, 7, 1),
             accrual_size=10,
-            accrual_calculation_model=AccrualCalculationModel.objects.get(
-                pk=AccrualCalculationModel.ACT_ACT),
+            accrual_calculation_model=AccrualCalculationModel.objects.get(pk=AccrualCalculationModel.ACT_360),
             periodicity=Periodicity.objects.get(pk=Periodicity.SEMI_ANNUALLY),
         ),
         AccrualCalculationSchedule(
             accrual_start_date=date(2003, 2, 1),
             first_payment_date=date(2004, 1, 1),
             accrual_size=20,
-            accrual_calculation_model=AccrualCalculationModel.objects.get(
-                pk=AccrualCalculationModel.ACT_ACT),
+            accrual_calculation_model=AccrualCalculationModel.objects.get(pk=AccrualCalculationModel.ACT_360),
             periodicity=Periodicity.objects.get(pk=Periodicity.ANNUALLY),
         ),
     ]
@@ -1175,7 +1171,7 @@ if __name__ == "__main__":
         # _l.info('%s', cpn_date)
         cpn_val, is_cpn = i.get_coupon(cpn_date=cpn_date, accruals=accruals)
         if is_cpn:
-            _l.info('    %s, is_cpn=%s', cpn_val, is_cpn)
+            _l.info('    %s - %s (is_cpn=%s)', cpn_date, cpn_val, is_cpn)
         cpn_date += timedelta(days=1)
 
     _l.info('get_future_coupons: %s',
