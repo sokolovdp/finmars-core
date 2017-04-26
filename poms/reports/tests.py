@@ -2935,7 +2935,7 @@ class ReportTestCase(TestCase):
         pass
 
     def test_from_csv_td_1(self):
-        test_prefix = 'td_1'
+        test_prefix = 'td_2'
         base_path = os.path.join(settings.BASE_DIR, 'poms', 'reports', 'tests_data')
         load_from_csv(
             master_user=self.m,
@@ -2968,8 +2968,8 @@ class ReportTestCase(TestCase):
             report_dates = []
         report_currencies = [
             Currency.objects.get(master_user=self.m, user_code='USD'),  # 1, 4, 7, 10
-            # Currency.objects.get(master_user=self.m, user_code='EUR'),  # 2, 5, 8, 11
-            # Currency.objects.get(master_user=self.m, user_code='GBP'),  # 3, 6, 9, 12
+            Currency.objects.get(master_user=self.m, user_code='EUR'),  # 2, 5, 8, 11
+            Currency.objects.get(master_user=self.m, user_code='GBP'),  # 3, 6, 9, 12
         ]
         # portfolio_modes = [
         #     Report.MODE_IGNORE,
