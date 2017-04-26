@@ -15,7 +15,7 @@ from django.utils.translation import ugettext, ugettext_lazy
 from mptt.models import MPTTModel
 
 from poms.common import formula
-from poms.common.formula_accruals import f_xirr
+from poms.common.formula_accruals import f_xirr, get_coupon
 from poms.common.models import NamedModel, AbstractClassModel, FakeDeletableModel
 from poms.common.utils import date_now, isclose
 from poms.obj_attrs.models import GenericAttribute
@@ -750,7 +750,7 @@ class Instrument(NamedModel, FakeDeletableModel):
 
                 if d == cpn_date:
                     # _l.info('  %s, d=%s, prev_d=%s', d == cpn_date, d, prev_d)
-                    return 0.0, True
+                    return get_coupon(accrual, ), True
 
         return 0.0, False
 
