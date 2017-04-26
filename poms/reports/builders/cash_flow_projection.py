@@ -240,9 +240,10 @@ class CashFlowProjectionReportBuilder(TransactionReportBuilder):
                         e.position = ritem.position_size_with_sign
 
                         is_apply_default_on_date = e.is_apply_default_on_date(now)
+                        is_need_reaction_on_date = e.is_need_reaction_on_date(now)
 
-                        _l.debug('gen event: is_apply_default_on_date=%s',
-                                 is_apply_default_on_date)
+                        _l.debug('gen event: is_apply_default_on_date=%s, is_need_reaction_on_date=%s',
+                                 is_apply_default_on_date, is_need_reaction_on_date)
 
                         if is_apply_default_on_date:
                             action = e.get_default_action()
