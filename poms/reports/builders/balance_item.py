@@ -1019,7 +1019,7 @@ class ReportItem(BaseReportItem):
             if self.instr:
                 self.instr_principal_res = self.pos_size * self.instr.price_multiplier * self.instr_price_cur_principal_price * self.instr_pricing_ccy_cur_fx
                 self.instr_principal_loc = self.pos_size * self.instr.price_multiplier * self.instr_price_cur_principal_price
-                self.instr_accrued_res = self.pos_size * self.instr.accrued_multiplier * self.instr_price_cur_accrued_price * self.instr_pricing_ccy_cur_fx
+                self.instr_accrued_res = self.pos_size * self.instr.accrued_multiplier * self.instr_price_cur_accrued_price * self.instr_accrued_ccy_cur_fx
                 self.instr_accrued_loc = self.pos_size * self.instr.accrued_multiplier * self.instr_price_cur_accrued_price
 
                 # _l.debug('> instr_accrual: instr=%s', self.instr.id)
