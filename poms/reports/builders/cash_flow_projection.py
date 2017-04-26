@@ -249,8 +249,9 @@ class CashFlowProjectionReportBuilder(TransactionReportBuilder):
                         # is_apply = is_apply_default_on_date
                         is_apply = edate == now
 
-                        _l.debug('gen event: is_apply=%s, is_apply_default_on_date=%s, is_need_reaction_on_date=%s',
-                                 is_apply, is_apply_default_on_date, is_need_reaction_on_date)
+                        _l.debug('gen event: is_apply=%s, effective_date=%s, notification_date=%s, '
+                                 'is_apply_default_on_date=%s, is_need_reaction_on_date=%s',
+                                 is_apply, str(edate), str(ndate), is_apply_default_on_date, is_need_reaction_on_date)
 
                         if is_apply:
                             # action = e.get_default_action()
@@ -293,27 +294,39 @@ class CashFlowProjectionReportBuilder(TransactionReportBuilder):
                     item = CashFlowProjectionReportItem(self.instance, trn=t)
                     self._items.append(item)
 
-                    ritem = None
                     if t.transaction_class_id in [TransactionClass.BUY, TransactionClass.SELL]:
-                        ritem = self._rolling(t)
+                        key = self._instr_rolling_trn_key(t)
+                        ritem = self._rolling(t, key=key)
                         ritem.add_balance(t)
-                    elif t.transaction_class_id in [TransactionClass.TRANSFER]:
-                        # TODO: implement me please
-                        src_key = self._instr_rolling_trn_key(t, acc=t.account_cash)
-                        dst_key = self._instr_rolling_trn_key(t, acc=t.account_position)
 
+                        _l.debug('instr check pos: key=%s; pos_size=%s', key, ritem.position_size_with_sign)
+                        if isclose(ritem.position_size_with_sign, 0.0):
+                            del self._rolling_items[key]
+
+                    elif t.transaction_class_id in [TransactionClass.TRANSFER]:
+                        # TODO: check me
+                        src_key = self._instr_rolling_trn_key(t, acc=t.account_cash)
                         src_item = self._rolling(t, key=src_key)
                         src_item.add_balance(t, sign=-1)
 
+                        dst_key = self._instr_rolling_trn_key(t, acc=t.account_position)
                         dst_item = self._rolling(t, key=dst_key)
                         dst_item.add_balance(t)
 
-                    # remove item with position_size_with_sign close to zero
-                    if ritem:
-                        _l.debug('instr del or not: position=%s', ritem.position_size_with_sign)
-                        if isclose(ritem.position_size_with_sign, 0.0):
-                            key = self._instr_rolling_trn_key(t)
-                            del self._rolling_items[key]
+                        _l.debug('instr check pos (trnfr, src): key=%s; pos_size=%s', src_key, src_item.position_size_with_sign)
+                        if isclose(src_item.position_size_with_sign, 0.0):
+                            del self._rolling_items[src_key]
+
+                        _l.debug('instr check pos (trnfr, dst): key=%s; pos_size=%s', dst_key, dst_item.position_size_with_sign)
+                        if isclose(dst_item.position_size_with_sign, 0.0):
+                            del self._rolling_items[dst_key]
+
+                    # # remove item with position_size_with_sign close to zero
+                    # if ritem:
+                    #     _l.debug('instr del or not: position=%s', ritem.position_size_with_sign)
+                    #     if isclose(ritem.position_size_with_sign, 0.0):
+                    #         key = self._instr_rolling_trn_key(t)
+                    #         del self._rolling_items[key]
 
     def _calc_before_after(self):
         # aggregate some rolling values
