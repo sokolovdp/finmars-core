@@ -813,7 +813,7 @@ class ComplexTransaction(FakeDeletableModel):
 
     def save(self, *args, **kwargs):
         if self.code is None or self.code == 0:
-            self.code = FakeSequence.next_value(self.transaction_type.master_user, 'complex_transaction', count=100)
+            self.code = FakeSequence.next_value(self.transaction_type.master_user, 'complex_transaction', d=100)
         super(ComplexTransaction, self).save(*args, **kwargs)
 
 
@@ -1000,17 +1000,17 @@ class Transaction(FakeDeletableModel):
         ordering = ['transaction_date', 'transaction_code']
 
     def __str__(self):
-        return 'Transaction #%s' % (self.transaction_code)
+        return str(self.transaction_code)
 
     def save(self, *args, **kwargs):
         calc_cash = kwargs.pop('calc_cash', False)
 
         self.transaction_date = min(self.accounting_date, self.cash_date)
         if self.transaction_code is None or self.transaction_code == 0:
-            if self.complex_transaction_id:
-                self.transaction_code = self.complex_transaction.code + self.complex_transaction_order
+            if self.complex_transaction is None:
+                self.transaction_code = FakeSequence.next_value(self.master_user, 'transaction')
             else:
-                self.transaction_code = FakeSequence.next_value(self.master_user, 'transaction', count=1)
+                self.transaction_code = self.complex_transaction.code + self.complex_transaction_order
         super(Transaction, self).save(*args, **kwargs)
 
         if calc_cash:
