@@ -6,6 +6,7 @@ from poms.audit.fields import ObjectHistoryContentTypeField
 from poms.audit.models import AuthLogEntry, ObjectHistory4Entry
 from poms.common.fields import DateTimeTzAwareField
 from poms.common.middleware import get_city_by_ip
+from poms.common.serializers import ContentTypeSerializer
 from poms.users.serializers import MemberViewSerializer
 
 
@@ -31,6 +32,11 @@ class ObjectHistory4EntrySerializer(serializers.ModelSerializer):
     old_value_content_type = ObjectHistoryContentTypeField()
     message = serializers.ReadOnlyField()
 
+    actor_content_type_object = ContentTypeSerializer(source='actor_content_type', read_only=True)
+    content_type_object = ContentTypeSerializer(source='content_type', read_only=True)
+    value_content_type_object = ContentTypeSerializer(source='value_content_type', read_only=True)
+    old_value_content_type_object = ContentTypeSerializer(source='old_value_content_type', read_only=True)
+
     class Meta:
         model = ObjectHistory4Entry
         fields = [
@@ -40,6 +46,8 @@ class ObjectHistory4EntrySerializer(serializers.ModelSerializer):
             'field_name', 'field_name_repr',
             'value', 'value_content_type', 'value_content_type_repr', 'value_object_id',
             'old_value', 'old_value_content_type', 'old_value_content_type_repr', 'old_value_object_id',
-            'message'
+            'message',
+            'actor_content_type_object', 'content_type_object', 'value_content_type_object',
+            'old_value_content_type_object',
         ]
         read_only_fields = fields
