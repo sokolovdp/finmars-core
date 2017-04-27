@@ -631,7 +631,7 @@ class ReportItem(BaseReportItem):
 
         # elif item.type in [ReportItem.TYPE_SUMMARY, ReportItem.TYPE_INVESTED_SUMMARY]:
         elif item.type in [ReportItem.TYPE_SUMMARY, ]:
-            item.pos_size = float('nan')
+            item.pos_size = 0.0 # float('nan')
 
         # if trn.is_show_details(acc):
         #     item.detail_trn = trn
@@ -788,7 +788,7 @@ class ReportItem(BaseReportItem):
 
         # if item.type in [ReportItem.TYPE_SUMMARY, ReportItem.TYPE_INVESTED_SUMMARY]:
         if item.type in [ReportItem.TYPE_SUMMARY]:
-            item.pos_size = float('nan')
+            item.pos_size = 0.0 # float('nan')
 
         return item
 
@@ -1133,6 +1133,7 @@ class ReportItem(BaseReportItem):
                                       / -self.principal_invested_res
             except ArithmeticError:
                 self.pos_return_res = 0
+
             try:
                 self.pos_return_loc = (self.principal_opened_loc + self.carry_opened_loc) \
                                       / -self.principal_invested_loc
@@ -1552,66 +1553,67 @@ class ReportItem(BaseReportItem):
             self.total_fixed_loc = self.total_fixed_opened_loc
 
         if self.subtype in [ReportItem.SUBTYPE_CLOSED, ReportItem.SUBTYPE_OPENED]:
-            # self.principal_closed_res = float('nan')
-            # self.carry_closed_res = float('nan')
-            # self.overheads_closed_res = float('nan')
-            # self.total_closed_res = float('nan')
+            # self.principal_closed_res = 0.0 # float('nan')
+            # self.carry_closed_res = 0.0 # float('nan')
+            # self.overheads_closed_res = 0.0 # float('nan')
+            # self.total_closed_res = 0.0 # float('nan')
             #
-            # self.principal_opened_res = float('nan')
-            # self.carry_opened_res = float('nan')
-            # self.overheads_opened_res = float('nan')
-            # self.total_opened_res = float('nan')
+            # self.principal_opened_res = 0.0 # float('nan')
+            # self.carry_opened_res = 0.0 # float('nan')
+            # self.overheads_opened_res = 0.0 # float('nan')
+            # self.total_opened_res = 0.0 # float('nan')
             #
-            # self.principal_fx_closed_res = float('nan')
-            # self.carry_fx_closed_res = float('nan')
-            # self.overheads_fx_closed_res = float('nan')
-            # self.total_fx_closed_res = float('nan')
+            # self.principal_fx_closed_res = 0.0 # float('nan')
+            # self.carry_fx_closed_res = 0.0 # float('nan')
+            # self.overheads_fx_closed_res = 0.0 # float('nan')
+            # self.total_fx_closed_res = 0.0 # float('nan')
             #
-            # self.principal_fx_opened_res = float('nan')
-            # self.carry_fx_opened_res = float('nan')
-            # self.overheads_fx_opened_res = float('nan')
-            # self.total_fx_opened_res = float('nan')
+            # self.principal_fx_opened_res = 0.0 # float('nan')
+            # self.carry_fx_opened_res = 0.0 # float('nan')
+            # self.overheads_fx_opened_res = 0.0 # float('nan')
+            # self.total_fx_opened_res = 0.0 # float('nan')
             #
-            # self.principal_fixed_closed_res = float('nan')
-            # self.carry_fixed_closed_res = float('nan')
-            # self.overheads_fixed_closed_res = float('nan')
-            # self.total_fixed_closed_res = float('nan')
+            # self.principal_fixed_closed_res = 0.0 # float('nan')
+            # self.carry_fixed_closed_res = 0.0 # float('nan')
+            # self.overheads_fixed_closed_res = 0.0 # float('nan')
+            # self.total_fixed_closed_res = 0.0 # float('nan')
             #
-            # self.principal_fixed_opened_res = float('nan')
-            # self.carry_fixed_opened_res = float('nan')
-            # self.overheads_fixed_opened_res = float('nan')
-            # self.total_fixed_opened_res = float('nan')
+            # self.principal_fixed_opened_res = 0.0 # float('nan')
+            # self.carry_fixed_opened_res = 0.0 # float('nan')
+            # self.overheads_fixed_opened_res = 0.0 # float('nan')
+            # self.total_fixed_opened_res = 0.0 # float('nan')
             #
-            # self.principal_closed_loc = float('nan')
-            # self.carry_closed_loc = float('nan')
-            # self.overheads_closed_loc = float('nan')
-            # self.total_closed_loc = float('nan')
+            # self.principal_closed_loc = 0.0 # float('nan')
+            # self.carry_closed_loc = 0.0 # float('nan')
+            # self.overheads_closed_loc = 0.0 # float('nan')
+            # self.total_closed_loc = 0.0 # float('nan')
             #
-            # self.principal_opened_loc = float('nan')
-            # self.carry_opened_loc = float('nan')
-            # self.overheads_opened_loc = float('nan')
-            # self.total_opened_loc = float('nan')
+            # self.principal_opened_loc = 0.0 # float('nan')
+            # self.carry_opened_loc = 0.0 # float('nan')
+            # self.overheads_opened_loc = 0.0 # float('nan')
+            # self.total_opened_loc = 0.0 # float('nan')
             #
-            # self.principal_fx_closed_loc = float('nan')
-            # self.carry_fx_closed_loc = float('nan')
-            # self.overheads_fx_closed_loc = float('nan')
-            # self.total_fx_closed_loc = float('nan')
+            # self.principal_fx_closed_loc = 0.0 # float('nan')
+            # self.carry_fx_closed_loc = 0.0 # float('nan')
+            # self.overheads_fx_closed_loc = 0.0 # float('nan')
+            # self.total_fx_closed_loc = 0.0 # float('nan')
             #
-            # self.principal_fx_opened_loc = float('nan')
-            # self.carry_fx_opened_loc = float('nan')
-            # self.overheads_fx_opened_loc = float('nan')
-            # self.total_fx_opened_loc = float('nan')
+            # self.principal_fx_opened_loc = 0.0 # float('nan')
+            # self.carry_fx_opened_loc = 0.0 # float('nan')
+            # self.overheads_fx_opened_loc = 0.0 # float('nan')
+            # self.total_fx_opened_loc = 0.0 # float('nan')
             #
-            # self.principal_fixed_closed_loc = float('nan')
-            # self.carry_fixed_closed_loc = float('nan')
-            # self.overheads_fixed_closed_loc = float('nan')
-            # self.total_fixed_closed_loc = float('nan')
+            # self.principal_fixed_closed_loc = 0.0 # float('nan')
+            # self.carry_fixed_closed_loc = 0.0 # float('nan')
+            # self.overheads_fixed_closed_loc = 0.0 # float('nan')
+            # self.total_fixed_closed_loc = 0.0 # float('nan')
             #
-            # self.principal_fixed_opened_loc = float('nan')
-            # self.carry_fixed_opened_loc = float('nan')
-            # self.overheads_fixed_opened_loc = float('nan')
-            # self.total_fixed_opened_loc = float('nan')
-            self.set_pl_values(opened=float('nan'), closed=float('nan'))
+            # self.principal_fixed_opened_loc = 0.0 # float('nan')
+            # self.carry_fixed_opened_loc = 0.0 # float('nan')
+            # self.overheads_fixed_opened_loc = 0.0 # float('nan')
+            # self.total_fixed_opened_loc = 0.0 # float('nan')
+            # self.set_pl_values(opened=float('nan'), closed=float('nan'))
+            self.set_pl_values(opened=0.0, closed=0.0)
 
     def set_pl_values(self, total=None, closed=None, opened=None):
         if isinstance(total, (float, int)):
