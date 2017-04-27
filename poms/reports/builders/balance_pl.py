@@ -57,6 +57,17 @@ class ReportBuilder(BaseReportBuilder):
         _l.debug('done: %s', (time.perf_counter() - st))
         return self.instance
 
+    def build_balance_for_tests(self, full=True):
+        st = time.perf_counter()
+        _l.debug('build balance report: %s', self.instance)
+
+        self.instance.report_type = Report.TYPE_BALANCE
+        self.instance.pl_first_date = None
+        self.build(full=full)
+
+        _l.debug('done: %s', (time.perf_counter() - st))
+        return self.instance
+
     def build_pl(self, full=True):
         st = time.perf_counter()
         _l.debug('build pl report: %s', self.instance)
