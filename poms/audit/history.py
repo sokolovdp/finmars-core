@@ -182,7 +182,11 @@ def _fields_to_set(fields):
 
 
 def _serialize(obj):
-    return serializers.serialize('python', [obj])[0]
+    val = serializers.serialize('python', [obj])[0]
+    if val['model'] == 'transactions.transactiontype':
+        val['fields'].pop('book_transaction_layout_json')
+    print(val)
+    return val
 
 
 def _get_model(content_type):
