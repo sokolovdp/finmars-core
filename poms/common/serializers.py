@@ -1,7 +1,7 @@
+from django.contrib.contenttypes.models import ContentType
 from django.utils.text import Truncator
 from mptt.utils import get_cached_trees
 from rest_framework import serializers
-from rest_framework.exceptions import ValidationError
 from rest_framework.fields import empty
 from rest_framework.serializers import ListSerializer
 
@@ -69,6 +69,12 @@ class ClassifierListSerializer(serializers.ListSerializer):
         tree = get_cached_trees(instance.classifiers.all())
         return tree
 
+
+class ContentTypeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ContentType
+        fields = ['name', ]
+        read_only_fields = fields
 
 # class AbstractClassifierSerializer(serializers.ModelSerializer):
 #     id = serializers.IntegerField(read_only=False, required=False, allow_null=True)
