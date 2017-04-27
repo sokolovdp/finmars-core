@@ -254,10 +254,9 @@ class CashFlowProjectionReportBuilder(TransactionReportBuilder):
                                  is_apply, str(edate), str(ndate), is_apply_default_on_date, is_need_reaction_on_date)
 
                         if is_apply:
-                            # action = e.get_default_action()
-                            # if action:
-
-                            for action in es.actions.all():
+                            # for action in es.actions.all():
+                            action = e.get_default_action()
+                            if action:
                                 _l.debug('gen event action: id=%s, is_book_automatic=%s, transaction_type=%s',
                                          action.id, action.is_book_automatic, action.transaction_type_id)
 
