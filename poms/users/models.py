@@ -338,8 +338,8 @@ class MasterUser(models.Model):
             for p in get_change_perms(c):
                 assign_perms3(c, perms=[{'group': group, 'permission': p}])
 
-        for fsn in ['complex_transaction', 'transaction']:
-            FakeSequence.objects.get_or_create(master_user=self, name=fsn)
+        FakeSequence.objects.get_or_create(master_user=self, name='complex_transaction')
+        FakeSequence.objects.get_or_create(master_user=self, name='transaction')
 
     def patch_currencies(self, overwrite_name=False, overwrite_reference_for_pricing=False):
         from poms.currencies.models import currencies_data, Currency
@@ -526,14 +526,18 @@ class FakeSequence(models.Model):
     #     return RuntimeError('simple sequence optimistic lock error')
 
     @classmethod
-    def next_value(cls, master_user, name, count=0):
+    def next_value(cls, master_user, name, d=1):
         # seq = SimpleSequence.objects.select_for_update().get_or_create(master_user=master_user, name=name)
         # seq = SimpleSequence.objects.select_for_update().get(master_user=master_user, name=name)
-        seq, _ = cls.objects.get_or_create(master_user=master_user, name=name)
-        newval = seq.value + 1
-        seq.value = newval + count
+        seq, created = cls.objects.get_or_create(master_user=master_user, name=name)
+        if not d:
+            d = 1
+        if d == 1:
+            seq.value += 1
+        else:
+            seq.value = ((seq.value + d) // d) * d
         seq.save(update_fields=['value'])
-        return newval
+        return seq.value
 
 
 @receiver(post_save, dispatch_uid='create_profile', sender=settings.AUTH_USER_MODEL)
