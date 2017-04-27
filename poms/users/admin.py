@@ -271,7 +271,7 @@ admin.site.register(Permission, PermissionAdmin)
 
 class ContentTypeAdmin(admin.ModelAdmin):
     model = ContentType
-    list_display = ['id', 'app_label', 'model']
+    list_display = ['id', 'app_label', 'model', 'name']
     ordering = ['app_label', 'model']
     readonly_fields = ['app_label', 'model']
     search_fields = ['app_label', 'model']

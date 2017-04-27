@@ -71,22 +71,27 @@ class CashFlowProjectionReportBuilder(TransactionReportBuilder):
         self._transaction_order_seq += 1
         return self._transaction_order_seq
 
-    def _balance_trn_key(self, trn, acc=empty):
+    def _balance_trn_key(self, trn, stl_ccy=None, prtfl=empty, acc=empty):
+        if prtfl is empty:
+            prtfl = trn.portfolio
         if acc is empty:
             acc = trn.account_cash
+        if stl_ccy is empty:
+            stl_ccy = trn.settlement_currency
         return (
-            check_int_min(getattr(trn.settlement_currency, 'id', None)),
-            check_int_min(getattr(trn.portfolio, 'id', None)),
+            check_int_min(getattr(prtfl, 'id', None)),
             check_int_min(getattr(acc, 'id', None)),
-            # getattr(trn.instrument, 'id', -1),
+            check_int_min(getattr(stl_ccy, 'id', None)),
         )
 
-    def _instr_rolling_trn_key(self, trn):
-        return (
-            getattr(trn.portfolio, 'id', None),
-            getattr(trn.account_position, 'id', None),
-            getattr(trn.instrument, 'id', -1),
-        )
+    def _instr_rolling_trn_key(self, trn, prtfl=empty, acc=empty, instr=empty):
+        if prtfl is empty:
+            prtfl = trn.portfolio
+        if acc is empty:
+            acc = trn.account_position
+        if instr is empty:
+            instr = trn.instrument
+        return (getattr(prtfl, 'id', None), getattr(acc, 'id', None), getattr(instr, 'id', -1),)
 
     def _item(self, cache, trn, key, itype=CashFlowProjectionReportItem.DEFAULT):
         if key is None:
@@ -241,17 +246,23 @@ class CashFlowProjectionReportBuilder(TransactionReportBuilder):
 
                         is_apply_default_on_date = e.is_apply_default_on_date(now)
                         is_need_reaction_on_date = e.is_need_reaction_on_date(now)
+                        # is_apply = is_apply_default_on_date
+                        is_apply = edate == now
 
-                        _l.debug('gen event: is_apply_default_on_date=%s, is_need_reaction_on_date=%s',
-                                 is_apply_default_on_date, is_need_reaction_on_date)
+                        _l.debug('gen event: is_apply=%s, effective_date=%s, notification_date=%s, '
+                                 'is_apply_default_on_date=%s, is_need_reaction_on_date=%s',
+                                 is_apply, str(edate), str(ndate), is_apply_default_on_date, is_need_reaction_on_date)
 
-                        if is_apply_default_on_date:
+                        if is_apply:
+                            # for action in es.actions.all():
                             action = e.get_default_action()
-
-                            _l.debug('gen event action: action=%s, transaction_type=%s',
-                                     getattr(action, 'id', None), getattr(action, 'transaction_type_id', None))
-
                             if action:
+                                _l.debug('gen event action: id=%s, is_book_automatic=%s, transaction_type=%s',
+                                         action.id, action.is_book_automatic, action.transaction_type_id)
+
+                                if not action.is_book_automatic:
+                                    continue
+
                                 self._set_ref(action, 'transaction_type', clazz=TransactionType)
                                 gep = GeneratedEventProcess(
                                     generated_event=e,
@@ -268,12 +279,6 @@ class CashFlowProjectionReportBuilder(TransactionReportBuilder):
                                 if gep.has_errors:
                                     self.instance.has_errors = True
                                 else:
-                                    # for i2 in gep.instruments:
-                                    #     if i2.id < 0 and i2.id not in self._instruments:
-                                    #         self._instruments[i2.id] = i2
-                                    # gep.complex_transaction._fake_transactions = list(gep.transactions)
-                                    # self._prefetch(gep.transactions)
-                                    # self._set_trns_refs(gep.transactions)
                                     for t2 in gep.transactions:
                                         _l.debug('gen trn: id=%s, c.id=%s, c.date=%s, acc_date=%s, cash_date=%s',
                                                  t2.id, t2.complex_transaction.id, t2.complex_transaction.date,
@@ -288,20 +293,39 @@ class CashFlowProjectionReportBuilder(TransactionReportBuilder):
                     item = CashFlowProjectionReportItem(self.instance, trn=t)
                     self._items.append(item)
 
-                    ritem = None
                     if t.transaction_class_id in [TransactionClass.BUY, TransactionClass.SELL]:
-                        ritem = self._rolling(t)
+                        key = self._instr_rolling_trn_key(t)
+                        ritem = self._rolling(t, key=key)
                         ritem.add_balance(t)
-                    elif t.transaction_class_id in [TransactionClass.TRANSFER]:
-                        # TODO: implement me please
-                        pass
 
-                    # remove item with position_size_with_sign close to zero
-                    if ritem:
-                        _l.debug('instr del or not: position=%s', ritem.position_size_with_sign)
+                        _l.debug('instr check pos: key=%s; pos_size=%s', key, ritem.position_size_with_sign)
                         if isclose(ritem.position_size_with_sign, 0.0):
-                            key = self._instr_rolling_trn_key(t)
                             del self._rolling_items[key]
+
+                    elif t.transaction_class_id in [TransactionClass.TRANSFER]:
+                        # TODO: check me
+                        src_key = self._instr_rolling_trn_key(t, acc=t.account_cash)
+                        src_item = self._rolling(t, key=src_key)
+                        src_item.add_balance(t, sign=-1)
+
+                        dst_key = self._instr_rolling_trn_key(t, acc=t.account_position)
+                        dst_item = self._rolling(t, key=dst_key)
+                        dst_item.add_balance(t)
+
+                        _l.debug('instr check pos (trnfr, src): key=%s; pos_size=%s', src_key, src_item.position_size_with_sign)
+                        if isclose(src_item.position_size_with_sign, 0.0):
+                            del self._rolling_items[src_key]
+
+                        _l.debug('instr check pos (trnfr, dst): key=%s; pos_size=%s', dst_key, dst_item.position_size_with_sign)
+                        if isclose(dst_item.position_size_with_sign, 0.0):
+                            del self._rolling_items[dst_key]
+
+                    # # remove item with position_size_with_sign close to zero
+                    # if ritem:
+                    #     _l.debug('instr del or not: position=%s', ritem.position_size_with_sign)
+                    #     if isclose(ritem.position_size_with_sign, 0.0):
+                    #         key = self._instr_rolling_trn_key(t)
+                    #         del self._rolling_items[key]
 
     def _calc_before_after(self):
         # aggregate some rolling values

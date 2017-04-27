@@ -297,11 +297,26 @@ class TransactionTypeAdmin(AbstractModelAdmin):
 admin.site.register(TransactionType, TransactionTypeAdmin)
 
 
-class ComplexTransactionInputInline(admin.StackedInline):
+class TransactionInline(admin.TabularInline):
+    model = Transaction
+    extra = 0
+    show_change_link = True
+    raw_id_fields = [
+        'master_user', 'instrument', 'transaction_currency', 'settlement_currency',
+        'portfolio', 'account_position', 'account_cash', 'account_interim',
+        'strategy1_position', 'strategy1_cash', 'strategy2_position', 'strategy2_cash',
+        'strategy3_position', 'strategy3_cash',
+        'responsible', 'counterparty', 'linked_instrument', 'allocation_balance', 'allocation_pl',
+    ]
+
+
+class ComplexTransactionInputInline(admin.TabularInline):
     model = ComplexTransactionInput
     extra = 0
-    raw_id_fields = ('transaction_type_input', 'account', 'instrument_type', 'instrument', 'currency', 'counterparty',
-                     'responsible', 'portfolio', 'strategy1', 'strategy2', 'strategy3', 'price_download_scheme')
+    raw_id_fields = (
+        'transaction_type_input', 'account', 'instrument_type', 'instrument', 'currency', 'counterparty',
+        'responsible', 'portfolio', 'strategy1', 'strategy2', 'strategy3', 'price_download_scheme'
+    )
     readonly_fields = ('id',)
 
 
@@ -314,7 +329,7 @@ class ComplexTransactionAdmin(AbstractModelAdmin):
     search_fields = ['id']
     raw_id_fields = ['transaction_type']
     list_filter = ['is_deleted', 'date', ]
-    inlines = [GenericAttributeInline, ComplexTransactionInputInline, ]
+    inlines = [GenericAttributeInline, TransactionInline, ComplexTransactionInputInline, ]
     save_as = True
 
     def master_user(self, obj):
@@ -388,16 +403,13 @@ class TransactionAdmin(AbstractModelAdmin):
     search_fields = ['id']
     list_filter = ['is_deleted', 'transaction_date', ]
     date_hierarchy = 'transaction_date'
-    raw_id_fields = ['master_user', 'complex_transaction',
-                     'instrument', 'transaction_currency',
-                     'settlement_currency',
-                     'portfolio', 'account_position', 'account_cash', 'account_interim',
-                     'strategy1_position', 'strategy1_cash', 'strategy2_position', 'strategy2_cash',
-                     'strategy3_position', 'strategy3_cash',
-                     'responsible', 'counterparty',
-                     'linked_instrument',
-                     'allocation_balance', 'allocation_pl',
-                     ]
+    raw_id_fields = [
+        'master_user', 'complex_transaction', 'instrument', 'transaction_currency', 'settlement_currency',
+        'portfolio', 'account_position', 'account_cash', 'account_interim',
+        'strategy1_position', 'strategy1_cash', 'strategy2_position', 'strategy2_cash',
+        'strategy3_position', 'strategy3_cash', 'responsible', 'counterparty',
+        'linked_instrument', 'allocation_balance', 'allocation_pl',
+    ]
     inlines = [
         # AbstractAttributeInline,
         GenericAttributeInline,

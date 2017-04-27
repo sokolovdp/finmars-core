@@ -376,9 +376,7 @@ def _safe_get_instrument(evaluator, instrument):
         context[('_instrument_get_accrued_price', instrument.pk, None)] = instrument
         context[('_instrument_get_accrued_price', None, instrument.user_code)] = instrument
 
-        return instrument
-
-    raise ExpressionEvalError('Instrument does not find')
+    return instrument
 
 
 def _get_instrument_accrued_price(evaluator, instrument, date):
@@ -1910,8 +1908,12 @@ accrual_NL_365_NO_EOM(date(2000, 1, 1), date(2000, 1, 25))
             'master_user': master_user,
         }))
 
+        _l.info(safe_eval('get_instrument_coupon("testaccruals", "2010-03-10")', context={
+            'master_user': master_user,
+        }))
 
-    # accrued_test()
+
+    accrued_test()
     pass
 
 

@@ -26,12 +26,12 @@ class CashFlowProjectionReportItem(TransactionReportItem):
         self.cash_consideration_before = cash_consideration_before
         self.cash_consideration_after = cash_consideration_after
 
-    def add_balance(self, trn_or_item):
-        self.position_size_with_sign += trn_or_item.position_size_with_sign
-        self.cash_consideration += trn_or_item.cash_consideration
-        self.principal_with_sign += trn_or_item.principal_with_sign
-        self.carry_with_sign += trn_or_item.carry_with_sign
-        self.overheads_with_sign += trn_or_item.overheads_with_sign
+    def add_balance(self, trn_or_item, sign=1):
+        self.position_size_with_sign += sign * trn_or_item.position_size_with_sign
+        self.cash_consideration += sign * trn_or_item.cash_consideration
+        self.principal_with_sign += sign * trn_or_item.principal_with_sign
+        self.carry_with_sign += sign * trn_or_item.carry_with_sign
+        self.overheads_with_sign += sign * trn_or_item.overheads_with_sign
 
     def __str__(self):
         return 'CashFlowProjectionReportItem:%s' % self.id
