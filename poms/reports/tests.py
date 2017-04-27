@@ -1299,7 +1299,7 @@ class ReportTestCase(TestCase):
             # _l.info(self._sdump_hist(*args, **kwargs))
 
     def _simple_run(self, name, result=None, trns=False, trn_cols=None, item_cols=None,
-                    trn_dump_all=True, in_csv=False, **kwargs):
+                    trn_dump_all=True, in_csv=False, build_balance_for_tests=False, **kwargs):
         _l.info('')
         _l.info('')
         _l.info('*' * 79)
@@ -1311,7 +1311,10 @@ class ReportTestCase(TestCase):
             queryset = Transaction.objects.filter(pk__in=[int(t) if isinstance(t, int) else t.id for t in trns])
         b = ReportBuilder(instance=r, queryset=queryset)
         if r.report_type == Report.TYPE_BALANCE:
-            b.build_balance(full=True)
+            if build_balance_for_tests:
+                b.build_balance_for_tests(full=True)
+            else:
+                b.build_balance(full=True)
         elif r.report_type == Report.TYPE_PL:
             b.build_pl(full=True)
         r.transactions = b.transactions
@@ -3128,6 +3131,7 @@ class ReportTestCase(TestCase):
                     #         report_date, report_currency, sorted(consolidation.items()))
                     bal = self._simple_run(
                         None,
+                        build_balance_for_tests=True,
                         report_type=Report.TYPE_BALANCE,
                         report_currency=report_currency,
                         report_date=report_date,
