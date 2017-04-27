@@ -528,8 +528,10 @@ class VirtualTransaction(BaseReportItem):
             self.instr_price_cur = self.pricing_provider[self.instr]
             self.instr_price_cur_principal_price = self.instr_price_cur.principal_price
             self.instr_price_cur_accrued_price = self.instr_price_cur.accrued_price
+
             self.instr_pricing_ccy_cur = self.fx_rate_provider[self.instr.pricing_currency]
             self.instr_pricing_ccy_cur_fx = self.instr_pricing_ccy_cur.fx_rate * report_ccy_cur_fx
+
             self.instr_accrued_ccy_cur = self.fx_rate_provider[self.instr.accrued_currency]
             self.instr_accrued_ccy_cur_fx = self.instr_accrued_ccy_cur.fx_rate * report_ccy_cur_fx
 
@@ -571,7 +573,7 @@ class VirtualTransaction(BaseReportItem):
                 self.instr_principal_res = self.instr_principal * self.instr_pricing_ccy_cur_fx
 
                 self.instr_accrued = self.pos_size * self.instr.accrued_multiplier * self.instr_price_cur_accrued_price
-                self.instr_accrued_res = self.instr_accrued * self.instr_pricing_ccy_cur_fx
+                self.instr_accrued_res = self.instr_accrued * self.instr_accrued_ccy_cur_fx
 
             # Cash related
 
@@ -708,29 +710,32 @@ class VirtualTransaction(BaseReportItem):
 
                 if self.trn_cls.id in [TransactionClass.BUY, TransactionClass.SELL] and self.instr:
                     try:
-                        self.gross_cost_res = self.principal_res * self.ref_fx * \
-                                              (self.trn_ccy_cur_fx / self.instr_pricing_ccy_cur_fx) * \
-                                              (1.0 - self.multiplier) / self.pos_size / self.instr.price_multiplier
+                        self.gross_cost_res = self.principal * self.ref_fx * \
+                                              (self.trn_ccy_cur.fx_rate / self.instr_pricing_ccy_cur.fx_rate) * \
+                                              (1.0 - self.multiplier) / self.pos_size / self.instr.price_multiplier * \
+                                              self.instr_pricing_ccy_cur_fx
+
                     except ArithmeticError:
                         self.gross_cost_res = 0.0
 
                     try:
-                        self.net_cost_res = (self.principal_res + self.overheads_res) * self.ref_fx * \
-                                            (self.trn_ccy_cur_fx / self.instr_pricing_ccy_cur_fx) * \
-                                            (1.0 - self.multiplier) / self.pos_size / self.instr.price_multiplier
+                        self.net_cost_res = (self.principal + self.overheads) * self.ref_fx * \
+                                            (self.trn_ccy_cur.fx_rate / self.instr_pricing_ccy_cur.fx_rate) * \
+                                            (1.0 - self.multiplier) / self.pos_size / self.instr.price_multiplier * \
+                                            self.instr_pricing_ccy_cur_fx
                     except ArithmeticError:
                         self.net_cost_res = 0.0
 
                     try:
-                        self.principal_invested_res = self.principal_res * self.ref_fx * \
-                                                      (self.trn_ccy_cur_fx / self.instr_pricing_ccy_cur_fx) * \
+                        self.principal_invested_res = self.principal * self.ref_fx * \
+                                                      (self.trn_ccy_cur.fx_rate / self.report_ccy_cur.fx_rate) * \
                                                       (1.0 - self.multiplier)
                     except ArithmeticError:
                         self.principal_invested_res = 0.0
 
                     try:
                         self.amount_invested_res = self.total_res * self.ref_fx * \
-                                                   (self.trn_ccy_cur_fx / self.instr_pricing_ccy_cur_fx) * \
+                                                   (self.trn_ccy_cur.fx_rate / self.report_ccy_cur.fx_rate) * \
                                                    (1.0 - self.multiplier)
                     except ArithmeticError:
                         self.amount_invested_res = 0.0
@@ -803,40 +808,40 @@ class VirtualTransaction(BaseReportItem):
             t.is_mismatch = False
 
             t.report_ccy_cur = None
-            t.report_ccy_cur_fx = float('nan')
+            t.report_ccy_cur_fx = 0.0 # float('nan')
             t.report_ccy_cash_hist = None
-            t.report_ccy_cash_hist_fx = float('nan')
+            t.report_ccy_cash_hist_fx = 0.0 # float('nan')
             t.report_ccy_acc_hist = None
-            t.report_ccy_acc_hist_fx = float('nan')
+            t.report_ccy_acc_hist_fx = 0.0 # float('nan')
 
             t.pricing_ccy_cur = None
-            t.pricing_ccy_cur_fx = float('nan')
+            t.pricing_ccy_cur_fx = 0.0 # float('nan')
             t.pricing_ccy_cash_hist = None
-            t.pricing_ccy_cash_hist_fx = float('nan')
+            t.pricing_ccy_cash_hist_fx = 0.0 # float('nan')
             t.pricing_ccy_acc_hist = None
-            t.pricing_ccy_acc_hist_fx = float('nan')
+            t.pricing_ccy_acc_hist_fx = 0.0 # float('nan')
 
             t.instr_price_cur = None
-            t.instr_price_cur_principal_price = float('nan')
-            t.instr_price_cur_accrued_price = float('nan')
+            t.instr_price_cur_principal_price = 0.0 # float('nan')
+            t.instr_price_cur_accrued_price = 0.0 # float('nan')
             t.instr_pricing_ccy_cur = None
-            t.instr_pricing_ccy_cur_fx = float('nan')
+            t.instr_pricing_ccy_cur_fx = 0.0 # float('nan')
             t.instr_accrued_ccy_cur = None
-            t.instr_accrued_ccy_cur_fx = float('nan')
+            t.instr_accrued_ccy_cur_fx = 0.0 # float('nan')
 
             t.trn_ccy_cash_hist = None
-            t.trn_ccy_cash_hist_fx = float('nan')
+            t.trn_ccy_cash_hist_fx = 0.0 # float('nan')
             t.trn_ccy_acc_hist = None
-            t.trn_ccy_acc_hist_fx = float('nan')
+            t.trn_ccy_acc_hist_fx = 0.0 # float('nan')
             t.trn_ccy_cur = None
-            t.trn_ccy_cur_fx = float('nan')
+            t.trn_ccy_cur_fx = 0.0 # float('nan')
 
             t.stl_ccy_cash_hist = None
-            t.stl_ccy_cash_hist_fx = float('nan')
+            t.stl_ccy_cash_hist_fx = 0.0 # float('nan')
             t.stl_ccy_acc_hist = None
-            t.stl_ccy_acc_hist_fx = float('nan')
+            t.stl_ccy_acc_hist_fx = 0.0 # float('nan')
             t.stl_ccy_cur = None
-            t.stl_ccy_cur_fx = float('nan')
+            t.stl_ccy_cur_fx = 0.0 # float('nan')
 
             t.mismatch = 0.0
             t.avco_multiplier = 0.0
@@ -848,18 +853,18 @@ class VirtualTransaction(BaseReportItem):
             t.cash = 0.0
             t.cash_res = 0.0
 
-            t.instr_principal = float('nan')
+            t.instr_principal = 0.0 # float('nan')
             t.instr_principal_res = 0.0
-            t.instr_accrued = float('nan')
+            t.instr_accrued = 0.0 # float('nan')
             t.instr_accrued_res = 0.0
 
-            t.principal = float('nan')
-            t.carry = float('nan')
-            t.overheads = float('nan')
-            t.total = float('nan')
+            t.principal = 0.0 # float('nan')
+            t.carry = 0.0 # float('nan')
+            t.overheads = 0.0 # float('nan')
+            t.total = 0.0 # float('nan')
 
-            t.pl_fx_mul = float('nan')
-            t.pl_fixed_mul = float('nan')
+            t.pl_fx_mul = 0.0 # float('nan')
+            t.pl_fixed_mul = 0.0 # float('nan')
 
         pos_size = abs(closed.pos_size * mul_delta)
 
