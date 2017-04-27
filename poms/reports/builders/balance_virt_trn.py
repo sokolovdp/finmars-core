@@ -808,40 +808,40 @@ class VirtualTransaction(BaseReportItem):
             t.is_mismatch = False
 
             t.report_ccy_cur = None
-            t.report_ccy_cur_fx = float('nan')
+            t.report_ccy_cur_fx = 0.0 # float('nan')
             t.report_ccy_cash_hist = None
-            t.report_ccy_cash_hist_fx = float('nan')
+            t.report_ccy_cash_hist_fx = 0.0 # float('nan')
             t.report_ccy_acc_hist = None
-            t.report_ccy_acc_hist_fx = float('nan')
+            t.report_ccy_acc_hist_fx = 0.0 # float('nan')
 
             t.pricing_ccy_cur = None
-            t.pricing_ccy_cur_fx = float('nan')
+            t.pricing_ccy_cur_fx = 0.0 # float('nan')
             t.pricing_ccy_cash_hist = None
-            t.pricing_ccy_cash_hist_fx = float('nan')
+            t.pricing_ccy_cash_hist_fx = 0.0 # float('nan')
             t.pricing_ccy_acc_hist = None
-            t.pricing_ccy_acc_hist_fx = float('nan')
+            t.pricing_ccy_acc_hist_fx = 0.0 # float('nan')
 
             t.instr_price_cur = None
-            t.instr_price_cur_principal_price = float('nan')
-            t.instr_price_cur_accrued_price = float('nan')
+            t.instr_price_cur_principal_price = 0.0 # float('nan')
+            t.instr_price_cur_accrued_price = 0.0 # float('nan')
             t.instr_pricing_ccy_cur = None
-            t.instr_pricing_ccy_cur_fx = float('nan')
+            t.instr_pricing_ccy_cur_fx = 0.0 # float('nan')
             t.instr_accrued_ccy_cur = None
-            t.instr_accrued_ccy_cur_fx = float('nan')
+            t.instr_accrued_ccy_cur_fx = 0.0 # float('nan')
 
             t.trn_ccy_cash_hist = None
-            t.trn_ccy_cash_hist_fx = float('nan')
+            t.trn_ccy_cash_hist_fx = 0.0 # float('nan')
             t.trn_ccy_acc_hist = None
-            t.trn_ccy_acc_hist_fx = float('nan')
+            t.trn_ccy_acc_hist_fx = 0.0 # float('nan')
             t.trn_ccy_cur = None
-            t.trn_ccy_cur_fx = float('nan')
+            t.trn_ccy_cur_fx = 0.0 # float('nan')
 
             t.stl_ccy_cash_hist = None
-            t.stl_ccy_cash_hist_fx = float('nan')
+            t.stl_ccy_cash_hist_fx = 0.0 # float('nan')
             t.stl_ccy_acc_hist = None
-            t.stl_ccy_acc_hist_fx = float('nan')
+            t.stl_ccy_acc_hist_fx = 0.0 # float('nan')
             t.stl_ccy_cur = None
-            t.stl_ccy_cur_fx = float('nan')
+            t.stl_ccy_cur_fx = 0.0 # float('nan')
 
             t.mismatch = 0.0
             t.avco_multiplier = 0.0
@@ -853,18 +853,18 @@ class VirtualTransaction(BaseReportItem):
             t.cash = 0.0
             t.cash_res = 0.0
 
-            t.instr_principal = float('nan')
+            t.instr_principal = 0.0 # float('nan')
             t.instr_principal_res = 0.0
-            t.instr_accrued = float('nan')
+            t.instr_accrued = 0.0 # float('nan')
             t.instr_accrued_res = 0.0
 
-            t.principal = float('nan')
-            t.carry = float('nan')
-            t.overheads = float('nan')
-            t.total = float('nan')
+            t.principal = 0.0 # float('nan')
+            t.carry = 0.0 # float('nan')
+            t.overheads = 0.0 # float('nan')
+            t.total = 0.0 # float('nan')
 
-            t.pl_fx_mul = float('nan')
-            t.pl_fixed_mul = float('nan')
+            t.pl_fx_mul = 0.0 # float('nan')
+            t.pl_fixed_mul = 0.0 # float('nan')
 
         pos_size = abs(closed.pos_size * mul_delta)
 
