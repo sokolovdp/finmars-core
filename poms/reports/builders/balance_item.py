@@ -832,8 +832,10 @@ class ReportItem(BaseReportItem):
             self.instr_price_cur = self.pricing_provider[self.instr]
             self.instr_price_cur_principal_price = self.instr_price_cur.principal_price
             self.instr_price_cur_accrued_price = self.instr_price_cur.accrued_price
+
             self.instr_pricing_ccy_cur = self.fx_rate_provider[self.instr.pricing_currency]
             self.instr_pricing_ccy_cur_fx = self.instr_pricing_ccy_cur.fx_rate * report_ccy_cur_fx
+
             self.instr_accrued_ccy_cur = self.fx_rate_provider[self.instr.accrued_currency]
             self.instr_accrued_ccy_cur_fx = self.instr_accrued_ccy_cur.fx_rate * report_ccy_cur_fx
 
@@ -844,9 +846,9 @@ class ReportItem(BaseReportItem):
             self.ccy_cur = self.fx_rate_provider[self.ccy]
             self.ccy_cur_fx = self.ccy_cur.fx_rate * report_ccy_cur_fx
 
-            if self.pricing_ccy:
-                self.pricing_ccy_cur = self.fx_rate_provider[self.pricing_ccy]
-                self.pricing_ccy_cur_fx = self.pricing_ccy_cur.fx_rate * report_ccy_cur_fx
+        if self.pricing_ccy:
+            self.pricing_ccy_cur = self.fx_rate_provider[self.pricing_ccy]
+            self.pricing_ccy_cur_fx = self.pricing_ccy_cur.fx_rate * report_ccy_cur_fx
 
     def add(self, o):
         # ------------------
@@ -1018,10 +1020,10 @@ class ReportItem(BaseReportItem):
         elif self.type == ReportItem.TYPE_INSTRUMENT:
             if self.instr:
                 self.instr_principal_res = self.pos_size * self.instr.price_multiplier * self.instr_price_cur_principal_price * self.instr_pricing_ccy_cur_fx
-                self.instr_principal_loc = self.pos_size * self.instr.price_multiplier * self.instr_price_cur_principal_price
+                self.instr_principal_loc = self.instr_principal_res * res_to_loc_fx
 
                 self.instr_accrued_res = self.pos_size * self.instr.accrued_multiplier * self.instr_price_cur_accrued_price * self.instr_accrued_ccy_cur_fx
-                self.instr_accrued_loc = self.pos_size * self.instr.accrued_multiplier * self.instr_price_cur_accrued_price
+                self.instr_accrued_loc = self.instr_accrued_res * res_to_loc_fx
 
                 # _l.debug('> instr_accrual: instr=%s', self.instr.id)
                 self.instr_accrual = self.instr.find_accrual(self.report.report_date)
