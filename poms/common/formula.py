@@ -101,6 +101,14 @@ def _abs(a):
     return abs(a)
 
 
+def _min(a, b):
+    return min(a, b)
+
+
+def _max(a, b):
+    return max(a, b)
+
+
 def _isclose(a, b, rel_tol=1e-09, abs_tol=0.0):
     return isclose(float(a), float(b), rel_tol=float(rel_tol), abs_tol=float(abs_tol))
 
@@ -275,6 +283,8 @@ def _format_number(number, decimal_sep='.', decimal_pos=None, grouping=3, thousa
 
 
 def _parse_number(a):
+    if isinstance(a, (float, int)):
+        return a
     return float(a)
 
 
@@ -443,13 +453,7 @@ def _get_instrument_accrued_price(evaluator, instrument, date):
     #     raise ExpressionEvalError()
 
     instrument = _safe_get_instrument(evaluator, instrument)
-
-    if isinstance(date, str):
-        date = _parse_date(date)
-
-    if not isinstance(date, datetime.date):
-        date = _parse_date(str(date))
-
+    date = _parse_date(date)
     val = instrument.get_accrued_price(date)
 
     if val is None:
@@ -465,13 +469,7 @@ def _get_instrument_coupon(evaluator, instrument, date):
         return 0.0
 
     instrument = _safe_get_instrument(evaluator, instrument)
-
-    if isinstance(date, str):
-        date = _parse_date(date)
-
-    if not isinstance(date, datetime.date):
-        date = _parse_date(str(date))
-
+    date = _parse_date(date)
     cpn_val, is_cpn = instrument.get_coupon(date)
 
     if cpn_val is None:
@@ -734,6 +732,8 @@ FUNCTIONS = [
     SimpleEval2Def('abs', _abs),
     SimpleEval2Def('isclose', _isclose),
     SimpleEval2Def('random', _random),
+    SimpleEval2Def('min', _min),
+    SimpleEval2Def('max', _max),
 
     SimpleEval2Def('iff', _iff),
     SimpleEval2Def('len', _len),
@@ -754,8 +754,8 @@ FUNCTIONS = [
 
     SimpleEval2Def('format_date', _format_date),
     SimpleEval2Def('parse_date', _parse_date),
-    SimpleEval2Def('format_date2', _format_date2),
-    SimpleEval2Def('parse_date2', _parse_date2),
+    # SimpleEval2Def('format_date2', _format_date2),
+    # SimpleEval2Def('parse_date2', _parse_date2),
 
     SimpleEval2Def('format_number', _format_number),
     SimpleEval2Def('parse_number', _parse_number),
@@ -1140,6 +1140,14 @@ def safe_eval(s, names=None, max_time=None, add_print=False, allow_assign=False,
     e = SimpleEval2(names=names, max_time=max_time, add_print=add_print, allow_assign=allow_assign, now=now,
                     context=context)
     return e.eval(s)
+
+
+def validate_date(val):
+    return _parse_date(val)
+
+
+def validate_num(val):
+    return _parse_number(val)
 
 
 def register_fun(name, callback):
