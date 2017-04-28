@@ -79,7 +79,7 @@ class Notification(models.Model):
     # objects = NotificationQuerySet.as_manager()
 
     class Meta:
-        ordering = ['create_date']
+        ordering = ['-create_date']
 
     def __str__(self):
         if self.message:
