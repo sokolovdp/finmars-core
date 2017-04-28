@@ -2,11 +2,13 @@ from __future__ import unicode_literals
 
 from django.contrib import admin
 
+from poms.common.admin import AbstractModelAdmin
 from poms.notifications.models import Notification
 
 
-class NotificationAdmin(admin.ModelAdmin):
+class NotificationAdmin(AbstractModelAdmin):
     model = Notification
+    master_user_path = 'recipient_member__master_user'
     list_display = ['id', 'recipient', 'recipient_member', 'create_date', '__str__',
                     'actor', 'verb', 'action_object', 'target']
     ordering = ['recipient_member', 'create_date']
