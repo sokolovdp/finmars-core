@@ -11,7 +11,7 @@ from django.db import models
 from django.utils import timezone
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.text import Truncator
-from django.utils.translation import get_language, ugettext_lazy
+from django.utils.translation import get_language, ugettext_lazy, ugettext
 
 from poms.notifications import LEVELS
 
@@ -94,13 +94,13 @@ class Notification(models.Model):
             }
             if self.target:
                 if self.action_object:
-                    return ugettext_lazy('%(actor)s %(verb)s %(action_object)s on %(target)s %(timesince)s') % ctx
-                return ugettext_lazy('%(actor)s %(verb)s %(target)s %(timesince)s') % ctx
+                    return ugettext('%(actor)s %(verb)s %(action_object)s on %(target)s %(timesince)s') % ctx
+                return ugettext('%(actor)s %(verb)s %(target)s %(timesince)s') % ctx
             if self.action_object:
-                return ugettext_lazy('%(actor)s %(verb)s %(action_object)s %(timesince)s') % ctx
-            return ugettext_lazy('%(actor)s %(verb)s %(timesince)s') % ctx
+                return ugettext('%(actor)s %(verb)s %(action_object)s %(timesince)s') % ctx
+            return ugettext('%(actor)s %(verb)s %(timesince)s') % ctx
         else:
-            return ugettext_lazy("Invalid notification message")
+            return ugettext("Invalid notification message")
 
     @property
     def subject(self):
