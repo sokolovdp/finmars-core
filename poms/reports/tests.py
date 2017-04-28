@@ -2940,7 +2940,7 @@ class ReportTestCase(TestCase):
         # as_json(r)
         pass
 
-    def test_cf_p1(self):
+    def _test_cf_p1(self):
         # settings.DEBUG = True
 
         tt1 = TransactionType.objects.create(
@@ -3017,7 +3017,7 @@ class ReportTestCase(TestCase):
         report_builder = CashFlowProjectionReportBuilder(report)
         report_builder.build()
 
-    def _test_from_csv_td_1(self):
+    def test_from_csv_td_1(self):
         test_prefix = 'td_2'
         base_path = os.path.join(settings.BASE_DIR, 'poms', 'reports', 'tests_data')
         load_from_csv(
@@ -3029,7 +3029,10 @@ class ReportTestCase(TestCase):
         )
         # Transaction.objects.filter(master_user=self.m).exclude(transaction_class_id=TransactionClass.TRANSACTION_PL).delete()
         # Transaction.objects.filter(master_user=self.m).exclude(transaction_code__in=[7859, 7860]).delete()
-        # Transaction.objects.filter(master_user=self.m).exclude(instrument__user_code__in=['CH0336352825']).delete()
+        # Transaction.objects.filter(master_user=self.m).exclude(
+        #     instrument__user_code__in=['GB0031544546'],
+        #     portfolio__user_code__in=['FinMARS-5'],
+        # ).delete()
 
         cost_method = self._avco
 
