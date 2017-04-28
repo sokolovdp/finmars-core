@@ -559,9 +559,14 @@ class ReportItem(BaseReportItem):
             #     item.pricing_ccy = trn.report.master_user.system_currency
 
             item.gross_cost_res = trn.gross_cost_res
+            item.gross_cost_loc = trn.gross_cost_loc
             item.net_cost_res = trn.net_cost_res
+            item.net_cost_loc = trn.net_cost_loc
+
             item.principal_invested_res = trn.principal_invested_res
+            item.principal_invested_loc = trn.principal_invested_loc
             item.amount_invested_res = trn.amount_invested_res
+            item.amount_invested_loc = trn.amount_invested_loc
 
             if trn.trn_cls.id in [TransactionClass.BUY, TransactionClass.SELL]:
                 item.last_notes = trn.notes
@@ -971,9 +976,14 @@ class ReportItem(BaseReportItem):
             # self.time_invested += o.time_invested
 
             self.gross_cost_res += o.gross_cost_res
+            self.gross_cost_loc += o.gross_cost_loc
             self.net_cost_res += o.net_cost_res
+            self.net_cost_loc += o.net_cost_loc
+
             self.principal_invested_res += o.principal_invested_res
+            self.principal_invested_loc += o.principal_invested_loc
             self.amount_invested_res += o.amount_invested_res
+            self.amount_invested_loc += o.amount_invested_loc
 
             if o.last_notes is not None:
                 self.last_notes = o.last_notes
@@ -1122,13 +1132,15 @@ class ReportItem(BaseReportItem):
             # Other
             # ------------------
             self.gross_cost_res = -self.gross_cost_res
-            self.gross_cost_loc = self.gross_cost_res * res_to_loc_fx
+            # self.gross_cost_loc = self.gross_cost_res * res_to_loc_fx
+            self.gross_cost_loc = -self.gross_cost_loc
 
             self.net_cost_res = -self.net_cost_res
-            self.net_cost_loc = self.net_cost_res * res_to_loc_fx
+            # self.net_cost_loc = self.net_cost_res * res_to_loc_fx
+            self.net_cost_loc = -self.net_cost_loc
 
-            self.principal_invested_loc = self.principal_invested_res * res_to_loc_fx
-            self.amount_invested_loc = self.amount_invested_res * res_to_loc_fx
+            # self.principal_invested_loc = self.principal_invested_res * res_to_loc_fx
+            # self.amount_invested_loc = self.amount_invested_res * res_to_loc_fx
 
             try:
                 self.pos_return_res = (self.principal_opened_res + self.carry_opened_res) \
@@ -1182,6 +1194,7 @@ class ReportItem(BaseReportItem):
                                                   / self.gross_cost_loc
                     except ArithmeticError:
                         self.daily_price_change = 0.0
+
                 else:
                     #  = (Current Price at T -  Price from Price History at T-1) / (Price from Price History at T-1) , if Time Invested > 1 day
                     price_yest = self.pricing_provider[self.instr, self.report.report_date - timedelta(days=1)]
@@ -1200,6 +1213,7 @@ class ReportItem(BaseReportItem):
                                                 / self.gross_cost_loc
                     except ArithmeticError:
                         self.mtd_price_change = 0.0
+
                 else:
                     # = (Current Price -  Price from Price History at end_of_previous_month (Report Date)) / (Price from Price History at end_of_previous_month (Report Date)) , if Time Invested > Day(Report Date)
                     price_eom = self.pricing_provider[

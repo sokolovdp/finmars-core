@@ -138,9 +138,13 @@ class VirtualTransaction(BaseReportItem):
     instr_accrued_res = 0.0
 
     gross_cost_res = 0.0
+    gross_cost_loc = 0.0
     net_cost_res = 0.0
+    net_cost_loc = 0.0
     principal_invested_res = 0.0
+    principal_invested_loc = 0.0
     amount_invested_res = 0.0
+    amount_invested_loc = 0.0
 
     balance_pos_size = 0.0
     sum_remaining_pos_size = 0.0 # sum of remaining_pos_size by trns before current
@@ -717,33 +721,71 @@ class VirtualTransaction(BaseReportItem):
             if not self.is_cloned and self.instr:
 
                 if self.trn_cls.id in [TransactionClass.BUY, TransactionClass.SELL] and self.instr:
+                    # gross_cost
+
                     try:
                         self.gross_cost_res = self.principal * self.ref_fx * \
-                                              (self.trn_ccy_cur.fx_rate / self.report_ccy_cur.fx_rate) * \
+                                              (self.trn_ccy_acc_hist.fx_rate / self.report_ccy_acc_hist.fx_rate) * \
                                               (1.0 - self.multiplier) / self.pos_size / self.instr.price_multiplier
                     except ArithmeticError:
                         self.gross_cost_res = 0.0
 
                     try:
+                        self.gross_cost_loc = self.principal * self.ref_fx * \
+                                              (self.trn_ccy_acc_hist.fx_rate / self.pricing_ccy_acc_hist.fx_rate) * \
+                                              (1.0 - self.multiplier) / self.pos_size / self.instr.price_multiplier
+                    except ArithmeticError:
+                        self.gross_cost_loc = 0.0
+
+                    # net_cost
+
+                    try:
                         self.net_cost_res = (self.principal + self.overheads) * self.ref_fx * \
-                                            (self.trn_ccy_cur.fx_rate / self.instr_pricing_ccy_cur.fx_rate) * \
+                                            (self.trn_ccy_acc_hist.fx_rate / self.report_ccy_acc_hist.fx_rate) * \
                                             (1.0 - self.multiplier) / self.pos_size / self.instr.price_multiplier
                     except ArithmeticError:
                         self.net_cost_res = 0.0
 
                     try:
+                        self.net_cost_loc = (self.principal + self.overheads) * self.ref_fx * \
+                                            (self.trn_ccy_acc_hist.fx_rate / self.pricing_ccy_acc_hist.fx_rate) * \
+                                            (1.0 - self.multiplier) / self.pos_size / self.instr.price_multiplier
+                    except ArithmeticError:
+                        self.net_cost_loc = 0.0
+
+                    # principal_invested
+
+                    try:
                         self.principal_invested_res = self.principal * self.ref_fx * \
-                                                      (self.trn_ccy_cur.fx_rate / self.report_ccy_cur.fx_rate) * \
+                                                      (self.trn_ccy_acc_hist.fx_rate / self.report_ccy_acc_hist.fx_rate) * \
                                                       (1.0 - self.multiplier)
                     except ArithmeticError:
                         self.principal_invested_res = 0.0
 
                     try:
+                        self.principal_invested_loc = self.principal * self.ref_fx * \
+                                                      (self.trn_ccy_acc_hist.fx_rate / self.pricing_ccy_acc_hist.fx_rate) * \
+                                                      (1.0 - self.multiplier)
+                    except ArithmeticError:
+                        self.principal_invested_loc = 0.0
+
+                    # amount_invested
+
+                    try:
                         self.amount_invested_res = self.total_res * self.ref_fx * \
-                                                   (self.trn_ccy_cur.fx_rate / self.report_ccy_cur.fx_rate) * \
+                                                   (self.trn_ccy_acc_hist.fx_rate / self.report_ccy_acc_hist.fx_rate) * \
                                                    (1.0 - self.multiplier)
                     except ArithmeticError:
                         self.amount_invested_res = 0.0
+
+                    try:
+                        self.amount_invested_loc = self.total_res * self.ref_fx * \
+                                                   (self.trn_ccy_acc_hist.fx_rate / self.pricing_ccy_acc_hist.fx_rate) * \
+                                                   (1.0 - self.multiplier)
+                    except ArithmeticError:
+                        self.amount_invested_loc = 0.0
+
+                    # other
 
                     try:
                         future_accrual_payments = self.instr.get_future_accrual_payments(
@@ -763,6 +805,7 @@ class VirtualTransaction(BaseReportItem):
                         self.remaining_pos_size_percent = self.remaining_pos_size / self.balance_pos_size
                     except ArithmeticError:
                         self.remaining_pos_size_percent = 0.0
+
                     self.weighted_ytm = self.ytm * self.remaining_pos_size_percent
                     self.weighted_time_invested_days = self.time_invested_days * self.remaining_pos_size_percent
                     self.weighted_time_invested = self.time_invested * self.remaining_pos_size_percent
