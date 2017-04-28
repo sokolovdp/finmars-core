@@ -222,6 +222,7 @@ CORS_ORIGIN_WHITELIST = ('dev.finmars.com', 'finmars.com', )
 CORS_URLS_REGEX = r'^/api/.*$'
 CORS_REPLACE_HTTPS_REFERER = True
 CORS_ALLOW_CREDENTIALS = True
+CORS_PREFLIGHT_MAX_AGE = 3600
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/1.9/howto/static-files/
