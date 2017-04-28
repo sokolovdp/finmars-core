@@ -502,7 +502,7 @@ def get_coupon(accrual, dt1, dt2, maturity_date=None):
     y1 = dt1.year
     d2 = dt2.day
     m2 = dt2.month
-    y2 = dt2.month
+    y2 = dt2.year
 
     # Select Case day_convention_code
     if accrual_calculation_model.id == AccrualCalculationModel.NONE:

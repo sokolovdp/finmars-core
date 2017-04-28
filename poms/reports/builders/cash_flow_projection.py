@@ -249,9 +249,10 @@ class CashFlowProjectionReportBuilder(TransactionReportBuilder):
                         # is_apply = is_apply_default_on_date
                         is_apply = edate == now
 
-                        _l.debug('gen event: is_apply=%s, effective_date=%s, notification_date=%s, '
+                        _l.debug('gen event: now=%s, is_apply=%s, effective_date=%s, notification_date=%s, '
                                  'is_apply_default_on_date=%s, is_need_reaction_on_date=%s',
-                                 is_apply, str(edate), str(ndate), is_apply_default_on_date, is_need_reaction_on_date)
+                                 str(now), is_apply, str(edate), str(ndate), is_apply_default_on_date,
+                                 is_need_reaction_on_date)
 
                         if is_apply:
                             # for action in es.actions.all():
