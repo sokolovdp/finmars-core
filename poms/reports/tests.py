@@ -18,11 +18,14 @@ from poms.accounts.models import AccountType, Account
 from poms.counterparties.models import Counterparty, Responsible, CounterpartyGroup, ResponsibleGroup
 from poms.currencies.models import Currency, CurrencyHistory
 from poms.instruments.models import Instrument, PriceHistory, PricingPolicy, CostMethod, InstrumentType, \
-    InstrumentClass, AccrualCalculationSchedule, AccrualCalculationModel, Periodicity, PaymentSizeDetail
+    InstrumentClass, AccrualCalculationSchedule, AccrualCalculationModel, Periodicity, PaymentSizeDetail, EventSchedule
 from poms.portfolios.models import Portfolio
 from poms.reports.builders.balance_item import ReportItem, Report
 from poms.reports.builders.balance_pl import ReportBuilder
 from poms.reports.builders.balance_virt_trn import VirtualTransaction
+from poms.reports.builders.base_item import BaseReportItem
+from poms.reports.builders.cash_flow_projection import CashFlowProjectionReportBuilder
+from poms.reports.builders.cash_flow_projection_item import CashFlowProjectionReport
 from poms.strategies.models import Strategy1Group, Strategy1Subgroup, Strategy1, Strategy2Group, Strategy2Subgroup, \
     Strategy2, Strategy3Subgroup, Strategy3Group, Strategy3
 from poms.transactions.models import Transaction, TransactionClass, TransactionType, ComplexTransaction
@@ -440,7 +443,7 @@ class ReportTestCase(TestCase):
         'principal_fixed_opened_loc',
         'carry_fixed_opened_loc',
         'overheads_fixed_opened_loc',
-        'total_fixed_opened_loc',    ]
+        'total_fixed_opened_loc', ]
 
     TRN_COLS_MINI = [
         # 'is_cloned',
@@ -2937,7 +2940,84 @@ class ReportTestCase(TestCase):
         # as_json(r)
         pass
 
-    def test_from_csv_td_1(self):
+    def test_cf_p1(self):
+        # settings.DEBUG = True
+
+        tt1 = TransactionType.objects.create(
+            master_user=self.m,
+            group=self.m.transaction_type_group,
+            date_expr='effective_date',
+        )
+
+        it1 = InstrumentType.objects.create(
+            master_user=self.m,
+            user_code='itype1',
+            instrument_class=InstrumentClass.objects.get(pk=InstrumentClass.REGULAR_EVENT_AT_MATURITY),
+            one_off_event=tt1,
+            regular_event=tt1,
+            factor_same=tt1,
+            factor_up=tt1,
+            factor_down=tt1,
+        )
+
+        i1 = Instrument.objects.create(
+            master_user=self.m,
+            user_code='i1',
+            instrument_type=it1,
+            pricing_currency=self.usd,
+            price_multiplier=1.0,
+            accrued_currency=self.usd,
+            accrued_multiplier=1.0,
+            maturity_date=date(2103, 1, 1),
+            maturity_price=1000,
+        )
+
+        es1 = AccrualCalculationSchedule.objects.create(
+            instrument=i1,
+            accrual_start_date=date(2100, 1, 1),
+            first_payment_date=date(2100, 7, 1),
+            accrual_size=10,
+            accrual_calculation_model=AccrualCalculationModel.objects.get(pk=AccrualCalculationModel.ISMA_30_360),
+            periodicity=Periodicity.objects.get(pk=Periodicity.SEMI_ANNUALLY),
+            periodicity_n=1
+        )
+
+        i1.rebuild_event_schedules()
+
+        _l.info('get_future_coupons: %s',
+            [(str(d), v) for d, v in i1.get_future_coupons(begin_date=date(2101, 1, 1))])
+
+        BaseReportItem.dumps(
+            items=EventSchedule.objects.filter(instrument=i1),
+            columns=[
+                'effective_date',
+                'event_class',
+                'notification_class',
+                'notify_in_n_days',
+                'periodicity',
+                'periodicity',
+                'periodicity_n',
+                'final_date',
+                'is_auto_generated',
+                'accrual_calculation_schedule',
+                'factor_schedule',
+            ]
+        )
+
+        self._t_buy(instr=i1, position=10,
+                    stl_ccy=self.usd, principal=-10, carry=0, overheads=-10,
+                    acc_date=date(2101, 2, 1), cash_date=date(2101, 2, 1))
+
+        report = CashFlowProjectionReport(
+            master_user=self.m,
+            member=self.mm,
+            balance_date=date(2101, 2, 1),
+            report_date=date(2104, 1, 1),
+        )
+        report_builder = CashFlowProjectionReportBuilder(report)
+        report_builder.build()
+
+    def _test_from_csv_td_1(self):
         test_prefix = 'td_2'
         base_path = os.path.join(settings.BASE_DIR, 'poms', 'reports', 'tests_data')
         load_from_csv(
@@ -3057,7 +3137,7 @@ class ReportTestCase(TestCase):
                 'show_transaction_details': True,
             },
         ]
-        pl_consolidations=[]
+        pl_consolidations = []
 
         trn_cols = [
             'pk', 'trn_code', 'trn_cls', 'multiplier', 'instr', 'trn_ccy', 'pos_size', 'stl_ccy', 'cash', 'principal',
