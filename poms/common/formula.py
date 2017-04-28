@@ -1993,5 +1993,5 @@ accrual_NL_365_NO_EOM(date(2000, 1, 1), date(2000, 1, 25))
         # _l.info('1: %s', safe_eval('format_date2("2001-12-12", "yyyy/MM/dd")'))
 
 
-    group_test()
+    # group_test()
     pass

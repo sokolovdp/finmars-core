@@ -23,7 +23,6 @@ from poms.obj_perms.models import GenericObjectPermission
 from poms.tags.models import TagLink
 from poms.users.models import MasterUser, Member
 
-
 _l = logging.getLogger('poms.instruments')
 
 
@@ -736,7 +735,10 @@ class Instrument(NamedModel, FakeDeletableModel):
                 # 3652058 == (date.max-date.min).days
                 for k in range(0, 3652058):
                     if k > 0:
-                        d = accrual.first_payment_date + periodicity.to_timedelta(i=k)
+                        try:
+                            d = accrual.first_payment_date + periodicity.to_timedelta(i=k)
+                        except ValueError:  # year is out of range
+                            return 0.0, False
                         if d >= accrual.accrual_end_date:
                             d = accrual.accrual_end_date - timedelta(days=1)
 
@@ -755,7 +757,7 @@ class Instrument(NamedModel, FakeDeletableModel):
         return 0.0, False
 
     def get_future_coupons(self, data=None, d0=None, v0=None, begin_date=None, accruals=None,
-                                    principal_ccy_fx=1.0, accrual_ccy_fx=1.0):
+                           principal_ccy_fx=1.0, accrual_ccy_fx=1.0):
         accruals = self.get_accrual_calculation_schedules_all(accruals=accruals)
 
         if data is None:
