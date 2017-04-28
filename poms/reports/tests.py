@@ -1236,7 +1236,7 @@ class ReportTestCase(TestCase):
 
     def _sdump(self, builder, name, show_trns=True, show_items=True, trn_cols=None, item_cols=None,
                trn_filter=None, in_csv=False):
-        transpose = False
+        transpose = True
         showindex = 'always'
         if show_trns or show_items:
             s = 'Report: %s\n' % (
@@ -1299,7 +1299,7 @@ class ReportTestCase(TestCase):
             # _l.info(self._sdump_hist(*args, **kwargs))
 
     def _simple_run(self, name, result=None, trns=False, trn_cols=None, item_cols=None,
-                    trn_dump_all=True, in_csv=False, **kwargs):
+                    trn_dump_all=True, in_csv=False, build_balance_for_tests=False, **kwargs):
         _l.info('')
         _l.info('')
         _l.info('*' * 79)
@@ -1311,7 +1311,10 @@ class ReportTestCase(TestCase):
             queryset = Transaction.objects.filter(pk__in=[int(t) if isinstance(t, int) else t.id for t in trns])
         b = ReportBuilder(instance=r, queryset=queryset)
         if r.report_type == Report.TYPE_BALANCE:
-            b.build_balance(full=True)
+            if build_balance_for_tests:
+                b.build_balance_for_tests(full=True)
+            else:
+                b.build_balance(full=True)
         elif r.report_type == Report.TYPE_PL:
             b.build_pl(full=True)
         r.transactions = b.transactions
@@ -2946,6 +2949,7 @@ class ReportTestCase(TestCase):
         )
         # Transaction.objects.filter(master_user=self.m).exclude(transaction_class_id=TransactionClass.TRANSACTION_PL).delete()
         # Transaction.objects.filter(master_user=self.m).exclude(transaction_code__in=[7859, 7860]).delete()
+        Transaction.objects.filter(master_user=self.m).exclude(instrument__user_code__in=['CH0336352825']).delete()
 
         cost_method = self._avco
 
@@ -2959,16 +2963,16 @@ class ReportTestCase(TestCase):
         elif test_prefix == 'td_2':
             report_dates = [
                 date(2017, 2, 3),  # 1,  2,  3
-                date(2017, 2, 7),  # 4,  5,  6
-                date(2017, 2, 15),  # 7,  8,  9
-                date(2017, 2, 23),  # 10, 11, 12
+                # date(2017, 2, 7),  # 4,  5,  6
+                # date(2017, 2, 15),  # 7,  8,  9
+                # date(2017, 2, 23),  # 10, 11, 12
             ]
         else:
             report_dates = []
         report_currencies = [
             Currency.objects.get(master_user=self.m, user_code='USD'),  # 1, 4, 7, 10
-            Currency.objects.get(master_user=self.m, user_code='EUR'),  # 2, 5, 8, 11
-            Currency.objects.get(master_user=self.m, user_code='GBP'),  # 3, 6, 9, 12
+            # Currency.objects.get(master_user=self.m, user_code='EUR'),  # 2, 5, 8, 11
+            # Currency.objects.get(master_user=self.m, user_code='GBP'),  # 3, 6, 9, 12
         ]
         # portfolio_modes = [
         #     Report.MODE_IGNORE,
@@ -3018,30 +3022,30 @@ class ReportTestCase(TestCase):
                 'strategy3_mode': Report.MODE_INDEPENDENT,
                 'show_transaction_details': True,
             },
-            {
-                'portfolio_mode': Report.MODE_INDEPENDENT,
-                'account_mode': Report.MODE_INDEPENDENT,
-                'strategy1_mode': Report.MODE_IGNORE,
-                'strategy2_mode': Report.MODE_IGNORE,
-                'strategy3_mode': Report.MODE_IGNORE,
-                'show_transaction_details': True,
-            },
-            {
-                'portfolio_mode': Report.MODE_INDEPENDENT,
-                'account_mode': Report.MODE_IGNORE,
-                'strategy1_mode': Report.MODE_IGNORE,
-                'strategy2_mode': Report.MODE_IGNORE,
-                'strategy3_mode': Report.MODE_IGNORE,
-                'show_transaction_details': True,
-            },
-            {
-                'portfolio_mode': Report.MODE_IGNORE,
-                'account_mode': Report.MODE_INDEPENDENT,
-                'strategy1_mode': Report.MODE_IGNORE,
-                'strategy2_mode': Report.MODE_IGNORE,
-                'strategy3_mode': Report.MODE_IGNORE,
-                'show_transaction_details': True,
-            },
+            # {
+            #     'portfolio_mode': Report.MODE_INDEPENDENT,
+            #     'account_mode': Report.MODE_INDEPENDENT,
+            #     'strategy1_mode': Report.MODE_IGNORE,
+            #     'strategy2_mode': Report.MODE_IGNORE,
+            #     'strategy3_mode': Report.MODE_IGNORE,
+            #     'show_transaction_details': True,
+            # },
+            # {
+            #     'portfolio_mode': Report.MODE_INDEPENDENT,
+            #     'account_mode': Report.MODE_IGNORE,
+            #     'strategy1_mode': Report.MODE_IGNORE,
+            #     'strategy2_mode': Report.MODE_IGNORE,
+            #     'strategy3_mode': Report.MODE_IGNORE,
+            #     'show_transaction_details': True,
+            # },
+            # {
+            #     'portfolio_mode': Report.MODE_IGNORE,
+            #     'account_mode': Report.MODE_INDEPENDENT,
+            #     'strategy1_mode': Report.MODE_IGNORE,
+            #     'strategy2_mode': Report.MODE_IGNORE,
+            #     'strategy3_mode': Report.MODE_IGNORE,
+            #     'show_transaction_details': True,
+            # },
         ]
         pl_consolidations = bl_consolidations + [
             {
@@ -3053,6 +3057,7 @@ class ReportTestCase(TestCase):
                 'show_transaction_details': True,
             },
         ]
+        pl_consolidations=[]
 
         trn_cols = [
             'pk', 'trn_code', 'trn_cls', 'multiplier', 'instr', 'trn_ccy', 'pos_size', 'stl_ccy', 'cash', 'principal',
@@ -3091,7 +3096,8 @@ class ReportTestCase(TestCase):
             'overheads_fixed_closed_loc', 'total_fixed_closed_loc', 'principal_fixed_opened_res',
             'carry_fixed_opened_res', 'overheads_fixed_opened_res', 'total_fixed_opened_res',
             'principal_fixed_opened_loc', 'carry_fixed_opened_loc', 'overheads_fixed_opened_loc',
-            'total_fixed_opened_loc', 'group_code', 'detail_trn'
+            'total_fixed_opened_loc', 'group_code', 'detail_trn',
+            'user_code', 'name',
         ]
 
         # trn_cols = self.TRN_COLS_ALL
@@ -3125,6 +3131,7 @@ class ReportTestCase(TestCase):
                     #         report_date, report_currency, sorted(consolidation.items()))
                     bal = self._simple_run(
                         None,
+                        build_balance_for_tests=True,
                         report_type=Report.TYPE_BALANCE,
                         report_currency=report_currency,
                         report_date=report_date,
@@ -3221,8 +3228,8 @@ class ReportTestCase(TestCase):
         #                                 pl_reports.append(pl)
 
         _l.warn('write results')
-        self._write_results(balance_reports, '%s_balance.xlsx' % test_prefix,
-                            trn_cols=trn_cols, item_cols=item_cols)
-        self._write_results(pl_reports, '%s_pl_report.xlsx' % test_prefix,
-                            trn_cols=trn_cols, item_cols=item_cols)
+        # self._write_results(balance_reports, '%s_balance.xlsx' % test_prefix,
+        #                     trn_cols=trn_cols, item_cols=item_cols)
+        # self._write_results(pl_reports, '%s_pl_report.xlsx' % test_prefix,
+        #                     trn_cols=trn_cols, item_cols=item_cols)
         pass

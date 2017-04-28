@@ -472,11 +472,12 @@ def _get_instrument_coupon(evaluator, instrument, date):
     if not isinstance(date, datetime.date):
         date = _parse_date(str(date))
 
-    val = instrument.get_coupon(date)
+    cpn_val, is_cpn = instrument.get_coupon(date)
 
-    if val is None:
-        val = 0.0
-    return val
+    if cpn_val is None:
+        cpn_val = 0.0
+
+    return cpn_val
 
 
 _get_instrument_coupon.evaluator = True
@@ -1992,5 +1993,5 @@ accrual_NL_365_NO_EOM(date(2000, 1, 1), date(2000, 1, 25))
         # _l.info('1: %s', safe_eval('format_date2("2001-12-12", "yyyy/MM/dd")'))
 
 
-    group_test()
+    # group_test()
     pass

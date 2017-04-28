@@ -539,7 +539,7 @@ def get_coupon(accrual, dt1, dt2, maturity_date=None):
             d1 = 30
         if d2 == 31 and (d1 == 30 or d1 == 31):
             d2 = 30
-        return cpn * ((dt2.yaar - y1) * 360 + (m2 - m1) * 30 + (d2 - d1)) / 360
+        return cpn * ((y2 - y1) * 360 + (m2 - m1) * 30 + (d2 - d1)) / 360
 
     # elif accrual_calculation_model.id == AccrualCalculationModel.:
     # #     Case 6  '30/365
