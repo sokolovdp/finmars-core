@@ -400,7 +400,7 @@ class TransactionReportBuilder(BaseReportBuilder):
         self.instance.strategies2 = self._refresh_strategies2(
             master_user=self.instance.master_user,
             items=self.instance.items,
-            attrs=['strategy2_position', 'strategy3_cash']
+            attrs=['strategy2_position', 'strategy2_cash']
         )
 
         self.instance.strategies3 = self._refresh_strategies3(
