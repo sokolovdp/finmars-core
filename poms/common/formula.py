@@ -1248,9 +1248,9 @@ def _get_supported_models_serializer_class():
     from poms.accounts.serializers import AccountSerializer
     from poms.counterparties.models import Counterparty, Responsible
     from poms.counterparties.serializers import CounterpartySerializer, ResponsibleSerializer
-    from poms.instruments.models import Instrument, DailyPricingModel, PaymentSizeDetail
+    from poms.instruments.models import Instrument, DailyPricingModel, PaymentSizeDetail, GeneratedEvent
     from poms.instruments.serializers import InstrumentSerializer, DailyPricingModelSerializer, \
-        PaymentSizeDetailSerializer
+        PaymentSizeDetailSerializer, GeneratedEventSerializer
     from poms.currencies.models import Currency
     from poms.currencies.serializers import CurrencySerializer
     from poms.portfolios.models import Portfolio
@@ -1285,6 +1285,7 @@ def _get_supported_models_serializer_class():
         ReportItem: ReportItemEvalSerializer,
         TransactionReportItem: TransactionReportItemSerializer,
         CashFlowProjectionReportItem: CashFlowProjectionReportItemSerializer,
+        GeneratedEvent: GeneratedEventSerializer
     }
 
 
