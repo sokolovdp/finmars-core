@@ -551,12 +551,8 @@ class ReportItem(BaseReportItem):
                 item.pos_size = trn.pos_size * (1.0 - trn.multiplier)
             else:
                 item.pos_size = val
-            item.cost_res = trn.principal_res * (1.0 - trn.multiplier)
 
-            # if trn.instr:
-            #     item.pricing_ccy = trn.instr.pricing_currency
-            # else:
-            #     item.pricing_ccy = trn.report.master_user.system_currency
+            item.cost_res = trn.cost_res
 
             item.gross_cost_res = trn.gross_cost_res
             item.gross_cost_loc = trn.gross_cost_loc
@@ -965,7 +961,6 @@ class ReportItem(BaseReportItem):
             # self.carry_res += o.instr_accrued_res
 
             # self.market_value_res += o.instr_principal_res + o.instr_accrued_res
-            self.cost_res += o.cost_res
 
             # self.total_real_res += o.total_real_res
             # self.total_unreal_res += o.market_value_res + o.cost_res
@@ -974,6 +969,8 @@ class ReportItem(BaseReportItem):
             self.ytm_at_cost += o.ytm_at_cost
             self.time_invested_days += o.time_invested_days
             # self.time_invested += o.time_invested
+
+            self.cost_res += o.cost_res
 
             self.gross_cost_res += o.gross_cost_res
             self.gross_cost_loc += o.gross_cost_loc
@@ -1132,15 +1129,10 @@ class ReportItem(BaseReportItem):
             # Other
             # ------------------
             self.gross_cost_res = -self.gross_cost_res
-            # self.gross_cost_loc = self.gross_cost_res * res_to_loc_fx
             self.gross_cost_loc = -self.gross_cost_loc
 
             self.net_cost_res = -self.net_cost_res
-            # self.net_cost_loc = self.net_cost_res * res_to_loc_fx
             self.net_cost_loc = -self.net_cost_loc
-
-            # self.principal_invested_loc = self.principal_invested_res * res_to_loc_fx
-            # self.amount_invested_loc = self.amount_invested_res * res_to_loc_fx
 
             try:
                 self.pos_return_res = (self.principal_opened_res + self.carry_opened_res) \

@@ -137,6 +137,7 @@ class VirtualTransaction(BaseReportItem):
     instr_accrued = 0.0
     instr_accrued_res = 0.0
 
+    cost_res = 0.0
     gross_cost_res = 0.0
     gross_cost_loc = 0.0
     net_cost_res = 0.0
@@ -147,7 +148,7 @@ class VirtualTransaction(BaseReportItem):
     amount_invested_loc = 0.0
 
     balance_pos_size = 0.0
-    sum_remaining_pos_size = 0.0 # sum of remaining_pos_size by trns before current
+    sum_remaining_pos_size = 0.0  # sum of remaining_pos_size by trns before current
     remaining_pos_size = 0.0
     remaining_pos_size_percent = 0.0  # calculated in second pass
     ytm = 0.0
@@ -721,6 +722,12 @@ class VirtualTransaction(BaseReportItem):
             if not self.is_cloned and self.instr:
 
                 if self.trn_cls.id in [TransactionClass.BUY, TransactionClass.SELL] and self.instr:
+                    try:
+                        self.cost_res = self.principal * (self.stl_ccy_cur.fx_rate / self.report_ccy_cur.fx_rate) * \
+                                        (1.0 - self.multiplier)
+                    except ArithmeticError:
+                        self.cost_res = 0.0
+
                     # gross_cost
 
                     try:
@@ -757,14 +764,16 @@ class VirtualTransaction(BaseReportItem):
 
                     try:
                         self.principal_invested_res = self.principal * self.ref_fx * \
-                                                      (self.trn_ccy_acc_hist.fx_rate / self.report_ccy_acc_hist.fx_rate) * \
+                                                      (
+                                                      self.trn_ccy_acc_hist.fx_rate / self.report_ccy_acc_hist.fx_rate) * \
                                                       (1.0 - self.multiplier)
                     except ArithmeticError:
                         self.principal_invested_res = 0.0
 
                     try:
                         self.principal_invested_loc = self.principal * self.ref_fx * \
-                                                      (self.trn_ccy_acc_hist.fx_rate / self.pricing_ccy_acc_hist.fx_rate) * \
+                                                      (
+                                                      self.trn_ccy_acc_hist.fx_rate / self.pricing_ccy_acc_hist.fx_rate) * \
                                                       (1.0 - self.multiplier)
                     except ArithmeticError:
                         self.principal_invested_loc = 0.0
@@ -856,40 +865,40 @@ class VirtualTransaction(BaseReportItem):
             t.is_mismatch = False
 
             t.report_ccy_cur = None
-            t.report_ccy_cur_fx = 0.0 # float('nan')
+            t.report_ccy_cur_fx = 0.0  # float('nan')
             t.report_ccy_cash_hist = None
-            t.report_ccy_cash_hist_fx = 0.0 # float('nan')
+            t.report_ccy_cash_hist_fx = 0.0  # float('nan')
             t.report_ccy_acc_hist = None
-            t.report_ccy_acc_hist_fx = 0.0 # float('nan')
+            t.report_ccy_acc_hist_fx = 0.0  # float('nan')
 
             t.pricing_ccy_cur = None
-            t.pricing_ccy_cur_fx = 0.0 # float('nan')
+            t.pricing_ccy_cur_fx = 0.0  # float('nan')
             t.pricing_ccy_cash_hist = None
-            t.pricing_ccy_cash_hist_fx = 0.0 # float('nan')
+            t.pricing_ccy_cash_hist_fx = 0.0  # float('nan')
             t.pricing_ccy_acc_hist = None
-            t.pricing_ccy_acc_hist_fx = 0.0 # float('nan')
+            t.pricing_ccy_acc_hist_fx = 0.0  # float('nan')
 
             t.instr_price_cur = None
-            t.instr_price_cur_principal_price = 0.0 # float('nan')
-            t.instr_price_cur_accrued_price = 0.0 # float('nan')
+            t.instr_price_cur_principal_price = 0.0  # float('nan')
+            t.instr_price_cur_accrued_price = 0.0  # float('nan')
             t.instr_pricing_ccy_cur = None
-            t.instr_pricing_ccy_cur_fx = 0.0 # float('nan')
+            t.instr_pricing_ccy_cur_fx = 0.0  # float('nan')
             t.instr_accrued_ccy_cur = None
-            t.instr_accrued_ccy_cur_fx = 0.0 # float('nan')
+            t.instr_accrued_ccy_cur_fx = 0.0  # float('nan')
 
             t.trn_ccy_cash_hist = None
-            t.trn_ccy_cash_hist_fx = 0.0 # float('nan')
+            t.trn_ccy_cash_hist_fx = 0.0  # float('nan')
             t.trn_ccy_acc_hist = None
-            t.trn_ccy_acc_hist_fx = 0.0 # float('nan')
+            t.trn_ccy_acc_hist_fx = 0.0  # float('nan')
             t.trn_ccy_cur = None
-            t.trn_ccy_cur_fx = 0.0 # float('nan')
+            t.trn_ccy_cur_fx = 0.0  # float('nan')
 
             t.stl_ccy_cash_hist = None
-            t.stl_ccy_cash_hist_fx = 0.0 # float('nan')
+            t.stl_ccy_cash_hist_fx = 0.0  # float('nan')
             t.stl_ccy_acc_hist = None
-            t.stl_ccy_acc_hist_fx = 0.0 # float('nan')
+            t.stl_ccy_acc_hist_fx = 0.0  # float('nan')
             t.stl_ccy_cur = None
-            t.stl_ccy_cur_fx = 0.0 # float('nan')
+            t.stl_ccy_cur_fx = 0.0  # float('nan')
 
             t.mismatch = 0.0
             t.avco_multiplier = 0.0
@@ -901,18 +910,18 @@ class VirtualTransaction(BaseReportItem):
             t.cash = 0.0
             t.cash_res = 0.0
 
-            t.instr_principal = 0.0 # float('nan')
+            t.instr_principal = 0.0  # float('nan')
             t.instr_principal_res = 0.0
-            t.instr_accrued = 0.0 # float('nan')
+            t.instr_accrued = 0.0  # float('nan')
             t.instr_accrued_res = 0.0
 
-            t.principal = 0.0 # float('nan')
-            t.carry = 0.0 # float('nan')
-            t.overheads = 0.0 # float('nan')
-            t.total = 0.0 # float('nan')
+            t.principal = 0.0  # float('nan')
+            t.carry = 0.0  # float('nan')
+            t.overheads = 0.0  # float('nan')
+            t.total = 0.0  # float('nan')
 
-            t.pl_fx_mul = 0.0 # float('nan')
-            t.pl_fixed_mul = 0.0 # float('nan')
+            t.pl_fx_mul = 0.0  # float('nan')
+            t.pl_fixed_mul = 0.0  # float('nan')
 
         pos_size = abs(closed.pos_size * mul_delta)
 
