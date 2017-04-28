@@ -1128,7 +1128,6 @@ class ReportItem(BaseReportItem):
             self.net_cost_loc = self.net_cost_res * res_to_loc_fx
 
             self.principal_invested_loc = self.principal_invested_res * res_to_loc_fx
-
             self.amount_invested_loc = self.amount_invested_res * res_to_loc_fx
 
             try:

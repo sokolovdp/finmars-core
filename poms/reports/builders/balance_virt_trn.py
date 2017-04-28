@@ -462,10 +462,13 @@ class VirtualTransaction(BaseReportItem):
         # report ccy
         self.report_ccy_cur = self.fx_rate_provider[self.report.report_currency]
         self.report_ccy_cur_fx = self.report_ccy_cur.fx_rate
+
         self.report_ccy_cash_hist = self.fx_rate_provider[self.report.report_currency, self.cash_date]
         self.report_ccy_cash_hist_fx = self.report_ccy_cash_hist.fx_rate
+
         self.report_ccy_acc_hist = self.fx_rate_provider[self.report.report_currency, self.acc_date]
         self.report_ccy_acc_hist_fx = self.report_ccy_acc_hist.fx_rate
+
         try:
             report_ccy_cur_fx = 1.0 / self.report_ccy_cur_fx
         except ArithmeticError:
@@ -494,8 +497,10 @@ class VirtualTransaction(BaseReportItem):
         if self.pricing_ccy.id == self.report.report_currency.id:
             self.pricing_ccy_cur = self.report_ccy_cur
             self.pricing_ccy_cur_fx = self.report_ccy_cur_fx
+
             self.pricing_ccy_cash_hist = self.report_ccy_cash_hist
             self.pricing_ccy_cash_hist_fx = self.report_ccy_cash_hist_fx
+
             self.pricing_ccy_acc_hist = self.report_ccy_acc_hist
             self.pricing_ccy_acc_hist_fx = self.report_ccy_acc_hist_fx
 
@@ -506,10 +511,13 @@ class VirtualTransaction(BaseReportItem):
         else:
             self.pricing_ccy_cur = self.fx_rate_provider[self.pricing_ccy]
             self.pricing_ccy_cur_fx = self.pricing_ccy_cur.fx_rate
+
             self.pricing_ccy_cash_hist = self.fx_rate_provider[self.pricing_ccy, self.cash_date]
             self.pricing_ccy_cash_hist_fx = self.pricing_ccy_cash_hist.fx_rate
+
             self.pricing_ccy_acc_hist = self.fx_rate_provider[self.pricing_ccy, self.acc_date]
             self.pricing_ccy_acc_hist_fx = self.pricing_ccy_acc_hist.fx_rate
+
             try:
                 pricing_ccy_cur_fx = 1.0 / self.pricing_ccy_cur_fx
             except ArithmeticError:
@@ -556,8 +564,8 @@ class VirtualTransaction(BaseReportItem):
             self.stl_ccy_cash_hist_fx_loc = self.stl_ccy_cash_hist.fx_rate * pricing_ccy_cash_hist_fx
 
             self.stl_ccy_acc_hist = self.fx_rate_provider[self.stl_ccy, self.acc_date]
-            self.stl_ccy_acc_hist_fx = self.stl_ccy_acc_hist.fx_rate * report_ccy_cash_hist_fx
-            self.stl_ccy_acc_hist_fx_loc = self.stl_ccy_acc_hist.fx_rate * pricing_ccy_cash_hist_fx
+            self.stl_ccy_acc_hist_fx = self.stl_ccy_acc_hist.fx_rate * report_ccy_acc_hist_fx
+            self.stl_ccy_acc_hist_fx_loc = self.stl_ccy_acc_hist.fx_rate * pricing_ccy_acc_hist_fx
 
             self.stl_ccy_cur = self.fx_rate_provider[self.stl_ccy]
             self.stl_ccy_cur_fx = self.stl_ccy_cur.fx_rate * report_ccy_cur_fx
@@ -718,7 +726,7 @@ class VirtualTransaction(BaseReportItem):
 
                     try:
                         self.net_cost_res = (self.principal + self.overheads) * self.ref_fx * \
-                                            (self.trn_ccy_cur.fx_rate / self.report_ccy_cur.fx_rate) * \
+                                            (self.trn_ccy_cur.fx_rate / self.instr_pricing_ccy_cur.fx_rate) * \
                                             (1.0 - self.multiplier) / self.pos_size / self.instr.price_multiplier
                     except ArithmeticError:
                         self.net_cost_res = 0.0
