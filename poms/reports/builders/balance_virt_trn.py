@@ -711,18 +711,15 @@ class VirtualTransaction(BaseReportItem):
                 if self.trn_cls.id in [TransactionClass.BUY, TransactionClass.SELL] and self.instr:
                     try:
                         self.gross_cost_res = self.principal * self.ref_fx * \
-                                              (self.trn_ccy_cur.fx_rate / self.instr_pricing_ccy_cur.fx_rate) * \
-                                              (1.0 - self.multiplier) / self.pos_size / self.instr.price_multiplier * \
-                                              self.instr_pricing_ccy_cur_fx
-
+                                              (self.trn_ccy_cur.fx_rate / self.report_ccy_cur.fx_rate) * \
+                                              (1.0 - self.multiplier) / self.pos_size / self.instr.price_multiplier
                     except ArithmeticError:
                         self.gross_cost_res = 0.0
 
                     try:
                         self.net_cost_res = (self.principal + self.overheads) * self.ref_fx * \
-                                            (self.trn_ccy_cur.fx_rate / self.instr_pricing_ccy_cur.fx_rate) * \
-                                            (1.0 - self.multiplier) / self.pos_size / self.instr.price_multiplier * \
-                                            self.instr_pricing_ccy_cur_fx
+                                            (self.trn_ccy_cur.fx_rate / self.report_ccy_cur.fx_rate) * \
+                                            (1.0 - self.multiplier) / self.pos_size / self.instr.price_multiplier
                     except ArithmeticError:
                         self.net_cost_res = 0.0
 
