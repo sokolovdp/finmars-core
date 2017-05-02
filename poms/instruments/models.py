@@ -473,7 +473,7 @@ class Instrument(NamedModel, FakeDeletableModel):
                 raise ValueError('Field one-off event in instrument type "%s" must be set' % instrument_type)
 
         # process factors
-        factors = list(self.factor_schedules.order_by('effective_date'))
+        factors = list(self.factor_schedules.all())
         for i, f in enumerate(factors):
             if i == 0:
                 continue
@@ -860,7 +860,7 @@ class AccrualCalculationSchedule(models.Model):
         ordering = ['accrual_start_date']
 
     def __str__(self):
-        return '%s @ %s' % (self.instrument_id, self.accrual_start_date)
+        return '%s' % self.accrual_start_date
 
 
 @python_2_unicode_compatible
@@ -876,7 +876,7 @@ class InstrumentFactorSchedule(models.Model):
         ordering = ['effective_date']
 
     def __str__(self):
-        return '%s @ %s' % (self.instrument_id, self.effective_date)
+        return '%s' % self.effective_date
 
 
 class EventSchedule(models.Model):
