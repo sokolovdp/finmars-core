@@ -9,7 +9,7 @@ from django.utils.functional import cached_property
 from poms.accounts.models import AccountType, Account
 from poms.currencies.models import Currency, CurrencyHistory
 from poms.instruments.models import Instrument, PriceHistory, PricingPolicy, CostMethod, InstrumentType, \
-    InstrumentClass, AccrualCalculationSchedule, AccrualCalculationModel, Periodicity, EventSchedule
+    InstrumentClass, AccrualCalculationSchedule, AccrualCalculationModel, Periodicity, InstrumentFactorSchedule
 from poms.portfolios.models import Portfolio
 from poms.reports.builders.base_item import BaseReportItem
 from poms.reports.builders.cash_flow_projection import CashFlowProjectionReportBuilder
@@ -386,7 +386,85 @@ class AbstractReportTestMixin:
 
 
 class CFReportTestCase(AbstractReportTestMixin, TestCase):
-    def test_cf_p1(self):
+    def _dumps_tinstr(self, items):
+        _l.info('Instrument types: \n %s',
+                BaseReportItem.sdumps(
+                    items=items,
+                    columns=[
+                        'user_code',
+                        'instrument_class',
+                        'one_off_event',
+                        'regular_event',
+                        'factor_same',
+                        'factor_up',
+                        'factor_down',
+                    ]
+                ))
+
+    def _dumps_instr(self, items):
+        _l.info('Instuments: \n %s',
+                BaseReportItem.sdumps(
+                    items=items,
+                    columns=[
+                        'user_code',
+                        'instrument_type',
+                        'pricing_currency',
+                        'price_multiplier',
+                        'accrued_currency',
+                        'accrued_multiplier',
+                        'maturity_date',
+                        'maturity_price',
+                    ]
+                ))
+
+    def _dumps_accruals(self, items):
+        _l.info('AccrualCalculationSchedule: \n %s',
+                BaseReportItem.sdumps(
+                    items=items,
+                    columns=[
+                        'accrual_start_date',
+                        'first_payment_date',
+                        'accrual_size',
+                        'accrual_calculation_model',
+                        'periodicity',
+                        'periodicity_n',
+                    ]
+                ))
+
+    def _dumps_factors(self, items):
+        _l.info('InstrumentFactorSchedule: \n %s',
+                BaseReportItem.sdumps(
+                    items=items,
+                    columns=[
+                        'effective_date',
+                        'factor_value',
+                    ]
+                ))
+
+    def _dumps_events_shed(self, items):
+        _l.info('EventSchedule: \n %s',
+                BaseReportItem.sdumps(
+                    items=items,
+                    columns=[
+                        'effective_date',
+                        'event_class',
+                        'notification_class',
+                        'notify_in_n_days',
+                        'periodicity',
+                        'periodicity_n',
+                        'final_date',
+                        'is_auto_generated',
+                        'accrual_calculation_schedule',
+                        'factor_schedule',
+                    ]
+                ))
+
+    def _dumps_cpns(self, cpns):
+        _l.info('get_future_coupons:')
+        for d, v in cpns:
+            _l.info('\t%s - %s', str(d), v)
+
+    def _test_cf1(self):
         # settings.DEBUG = True
 
         tt1 = TransactionType.objects.create(
@@ -430,25 +508,14 @@ class CFReportTestCase(AbstractReportTestMixin, TestCase):
 
         i1.rebuild_event_schedules()
 
-        _l.info('get_future_coupons: %s',
-                [(str(d), v) for d, v in i1.get_future_coupons(begin_date=date(2101, 1, 1))])
+        self._dumps_tinstr([it1])
+        self._dumps_instr([i1])
+        self._dumps_accruals(i1.accrual_calculation_schedules.all())
+        self._dumps_factors(i1.factor_schedules.all())
+        self._dumps_events_shed(i1.event_schedules.all())
+        self._dumps_cpns(i1.get_future_coupons(begin_date=date(2101, 2, 1)))
 
-        BaseReportItem.dumps(
-            items=EventSchedule.objects.filter(instrument=i1),
-            columns=[
-                'effective_date',
-                'event_class',
-                'notification_class',
-                'notify_in_n_days',
-                'periodicity',
-                'periodicity',
-                'periodicity_n',
-                'final_date',
-                'is_auto_generated',
-                'accrual_calculation_schedule',
-                'factor_schedule',
-            ]
-        )
+        _l.info('-' * 80)
 
         self._t_buy(instr=i1, position=10,
                     stl_ccy=self.usd, principal=-10, carry=0, overheads=-10,
@@ -458,6 +525,108 @@ class CFReportTestCase(AbstractReportTestMixin, TestCase):
             master_user=self.m,
             member=self.mm,
             balance_date=date(2101, 2, 1),
+            report_date=date(2104, 1, 1),
+        )
+        report_builder = CashFlowProjectionReportBuilder(report)
+        report_builder.build()
+
+    def test_cf2(self):
+        # settings.DEBUG = True
+
+        tt1 = TransactionType.objects.create(
+            master_user=self.m,
+            group=self.m.transaction_type_group,
+            name='tt1',
+            date_expr='effective_date',
+        )
+        tt2 = TransactionType.objects.create(
+            master_user=self.m,
+            group=self.m.transaction_type_group,
+            name='tt2',
+            date_expr='effective_date',
+        )
+        tt3 = TransactionType.objects.create(
+            master_user=self.m,
+            group=self.m.transaction_type_group,
+            name='tt3',
+            date_expr='effective_date',
+        )
+        tt4 = TransactionType.objects.create(
+            master_user=self.m,
+            group=self.m.transaction_type_group,
+            name='tt4',
+            date_expr='effective_date',
+        )
+        tt5 = TransactionType.objects.create(
+            master_user=self.m,
+            group=self.m.transaction_type_group,
+            name='tt5',
+            date_expr='effective_date',
+        )
+
+        it1 = InstrumentType.objects.create(
+            master_user=self.m,
+            user_code='itype1',
+            instrument_class=InstrumentClass.objects.get(pk=InstrumentClass.REGULAR_EVENT_AT_MATURITY),
+            one_off_event=tt1,
+            regular_event=tt2,
+            factor_same=tt3,
+            factor_up=tt4,
+            factor_down=tt5,
+        )
+
+        i1 = Instrument.objects.create(
+            master_user=self.m,
+            user_code='i1',
+            instrument_type=it1,
+            pricing_currency=self.usd,
+            price_multiplier=1.0,
+            accrued_currency=self.usd,
+            accrued_multiplier=1.0,
+            maturity_date=date(2103, 2, 1),
+            maturity_price=1000,
+        )
+
+        AccrualCalculationSchedule.objects.create(
+            instrument=i1,
+            accrual_start_date=date(2100, 2, 1),
+            first_payment_date=date(2100, 7, 1),
+            accrual_size=10,
+            accrual_calculation_model=AccrualCalculationModel.objects.get(pk=AccrualCalculationModel.ISMA_30_360),
+            periodicity=Periodicity.objects.get(pk=Periodicity.SEMI_ANNUALLY),
+            periodicity_n=1
+        )
+
+        InstrumentFactorSchedule.objects.create(
+            instrument=i1,
+            effective_date=date(2100, 2, 1),
+            factor_value=1,
+        )
+        InstrumentFactorSchedule.objects.create(
+            instrument=i1,
+            effective_date=date(2102, 4, 21),
+            factor_value=2,
+        )
+
+        i1.rebuild_event_schedules()
+
+        self._dumps_tinstr([it1])
+        self._dumps_instr([i1])
+        self._dumps_accruals(i1.accrual_calculation_schedules.all())
+        self._dumps_factors(i1.factor_schedules.all())
+        self._dumps_events_shed(i1.event_schedules.all())
+        self._dumps_cpns(i1.get_future_coupons(begin_date=date(2101, 2, 2)))
+
+        _l.info('-' * 80)
+
+        self._t_buy(instr=i1, position=10,
+                    stl_ccy=self.usd, principal=-10, carry=0, overheads=-10,
+                    acc_date=date(2101, 2, 1), cash_date=date(2101, 2, 1))
+
+        report = CashFlowProjectionReport(
+            master_user=self.m,
+            member=self.mm,
+            balance_date=date(2101, 2, 2),
             report_date=date(2104, 1, 1),
         )
         report_builder = CashFlowProjectionReportBuilder(report)
