@@ -676,7 +676,10 @@ class Instrument(NamedModel, FakeDeletableModel):
         # if a:
         #     a.accrual_end_date = self.maturity_date
 
-        a_to_p_mul = None  # lazy
+        try:
+            a_to_p_mul = (self.accrued_multiplier / self.price_multiplier) * (accrual_ccy_fx / principal_ccy_fx)
+        except ArithmeticError:
+            a_to_p_mul = 0.0
 
         for a in accruals:
             if a.accrual_end_date <= begin_date:
@@ -689,17 +692,17 @@ class Instrument(NamedModel, FakeDeletableModel):
                 if d <= begin_date:
                     continue
 
-                if a_to_p_mul is None:
-                    try:
-                        a_to_p_mul = self.accrued_multiplier / self.price_multiplier
-                    except ArithmeticError:
-                        a_to_p_mul = 0.0
-                    if not isclose(principal_ccy_fx, accrual_ccy_fx):
-                        try:
-                            v = accrual_ccy_fx / principal_ccy_fx
-                        except ArithmeticError:
-                            v = 0
-                        a_to_p_mul *= v
+                # if a_to_p_mul is None:
+                #     try:
+                #         a_to_p_mul = self.accrued_multiplier / self.price_multiplier
+                #     except ArithmeticError:
+                #         a_to_p_mul = 0.0
+                #     if not isclose(principal_ccy_fx, accrual_ccy_fx):
+                #         try:
+                #             v = accrual_ccy_fx / principal_ccy_fx
+                #         except ArithmeticError:
+                #             v = 0
+                #         a_to_p_mul *= v
 
                 data.append((d, a.accrual_size * a_to_p_mul))
 
@@ -756,6 +759,38 @@ class Instrument(NamedModel, FakeDeletableModel):
 
         return 0.0, False
 
+    # def get_future_coupons(self, data=None, d0=None, v0=None, begin_date=None, accruals=None,
+    #                        principal_ccy_fx=1.0, accrual_ccy_fx=1.0):
+    #     accruals = self.get_accrual_calculation_schedules_all(accruals=accruals)
+    #
+    #     if data is None:
+    #         data = []
+    #
+    #     if d0 is not None and v0 is not None:
+    #         data.append((d0, v0))
+    #
+    #     if begin_date is None:
+    #         if data:
+    #             d0, v0 = data[-1]
+    #             begin_date = d0
+    #         else:
+    #             begin_date = date.min
+    #
+    #     a_to_p_mul = None  # lazy
+    #
+    #     d = begin_date
+    #     td1 = timedelta(days=1)
+    #     while d <= self.maturity_date:
+    #         cpn_val, is_cpn = self.get_coupon(cpn_date=d, accruals=accruals)
+    #         if is_cpn:
+    #             data.append((d, cpn_val))
+    #         try:
+    #             d += td1
+    #         except (OverflowError, ValueError):
+    #             break
+    #
+    #     return data
+
     def get_future_coupons(self, data=None, d0=None, v0=None, begin_date=None, accruals=None,
                            principal_ccy_fx=1.0, accrual_ccy_fx=1.0):
         accruals = self.get_accrual_calculation_schedules_all(accruals=accruals)
@@ -773,15 +808,38 @@ class Instrument(NamedModel, FakeDeletableModel):
             else:
                 begin_date = date.min
 
-        a_to_p_mul = None  # lazy
+        try:
+            a_to_p_mul = (self.accrued_multiplier / self.price_multiplier) * (accrual_ccy_fx / principal_ccy_fx)
+        except ArithmeticError:
+            a_to_p_mul = 0.0
 
-        d = begin_date
-        td1 = timedelta(days=1)
-        while d <= self.maturity_date:
-            cpn_val, is_cpn = self.get_coupon(cpn_date=d, accruals=accruals)
-            if is_cpn:
-                data.append((d, cpn_val))
-            d += td1
+        for accrual in accruals:
+            if begin_date > accrual.accrual_end_date:
+                continue
+
+            prev_d = accrual.accrual_start_date
+            periodicity = accrual.periodicity
+            for k in range(0, 3652058):
+                try:
+                    d = accrual.first_payment_date + periodicity.to_timedelta(i=k)
+                except (OverflowError, ValueError):  # year is out of range
+                    d = date.max
+
+                if d < begin_date:
+                    continue
+
+                if d >= accrual.accrual_end_date:
+                    d = accrual.accrual_end_date - timedelta(days=1)
+
+                cpn = get_coupon(accrual, prev_d, d, maturity_date=self.maturity_date)
+                data.append((d, cpn * a_to_p_mul))
+
+                if d == date.max or d >= accrual.accrual_end_date - timedelta(days=1):
+                    break
+
+                prev_d = d
+
+        data.append((self.maturity_date, self.maturity_price))
 
         return data
 
