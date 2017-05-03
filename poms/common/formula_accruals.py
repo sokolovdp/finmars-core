@@ -923,7 +923,7 @@ def f_xirr(data, x0=0.0, tol=0.0001, maxiter=None):
     >>> dates = [date(2016, 2, 16), date(2016, 3, 10), date(2016, 9, 1), date(2017, 1, 17), ]
     >>> values = [-90, 5, 5, 105, ]
     >>> data = [(d, v) for d, v in zip(dates, values)]
-    >>> f_xirr(values, dates)
+    >>> f_xirr(data)
     0.3291520343150294
     '''
     # _l.debug('f_xirr: data=%s', data)
