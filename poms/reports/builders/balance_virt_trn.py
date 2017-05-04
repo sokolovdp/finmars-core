@@ -796,16 +796,25 @@ class VirtualTransaction(BaseReportItem):
 
                     # other
 
-                    try:
-                        future_accrual_payments = self.instr.get_future_accrual_payments(
-                            d0=self.acc_date,
-                            v0=self.trade_price,
-                            principal_ccy_fx=self.instr_pricing_ccy_cur_fx,
-                            accrual_ccy_fx=self.instr_accrued_ccy_cur_fx
-                        )
-                    except (ValueError, TypeError):
-                        future_accrual_payments = False
-                    self.ytm = f_xirr(future_accrual_payments)
+                    # try:
+                    #     accrl_k = (self.instr.accrued_multiplier / self.instr.price_multiplier) * (self.instr_accrued_ccy_cur_fx / self.instr_pricing_ccy_cur_fx)
+                    # except ArithmeticError:
+                    #     accrl_k = 0.0
+                    # future_accrual_payments = self.instr.get_future_accrual_payments(
+                    #     d0=self.acc_date,
+                    #     v0=self.trade_price,
+                    #     principal_ccy_fx=self.instr_pricing_ccy_cur_fx,
+                    #     accrual_ccy_fx=self.instr_accrued_ccy_cur_fx
+                    # )
+                    from poms.reports.builders.balance_pl import ReportBuilder
+                    ytm_data = ReportBuilder.instr_ytm_data(
+                        instr=self.instr,
+                        d0=self.acc_date,
+                        v0=self.trade_price,
+                        pricing_ccy_fx=self.instr_pricing_ccy_cur_fx,
+                        accrued_ccy_fx=self.instr_accrued_ccy_cur_fx,
+                    )
+                    self.ytm = ReportBuilder.instr_ytm(data=ytm_data, x0=0)
 
                     self.time_invested_days = (self.report.report_date - self.acc_date).days
                     self.time_invested = self.time_invested_days / 365.0

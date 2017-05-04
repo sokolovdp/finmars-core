@@ -3,8 +3,6 @@ from datetime import timedelta
 
 from django.utils.translation import ugettext_lazy, ugettext
 
-from poms.common.formula_accruals import f_duration
-from poms.common.formula_accruals import f_xirr
 from poms.common.utils import isclose, date_now
 from poms.instruments.models import CostMethod
 from poms.reports.builders.base_item import BaseReportItem
@@ -632,7 +630,7 @@ class ReportItem(BaseReportItem):
 
         # elif item.type in [ReportItem.TYPE_SUMMARY, ReportItem.TYPE_INVESTED_SUMMARY]:
         elif item.type in [ReportItem.TYPE_SUMMARY, ]:
-            item.pos_size = 0.0 # float('nan')
+            item.pos_size = 0.0  # float('nan')
 
         # if trn.is_show_details(acc):
         #     item.detail_trn = trn
@@ -789,7 +787,7 @@ class ReportItem(BaseReportItem):
 
         # if item.type in [ReportItem.TYPE_SUMMARY, ReportItem.TYPE_INVESTED_SUMMARY]:
         if item.type in [ReportItem.TYPE_SUMMARY]:
-            item.pos_size = 0.0 # float('nan')
+            item.pos_size = 0.0  # float('nan')
 
         return item
 
@@ -1147,12 +1145,14 @@ class ReportItem(BaseReportItem):
                 self.pos_return_loc = 0
 
             try:
-                self.net_pos_return_res = (self.principal_opened_res + self.carry_opened_res + self.overheads_opened_res) \
+                self.net_pos_return_res = (
+                                              self.principal_opened_res + self.carry_opened_res + self.overheads_opened_res) \
                                           / -self.principal_invested_res
             except ArithmeticError:
                 self.net_pos_return_res = 0.0
             try:
-                self.net_pos_return_loc = (self.principal_opened_loc + self.carry_opened_loc + self.overheads_opened_loc) \
+                self.net_pos_return_loc = (
+                                              self.principal_opened_loc + self.carry_opened_loc + self.overheads_opened_loc) \
                                           / -self.principal_invested_loc
             except ArithmeticError:
                 self.net_pos_return_loc = 0.0
@@ -1161,19 +1161,40 @@ class ReportItem(BaseReportItem):
                 # YTM/Duration - берем price из price history на дату репорта.
                 # Для записка итеративного алгоритма, для x0 из accrued schedule
                 # берем на текущую дату - (accrued_size * accrued_multiplier)/(price * price_multiplier).
-                try:
-                    future_accrual_payments = self.instr.get_future_accrual_payments(
-                        d0=self.report.report_date,
-                        v0=self.instr_price_cur_principal_price,
-                        principal_ccy_fx=self.instr_pricing_ccy_cur_fx,
-                        accrual_ccy_fx=self.instr_accrued_ccy_cur_fx
-                    )
-                except (ValueError, TypeError):
-                    future_accrual_payments = False
 
-                self.ytm = f_xirr(future_accrual_payments)
+                # try:
+                #     accrl_k = (self.instr.accrued_multiplier / self.instr.price_multiplier) * (self.instr_accrued_ccy_cur_fx / self.instr_pricing_ccy_cur_fx)
+                # except ArithmeticError:
+                #     accrl_k = 0.0
 
-                self.modified_duration = f_duration(future_accrual_payments, ytm=self.ytm)
+                # future_accrual_payments = self.instr.get_future_accrual_payments(
+                #     d0=self.report.report_date,
+                #     v0=self.instr_price_cur_principal_price,
+                #     principal_ccy_fx=self.instr_pricing_ccy_cur_fx,
+                #     accrual_ccy_fx=self.instr_accrued_ccy_cur_fx
+                # )
+                # future_accrual_payments = self.instr.get_future_coupons(
+                #     d0=self.report.report_date,
+                #     v0=self.instr_price_cur_principal_price,
+                #     principal_ccy_fx=self.instr_pricing_ccy_cur_fx,
+                #     accrual_ccy_fx=self.instr_accrued_ccy_cur_fx
+                # )
+                from poms.reports.builders.balance_pl import ReportBuilder
+                ytm_data = ReportBuilder.instr_ytm_data(
+                    instr=self.instr,
+                    d0=self.report.report_date,
+                    v0=self.instr_price_cur_principal_price,
+                    pricing_ccy_fx=self.instr_pricing_ccy_cur_fx,
+                    accrued_ccy_fx=self.instr_accrued_ccy_cur_fx,
+                )
+                self.ytm = ReportBuilder.instr_ytm(
+                    data=ytm_data,
+                    x0=self.instr.get_accrued_price(price_date=self.report.report_date) *
+                       ReportBuilder.instr_ytm_accrued_to_pricing_k(self.instr,
+                                                                    pricing_ccy_fx=self.instr_pricing_ccy_cur_fx,
+                                                                    accrued_ccy_fx=self.instr_accrued_ccy_cur_fx)
+                )
+                self.modified_duration = ReportBuilder.instr_duration(data=ytm_data, ytm=self.ytm)
 
                 self.time_invested = self.time_invested_days / 365.0
 

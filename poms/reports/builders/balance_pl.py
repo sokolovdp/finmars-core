@@ -2,13 +2,15 @@ import logging
 import sys
 import time
 from collections import Counter, defaultdict
-from datetime import date
+from datetime import date, timedelta
 from itertools import groupby
 
 from django.conf import settings
 from django.db.models import Q
 from django.utils.functional import cached_property
 
+from poms.common.formula_accruals import f_xirr
+from poms.common.formula_accruals import get_coupon, f_duration
 from poms.common.utils import isclose
 from poms.instruments.models import CostMethod, InstrumentClass
 from poms.reports.builders.balance_item import ReportItem, Report
@@ -1519,3 +1521,86 @@ class ReportBuilder(BaseReportBuilder):
                 res_items.append(res_item)
 
         self.instance.items = res_items
+
+    @staticmethod
+    def instr_ytm_accrued_to_pricing_k(instr, pricing_ccy_fx=1.0, accrued_ccy_fx=1.0):
+        try:
+           return (instr.accrued_multiplier / instr.price_multiplier) * (accrued_ccy_fx / pricing_ccy_fx)
+        except ArithmeticError:
+            return 0
+
+    @staticmethod
+    def instr_ytm_data(instr, d0, v0, k=None, v0_apply_k=False, pricing_ccy_fx=1.0, accrued_ccy_fx=1.0):
+        if instr.maturity_date is None or instr.maturity_date == date.max:
+            _l.debug('get_ytm_data: [], maturity_date rule')
+            return []
+        if instr.maturity_price is None or instr.isnan(instr.maturity_price) or isclose(instr.maturity_price, 0.0):
+            _l.debug('get_ytm_data: [], maturity_price rule')
+            return []
+
+        accruals = instr.get_accrual_calculation_schedules_all()
+
+        if k is None:
+            try:
+                k = (instr.accrued_multiplier / instr.price_multiplier) * (accrued_ccy_fx / pricing_ccy_fx)
+            except ArithmeticError:
+                k = 0
+
+        if v0_apply_k:
+            v0 *= k
+
+        data = [(d0, v0)]
+
+        for accrual in accruals:
+            if d0 > accrual.accrual_end_date:
+                continue
+
+            prev_d = accrual.accrual_start_date
+            for i in range(0, 3652058):
+                if i == 0:
+                    d = accrual.first_payment_date
+                else:
+                    try:
+                        d = accrual.first_payment_date + accrual.periodicity.to_timedelta(
+                            n=accrual.periodicity_n, i=i, same_date=accrual.accrual_start_date)
+                    except (OverflowError, ValueError):  # date is out of range
+                        d = date.max
+
+                if d < d0:
+                    continue
+
+                if d >= accrual.accrual_end_date:
+                    # accrual last day value
+                    d = accrual.accrual_end_date - timedelta(days=1)
+
+                cpn = get_coupon(accrual, prev_d, d, maturity_date=instr.maturity_date)
+                data.append((d, cpn * k))
+
+                if d == date.max or d >= accrual.accrual_end_date - timedelta(days=1):
+                    break
+
+                prev_d = d
+
+        data.append((instr.maturity_date, instr.maturity_price))
+
+        _l.debug('get_ytm_data: data=%s', [(str(d), v) for d, v in data])
+
+        return data
+
+    @staticmethod
+    def instr_ytm(data, x0):
+        if data:
+            res = f_xirr(data, x0=x0)
+        else:
+            res = 0.0
+        _l.debug('get_ytm: %s, data=%s, x0=%s', res, data, x0)
+        return res
+
+    @staticmethod
+    def instr_duration(data, ytm):
+        if data:
+            res = f_duration(data, ytm=ytm)
+        else:
+            res = 0.0
+        _l.debug('get_duration: %s, data=%s, x0=%s', res, data)
+        return res
