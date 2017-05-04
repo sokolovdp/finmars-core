@@ -11,6 +11,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
 from django.utils import timezone
 from django.utils.encoding import python_2_unicode_compatible
+from django.utils.functional import cached_property
 from django.utils.translation import ugettext, ugettext_lazy
 from mptt.models import MPTTModel
 
@@ -473,7 +474,7 @@ class Instrument(NamedModel, FakeDeletableModel):
                 raise ValueError('Field one-off event in instrument type "%s" must be set' % instrument_type)
 
         # process factors
-        factors = list(self.factor_schedules.order_by('effective_date'))
+        factors = list(self.factor_schedules.all())
         for i, f in enumerate(factors):
             if i == 0:
                 continue
@@ -676,7 +677,10 @@ class Instrument(NamedModel, FakeDeletableModel):
         # if a:
         #     a.accrual_end_date = self.maturity_date
 
-        a_to_p_mul = None  # lazy
+        try:
+            a_to_p_mul = (self.accrued_multiplier / self.price_multiplier) * (accrual_ccy_fx / principal_ccy_fx)
+        except ArithmeticError:
+            a_to_p_mul = 0.0
 
         for a in accruals:
             if a.accrual_end_date <= begin_date:
@@ -689,17 +693,17 @@ class Instrument(NamedModel, FakeDeletableModel):
                 if d <= begin_date:
                     continue
 
-                if a_to_p_mul is None:
-                    try:
-                        a_to_p_mul = self.accrued_multiplier / self.price_multiplier
-                    except ArithmeticError:
-                        a_to_p_mul = 0.0
-                    if not isclose(principal_ccy_fx, accrual_ccy_fx):
-                        try:
-                            v = accrual_ccy_fx / principal_ccy_fx
-                        except ArithmeticError:
-                            v = 0
-                        a_to_p_mul *= v
+                # if a_to_p_mul is None:
+                #     try:
+                #         a_to_p_mul = self.accrued_multiplier / self.price_multiplier
+                #     except ArithmeticError:
+                #         a_to_p_mul = 0.0
+                #     if not isclose(principal_ccy_fx, accrual_ccy_fx):
+                #         try:
+                #             v = accrual_ccy_fx / principal_ccy_fx
+                #         except ArithmeticError:
+                #             v = 0
+                #         a_to_p_mul *= v
 
                 data.append((d, a.accrual_size * a_to_p_mul))
 
@@ -756,6 +760,38 @@ class Instrument(NamedModel, FakeDeletableModel):
 
         return 0.0, False
 
+    # def get_future_coupons(self, data=None, d0=None, v0=None, begin_date=None, accruals=None,
+    #                        principal_ccy_fx=1.0, accrual_ccy_fx=1.0):
+    #     accruals = self.get_accrual_calculation_schedules_all(accruals=accruals)
+    #
+    #     if data is None:
+    #         data = []
+    #
+    #     if d0 is not None and v0 is not None:
+    #         data.append((d0, v0))
+    #
+    #     if begin_date is None:
+    #         if data:
+    #             d0, v0 = data[-1]
+    #             begin_date = d0
+    #         else:
+    #             begin_date = date.min
+    #
+    #     a_to_p_mul = None  # lazy
+    #
+    #     d = begin_date
+    #     td1 = timedelta(days=1)
+    #     while d <= self.maturity_date:
+    #         cpn_val, is_cpn = self.get_coupon(cpn_date=d, accruals=accruals)
+    #         if is_cpn:
+    #             data.append((d, cpn_val))
+    #         try:
+    #             d += td1
+    #         except (OverflowError, ValueError):
+    #             break
+    #
+    #     return data
+
     def get_future_coupons(self, data=None, d0=None, v0=None, begin_date=None, accruals=None,
                            principal_ccy_fx=1.0, accrual_ccy_fx=1.0):
         accruals = self.get_accrual_calculation_schedules_all(accruals=accruals)
@@ -773,15 +809,38 @@ class Instrument(NamedModel, FakeDeletableModel):
             else:
                 begin_date = date.min
 
-        a_to_p_mul = None  # lazy
+        try:
+            a_to_p_mul = (self.accrued_multiplier / self.price_multiplier) * (accrual_ccy_fx / principal_ccy_fx)
+        except ArithmeticError:
+            a_to_p_mul = 0.0
 
-        d = begin_date
-        td1 = timedelta(days=1)
-        while d <= self.maturity_date:
-            cpn_val, is_cpn = self.get_coupon(cpn_date=d, accruals=accruals)
-            if is_cpn:
-                data.append((d, cpn_val))
-            d += td1
+        for accrual in accruals:
+            if begin_date > accrual.accrual_end_date:
+                continue
+
+            prev_d = accrual.accrual_start_date
+            periodicity = accrual.periodicity
+            for k in range(0, 3652058):
+                try:
+                    d = accrual.first_payment_date + periodicity.to_timedelta(i=k)
+                except (OverflowError, ValueError):  # year is out of range
+                    d = date.max
+
+                if d < begin_date:
+                    continue
+
+                if d >= accrual.accrual_end_date:
+                    d = accrual.accrual_end_date - timedelta(days=1)
+
+                cpn = get_coupon(accrual, prev_d, d, maturity_date=self.maturity_date)
+                data.append((d, cpn * a_to_p_mul))
+
+                if d == date.max or d >= accrual.accrual_end_date - timedelta(days=1):
+                    break
+
+                prev_d = d
+
+        data.append((self.maturity_date, self.maturity_price))
 
         return data
 
@@ -860,7 +919,7 @@ class AccrualCalculationSchedule(models.Model):
         ordering = ['accrual_start_date']
 
     def __str__(self):
-        return '%s @ %s' % (self.instrument_id, self.accrual_start_date)
+        return '%s' % self.accrual_start_date
 
 
 @python_2_unicode_compatible
@@ -876,7 +935,7 @@ class InstrumentFactorSchedule(models.Model):
         ordering = ['effective_date']
 
     def __str__(self):
-        return '%s @ %s' % (self.instrument_id, self.effective_date)
+        return '%s' % self.effective_date
 
 
 class EventSchedule(models.Model):
@@ -923,35 +982,108 @@ class EventSchedule(models.Model):
     def __str__(self):
         return '#%s/#%s' % (self.id, self.instrument_id)
 
-    def check_date(self, now):
+    @cached_property
+    def all_dates(self):
         from poms.transactions.models import EventClass
 
-        notification_date_correction = timedelta(days=self.notify_in_n_days)
+        notify_in_n_days = timedelta(days=self.notify_in_n_days)
+
+        # sdate = self.effective_date
+        # edate = self.final_date
+
+        dates = []
+
+        def add_date(edate):
+            ndate = edate - notify_in_n_days
+            if self.effective_date <= ndate <= self.final_date or self.effective_date <= edate <= self.final_date:
+                dates.append((edate, ndate))
 
         if self.event_class_id == EventClass.ONE_OFF:
-            effective_date = self.effective_date
-            notification_date = effective_date - notification_date_correction
-            # _l.debug('effective_date=%s, notification_date=%s', effective_date, notification_date)
-
-            if notification_date == now or effective_date == now:
-                return True, effective_date, notification_date
+            # effective_date = self.effective_date
+            # notification_date = effective_date - notify_in_n_days
+            # if self.effective_date <= notification_date <= self.final_date or self.effective_date <= effective_date <= self.final_date:
+            #     dates.append((effective_date, notification_date))
+            add_date(self.effective_date)
 
         elif self.event_class_id == EventClass.REGULAR:
             for i in range(0, settings.INSTRUMENT_EVENTS_REGULAR_MAX_INTERVALS):
-                effective_date = self.effective_date + self.periodicity.to_timedelta(n=self.periodicity_n, i=i,
-                                                                                     same_date=self.effective_date)
-                notification_date = effective_date - notification_date_correction
-                # _l.debug('i=%s, book_date=%s, notify_date=%s', i, effective_date, notification_date)
+                stop = False
+                try:
+                    effective_date = self.effective_date + self.periodicity.to_timedelta(
+                        n=self.periodicity_n, i=i, same_date=self.effective_date)
+                except (OverflowError, ValueError):  # year is out of range
+                    effective_date = date.max
+                    stop = True
 
-                if effective_date > self.final_date:
-                    break
-                if effective_date < now:
-                    continue
-                if notification_date > now and effective_date > now:
+                if self.accrual_calculation_schedule_id is not None:
+                    if effective_date > self.final_date:
+                        # magic date
+                        effective_date = self.final_date - timedelta(days=1)
+                        stop = True
+
+                # notification_date = effective_date - notify_in_n_days
+                # if self.effective_date <= notification_date <= self.final_date or self.effective_date <= effective_date <= self.final_date:
+                #     dates.append((effective_date, notification_date))
+                add_date(effective_date)
+
+                if stop or effective_date > self.final_date:
                     break
 
-                if notification_date == now or effective_date == now:
-                    return True, effective_date, notification_date
+        return dates
+
+    def check_date(self, now):
+        # from poms.transactions.models import EventClass
+        #
+        # notification_date_correction = timedelta(days=self.notify_in_n_days)
+        #
+        # if self.event_class_id == EventClass.ONE_OFF:
+        #     effective_date = self.effective_date
+        #     notification_date = effective_date - notification_date_correction
+        #     # _l.debug('effective_date=%s, notification_date=%s', effective_date, notification_date)
+        #
+        #     if notification_date == now or effective_date == now:
+        #         return True, effective_date, notification_date
+        #
+        # elif self.event_class_id == EventClass.REGULAR:
+        #     for i in range(0, settings.INSTRUMENT_EVENTS_REGULAR_MAX_INTERVALS):
+        #         try:
+        #             effective_date = self.effective_date + self.periodicity.to_timedelta(
+        #                 n=self.periodicity_n, i=i, same_date=self.effective_date)
+        #         except (OverflowError, ValueError):  # year is out of range
+        #             effective_date = date.max
+        #
+        #         if self.accrual_calculation_schedule_id is not None:
+        #             if effective_date > self.final_date:
+        #                 # magic date
+        #                 effective_date = self.final_date - timedelta(days=1)
+        #
+        #         notification_date = effective_date - notification_date_correction
+        #
+        #         if notification_date == now or effective_date == now:
+        #             return True, effective_date, notification_date
+        #
+        #         if notification_date > now and effective_date > now:
+        #             break
+        #
+        # return False, None, None
+        if self.effective_date <= now <= self.final_date:
+            for edate, ndate in self.all_dates:
+                if edate == now or ndate == now:
+                    return True, edate, ndate
+        return False, None, None
+
+    def check_effective_date(self, now):
+        if self.effective_date <= now <= self.final_date:
+            for edate, ndate in self.all_dates:
+                if edate == now:
+                    return True, edate, ndate
+        return False, None, None
+
+    def check_notification_date(self, now):
+        if self.effective_date <= now <= self.final_date:
+            for edate, ndate in self.all_dates:
+                if ndate == now:
+                    return True, edate, ndate
         return False, None, None
 
 

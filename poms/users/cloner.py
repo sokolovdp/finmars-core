@@ -94,7 +94,7 @@ class FullDataCloner(object):
         self._tags()
         self._ui()
 
-        transaction.set_rollback(True)
+        # transaction.set_rollback(True)
 
     def _load_consts(self):
         for source in ContentType.objects.all():
@@ -362,13 +362,15 @@ class FullDataCloner(object):
                                 'overheads', 'responsible', 'responsible_input', 'counterparty', 'counterparty_input', )
 
     def _tags(self):
-        self._simple_list_clone(Tag, None, 'master_user', 'user_code', 'name', 'short_name', 'public_name', 'notes',
-                                'content_types', 'account_types', 'accounts', 'currencies', 'instrument_types',
-                                'instruments', 'counterparty_groups', 'counterparties', 'responsible_groups',
-                                'responsibles', 'portfolios', 'transaction_type_groups', 'transaction_types',
-                                'strategy1_groups', 'strategy1_subgroups', 'strategies1', 'strategy2_groups',
-                                'strategy2_subgroups', 'strategies2', 'strategy3_groups', 'strategy3_subgroups',
-                                'strategies3', 'thread_groups', )
+        # self._simple_list_clone(Tag, None, 'master_user', 'user_code', 'name', 'short_name', 'public_name', 'notes',
+        #                         'content_types', 'account_types', 'accounts', 'currencies', 'instrument_types',
+        #                         'instruments', 'counterparty_groups', 'counterparties', 'responsible_groups',
+        #                         'responsibles', 'portfolios', 'transaction_type_groups', 'transaction_types',
+        #                         'strategy1_groups', 'strategy1_subgroups', 'strategies1', 'strategy2_groups',
+        #                         'strategy2_subgroups', 'strategies2', 'strategy3_groups', 'strategy3_subgroups',
+        #                         'strategies3', 'thread_groups', )
+        self._simple_list_clone(Tag, 'master_user', 'user_code', 'name', 'short_name', 'public_name', 'notes',
+                                'content_types')
 
     def _ui(self):
         self._simple_list_clone(TemplateListLayout, None, 'content_type', 'json_data', 'name', 'is_default',
