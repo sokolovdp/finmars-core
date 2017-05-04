@@ -915,7 +915,7 @@ def f_xnpv(data, rate):
         return 0.0
 
 
-def f_xirr(data, x0=0.0, tol=0.0001, maxiter=None):
+def f_xirr(data, x0=0.0, tol=0.000001, maxiter=100):
     '''Equivalent of Excel's XIRR function.
     https://support.office.com/en-us/article/XIRR-function-de1242ec-6477-445b-b11b-a303ad9adc9d
 
@@ -968,18 +968,6 @@ def f_duration(data, ytm=None):
         ytm = f_xirr(data)
     d0, v0 = data[0]
     v0 = -v0
-
-    # if _l.isEnabledFor(logging.DEBUG):
-    #     discounted_cf = [(vi / ((1 + ytm) ** ((di - d0).days / 365.0)))
-    #                      for i, (vi, di) in enumerate(zip(values, dates))
-    #                      if i != 0]
-    #     dur1 = [((di - d0).days / 365.0) * (vi / ((1 + ytm) ** ((di - d0).days / 365.0)))
-    #             for i, (vi, di) in enumerate(zip(values, dates))
-    #             if i != 0]
-    #     _l.debug('values: %s', values)
-    #     _l.debug('dates: %s', dates)
-    #     _l.debug('discounted_cf: %s', discounted_cf)
-    #     _l.debug('dur1: %s', dur1)
 
     try:
         return sum(
@@ -1162,6 +1150,9 @@ if __name__ == "__main__":
         _l.info('get_future_coupons: %s',
                 [(str(d), v) for d, v in i.get_future_coupons(begin_date=date(2007, 1, 1), accruals=accruals)])
 
+        for d, v in i.get_future_coupons(begin_date=date(2000, 1, 1), accruals=accruals):
+            _l.info('get_coupon: %s - %s', d, i.get_coupon(d, accruals=accruals))
+
         _l.info('-' * 10)
         accruals = [
             AccrualCalculationSchedule(
@@ -1195,6 +1186,5 @@ if __name__ == "__main__":
         _l.info('get_future_coupons: %s',
                 [(str(d), v) for d, v in i.get_future_coupons(begin_date=date(2000, 1, 1), accruals=accruals)])
 
-
-    # _test_coupons()
+    _test_coupons()
     pass
