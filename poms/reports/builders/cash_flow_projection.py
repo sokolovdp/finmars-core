@@ -206,7 +206,10 @@ class CashFlowProjectionReportBuilder(TransactionReportBuilder):
     def _calc_future(self):
         # eval future events
 
-        # owner = next(iter([m for m in self.instance.master_user.members.all() if m.is_owner]))
+        # for key, ritem in self._rolling_items.items():
+        #     instr = ritem.instrument
+        #     for es in instr.event_schedules.all():
+        #         _l.info('event_schedule.get_dates: %s -> %s', es, [(str(edate), str(ndate)) for edate, ndate in es.all_dates])
 
         now = self.instance.balance_date
         td1 = datetime.timedelta(days=1)
@@ -224,119 +227,222 @@ class CashFlowProjectionReportBuilder(TransactionReportBuilder):
                 # _l.debug('instr: id=%s, code=%s, position=%s',
                 #          instr.id, instr.user_code, ritem.position_size_with_sign)
 
-                for es in instr.event_schedules.all():
-                    is_complies, edate, ndate = es.check_date(now)
-
-                    # _l.debug('sched: %s, instr=%s, id=%s, is_complies=%s, edate=%s, ndate=%s',
-                    #          now, instr, es.id, is_complies, edate, ndate)
-
-                    if is_complies:
-                        e = GeneratedEvent()
-                        e.master_user = self.instance.master_user
-                        e.event_schedule = es
-                        e.status = GeneratedEvent.NEW
-                        e.effective_date = edate
-                        e.notification_date = ndate
-                        e.instrument = ritem.instrument
-                        e.portfolio = ritem.portfolio
-                        e.account = ritem.account_position
-                        e.strategy1 = ritem.strategy1_position
-                        e.strategy2 = ritem.strategy2_position
-                        e.strategy3 = ritem.strategy3_position
-                        e.position = ritem.position_size_with_sign
-
-                        is_apply_default_on_date = e.is_apply_default_on_date(now)
-                        is_need_reaction_on_date = e.is_need_reaction_on_date(now)
-                        # is_apply = is_apply_default_on_date
-                        is_apply = edate == now
-                        action = e.get_default_action() if is_apply else None
-
-                        _l.debug(
-                            'evt: %s, '
-                            'es=%s, accrual=%s, factor=%s, '
-                            'action=%s/%s, '
-                            'effective_date=%s, notification_date=%s, '
-                            'is_apply_default_on_date=%s, is_need_reaction_on_date=%s',
-                            str(now),
-                            es.id, es.accrual_calculation_schedule, es.factor_schedule,
-                            getattr(action, 'transaction_type', None), getattr(action, 'is_book_automatic', None),
-                            str(edate), str(ndate),
-                            is_apply_default_on_date, is_need_reaction_on_date
-                        )
-
-                        _l.debug(
-                            '%s - accrual=%s, factor=%s, action=%s',
-                            str(now),
-                            es.accrual_calculation_schedule, es.factor_schedule,
-                            getattr(action, 'transaction_type', None),
-                        )
-
-                        if action:
-                            # continue
-                            # if not action.is_book_automatic:
-                            #     continue
-
-                            self._set_ref(action, 'transaction_type', clazz=TransactionType)
-                            gep = GeneratedEventProcess(
-                                generated_event=e,
-                                action=action,
-                                fake_id_gen=self._fake_id_gen,
-                                transaction_order_gen=self._trn_order_gen,
-                                now=now,
-                                context={
-                                    'master_user': self.instance.master_user,
-                                    'member': self.instance.member,
-                                }
-                            )
-                            gep.process()
-                            if gep.has_errors:
-                                self.instance.has_errors = True
-                            else:
-                                for t2 in gep.transactions:
-                                    _l.debug('gen trn: id=%s, c.id=%s, c.date=%s, acc_date=%s, cash_date=%s',
-                                             t2.id, t2.complex_transaction.id, t2.complex_transaction.date,
-                                             t2.accounting_date, t2.cash_date)
-                                    # d = t2.complex_transaction.date or datetime.date.max
-                                    # self._transactions_by_date[d].append(t2)
-
-                                    d = t2.accounting_date or datetime.date.max
-                                    self._transactions_by_date[d].append(t2)
+                # for es in instr.event_schedules.all():
+                #     is_complies, edate, ndate = es.check_date(now)
+                #
+                #     # _l.debug('sched: %s, instr=%s, id=%s, is_complies=%s, edate=%s, ndate=%s',
+                #     #          now, instr, es.id, is_complies, edate, ndate)
+                #
+                #     if is_complies:
+                #         e = GeneratedEvent()
+                #         e.master_user = self.instance.master_user
+                #         e.event_schedule = es
+                #         e.status = GeneratedEvent.NEW
+                #         e.effective_date = edate
+                #         e.notification_date = ndate
+                #         e.instrument = ritem.instrument
+                #         e.portfolio = ritem.portfolio
+                #         e.account = ritem.account_position
+                #         e.strategy1 = ritem.strategy1_position
+                #         e.strategy2 = ritem.strategy2_position
+                #         e.strategy3 = ritem.strategy3_position
+                #         e.position = ritem.position_size_with_sign
+                #
+                #         is_apply_default_on_date = e.is_apply_default_on_date(now)
+                #         is_need_reaction_on_date = e.is_need_reaction_on_date(now)
+                #         # is_apply = is_apply_default_on_date
+                #         is_apply = edate == now
+                #         action = e.get_default_action() if is_apply else None
+                #
+                #         _l.debug(
+                #             'evt: %s, '
+                #             'es=%s, accrual=%s, factor=%s, '
+                #             'action=%s/%s, '
+                #             'effective_date=%s, notification_date=%s, '
+                #             'is_apply_default_on_date=%s, is_need_reaction_on_date=%s',
+                #             str(now),
+                #             es.id, es.accrual_calculation_schedule, es.factor_schedule,
+                #             getattr(action, 'transaction_type', None), getattr(action, 'is_book_automatic', None),
+                #             str(edate), str(ndate),
+                #             is_apply_default_on_date, is_need_reaction_on_date
+                #         )
+                #
+                #         if action:
+                #             # continue
+                #             # if not action.is_book_automatic:
+                #             #     continue
+                #
+                #             self._set_ref(action, 'transaction_type', clazz=TransactionType)
+                #             gep = GeneratedEventProcess(
+                #                 generated_event=e,
+                #                 action=action,
+                #                 fake_id_gen=self._fake_id_gen,
+                #                 transaction_order_gen=self._trn_order_gen,
+                #                 now=now,
+                #                 context={
+                #                     'master_user': self.instance.master_user,
+                #                     'member': self.instance.member,
+                #                 }
+                #             )
+                #             gep.process()
+                #             if gep.has_errors:
+                #                 self.instance.has_errors = True
+                #             else:
+                #                 for t2 in gep.transactions:
+                #                     _l.debug('gen trn: id=%s, c.id=%s, c.date=%s, acc_date=%s, cash_date=%s',
+                #                              t2.id, t2.complex_transaction.id, t2.complex_transaction.date,
+                #                              t2.accounting_date, t2.cash_date)
+                #                     # d = t2.complex_transaction.date or datetime.date.max
+                #                     # self._transactions_by_date[d].append(t2)
+                #
+                #                     d = t2.accounting_date or datetime.date.max
+                #                     self._transactions_by_date[d].append(t2)
+                self._generate(ritem, now)
 
             # process transactions for current date
-            if now in self._transactions_by_date:
-                for t in self._transactions_by_date[now]:
-                    _l.debug('trn=%s', t.id)
-                    item = CashFlowProjectionReportItem(self.instance, trn=t)
-                    self._items.append(item)
+            # if now in self._transactions_by_date:
+            #     for t in self._transactions_by_date[now]:
+            #         _l.debug('trn=%s', t.id)
+            #         item = CashFlowProjectionReportItem(self.instance, trn=t)
+            #         self._items.append(item)
+            #
+            #         if t.transaction_class_id in [TransactionClass.BUY, TransactionClass.SELL]:
+            #             key = self._instr_rolling_trn_key(t)
+            #             ritem = self._rolling(t, key=key)
+            #             ritem.add_balance(t)
+            #
+            #             _l.debug('instr check pos: key=%s; pos_size=%s', key, ritem.position_size_with_sign)
+            #             if isclose(ritem.position_size_with_sign, 0.0):
+            #                 del self._rolling_items[key]
+            #
+            #         elif t.transaction_class_id in [TransactionClass.TRANSFER]:
+            #             # TODO: check me
+            #             src_key = self._instr_rolling_trn_key(t, acc=t.account_cash)
+            #             src_item = self._rolling(t, key=src_key)
+            #             src_item.add_balance(t, sign=-1)
+            #
+            #             dst_key = self._instr_rolling_trn_key(t, acc=t.account_position)
+            #             dst_item = self._rolling(t, key=dst_key)
+            #             dst_item.add_balance(t)
+            #
+            #             _l.debug('instr check pos (trnfr, src): key=%s; pos_size=%s', src_key,
+            #                      src_item.position_size_with_sign)
+            #             if isclose(src_item.position_size_with_sign, 0.0):
+            #                 del self._rolling_items[src_key]
+            #
+            #             _l.debug('instr check pos (trnfr, dst): key=%s; pos_size=%s', dst_key,
+            #                      dst_item.position_size_with_sign)
+            #             if isclose(dst_item.position_size_with_sign, 0.0):
+            #                 del self._rolling_items[dst_key]
+            self._process_transactions(now)
 
-                    if t.transaction_class_id in [TransactionClass.BUY, TransactionClass.SELL]:
-                        key = self._instr_rolling_trn_key(t)
-                        ritem = self._rolling(t, key=key)
-                        ritem.add_balance(t)
+    def _generate(self, ritem, now):
+        for es in ritem.instrument.event_schedules.all():
+            is_complies, edate, ndate = es.check_effective_date(now)
 
-                        _l.debug('instr check pos: key=%s; pos_size=%s', key, ritem.position_size_with_sign)
-                        if isclose(ritem.position_size_with_sign, 0.0):
-                            del self._rolling_items[key]
+            if not is_complies:
+                continue
 
-                    elif t.transaction_class_id in [TransactionClass.TRANSFER]:
-                        # TODO: check me
-                        src_key = self._instr_rolling_trn_key(t, acc=t.account_cash)
-                        src_item = self._rolling(t, key=src_key)
-                        src_item.add_balance(t, sign=-1)
+            e = GeneratedEvent()
+            e.master_user = self.instance.master_user
+            e.event_schedule = es
+            e.status = GeneratedEvent.NEW
+            e.effective_date = edate
+            e.notification_date = ndate
+            e.instrument = ritem.instrument
+            e.portfolio = ritem.portfolio
+            e.account = ritem.account_position
+            e.strategy1 = ritem.strategy1_position
+            e.strategy2 = ritem.strategy2_position
+            e.strategy3 = ritem.strategy3_position
+            e.position = ritem.position_size_with_sign
 
-                        dst_key = self._instr_rolling_trn_key(t, acc=t.account_position)
-                        dst_item = self._rolling(t, key=dst_key)
-                        dst_item.add_balance(t)
+            # is_apply_default_on_date = e.is_apply_default_on_date(now)
+            # is_need_reaction_on_date = e.is_need_reaction_on_date(now)
+            # is_apply = is_apply_default_on_date
+            # is_apply = edate == now
+            action = e.get_default_action() if edate == now else None
 
-                        _l.debug('instr check pos (trnfr, src): key=%s; pos_size=%s', src_key,
-                                 src_item.position_size_with_sign)
-                        if isclose(src_item.position_size_with_sign, 0.0):
-                            del self._rolling_items[src_key]
+            _l.debug(
+                'evt: %s, es=%s, accrual=%s, factor=%s, action=%s, edate=%s, ndate=%s',
+                now, es.id, es.accrual_calculation_schedule, es.factor_schedule,
+                getattr(action, 'transaction_type', None), edate, ndate,
+            )
 
-                        _l.debug('instr check pos (trnfr, dst): key=%s; pos_size=%s', dst_key,
-                                 dst_item.position_size_with_sign)
-                        if isclose(dst_item.position_size_with_sign, 0.0):
-                            del self._rolling_items[dst_key]
+            if not action:
+                continue
+
+            self._set_ref(action, 'transaction_type', clazz=TransactionType)
+
+            gep = GeneratedEventProcess(
+                generated_event=e,
+                action=action,
+                fake_id_gen=self._fake_id_gen,
+                transaction_order_gen=self._trn_order_gen,
+                now=now,
+                context={
+                    'master_user': self.instance.master_user,
+                    'member': self.instance.member,
+                }
+            )
+            gep.process()
+
+            if gep.has_errors:
+                self.instance.has_errors = True
+                continue
+
+            _l.debug('evt: cplx=%s, trns=%s', gep.complex_transaction, gep.transactions)
+
+            for t2 in gep.transactions:
+                _l.debug('evt: trn: id=%s, c.id=%s, c.date=%s, acc_date=%s, cash_date=%s',
+                         t2.id, t2.complex_transaction.id, t2.complex_transaction.date,
+                         t2.accounting_date, t2.cash_date)
+                # d = t2.complex_transaction.date or datetime.date.max
+                # self._transactions_by_date[d].append(t2)
+
+                d = t2.accounting_date or datetime.date.max
+                self._transactions_by_date[d].append(t2)
+
+    def _process_transactions(self, now):
+        if now not in self._transactions_by_date:
+            return
+
+        for t in self._transactions_by_date[now]:
+            # _l.debug('trn=%s', t.id)
+
+            item = CashFlowProjectionReportItem(self.instance, trn=t)
+            self._items.append(item)
+
+            if t.transaction_class_id in [TransactionClass.BUY, TransactionClass.SELL]:
+                key = self._instr_rolling_trn_key(t)
+                ritem = self._rolling(t, key=key)
+                ritem.add_balance(t)
+
+                _l.debug('rolling: instr check pos: %s, src_key=%s; pos_size=%s',
+                         t.transaction_class, key, ritem.position_size_with_sign)
+
+                if isclose(ritem.position_size_with_sign, 0.0):
+                    del self._rolling_items[key]
+
+            elif t.transaction_class_id in [TransactionClass.TRANSFER]:
+                # TODO: check me
+                src_key = self._instr_rolling_trn_key(t, acc=t.account_cash)
+                src_item = self._rolling(t, key=src_key)
+                src_item.add_balance(t, sign=-1)
+
+                dst_key = self._instr_rolling_trn_key(t, acc=t.account_position)
+                dst_item = self._rolling(t, key=dst_key)
+                dst_item.add_balance(t)
+
+                _l.debug('rolling: instr check pos: %s, src_key=%s; pos_size=%s',
+                         t.transaction_class, src_key, src_item.position_size_with_sign)
+                if isclose(src_item.position_size_with_sign, 0.0):
+                    del self._rolling_items[src_key]
+
+                _l.debug('rolling: instr check pos: %s, dst_key=%s; pos_size=%s',
+                         t.transaction_class, dst_key, dst_item.position_size_with_sign)
+                if isclose(dst_item.position_size_with_sign, 0.0):
+                    del self._rolling_items[dst_key]
 
     def _calc_before_after(self):
         # aggregate some rolling values

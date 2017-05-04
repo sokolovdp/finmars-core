@@ -564,6 +564,9 @@ class CFReportTestCase(AbstractReportTestMixin, TestCase):
             date_expr='effective_date',
         )
 
+        self.m.instrument_event_schedule_config.notify_in_n_days = 2
+        self.m.instrument_event_schedule_config.save()
+
         it1 = InstrumentType.objects.create(
             master_user=self.m,
             user_code='itype1',
