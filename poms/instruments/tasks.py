@@ -43,9 +43,9 @@ def calculate_prices_accrued_price_async(master_user=None, begin_date=None, end_
                                    instruments=instruments)
 
 
-@shared_task(name='instruments.mu_generate_events', ignore_result=True)
-def mu_generate_events(master_user):
-    _l.debug('generate_events: master_user=%s', master_user.id)
+@shared_task(name='instruments.generate_events0', ignore_result=True)
+def generate_events0(master_user):
+    _l.debug('generate_events0: master_user=%s', master_user.id)
 
     opened_instrument_items = []
 
@@ -151,7 +151,7 @@ def mu_generate_events(master_user):
                 generated_event.position = position
                 generated_event.save()
 
-    mu_process_events.apply_async(kwargs={'master_user': master_user})
+    process_events0.apply_async(kwargs={'master_user': master_user})
 
 
 @shared_task(name='instruments.generate_events', ignore_result=True)
@@ -274,19 +274,19 @@ def generate_events(master_users=None):
         #             generated_event.strategy3 = strategy3
         #             generated_event.position = position
         #             generated_event.save()
-        mu_generate_events.apply_async(kwargs={'master_user': master_user})
+        generate_events0.apply_async(kwargs={'master_user': master_user})
 
     # process_events.apply_async(kwargs={'master_users': master_users})
 
     # _l.debug('finished')
 
 
-@shared_task(name='instruments.mu_process_events', ignore_result=True)
+@shared_task(name='instruments.process_events0', ignore_result=True)
 @transaction.atomic()
-def mu_process_events(master_user):
+def process_events0(master_user):
     from poms.instruments.handlers import GeneratedEventProcess
 
-    _l.debug('process_events: master_user=%s', master_user.id)
+    _l.debug('process_events0: master_user=%s', master_user.id)
 
     now = date_now()
 
@@ -512,4 +512,4 @@ def process_events(master_users=None):
         #         if is_notify_on_notification_date or is_notify_on_effective_date or \
         #                 is_apply_default_on_notification_date or is_apply_default_on_effective_date:
         #             gevent.save()
-        mu_process_events.apply_async(kwargs={'master_user': master_user})
+        process_events0.apply_async(kwargs={'master_user': master_user})
