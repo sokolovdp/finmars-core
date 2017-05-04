@@ -760,6 +760,16 @@ class Instrument(NamedModel, FakeDeletableModel):
 
         return 0.0, False
 
+    def get_factor(self, fdate):
+        fndf = None
+        for f in self.factor_schedules.all():
+            if f.effective_date < fdate:
+                fndf = f
+        if fndf:
+            return fndf.factor_value
+        return 0
+
+
     # def get_future_coupons(self, data=None, d0=None, v0=None, begin_date=None, accruals=None,
     #                        principal_ccy_fx=1.0, accrual_ccy_fx=1.0):
     #     accruals = self.get_accrual_calculation_schedules_all(accruals=accruals)
