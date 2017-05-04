@@ -111,7 +111,7 @@ class MasterUserAdmin(AbstractModelAdmin):
 
     def generate_events(self, request, queryset):
         from poms.instruments.tasks import generate_events
-        generate_events(master_users=[mu.pk for mu in queryset])
+        generate_events.apply_async(kwargs={'master_users': [mu.pk for mu in queryset]})
 
     generate_events.short_description = ugettext_lazy("Generate and check events")
 
@@ -271,7 +271,7 @@ admin.site.register(Permission, PermissionAdmin)
 
 class ContentTypeAdmin(admin.ModelAdmin):
     model = ContentType
-    list_display = ['id', 'app_label', 'model']
+    list_display = ['id', 'app_label', 'model', 'name']
     ordering = ['app_label', 'model']
     readonly_fields = ['app_label', 'model']
     search_fields = ['app_label', 'model']

@@ -18,11 +18,14 @@ from poms.accounts.models import AccountType, Account
 from poms.counterparties.models import Counterparty, Responsible, CounterpartyGroup, ResponsibleGroup
 from poms.currencies.models import Currency, CurrencyHistory
 from poms.instruments.models import Instrument, PriceHistory, PricingPolicy, CostMethod, InstrumentType, \
-    InstrumentClass, AccrualCalculationSchedule, AccrualCalculationModel, Periodicity, PaymentSizeDetail
+    InstrumentClass, AccrualCalculationSchedule, AccrualCalculationModel, Periodicity, PaymentSizeDetail, EventSchedule
 from poms.portfolios.models import Portfolio
 from poms.reports.builders.balance_item import ReportItem, Report
 from poms.reports.builders.balance_pl import ReportBuilder
 from poms.reports.builders.balance_virt_trn import VirtualTransaction
+from poms.reports.builders.base_item import BaseReportItem
+from poms.reports.builders.cash_flow_projection import CashFlowProjectionReportBuilder
+from poms.reports.builders.cash_flow_projection_item import CashFlowProjectionReport
 from poms.strategies.models import Strategy1Group, Strategy1Subgroup, Strategy1, Strategy2Group, Strategy2Subgroup, \
     Strategy2, Strategy3Subgroup, Strategy3Group, Strategy3
 from poms.transactions.models import Transaction, TransactionClass, TransactionType, ComplexTransaction
@@ -281,6 +284,7 @@ class ReportTestCase(TestCase):
         'trn_cls',
         'instr',
         'trn_ccy',
+        'pricing_ccy',
         'notes',
         'stl_ccy',
         'pos_size',
@@ -361,6 +365,9 @@ class ReportTestCase(TestCase):
         'weighted_time_invested',
         'cash_res',
         'total',
+
+        'pl_fx_mul',
+        'pl_fixed_mul',
         'principal_res',
         'carry_res',
         'overheads_res',
@@ -373,7 +380,6 @@ class ReportTestCase(TestCase):
         'carry_opened_res',
         'overheads_opened_res',
         'total_opened_res',
-        'pl_fx_mul',
         'principal_fx_res',
         'carry_fx_res',
         'overheads_fx_res',
@@ -386,7 +392,6 @@ class ReportTestCase(TestCase):
         'carry_fx_opened_res',
         'overheads_fx_opened_res',
         'total_fx_opened_res',
-        'pl_fixed_mul',
         'principal_fixed_res',
         'carry_fixed_res',
         'overheads_fixed_res',
@@ -399,7 +404,46 @@ class ReportTestCase(TestCase):
         'carry_fixed_opened_res',
         'overheads_fixed_opened_res',
         'total_fixed_opened_res',
-    ]
+
+        'pl_fx_mul_loc',
+        'pl_fixed_mul_loc',
+        'principal_loc',
+        'carry_loc',
+        'overheads_loc',
+        'total_loc',
+        'principal_closed_loc',
+        'carry_closed_loc',
+        'overheads_closed_loc',
+        'total_closed_loc',
+        'principal_opened_loc',
+        'carry_opened_loc',
+        'overheads_opened_loc',
+        'total_opened_loc',
+        'principal_fx_loc',
+        'carry_fx_loc',
+        'overheads_fx_loc',
+        'total_fx_loc',
+        'principal_fx_closed_loc',
+        'carry_fx_closed_loc',
+        'overheads_fx_closed_loc',
+        'total_fx_closed_loc',
+        'principal_fx_opened_loc',
+        'carry_fx_opened_loc',
+        'overheads_fx_opened_loc',
+        'total_fx_opened_loc',
+        'pl_fixed_mul',
+        'principal_fixed_loc',
+        'carry_fixed_loc',
+        'overheads_fixed_loc',
+        'total_fixed_loc',
+        'principal_fixed_closed_loc',
+        'carry_fixed_closed_loc',
+        'overheads_fixed_closed_loc',
+        'total_fixed_closed_loc',
+        'principal_fixed_opened_loc',
+        'carry_fixed_opened_loc',
+        'overheads_fixed_opened_loc',
+        'total_fixed_opened_loc', ]
 
     TRN_COLS_MINI = [
         # 'is_cloned',
@@ -1195,7 +1239,7 @@ class ReportTestCase(TestCase):
 
     def _sdump(self, builder, name, show_trns=True, show_items=True, trn_cols=None, item_cols=None,
                trn_filter=None, in_csv=False):
-        transpose = False
+        transpose = True
         showindex = 'always'
         if show_trns or show_items:
             s = 'Report: %s\n' % (
@@ -1258,7 +1302,7 @@ class ReportTestCase(TestCase):
             # _l.info(self._sdump_hist(*args, **kwargs))
 
     def _simple_run(self, name, result=None, trns=False, trn_cols=None, item_cols=None,
-                    trn_dump_all=True, in_csv=False, **kwargs):
+                    trn_dump_all=True, in_csv=False, build_balance_for_tests=False, **kwargs):
         _l.info('')
         _l.info('')
         _l.info('*' * 79)
@@ -1270,7 +1314,10 @@ class ReportTestCase(TestCase):
             queryset = Transaction.objects.filter(pk__in=[int(t) if isinstance(t, int) else t.id for t in trns])
         b = ReportBuilder(instance=r, queryset=queryset)
         if r.report_type == Report.TYPE_BALANCE:
-            b.build_balance(full=True)
+            if build_balance_for_tests:
+                b.build_balance_for_tests(full=True)
+            else:
+                b.build_balance(full=True)
         elif r.report_type == Report.TYPE_PL:
             b.build_pl(full=True)
         r.transactions = b.transactions
@@ -2893,6 +2940,83 @@ class ReportTestCase(TestCase):
         # as_json(r)
         pass
 
+    def _test_cf_p1(self):
+        # settings.DEBUG = True
+
+        tt1 = TransactionType.objects.create(
+            master_user=self.m,
+            group=self.m.transaction_type_group,
+            date_expr='effective_date',
+        )
+
+        it1 = InstrumentType.objects.create(
+            master_user=self.m,
+            user_code='itype1',
+            instrument_class=InstrumentClass.objects.get(pk=InstrumentClass.REGULAR_EVENT_AT_MATURITY),
+            one_off_event=tt1,
+            regular_event=tt1,
+            factor_same=tt1,
+            factor_up=tt1,
+            factor_down=tt1,
+        )
+
+        i1 = Instrument.objects.create(
+            master_user=self.m,
+            user_code='i1',
+            instrument_type=it1,
+            pricing_currency=self.usd,
+            price_multiplier=1.0,
+            accrued_currency=self.usd,
+            accrued_multiplier=1.0,
+            maturity_date=date(2103, 1, 1),
+            maturity_price=1000,
+        )
+
+        es1 = AccrualCalculationSchedule.objects.create(
+            instrument=i1,
+            accrual_start_date=date(2100, 1, 1),
+            first_payment_date=date(2100, 7, 1),
+            accrual_size=10,
+            accrual_calculation_model=AccrualCalculationModel.objects.get(pk=AccrualCalculationModel.ISMA_30_360),
+            periodicity=Periodicity.objects.get(pk=Periodicity.SEMI_ANNUALLY),
+            periodicity_n=1
+        )
+
+        i1.rebuild_event_schedules()
+
+        _l.info('get_future_coupons: %s',
+            [(str(d), v) for d, v in i1.get_future_coupons(begin_date=date(2101, 1, 1))])
+
+        BaseReportItem.dumps(
+            items=EventSchedule.objects.filter(instrument=i1),
+            columns=[
+                'effective_date',
+                'event_class',
+                'notification_class',
+                'notify_in_n_days',
+                'periodicity',
+                'periodicity',
+                'periodicity_n',
+                'final_date',
+                'is_auto_generated',
+                'accrual_calculation_schedule',
+                'factor_schedule',
+            ]
+        )
+
+        self._t_buy(instr=i1, position=10,
+                    stl_ccy=self.usd, principal=-10, carry=0, overheads=-10,
+                    acc_date=date(2101, 2, 1), cash_date=date(2101, 2, 1))
+
+        report = CashFlowProjectionReport(
+            master_user=self.m,
+            member=self.mm,
+            balance_date=date(2101, 2, 1),
+            report_date=date(2104, 1, 1),
+        )
+        report_builder = CashFlowProjectionReportBuilder(report)
+        report_builder.build()
+
     def test_from_csv_td_1(self):
         test_prefix = 'td_2'
         base_path = os.path.join(settings.BASE_DIR, 'poms', 'reports', 'tests_data')
@@ -2905,6 +3029,10 @@ class ReportTestCase(TestCase):
         )
         # Transaction.objects.filter(master_user=self.m).exclude(transaction_class_id=TransactionClass.TRANSACTION_PL).delete()
         # Transaction.objects.filter(master_user=self.m).exclude(transaction_code__in=[7859, 7860]).delete()
+        # Transaction.objects.filter(master_user=self.m).exclude(
+        #     instrument__user_code__in=['GB0031544546'],
+        #     portfolio__user_code__in=['FinMARS-5'],
+        # ).delete()
 
         cost_method = self._avco
 
@@ -3012,6 +3140,7 @@ class ReportTestCase(TestCase):
                 'show_transaction_details': True,
             },
         ]
+        pl_consolidations = []
 
         trn_cols = [
             'pk', 'trn_code', 'trn_cls', 'multiplier', 'instr', 'trn_ccy', 'pos_size', 'stl_ccy', 'cash', 'principal',
@@ -3050,10 +3179,12 @@ class ReportTestCase(TestCase):
             'overheads_fixed_closed_loc', 'total_fixed_closed_loc', 'principal_fixed_opened_res',
             'carry_fixed_opened_res', 'overheads_fixed_opened_res', 'total_fixed_opened_res',
             'principal_fixed_opened_loc', 'carry_fixed_opened_loc', 'overheads_fixed_opened_loc',
-            'total_fixed_opened_loc', 'group_code', 'detail_trn'
+            'total_fixed_opened_loc', 'group_code', 'detail_trn',
+            'user_code', 'name',
         ]
 
         # trn_cols = self.TRN_COLS_ALL
+        # item_cols = self.ITEM_COLS_ALL
 
         # trn_cols = [x for x in trn_cols if x not in
         #             {'rolling_pos_size', 'remaining_pos_size', 'remaining_pos_size_percent', 'trn_date', 'str2_pos',
@@ -3083,6 +3214,7 @@ class ReportTestCase(TestCase):
                     #         report_date, report_currency, sorted(consolidation.items()))
                     bal = self._simple_run(
                         None,
+                        build_balance_for_tests=True,
                         report_type=Report.TYPE_BALANCE,
                         report_currency=report_currency,
                         report_date=report_date,
@@ -3181,6 +3313,6 @@ class ReportTestCase(TestCase):
         _l.warn('write results')
         self._write_results(balance_reports, '%s_balance.xlsx' % test_prefix,
                             trn_cols=trn_cols, item_cols=item_cols)
-        self._write_results(pl_reports, '%s_pl_report.xlsx' % test_prefix,
-                            trn_cols=trn_cols, item_cols=item_cols)
+        # self._write_results(pl_reports, '%s_pl_report.xlsx' % test_prefix,
+        #                     trn_cols=trn_cols, item_cols=item_cols)
         pass

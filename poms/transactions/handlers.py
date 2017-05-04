@@ -281,7 +281,8 @@ class TransactionTypeProcess(object):
                               source=action_instrument, source_attr_name='daily_pricing_model')
                 self._set_val(errors=errors, values=self.values, default_value=date.max,
                               target=instrument, target_attr_name='maturity_date',
-                              source=action_instrument, source_attr_name='maturity_date')
+                              source=action_instrument, source_attr_name='maturity_date',
+                              validator=formula.validate_date)
                 self._set_val(errors=errors, values=self.values, default_value=0.0,
                               target=instrument, target_attr_name='maturity_price',
                               source=action_instrument, source_attr_name='maturity_price')
@@ -305,7 +306,8 @@ class TransactionTypeProcess(object):
         if self.complex_transaction.date is None:
             self._set_val(errors=complex_transaction_errors, values=self.values, default_value=self._now,
                           target=self.complex_transaction, target_attr_name='date',
-                          source=self.transaction_type, source_attr_name='date_expr')
+                          source=self.transaction_type, source_attr_name='date_expr',
+                          validator=formula.validate_date)
             self.complex_transaction_errors.append(complex_transaction_errors)
             self.complex_transaction.save()
         self.complex_transaction.transactions.all().delete()
@@ -355,7 +357,6 @@ class TransactionTypeProcess(object):
                 self._set_rel(errors=errors, values=self.values, default_value=master_user.portfolio,
                               target=transaction, target_attr_name='portfolio',
                               source=action_transaction, source_attr_name='portfolio')
-
                 self._set_rel(errors=errors, values=self.values, default_value=master_user.account,
                               target=transaction, target_attr_name='account_position',
                               source=action_transaction, source_attr_name='account_position')
@@ -365,12 +366,15 @@ class TransactionTypeProcess(object):
                 self._set_rel(errors=errors, values=self.values, default_value=master_user.account,
                               target=transaction, target_attr_name='account_interim',
                               source=action_transaction, source_attr_name='account_interim')
+
                 self._set_val(errors=errors, values=self.values, default_value=self._now,
                               target=transaction, target_attr_name='accounting_date',
-                              source=action_transaction, source_attr_name='accounting_date')
+                              source=action_transaction, source_attr_name='accounting_date',
+                              validator=formula.validate_date)
                 self._set_val(errors=errors, values=self.values, default_value=self._now,
                               target=transaction, target_attr_name='cash_date',
-                              source=action_transaction, source_attr_name='cash_date')
+                              source=action_transaction, source_attr_name='cash_date',
+                              validator=formula.validate_date)
 
                 self._set_rel(errors=errors, values=self.values, default_value=master_user.strategy1,
                               target=transaction, target_attr_name='strategy1_position',
@@ -488,7 +492,8 @@ class TransactionTypeProcess(object):
                any(bool(e) for e in self.complex_transaction_errors) or \
                any(bool(e) for e in self.transactions_errors)
 
-    def _set_val(self, errors, values, default_value, target, target_attr_name, source, source_attr_name):
+    def _set_val(self, errors, values, default_value, target, target_attr_name, source, source_attr_name,
+                 validator=None):
         value = getattr(source, source_attr_name)
         if value:
             try:
@@ -496,6 +501,8 @@ class TransactionTypeProcess(object):
             except formula.InvalidExpression as e:
                 self._set_eval_error(errors, source_attr_name, value, e)
                 return
+            if callable(validator):
+                value = validator(value)
         else:
             value = default_value
         setattr(target, target_attr_name, value)

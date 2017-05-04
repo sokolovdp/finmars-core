@@ -207,6 +207,10 @@ class MasterUser(models.Model):
                                      related_name='master_user_thread_group',
                                      verbose_name=ugettext_lazy('thread group'))
 
+    transaction_type_group = models.ForeignKey('transactions.TransactionTypeGroup', null=True, blank=True,
+                                               on_delete=models.PROTECT,
+                                               verbose_name=ugettext_lazy('transaction type group'))
+
     mismatch_portfolio = models.ForeignKey('portfolios.Portfolio', null=True, blank=True, on_delete=models.PROTECT,
                                            related_name='master_user_mismatch_portfolio',
                                            verbose_name=ugettext_lazy('mismatch portfolio'))
@@ -237,7 +241,7 @@ class MasterUser(models.Model):
         from poms.strategies.models import Strategy1Group, Strategy1Subgroup, Strategy1, Strategy2Group, \
             Strategy2Subgroup, Strategy2, Strategy3Group, Strategy3Subgroup, Strategy3
         from poms.chats.models import ThreadGroup
-        from poms.transactions.models import NotificationClass
+        from poms.transactions.models import NotificationClass, TransactionTypeGroup
         from poms.obj_perms.utils import get_change_perms, assign_perms3
 
         if not EventScheduleConfig.objects.filter(master_user=self).exists():
@@ -293,6 +297,8 @@ class MasterUser(models.Model):
 
         thread_group = ThreadGroup.objects.create(master_user=self, name='-')
 
+        transaction_type_group = TransactionTypeGroup.objects.create(master_user=self, name='-')
+
         if user:
             Member.objects.create(user=user, master_user=self, is_owner=True, is_admin=True)
         group = Group.objects.create(master_user=self, name='%s' % ugettext_lazy('Default'))
@@ -328,18 +334,20 @@ class MasterUser(models.Model):
         self.strategy3_subgroup = strategy3_subgroup
         self.strategy3 = strategy3
         self.thread_group = thread_group
+        self.transaction_type_group = transaction_type_group
         self.mismatch_portfolio = portfolio
         self.mismatch_account = account
         self.save()
 
         for c in [account_type, account, counterparty_group, counterparty, responsible_group, responsible, portfolio,
                   instrument_type, instrument, strategy1_group, strategy1_subgroup, strategy1, strategy2_group,
-                  strategy2_subgroup, strategy2, strategy3_group, strategy3_subgroup, strategy3, thread_group]:
+                  strategy2_subgroup, strategy2, strategy3_group, strategy3_subgroup, strategy3, thread_group,
+                  transaction_type_group]:
             for p in get_change_perms(c):
                 assign_perms3(c, perms=[{'group': group, 'permission': p}])
 
-        for fsn in ['complex_transaction', 'transaction']:
-            FakeSequence.objects.get_or_create(master_user=self, name=fsn)
+        FakeSequence.objects.get_or_create(master_user=self, name='complex_transaction')
+        FakeSequence.objects.get_or_create(master_user=self, name='transaction')
 
     def patch_currencies(self, overwrite_name=False, overwrite_reference_for_pricing=False):
         from poms.currencies.models import currencies_data, Currency
@@ -526,14 +534,18 @@ class FakeSequence(models.Model):
     #     return RuntimeError('simple sequence optimistic lock error')
 
     @classmethod
-    def next_value(cls, master_user, name, count=0):
+    def next_value(cls, master_user, name, d=1):
         # seq = SimpleSequence.objects.select_for_update().get_or_create(master_user=master_user, name=name)
         # seq = SimpleSequence.objects.select_for_update().get(master_user=master_user, name=name)
-        seq, _ = cls.objects.get_or_create(master_user=master_user, name=name)
-        newval = seq.value + 1
-        seq.value = newval + count
+        seq, created = cls.objects.get_or_create(master_user=master_user, name=name)
+        if not d:
+            d = 1
+        if d == 1:
+            seq.value += 1
+        else:
+            seq.value = ((seq.value + d) // d) * d
         seq.save(update_fields=['value'])
-        return newval
+        return seq.value
 
 
 @receiver(post_save, dispatch_uid='create_profile', sender=settings.AUTH_USER_MODEL)

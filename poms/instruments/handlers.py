@@ -21,6 +21,8 @@ class GeneratedEventProcess(TransactionTypeProcess):
             'position': generated_event.position,
             'effective_date': generated_event.effective_date,
             'notification_date': generated_event.notification_date,
+            # 'final_date': generated_event.event_schedule.final_date,
+            # 'maturity_date': generated_event.instrument.maturity_date
         })
         kwargs['default_values'] = default_values
 

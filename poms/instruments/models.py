@@ -1,5 +1,6 @@
 from __future__ import unicode_literals
 
+import logging
 from datetime import date, timedelta
 
 from dateutil import relativedelta, rrule
@@ -10,17 +11,20 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
 from django.utils import timezone
 from django.utils.encoding import python_2_unicode_compatible
+from django.utils.functional import cached_property
 from django.utils.translation import ugettext, ugettext_lazy
 from mptt.models import MPTTModel
 
 from poms.common import formula
-from poms.common.formula_accruals import f_xirr
+from poms.common.formula_accruals import f_xirr, get_coupon
 from poms.common.models import NamedModel, AbstractClassModel, FakeDeletableModel
 from poms.common.utils import date_now, isclose
 from poms.obj_attrs.models import GenericAttribute
 from poms.obj_perms.models import GenericObjectPermission
 from poms.tags.models import TagLink
 from poms.users.models import MasterUser, Member
+
+_l = logging.getLogger('poms.instruments')
 
 
 class InstrumentClass(AbstractClassModel):
@@ -470,7 +474,7 @@ class Instrument(NamedModel, FakeDeletableModel):
                 raise ValueError('Field one-off event in instrument type "%s" must be set' % instrument_type)
 
         # process factors
-        factors = list(self.factor_schedules.order_by('effective_date'))
+        factors = list(self.factor_schedules.all())
         for i, f in enumerate(factors):
             if i == 0:
                 continue
@@ -550,30 +554,50 @@ class Instrument(NamedModel, FakeDeletableModel):
             if old_event:
                 processed.append(old_event.id)
 
-    def get_accrual_calculation_schedules_all(self):
-        return sorted(self.accrual_calculation_schedules.all(), key=lambda x: x.accrual_start_date)
+    def get_accrual_calculation_schedules_all(self, accruals=None):
+        if accruals is None:
+            accruals = list(self.accrual_calculation_schedules.all())
+
+        if not accruals:
+            return accruals
+
+        if getattr(accruals[0], 'accrual_end_date', None) is not None:
+            # already configured
+            return accruals
+
+        accruals = sorted(accruals, key=lambda x: x.accrual_start_date)
+
+        a = None
+        for next_a in accruals:
+            if a is not None:
+                a.accrual_end_date = next_a.accrual_start_date
+            a = next_a
+        if a:
+            a.accrual_end_date = self.maturity_date
+
+        return accruals
 
     def find_accrual(self, d, accruals=None):
         if d >= self.maturity_date:
             return None
-        if accruals is None:
-            # # TODO: verify that use queryset cache
-            # accruals = self.accrual_calculation_schedules.select_related(
-            #     'periodicity', 'accrual_calculation_model'
-            # ).order_by('accrual_start_date').all()
-            accruals = self.get_accrual_calculation_schedules_all()
+
+        accruals = self.get_accrual_calculation_schedules_all(accruals=accruals)
+
         accrual = None
         for a in accruals:
             if a.accrual_start_date <= d:
                 accrual = a
+
         return accrual
 
     def calculate_prices_accrued_price(self, begin_date=None, end_date=None):
-        # accruals = [a for a in self.accrual_calculation_schedules.order_by('accrual_start_date')]
         accruals = self.get_accrual_calculation_schedules_all()
+
         if not accruals:
             return
+
         existed_prices = PriceHistory.objects.filter(instrument=self, date__range=(begin_date, end_date))
+
         if begin_date is None and end_date is None:
             # used from admin
             for price in existed_prices:
@@ -584,6 +608,7 @@ class Instrument(NamedModel, FakeDeletableModel):
                     accrued_price = 0.0
                 price.accrued_price = accrued_price
                 price.save(update_fields=['accrued_price'])
+
         else:
             existed_prices = {(p.pricing_policy_id, p.date): p for p in existed_prices}
             for pp in PricingPolicy.objects.filter(master_user=self.master_user):
@@ -609,22 +634,27 @@ class Instrument(NamedModel, FakeDeletableModel):
 
     def get_accrued_price(self, price_date, accruals=None, accrual=None):
         from poms.common.formula_accruals import coupon_accrual_factor
+
         if price_date >= self.maturity_date:
-            return self.maturity_price
+            # return self.maturity_price
+            return 0.0
+
         if accrual is None:
             accrual = self.find_accrual(price_date, accruals=accruals)
+
         if accrual is None:
-            return None
+            return 0.0
+
         factor = coupon_accrual_factor(accrual_calculation_schedule=accrual,
                                        dt1=accrual.accrual_start_date,
                                        dt2=price_date,
                                        dt3=accrual.first_payment_date)
+
         return accrual.accrual_size * factor
 
     def get_future_accrual_payments(self, data=None, d0=None, v0=None, begin_date=None, accruals=None,
                                     principal_ccy_fx=1.0, accrual_ccy_fx=1.0):
-        if accruals is None:
-            accruals = self.get_accrual_calculation_schedules_all()
+        accruals = self.get_accrual_calculation_schedules_all(accruals=accruals)
 
         if data is None:
             data = []
@@ -639,15 +669,18 @@ class Instrument(NamedModel, FakeDeletableModel):
             else:
                 begin_date = date.min
 
-        a = None
-        for next_a in accruals:
-            if a is not None:
-                a.accrual_end_date = next_a.accrual_start_date
-            a = next_a
-        if a:
-            a.accrual_end_date = self.maturity_date
+        # a = None
+        # for next_a in accruals:
+        #     if a is not None:
+        #         a.accrual_end_date = next_a.accrual_start_date
+        #     a = next_a
+        # if a:
+        #     a.accrual_end_date = self.maturity_date
 
-        a_to_p_mul = None  # lazy
+        try:
+            a_to_p_mul = (self.accrued_multiplier / self.price_multiplier) * (accrual_ccy_fx / principal_ccy_fx)
+        except ArithmeticError:
+            a_to_p_mul = 0.0
 
         for a in accruals:
             if a.accrual_end_date <= begin_date:
@@ -660,17 +693,17 @@ class Instrument(NamedModel, FakeDeletableModel):
                 if d <= begin_date:
                     continue
 
-                if a_to_p_mul is None:
-                    try:
-                        a_to_p_mul = self.accrued_multiplier / self.price_multiplier
-                    except ArithmeticError:
-                        a_to_p_mul = 0.0
-                    if not isclose(principal_ccy_fx, accrual_ccy_fx):
-                        try:
-                            v = accrual_ccy_fx / principal_ccy_fx
-                        except ArithmeticError:
-                            v = 0
-                        a_to_p_mul *= v
+                # if a_to_p_mul is None:
+                #     try:
+                #         a_to_p_mul = self.accrued_multiplier / self.price_multiplier
+                #     except ArithmeticError:
+                #         a_to_p_mul = 0.0
+                #     if not isclose(principal_ccy_fx, accrual_ccy_fx):
+                #         try:
+                #             v = accrual_ccy_fx / principal_ccy_fx
+                #         except ArithmeticError:
+                #             v = 0
+                #         a_to_p_mul *= v
 
                 data.append((d, a.accrual_size * a_to_p_mul))
 
@@ -683,6 +716,131 @@ class Instrument(NamedModel, FakeDeletableModel):
                     data.append((self.maturity_date, self.maturity_price))
             else:
                 data.append((self.maturity_date, self.maturity_price))
+
+        return data
+
+    def get_coupon(self, cpn_date, accruals=None):
+        accruals = self.get_accrual_calculation_schedules_all(accruals=accruals)
+
+        if cpn_date == self.maturity_date:
+            # _l.info('  %s, d=%s', cpn_date == self.maturity_date, cpn_date,)
+            return self.maturity_price, True
+
+        elif cpn_date > self.maturity_date:
+            return 0.0, False
+
+        for accrual in accruals:
+            if accrual.accrual_start_date <= cpn_date < accrual.accrual_end_date:
+                periodicity = accrual.periodicity
+
+                prev_d = accrual.accrual_start_date
+                d = accrual.first_payment_date
+
+                # 3652058 == (date.max-date.min).days
+                for k in range(0, 3652058):
+                    if k > 0:
+                        try:
+                            d = accrual.first_payment_date + periodicity.to_timedelta(i=k)
+                        except ValueError:  # year is out of range
+                            return 0.0, False
+                        if d >= accrual.accrual_end_date:
+                            d = accrual.accrual_end_date - timedelta(days=1)
+
+                    if d == cpn_date:
+                        break
+
+                    if d >= accrual.accrual_end_date - timedelta(days=1):
+                        break
+
+                    prev_d = d
+
+                if d == cpn_date:
+                    # _l.info('  %s, d=%s, prev_d=%s', d == cpn_date, d, prev_d)
+                    return get_coupon(accrual, prev_d, d, maturity_date=self.maturity_date), True
+
+        return 0.0, False
+
+    # def get_future_coupons(self, data=None, d0=None, v0=None, begin_date=None, accruals=None,
+    #                        principal_ccy_fx=1.0, accrual_ccy_fx=1.0):
+    #     accruals = self.get_accrual_calculation_schedules_all(accruals=accruals)
+    #
+    #     if data is None:
+    #         data = []
+    #
+    #     if d0 is not None and v0 is not None:
+    #         data.append((d0, v0))
+    #
+    #     if begin_date is None:
+    #         if data:
+    #             d0, v0 = data[-1]
+    #             begin_date = d0
+    #         else:
+    #             begin_date = date.min
+    #
+    #     a_to_p_mul = None  # lazy
+    #
+    #     d = begin_date
+    #     td1 = timedelta(days=1)
+    #     while d <= self.maturity_date:
+    #         cpn_val, is_cpn = self.get_coupon(cpn_date=d, accruals=accruals)
+    #         if is_cpn:
+    #             data.append((d, cpn_val))
+    #         try:
+    #             d += td1
+    #         except (OverflowError, ValueError):
+    #             break
+    #
+    #     return data
+
+    def get_future_coupons(self, data=None, d0=None, v0=None, begin_date=None, accruals=None,
+                           principal_ccy_fx=1.0, accrual_ccy_fx=1.0):
+        accruals = self.get_accrual_calculation_schedules_all(accruals=accruals)
+
+        if data is None:
+            data = []
+
+        if d0 is not None and v0 is not None:
+            data.append((d0, v0))
+
+        if begin_date is None:
+            if data:
+                d0, v0 = data[-1]
+                begin_date = d0
+            else:
+                begin_date = date.min
+
+        try:
+            a_to_p_mul = (self.accrued_multiplier / self.price_multiplier) * (accrual_ccy_fx / principal_ccy_fx)
+        except ArithmeticError:
+            a_to_p_mul = 0.0
+
+        for accrual in accruals:
+            if begin_date > accrual.accrual_end_date:
+                continue
+
+            prev_d = accrual.accrual_start_date
+            periodicity = accrual.periodicity
+            for k in range(0, 3652058):
+                try:
+                    d = accrual.first_payment_date + periodicity.to_timedelta(i=k)
+                except (OverflowError, ValueError):  # year is out of range
+                    d = date.max
+
+                if d < begin_date:
+                    continue
+
+                if d >= accrual.accrual_end_date:
+                    d = accrual.accrual_end_date - timedelta(days=1)
+
+                cpn = get_coupon(accrual, prev_d, d, maturity_date=self.maturity_date)
+                data.append((d, cpn * a_to_p_mul))
+
+                if d == date.max or d >= accrual.accrual_end_date - timedelta(days=1):
+                    break
+
+                prev_d = d
+
+        data.append((self.maturity_date, self.maturity_price))
 
         return data
 
@@ -761,7 +919,7 @@ class AccrualCalculationSchedule(models.Model):
         ordering = ['accrual_start_date']
 
     def __str__(self):
-        return '%s @ %s' % (self.instrument_id, self.accrual_start_date)
+        return '%s' % self.accrual_start_date
 
 
 @python_2_unicode_compatible
@@ -777,7 +935,7 @@ class InstrumentFactorSchedule(models.Model):
         ordering = ['effective_date']
 
     def __str__(self):
-        return '%s @ %s' % (self.instrument_id, self.effective_date)
+        return '%s' % self.effective_date
 
 
 class EventSchedule(models.Model):
@@ -824,35 +982,108 @@ class EventSchedule(models.Model):
     def __str__(self):
         return '#%s/#%s' % (self.id, self.instrument_id)
 
-    def check_date(self, now):
+    @cached_property
+    def all_dates(self):
         from poms.transactions.models import EventClass
 
-        notification_date_correction = timedelta(days=self.notify_in_n_days)
+        notify_in_n_days = timedelta(days=self.notify_in_n_days)
+
+        # sdate = self.effective_date
+        # edate = self.final_date
+
+        dates = []
+
+        def add_date(edate):
+            ndate = edate - notify_in_n_days
+            if self.effective_date <= ndate <= self.final_date or self.effective_date <= edate <= self.final_date:
+                dates.append((edate, ndate))
 
         if self.event_class_id == EventClass.ONE_OFF:
-            effective_date = self.effective_date
-            notification_date = effective_date - notification_date_correction
-            # _l.debug('effective_date=%s, notification_date=%s', effective_date, notification_date)
-
-            if notification_date == now or effective_date == now:
-                return True, effective_date, notification_date
+            # effective_date = self.effective_date
+            # notification_date = effective_date - notify_in_n_days
+            # if self.effective_date <= notification_date <= self.final_date or self.effective_date <= effective_date <= self.final_date:
+            #     dates.append((effective_date, notification_date))
+            add_date(self.effective_date)
 
         elif self.event_class_id == EventClass.REGULAR:
             for i in range(0, settings.INSTRUMENT_EVENTS_REGULAR_MAX_INTERVALS):
-                effective_date = self.effective_date + self.periodicity.to_timedelta(n=self.periodicity_n, i=i,
-                                                                                     same_date=self.effective_date)
-                notification_date = effective_date - notification_date_correction
-                # _l.debug('i=%s, book_date=%s, notify_date=%s', i, effective_date, notification_date)
+                stop = False
+                try:
+                    effective_date = self.effective_date + self.periodicity.to_timedelta(
+                        n=self.periodicity_n, i=i, same_date=self.effective_date)
+                except (OverflowError, ValueError):  # year is out of range
+                    effective_date = date.max
+                    stop = True
 
-                if effective_date > self.final_date:
-                    break
-                if effective_date < now:
-                    continue
-                if notification_date > now and effective_date > now:
+                if self.accrual_calculation_schedule_id is not None:
+                    if effective_date > self.final_date:
+                        # magic date
+                        effective_date = self.final_date - timedelta(days=1)
+                        stop = True
+
+                # notification_date = effective_date - notify_in_n_days
+                # if self.effective_date <= notification_date <= self.final_date or self.effective_date <= effective_date <= self.final_date:
+                #     dates.append((effective_date, notification_date))
+                add_date(effective_date)
+
+                if stop or effective_date > self.final_date:
                     break
 
-                if notification_date == now or effective_date == now:
-                    return True, effective_date, notification_date
+        return dates
+
+    def check_date(self, now):
+        # from poms.transactions.models import EventClass
+        #
+        # notification_date_correction = timedelta(days=self.notify_in_n_days)
+        #
+        # if self.event_class_id == EventClass.ONE_OFF:
+        #     effective_date = self.effective_date
+        #     notification_date = effective_date - notification_date_correction
+        #     # _l.debug('effective_date=%s, notification_date=%s', effective_date, notification_date)
+        #
+        #     if notification_date == now or effective_date == now:
+        #         return True, effective_date, notification_date
+        #
+        # elif self.event_class_id == EventClass.REGULAR:
+        #     for i in range(0, settings.INSTRUMENT_EVENTS_REGULAR_MAX_INTERVALS):
+        #         try:
+        #             effective_date = self.effective_date + self.periodicity.to_timedelta(
+        #                 n=self.periodicity_n, i=i, same_date=self.effective_date)
+        #         except (OverflowError, ValueError):  # year is out of range
+        #             effective_date = date.max
+        #
+        #         if self.accrual_calculation_schedule_id is not None:
+        #             if effective_date > self.final_date:
+        #                 # magic date
+        #                 effective_date = self.final_date - timedelta(days=1)
+        #
+        #         notification_date = effective_date - notification_date_correction
+        #
+        #         if notification_date == now or effective_date == now:
+        #             return True, effective_date, notification_date
+        #
+        #         if notification_date > now and effective_date > now:
+        #             break
+        #
+        # return False, None, None
+        if self.effective_date <= now <= self.final_date:
+            for edate, ndate in self.all_dates:
+                if edate == now or ndate == now:
+                    return True, edate, ndate
+        return False, None, None
+
+    def check_effective_date(self, now):
+        if self.effective_date <= now <= self.final_date:
+            for edate, ndate in self.all_dates:
+                if edate == now:
+                    return True, edate, ndate
+        return False, None, None
+
+    def check_notification_date(self, now):
+        if self.effective_date <= now <= self.final_date:
+            for edate, ndate in self.all_dates:
+                if ndate == now:
+                    return True, edate, ndate
         return False, None, None
 
 
@@ -967,6 +1198,9 @@ class GeneratedEvent(models.Model):
             return self.notification_date == now and notification_class.is_notify_on_notification_date
         return False
 
+    def is_notify_on_date(self, now=None):
+        return self.is_notify_on_effective_date(now) or self.is_notify_on_notification_date(now)
+
     def is_apply_default_on_effective_date(self, now=None):
         from poms.transactions.models import NotificationClass
         if self.status == GeneratedEvent.NEW:
@@ -1001,6 +1235,9 @@ class GeneratedEvent(models.Model):
             notification_class = self.event_schedule.notification_class
             return self.notification_date == now and notification_class.is_need_reaction_on_notification_date
         return False
+
+    def is_need_reaction_on_date(self, now=None):
+        return self.is_need_reaction_on_effective_date(now) or self.is_need_reaction_on_notification_date(now)
 
     def get_default_action(self, actions=None):
         if actions is None:

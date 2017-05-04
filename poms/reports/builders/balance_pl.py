@@ -57,6 +57,17 @@ class ReportBuilder(BaseReportBuilder):
         _l.debug('done: %s', (time.perf_counter() - st))
         return self.instance
 
+    def build_balance_for_tests(self, full=True):
+        st = time.perf_counter()
+        _l.debug('build balance report: %s', self.instance)
+
+        self.instance.report_type = Report.TYPE_BALANCE
+        self.instance.pl_first_date = None
+        self.build(full=full)
+
+        _l.debug('done: %s', (time.perf_counter() - st))
+        return self.instance
+
     def build_pl(self, full=True):
         st = time.perf_counter()
         _l.debug('build pl report: %s', self.instance)
@@ -494,7 +505,7 @@ class ReportBuilder(BaseReportBuilder):
                 trn.is_hidden = True
 
                 trn1, trn2 = trn.fx_transfer_clone(trn_cls_out=self._trn_cls_cash_out,
-                                                   trn_cls_in=self._trn_cls_cash_out)
+                                                   trn_cls_in=self._trn_cls_cash_in)
                 res.append(trn1)
                 res.append(trn2)
 
@@ -572,7 +583,7 @@ class ReportBuilder(BaseReportBuilder):
                 t.balance_pos_size = balances[t_key]
                 t.sum_remaining_pos_size = remaining_positions[t_key]
                 try:
-                    t.multiplier = abs(t.sum_remaining_pos_size / t.balance_pos_size)
+                    t.multiplier = 1.0 - abs(t.sum_remaining_pos_size / t.balance_pos_size)
                 except ArithmeticError:
                     t.multiplier = 0.0
 
