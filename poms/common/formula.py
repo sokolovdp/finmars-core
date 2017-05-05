@@ -481,6 +481,18 @@ def _get_instrument_coupon(evaluator, instrument, date):
 _get_instrument_coupon.evaluator = True
 
 
+def _get_instrument_factor(evaluator, instrument, date):
+    if instrument is None or date is None:
+        return 0.0
+
+    instrument = _safe_get_instrument(evaluator, instrument)
+    date = _parse_date(date)
+    return instrument.get_factor(date)
+
+
+_get_instrument_factor.evaluator = True
+
+
 def _simple_group(val, ranges, default=None):
     for begin, end, text in ranges:
         if begin is None:
@@ -763,6 +775,7 @@ FUNCTIONS = [
     SimpleEval2Def('simple_price', _simple_price),
     SimpleEval2Def('get_instrument_accrued_price', _get_instrument_accrued_price),
     SimpleEval2Def('get_instrument_coupon', _get_instrument_coupon),
+    SimpleEval2Def('get_instrument_factor', _get_instrument_factor),
 
     SimpleEval2Def('find_name', _find_name),
 
@@ -1921,6 +1934,19 @@ accrual_NL_365_NO_EOM(date(2000, 1, 1), date(2000, 1, 25))
         _l.info(safe_eval('get_instrument_coupon("testaccruals", "2010-03-10")', context={
             'master_user': master_user,
         }))
+
+        _l.info(
+            'get_instrument_factor: 2015-02-01: %s',
+            safe_eval('get_instrument_factor("testaccruals", "2015-02-01")', context={
+                'master_user': master_user,
+            }))
+
+        _l.info(
+            'get_instrument_factor: 2017-02-01: %s',
+            safe_eval('get_instrument_factor("testaccruals", "2017-02-01")', context={
+                'master_user': master_user,
+            'member': member,
+            }))
 
 
     accrued_test()
