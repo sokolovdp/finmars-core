@@ -4,6 +4,7 @@ import time
 from collections import Counter, defaultdict
 from datetime import date, timedelta
 from itertools import groupby
+from math import isnan
 
 from django.conf import settings
 from django.db.models import Q
@@ -200,6 +201,7 @@ class ReportBuilder(BaseReportBuilder):
             'instrument__accrual_calculation_schedules',
             'instrument__accrual_calculation_schedules__accrual_calculation_model',
             'instrument__accrual_calculation_schedules__periodicity',
+            'instrument__factor_schedules',
             'transaction_currency',
             'settlement_currency',
             'portfolio',
@@ -1523,31 +1525,15 @@ class ReportBuilder(BaseReportBuilder):
         self.instance.items = res_items
 
     @staticmethod
-    def instr_ytm_accrued_to_pricing_k(instr, pricing_ccy_fx=1.0, accrued_ccy_fx=1.0):
-        try:
-           return (instr.accrued_multiplier / instr.price_multiplier) * (accrued_ccy_fx / pricing_ccy_fx)
-        except ArithmeticError:
-            return 0
-
-    @staticmethod
-    def instr_ytm_data(instr, d0, v0, k=None, v0_apply_k=False, pricing_ccy_fx=1.0, accrued_ccy_fx=1.0):
+    def instr_ytm_data(instr, d0, v0, pricing_ccy_fx=1.0, accrued_ccy_fx=1.0):
         if instr.maturity_date is None or instr.maturity_date == date.max:
             _l.debug('get_ytm_data: [], maturity_date rule')
             return []
-        if instr.maturity_price is None or instr.isnan(instr.maturity_price) or isclose(instr.maturity_price, 0.0):
+        if instr.maturity_price is None or isnan(instr.maturity_price) or isclose(instr.maturity_price, 0.0):
             _l.debug('get_ytm_data: [], maturity_price rule')
             return []
 
         accruals = instr.get_accrual_calculation_schedules_all()
-
-        if k is None:
-            try:
-                k = (instr.accrued_multiplier / instr.price_multiplier) * (accrued_ccy_fx / pricing_ccy_fx)
-            except ArithmeticError:
-                k = 0
-
-        if v0_apply_k:
-            v0 *= k
 
         data = [(d0, v0)]
 
@@ -1557,14 +1543,16 @@ class ReportBuilder(BaseReportBuilder):
 
             prev_d = accrual.accrual_start_date
             for i in range(0, 3652058):
-                if i == 0:
-                    d = accrual.first_payment_date
-                else:
-                    try:
-                        d = accrual.first_payment_date + accrual.periodicity.to_timedelta(
-                            n=accrual.periodicity_n, i=i, same_date=accrual.accrual_start_date)
-                    except (OverflowError, ValueError):  # date is out of range
-                        d = date.max
+                try:
+                    d = accrual.first_payment_date + accrual.periodicity.to_timedelta(
+                        n=accrual.periodicity_n, i=i, same_date=accrual.accrual_start_date)
+                except (OverflowError, ValueError):  # date is out of range
+                    d = date.max
+
+                try:
+                    k = instr.accrued_multiplier * instr.get_factor(d) * (accrued_ccy_fx / pricing_ccy_fx)
+                except ArithmeticError:
+                    k = 0
 
                 if d < d0:
                     continue
@@ -1581,26 +1569,27 @@ class ReportBuilder(BaseReportBuilder):
 
                 prev_d = d
 
-        data.append((instr.maturity_date, instr.maturity_price))
+        k = instr.price_multiplier * instr.get_factor(d)
+        data.append((instr.maturity_date, instr.maturity_price * k))
 
-        _l.debug('get_ytm_data: data=%s', [(str(d), v) for d, v in data])
+        _l.debug('instr_ytm_data: data=%s', [(str(d), v) for d, v in data])
 
         return data
 
     @staticmethod
     def instr_ytm(data, x0):
         if data:
-            res = f_xirr(data, x0=x0)
+            ytm = f_xirr(data, x0=x0)
         else:
-            res = 0.0
-        _l.debug('get_ytm: %s, data=%s, x0=%s', res, data, x0)
-        return res
+            ytm = 0.0
+        _l.debug('instr_ytm: %s, data=%s, x0=%s', ytm, data, x0)
+        return ytm
 
     @staticmethod
     def instr_duration(data, ytm):
         if data:
-            res = f_duration(data, ytm=ytm)
+            duration = f_duration(data, ytm=ytm)
         else:
-            res = 0.0
-        _l.debug('get_duration: %s, data=%s, x0=%s', res, data)
-        return res
+            duration = 0.0
+        _l.debug('instr_duration: %s, data=%s', duration, data)
+        return duration

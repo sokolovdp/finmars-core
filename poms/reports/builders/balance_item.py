@@ -1183,7 +1183,7 @@ class ReportItem(BaseReportItem):
                 ytm_data = ReportBuilder.instr_ytm_data(
                     instr=self.instr,
                     d0=self.report.report_date,
-                    v0=self.instr_price_cur_principal_price,
+                    v0=self.instr_price_cur_principal_price * self.instr.price_multiplier,
                     pricing_ccy_fx=self.instr_pricing_ccy_cur_fx,
                     accrued_ccy_fx=self.instr_accrued_ccy_cur_fx,
                 )
