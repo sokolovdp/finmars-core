@@ -1,7 +1,6 @@
 from __future__ import unicode_literals
 
 import logging
-import math
 from datetime import date, timedelta
 
 from dateutil import relativedelta, rrule
@@ -17,7 +16,7 @@ from django.utils.translation import ugettext, ugettext_lazy
 from mptt.models import MPTTModel
 
 from poms.common import formula
-from poms.common.formula_accruals import f_xirr, get_coupon, f_duration
+from poms.common.formula_accruals import get_coupon
 from poms.common.models import NamedModel, AbstractClassModel, FakeDeletableModel
 from poms.common.utils import date_now, isclose
 from poms.obj_attrs.models import GenericAttribute
@@ -633,6 +632,38 @@ class Instrument(NamedModel, FakeDeletableModel):
                         price.accrued_price = accrued_price
                         price.save(update_fields=['accrued_price'])
 
+    def get_accrual_size(self, price_date, accruals=None, accrual=None):
+        if price_date >= self.maturity_date:
+            return 0.0
+
+        if accrual is None:
+            accrual = self.find_accrual(price_date, accruals=accruals)
+
+        if accrual is None:
+            return 0.0
+
+        return accrual.accrual_size
+
+    def get_accrual_factor(self, price_date, accruals=None, accrual=None):
+        from poms.common.formula_accruals import coupon_accrual_factor
+
+        if price_date >= self.maturity_date:
+            # return self.maturity_price
+            return 0.0
+
+        if accrual is None:
+            accrual = self.find_accrual(price_date, accruals=accruals)
+
+        if accrual is None:
+            return 0.0
+
+        factor = coupon_accrual_factor(accrual_calculation_schedule=accrual,
+                                       dt1=accrual.accrual_start_date,
+                                       dt2=price_date,
+                                       dt3=accrual.first_payment_date)
+
+        return factor
+
     def get_accrued_price(self, price_date, accruals=None, accrual=None):
         from poms.common.formula_accruals import coupon_accrual_factor
 
@@ -721,6 +752,15 @@ class Instrument(NamedModel, FakeDeletableModel):
     #
     #     return data
 
+    def get_factor(self, fdate):
+        fndf = None
+        for f in self.factor_schedules.all():
+            if f.effective_date < fdate:
+                fndf = f
+        if fndf:
+            return fndf.factor_value
+        return 1.0
+
     def get_coupon(self, cpn_date, accruals=None):
         accruals = self.get_accrual_calculation_schedules_all(accruals=accruals)
 
@@ -761,16 +801,6 @@ class Instrument(NamedModel, FakeDeletableModel):
 
         return 0.0, False
 
-    def get_factor(self, fdate):
-        fndf = None
-        for f in self.factor_schedules.all():
-            if f.effective_date < fdate:
-                fndf = f
-        if fndf:
-            return fndf.factor_value
-        return 0
-
-
     # def get_future_coupons(self, data=None, d0=None, v0=None, begin_date=None, accruals=None,
     #                        principal_ccy_fx=1.0, accrual_ccy_fx=1.0):
     #     accruals = self.get_accrual_calculation_schedules_all(accruals=accruals)
@@ -803,7 +833,7 @@ class Instrument(NamedModel, FakeDeletableModel):
     #
     #     return data
 
-    def get_future_coupons(self, begin_date=None, accruals=None):
+    def get_future_coupons(self, begin_date=None, accruals=None, with_maturity=True):
         accruals = self.get_accrual_calculation_schedules_all(accruals=accruals)
 
         data = []
@@ -838,85 +868,86 @@ class Instrument(NamedModel, FakeDeletableModel):
 
                 prev_d = d
 
-        data.append((self.maturity_date, self.maturity_price))
+        if with_maturity:
+            data.append((self.maturity_date, self.maturity_price))
 
         return data
 
-    # def get_ytm_data_k(self, pricing_ccy_fx=1.0, accrued_ccy_fx=1.0):
-    #     try:
-    #         return (self.accrued_multiplier / self.price_multiplier) * (accrued_ccy_fx / pricing_ccy_fx)
-    #     except ArithmeticError:
-    #         return 0.0
-    #
-    # def get_ytm_data(self, d0, v0, k=None, v0_apply_k=False, pricing_ccy_fx=1.0, accrued_ccy_fx=1.0):
-    #     if self.maturity_date is None or self.maturity_date == date.max:
-    #         _l.debug('get_ytm_data: [], maturity_date rule')
-    #         return []
-    #     if self.maturity_price is None or math.isnan(self.maturity_price) or isclose(self.maturity_price, 0.0):
-    #         _l.debug('get_ytm_data: [], maturity_price rule')
-    #         return []
-    #
-    #     accruals = self.get_accrual_calculation_schedules_all()
-    #
-    #     if k is None:
-    #         k = self.get_ytm_data_k(pricing_ccy_fx=pricing_ccy_fx, accrued_ccy_fx=accrued_ccy_fx)
-    #
-    #     if v0_apply_k:
-    #         v0 *= k
-    #
-    #     data = [(d0, v0)]
-    #
-    #     for accrual in accruals:
-    #         if d0 > accrual.accrual_end_date:
-    #             continue
-    #
-    #         prev_d = accrual.accrual_start_date
-    #         for i in range(0, 3652058):
-    #             if i == 0:
-    #                 d = accrual.first_payment_date
-    #             else:
-    #                 try:
-    #                     d = accrual.first_payment_date + accrual.periodicity.to_timedelta(
-    #                         n=accrual.periodicity_n, i=i, same_date=accrual.accrual_start_date)
-    #                 except (OverflowError, ValueError):  # date is out of range
-    #                     d = date.max
-    #
-    #             if d < d0:
-    #                 continue
-    #
-    #             if d >= accrual.accrual_end_date:
-    #                 # accrual last day value
-    #                 d = accrual.accrual_end_date - timedelta(days=1)
-    #
-    #             cpn = get_coupon(accrual, prev_d, d, maturity_date=self.maturity_date)
-    #             data.append((d, cpn * k))
-    #
-    #             if d == date.max or d >= accrual.accrual_end_date - timedelta(days=1):
-    #                 break
-    #
-    #             prev_d = d
-    #
-    #     data.append((self.maturity_date, self.maturity_price))
-    #
-    #     _l.debug('get_ytm_data: data=%s', [(str(d), v) for d, v in data])
-    #
-    #     return data
-    #
-    # def get_ytm(self, data, x0):
-    #     if data:
-    #         res = f_xirr(data, x0=x0)
-    #     else:
-    #         res = 0.0
-    #     _l.debug('get_ytm: %s, data=%s, x0=%s', res, data, x0)
-    #     return res
-    #
-    # def get_duration(self, data, ytm):
-    #     if data:
-    #         res = f_duration(data, ytm=ytm)
-    #     else:
-    #         res = 0.0
-    #     _l.debug('get_duration: %s, data=%s, x0=%s', res, data)
-    #     return res
+        # def get_ytm_data_k(self, pricing_ccy_fx=1.0, accrued_ccy_fx=1.0):
+        #     try:
+        #         return (self.accrued_multiplier / self.price_multiplier) * (accrued_ccy_fx / pricing_ccy_fx)
+        #     except ArithmeticError:
+        #         return 0.0
+        #
+        # def get_ytm_data(self, d0, v0, k=None, v0_apply_k=False, pricing_ccy_fx=1.0, accrued_ccy_fx=1.0):
+        #     if self.maturity_date is None or self.maturity_date == date.max:
+        #         _l.debug('get_ytm_data: [], maturity_date rule')
+        #         return []
+        #     if self.maturity_price is None or math.isnan(self.maturity_price) or isclose(self.maturity_price, 0.0):
+        #         _l.debug('get_ytm_data: [], maturity_price rule')
+        #         return []
+        #
+        #     accruals = self.get_accrual_calculation_schedules_all()
+        #
+        #     if k is None:
+        #         k = self.get_ytm_data_k(pricing_ccy_fx=pricing_ccy_fx, accrued_ccy_fx=accrued_ccy_fx)
+        #
+        #     if v0_apply_k:
+        #         v0 *= k
+        #
+        #     data = [(d0, v0)]
+        #
+        #     for accrual in accruals:
+        #         if d0 > accrual.accrual_end_date:
+        #             continue
+        #
+        #         prev_d = accrual.accrual_start_date
+        #         for i in range(0, 3652058):
+        #             if i == 0:
+        #                 d = accrual.first_payment_date
+        #             else:
+        #                 try:
+        #                     d = accrual.first_payment_date + accrual.periodicity.to_timedelta(
+        #                         n=accrual.periodicity_n, i=i, same_date=accrual.accrual_start_date)
+        #                 except (OverflowError, ValueError):  # date is out of range
+        #                     d = date.max
+        #
+        #             if d < d0:
+        #                 continue
+        #
+        #             if d >= accrual.accrual_end_date:
+        #                 # accrual last day value
+        #                 d = accrual.accrual_end_date - timedelta(days=1)
+        #
+        #             cpn = get_coupon(accrual, prev_d, d, maturity_date=self.maturity_date)
+        #             data.append((d, cpn * k))
+        #
+        #             if d == date.max or d >= accrual.accrual_end_date - timedelta(days=1):
+        #                 break
+        #
+        #             prev_d = d
+        #
+        #     data.append((self.maturity_date, self.maturity_price))
+        #
+        #     _l.debug('get_ytm_data: data=%s', [(str(d), v) for d, v in data])
+        #
+        #     return data
+        #
+        # def get_ytm(self, data, x0):
+        #     if data:
+        #         res = f_xirr(data, x0=x0)
+        #     else:
+        #         res = 0.0
+        #     _l.debug('get_ytm: %s, data=%s, x0=%s', res, data, x0)
+        #     return res
+        #
+        # def get_duration(self, data, ytm):
+        #     if data:
+        #         res = f_duration(data, ytm=ytm)
+        #     else:
+        #         res = 0.0
+        #     _l.debug('get_duration: %s, data=%s, x0=%s', res, data)
+        #     return res
 
 
 @python_2_unicode_compatible

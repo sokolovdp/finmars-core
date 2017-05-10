@@ -5,13 +5,13 @@ from django.utils.translation import ugettext_lazy, ugettext
 
 from poms.common.utils import isclose, date_now
 from poms.instruments.models import CostMethod
-from poms.reports.builders.base_item import BaseReportItem
+from poms.reports.builders.base_item import BaseReportItem, YTMMixin
 from poms.transactions.models import TransactionClass
 
 _l = logging.getLogger('poms.reports')
 
 
-class ReportItem(BaseReportItem):
+class ReportItem(YTMMixin, BaseReportItem):
     TYPE_UNKNOWN = 0
     TYPE_INSTRUMENT = 1
     TYPE_CURRENCY = 2
@@ -1008,6 +1008,18 @@ class ReportItem(BaseReportItem):
     #     elif self.type == ReportItem.TYPE_INSTRUMENT:
     #         self.pos_size += o.pos_size
 
+    def get_instr_ytm_data_d0_v0(self):
+        return self.report.report_date, -abs(self.instr_price_cur_principal_price * self.instr.price_multiplier)
+
+    def get_instr_ytm_x0(self):
+        try:
+            accrual_size = self.instr.get_accrual_size(self.report.report_date)
+            return (accrual_size * self.instr.accrued_multiplier) * \
+                   (self.instr_accrued_ccy_cur_fx / self.instr_pricing_ccy_cur_fx) / \
+                   (self.instr_price_cur_principal_price * self.instr.price_multiplier)
+        except ArithmeticError:
+            return 0
+
     def close(self):
         try:
             res_to_loc_fx = 1.0 / self.pricing_ccy_cur_fx
@@ -1158,43 +1170,19 @@ class ReportItem(BaseReportItem):
                 self.net_pos_return_loc = 0.0
 
             if self.instr:
-                # YTM/Duration - берем price из price history на дату репорта.
-                # Для записка итеративного алгоритма, для x0 из accrued schedule
-                # берем на текущую дату - (accrued_size * accrued_multiplier)/(price * price_multiplier).
-
-                # try:
-                #     accrl_k = (self.instr.accrued_multiplier / self.instr.price_multiplier) * (self.instr_accrued_ccy_cur_fx / self.instr_pricing_ccy_cur_fx)
-                # except ArithmeticError:
-                #     accrl_k = 0.0
-
-                # future_accrual_payments = self.instr.get_future_accrual_payments(
+                # from poms.reports.builders.balance_pl import ReportBuilder
+                # ytm_data = ReportBuilder.instr_ytm_data(
+                #     instr=self.instr,
                 #     d0=self.report.report_date,
-                #     v0=self.instr_price_cur_principal_price,
-                #     principal_ccy_fx=self.instr_pricing_ccy_cur_fx,
-                #     accrual_ccy_fx=self.instr_accrued_ccy_cur_fx
+                #     v0=self.instr_price_cur_principal_price * self.instr.price_multiplier,
+                #     pricing_ccy_fx=self.instr_pricing_ccy_cur_fx,
+                #     accrued_ccy_fx=self.instr_accrued_ccy_cur_fx,
                 # )
-                # future_accrual_payments = self.instr.get_future_coupons(
-                #     d0=self.report.report_date,
-                #     v0=self.instr_price_cur_principal_price,
-                #     principal_ccy_fx=self.instr_pricing_ccy_cur_fx,
-                #     accrual_ccy_fx=self.instr_accrued_ccy_cur_fx
-                # )
-                from poms.reports.builders.balance_pl import ReportBuilder
-                ytm_data = ReportBuilder.instr_ytm_data(
-                    instr=self.instr,
-                    d0=self.report.report_date,
-                    v0=self.instr_price_cur_principal_price * self.instr.price_multiplier,
-                    pricing_ccy_fx=self.instr_pricing_ccy_cur_fx,
-                    accrued_ccy_fx=self.instr_accrued_ccy_cur_fx,
-                )
-                self.ytm = ReportBuilder.instr_ytm(
-                    data=ytm_data,
-                    x0=self.instr.get_accrued_price(price_date=self.report.report_date) *
-                       ReportBuilder.instr_ytm_accrued_to_pricing_k(self.instr,
-                                                                    pricing_ccy_fx=self.instr_pricing_ccy_cur_fx,
-                                                                    accrued_ccy_fx=self.instr_accrued_ccy_cur_fx)
-                )
-                self.modified_duration = ReportBuilder.instr_duration(data=ytm_data, ytm=self.ytm)
+                # x0 = self.instr.get_accrued_price(price_date=self.report.report_date) * self.instr.accrued_multiplier
+                # self.ytm = ReportBuilder.instr_ytm(instr=self.instr, data=ytm_data, x0=x0)
+                # self.modified_duration = ReportBuilder.instr_duration(instr=self.instr, data=ytm_data, ytm=self.ytm)
+                self.ytm = self.get_instr_ytm()
+                self.modified_duration = self.get_instr_duration()
 
                 self.time_invested = self.time_invested_days / 365.0
 
