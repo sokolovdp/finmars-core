@@ -2,13 +2,16 @@ import logging
 import sys
 import time
 from collections import Counter, defaultdict
-from datetime import date
+from datetime import date, timedelta
 from itertools import groupby
+from math import isnan
 
 from django.conf import settings
 from django.db.models import Q
 from django.utils.functional import cached_property
 
+from poms.common.formula_accruals import f_xirr
+from poms.common.formula_accruals import get_coupon, f_duration
 from poms.common.utils import isclose
 from poms.instruments.models import CostMethod, InstrumentClass
 from poms.reports.builders.balance_item import ReportItem, Report
@@ -198,6 +201,7 @@ class ReportBuilder(BaseReportBuilder):
             'instrument__accrual_calculation_schedules',
             'instrument__accrual_calculation_schedules__accrual_calculation_model',
             'instrument__accrual_calculation_schedules__periodicity',
+            'instrument__factor_schedules',
             'transaction_currency',
             'settlement_currency',
             'portfolio',

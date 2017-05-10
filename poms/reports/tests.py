@@ -3029,10 +3029,9 @@ class ReportTestCase(TestCase):
         )
         # Transaction.objects.filter(master_user=self.m).exclude(transaction_class_id=TransactionClass.TRANSACTION_PL).delete()
         # Transaction.objects.filter(master_user=self.m).exclude(transaction_code__in=[7859, 7860]).delete()
-        # Transaction.objects.filter(master_user=self.m).exclude(
-        #     instrument__user_code__in=['GB0031544546'],
-        #     portfolio__user_code__in=['FinMARS-5'],
-        # ).delete()
+        Transaction.objects.filter(master_user=self.m).exclude(
+            instrument__user_code__in=['CH0336352825'],
+        ).delete()
 
         cost_method = self._avco
 
@@ -3046,16 +3045,16 @@ class ReportTestCase(TestCase):
         elif test_prefix == 'td_2':
             report_dates = [
                 date(2017, 2, 3),  # 1,  2,  3
-                date(2017, 2, 7),  # 4,  5,  6
-                date(2017, 2, 15),  # 7,  8,  9
-                date(2017, 2, 23),  # 10, 11, 12
+                # date(2017, 2, 7),  # 4,  5,  6
+                # date(2017, 2, 15),  # 7,  8,  9
+                # date(2017, 2, 23),  # 10, 11, 12
             ]
         else:
             report_dates = []
         report_currencies = [
             Currency.objects.get(master_user=self.m, user_code='USD'),  # 1, 4, 7, 10
-            Currency.objects.get(master_user=self.m, user_code='EUR'),  # 2, 5, 8, 11
-            Currency.objects.get(master_user=self.m, user_code='GBP'),  # 3, 6, 9, 12
+            # Currency.objects.get(master_user=self.m, user_code='EUR'),  # 2, 5, 8, 11
+            # Currency.objects.get(master_user=self.m, user_code='GBP'),  # 3, 6, 9, 12
         ]
         # portfolio_modes = [
         #     Report.MODE_IGNORE,
@@ -3105,30 +3104,30 @@ class ReportTestCase(TestCase):
                 'strategy3_mode': Report.MODE_INDEPENDENT,
                 'show_transaction_details': True,
             },
-            {
-                'portfolio_mode': Report.MODE_INDEPENDENT,
-                'account_mode': Report.MODE_INDEPENDENT,
-                'strategy1_mode': Report.MODE_IGNORE,
-                'strategy2_mode': Report.MODE_IGNORE,
-                'strategy3_mode': Report.MODE_IGNORE,
-                'show_transaction_details': True,
-            },
-            {
-                'portfolio_mode': Report.MODE_INDEPENDENT,
-                'account_mode': Report.MODE_IGNORE,
-                'strategy1_mode': Report.MODE_IGNORE,
-                'strategy2_mode': Report.MODE_IGNORE,
-                'strategy3_mode': Report.MODE_IGNORE,
-                'show_transaction_details': True,
-            },
-            {
-                'portfolio_mode': Report.MODE_IGNORE,
-                'account_mode': Report.MODE_INDEPENDENT,
-                'strategy1_mode': Report.MODE_IGNORE,
-                'strategy2_mode': Report.MODE_IGNORE,
-                'strategy3_mode': Report.MODE_IGNORE,
-                'show_transaction_details': True,
-            },
+            # {
+            #     'portfolio_mode': Report.MODE_INDEPENDENT,
+            #     'account_mode': Report.MODE_INDEPENDENT,
+            #     'strategy1_mode': Report.MODE_IGNORE,
+            #     'strategy2_mode': Report.MODE_IGNORE,
+            #     'strategy3_mode': Report.MODE_IGNORE,
+            #     'show_transaction_details': True,
+            # },
+            # {
+            #     'portfolio_mode': Report.MODE_INDEPENDENT,
+            #     'account_mode': Report.MODE_IGNORE,
+            #     'strategy1_mode': Report.MODE_IGNORE,
+            #     'strategy2_mode': Report.MODE_IGNORE,
+            #     'strategy3_mode': Report.MODE_IGNORE,
+            #     'show_transaction_details': True,
+            # },
+            # {
+            #     'portfolio_mode': Report.MODE_IGNORE,
+            #     'account_mode': Report.MODE_INDEPENDENT,
+            #     'strategy1_mode': Report.MODE_IGNORE,
+            #     'strategy2_mode': Report.MODE_IGNORE,
+            #     'strategy3_mode': Report.MODE_IGNORE,
+            #     'show_transaction_details': True,
+            # },
         ]
         pl_consolidations = bl_consolidations + [
             {

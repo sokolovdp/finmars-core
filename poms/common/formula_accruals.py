@@ -373,7 +373,7 @@ def coupon_accrual_factor(
     return 0
 
 
-def get_coupon(accrual, dt1, dt2, maturity_date=None):
+def get_coupon(accrual, dt1, dt2, maturity_date=None, factor=False):
     # accruals = [
     #     {
     #         'accrual_start_date': '2001-01-01',
@@ -492,7 +492,7 @@ def get_coupon(accrual, dt1, dt2, maturity_date=None):
     from poms.instruments.models import AccrualCalculationModel
 
     accrual_calculation_model = accrual.accrual_calculation_model
-    cpn = accrual.accrual_size
+    cpn = accrual.accrual_size if not factor else 1.0
     periodicity = accrual.periodicity
     freq = periodicity.to_freq()
     dt3 = accrual.first_payment_date
@@ -1103,10 +1103,22 @@ if __name__ == "__main__":
         _l.info('data: %s', [(str(d), v) for d, v in data])
         _l.info('xirr: %s', f_xirr(data))
 
-        data = [(date(2017, 2, 3), 100.857), (date(2019, 9, 30), 100.0)]
+        _l.info('https://support.office.com/en-us/article/XIRR-function-de1242ec-6477-445b-b11b-a303ad9adc9d')
+        dates = [date(2008, 1, 1), date(2008, 3, 1), date(2008, 10, 30), date(2009, 2, 15), date(2009, 4, 1), ]
+        values = [-10000, 2750, 4250, 3250, 2750, ]
+        data = [(d, v) for d, v in zip(dates, values)]
         _l.info('data: %s', [(str(d), v) for d, v in data])
-        _l.info('xirr: %s', f_xirr(data, x0=100.857))
+        _l.info('xirr: %s', f_xirr(data))
+        _l.info('xirr: %s <- from MS', 0.373362535)
 
+        # trn
+        data = [(date(2017, 1, 27), -1.0), (date(2019, 9, 30), 1.0)]
+        _l.info('data: %s', [(str(d), v) for d, v in data])
+        _l.info('xirr: %s', f_xirr(data, x0=1.0))
+        # item
+        data = [(date(2017, 2, 3), -1.00857), (date(2019, 9, 30), 1.0)]
+        _l.info('data: %s', [(str(d), v) for d, v in data])
+        _l.info('xirr: %s', f_xirr(data, x0=0.0))
 
     _test_ytm()
     pass
@@ -1186,5 +1198,6 @@ if __name__ == "__main__":
         _l.info('get_future_coupons: %s',
                 [(str(d), v) for d, v in i.get_future_coupons(begin_date=date(2000, 1, 1), accruals=accruals)])
 
-    _test_coupons()
+
+    # _test_coupons()
     pass
