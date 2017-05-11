@@ -3029,10 +3029,9 @@ class ReportTestCase(TestCase):
         )
         # Transaction.objects.filter(master_user=self.m).exclude(transaction_class_id=TransactionClass.TRANSACTION_PL).delete()
         # Transaction.objects.filter(master_user=self.m).exclude(transaction_code__in=[7859, 7860]).delete()
-        Transaction.objects.filter(master_user=self.m).exclude(
-            instrument__user_code__in=['CH0336352825'],
-            trade_price__lt=0
-        ).delete()
+        # Transaction.objects.filter(master_user=self.m).exclude(
+        #     instrument__user_code__in=['CH0336352825'],
+        # ).delete()
 
         cost_method = self._avco
 
@@ -3054,8 +3053,8 @@ class ReportTestCase(TestCase):
             report_dates = []
         report_currencies = [
             Currency.objects.get(master_user=self.m, user_code='USD'),  # 1, 4, 7, 10
-            # Currency.objects.get(master_user=self.m, user_code='EUR'),  # 2, 5, 8, 11
-            # Currency.objects.get(master_user=self.m, user_code='GBP'),  # 3, 6, 9, 12
+            Currency.objects.get(master_user=self.m, user_code='EUR'),  # 2, 5, 8, 11
+            Currency.objects.get(master_user=self.m, user_code='GBP'),  # 3, 6, 9, 12
         ]
         # portfolio_modes = [
         #     Report.MODE_IGNORE,
