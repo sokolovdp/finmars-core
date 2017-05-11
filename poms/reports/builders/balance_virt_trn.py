@@ -576,7 +576,7 @@ class VirtualTransaction(YTMMixin, BaseReportItem):
             self.stl_ccy_cur_fx_loc = self.stl_ccy_cur.fx_rate * pricing_ccy_cur_fx
 
     def get_instr_ytm_data_d0_v0(self):
-        return self.acc_date, -abs(self.trade_price * self.instr.price_multiplier)
+        return self.acc_date, -(self.trade_price * self.instr.price_multiplier)
 
     def get_instr_ytm_x0(self):
         try:
@@ -732,7 +732,7 @@ class VirtualTransaction(YTMMixin, BaseReportItem):
             #
             if not self.is_cloned and self.instr:
 
-                if self.trn_cls.id in [TransactionClass.BUY, TransactionClass.SELL] and self.instr:
+                if self.trn_cls.id in [TransactionClass.BUY, TransactionClass.SELL]:
                     try:
                         self.cost_res = self.principal * (self.stl_ccy_cur.fx_rate / self.report_ccy_cur.fx_rate) * \
                                         (1.0 - self.multiplier)

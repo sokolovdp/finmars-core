@@ -3045,9 +3045,9 @@ class ReportTestCase(TestCase):
             ]
         elif test_prefix == 'td_2':
             report_dates = [
-                # date(2017, 2, 3),  # 1,  2,  3
-                # date(2017, 2, 7),  # 4,  5,  6
-                # date(2017, 2, 15),  # 7,  8,  9
+                date(2017, 2, 3),  # 1,  2,  3
+                date(2017, 2, 7),  # 4,  5,  6
+                date(2017, 2, 15),  # 7,  8,  9
                 date(2017, 2, 23),  # 10, 11, 12
             ]
         else:
@@ -3089,46 +3089,46 @@ class ReportTestCase(TestCase):
         }
 
         bl_consolidations = [
-            {
-                'portfolio_mode': Report.MODE_IGNORE,
-                'account_mode': Report.MODE_IGNORE,
-                'strategy1_mode': Report.MODE_IGNORE,
-                'strategy2_mode': Report.MODE_IGNORE,
-                'strategy3_mode': Report.MODE_IGNORE,
-                'show_transaction_details': True,
-            },
             # {
-            #     'portfolio_mode': Report.MODE_INDEPENDENT,
-            #     'account_mode': Report.MODE_INDEPENDENT,
-            #     'strategy1_mode': Report.MODE_INDEPENDENT,
-            #     'strategy2_mode': Report.MODE_INDEPENDENT,
-            #     'strategy3_mode': Report.MODE_INDEPENDENT,
-            #     'show_transaction_details': True,
-            # },
-            # {
-            #     'portfolio_mode': Report.MODE_INDEPENDENT,
-            #     'account_mode': Report.MODE_INDEPENDENT,
-            #     'strategy1_mode': Report.MODE_IGNORE,
-            #     'strategy2_mode': Report.MODE_IGNORE,
-            #     'strategy3_mode': Report.MODE_IGNORE,
-            #     'show_transaction_details': True,
-            # },
-            # {
-            #     'portfolio_mode': Report.MODE_INDEPENDENT,
+            #     'portfolio_mode': Report.MODE_IGNORE,
             #     'account_mode': Report.MODE_IGNORE,
             #     'strategy1_mode': Report.MODE_IGNORE,
             #     'strategy2_mode': Report.MODE_IGNORE,
             #     'strategy3_mode': Report.MODE_IGNORE,
             #     'show_transaction_details': True,
             # },
-            # {
-            #     'portfolio_mode': Report.MODE_IGNORE,
-            #     'account_mode': Report.MODE_INDEPENDENT,
-            #     'strategy1_mode': Report.MODE_IGNORE,
-            #     'strategy2_mode': Report.MODE_IGNORE,
-            #     'strategy3_mode': Report.MODE_IGNORE,
-            #     'show_transaction_details': True,
-            # },
+            {
+                'portfolio_mode': Report.MODE_INDEPENDENT,
+                'account_mode': Report.MODE_INDEPENDENT,
+                'strategy1_mode': Report.MODE_INDEPENDENT,
+                'strategy2_mode': Report.MODE_INDEPENDENT,
+                'strategy3_mode': Report.MODE_INDEPENDENT,
+                'show_transaction_details': True,
+            },
+            {
+                'portfolio_mode': Report.MODE_INDEPENDENT,
+                'account_mode': Report.MODE_INDEPENDENT,
+                'strategy1_mode': Report.MODE_IGNORE,
+                'strategy2_mode': Report.MODE_IGNORE,
+                'strategy3_mode': Report.MODE_IGNORE,
+                'show_transaction_details': True,
+            },
+            {
+                'portfolio_mode': Report.MODE_INDEPENDENT,
+                'account_mode': Report.MODE_IGNORE,
+                'strategy1_mode': Report.MODE_IGNORE,
+                'strategy2_mode': Report.MODE_IGNORE,
+                'strategy3_mode': Report.MODE_IGNORE,
+                'show_transaction_details': True,
+            },
+            {
+                'portfolio_mode': Report.MODE_IGNORE,
+                'account_mode': Report.MODE_INDEPENDENT,
+                'strategy1_mode': Report.MODE_IGNORE,
+                'strategy2_mode': Report.MODE_IGNORE,
+                'strategy3_mode': Report.MODE_IGNORE,
+                'show_transaction_details': True,
+            },
         ]
         pl_consolidations = bl_consolidations + [
             {
@@ -3183,7 +3183,7 @@ class ReportTestCase(TestCase):
             'user_code', 'name',
         ]
 
-        trn_cols = trn_cols + ['ytm', ]
+        # trn_cols = trn_cols + ['ytm', ]
         # trn_cols = ['pk', 'trn_code', 'trn_cls', 'instr', 'pos_size', 'is_cloned', 'is_hidden', 'trade_price', 'ytm', 'weighted_ytm',
         #             'remaining_pos_size_percent', 'remaining_pos_size', 'balance_pos_size', 'multiplier']
 

@@ -1009,7 +1009,7 @@ class ReportItem(YTMMixin, BaseReportItem):
     #         self.pos_size += o.pos_size
 
     def get_instr_ytm_data_d0_v0(self):
-        return self.report.report_date, -abs(self.instr_price_cur_principal_price * self.instr.price_multiplier)
+        return self.report.report_date, -(self.instr_price_cur_principal_price * self.instr.price_multiplier)
 
     def get_instr_ytm_x0(self):
         try:

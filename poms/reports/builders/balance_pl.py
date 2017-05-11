@@ -97,8 +97,8 @@ class ReportBuilder(BaseReportBuilder):
         self._load_transactions()
         self._transaction_pricing()
         self._transaction_multipliers()
-        self._transaction_calc()
         self._clone_transactions_if_need()
+        self._transaction_calc()
         # self.instance.transactions = self._transactions
         self._generate_items()
         self._aggregate_items()
