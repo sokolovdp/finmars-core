@@ -6,6 +6,7 @@ from threading import local
 from django.apps import apps
 from django.contrib.contenttypes.models import ContentType
 from django.core import serializers
+from django.core.signals import request_finished
 from django.db import transaction
 from django.db.models.signals import post_init, post_save, post_delete, m2m_changed
 from django.dispatch import receiver
@@ -86,6 +87,20 @@ def deactivate():
         else:
             _l.debug('actor_content_object is not defined (maybe registration)')
 
+    if hasattr(_state, "active"):
+        del _state.active
+    if hasattr(_state, "flag"):
+        del _state.flag
+    if hasattr(_state, "actor_content_object"):
+        del _state.actor_content_object
+    if hasattr(_state, "actor_content_object_id"):
+        del _state.actor_content_object_id
+    if hasattr(_state, "entries4"):
+        del _state.entries4
+
+
+@receiver(request_finished, dispatch_uid='poms_history_cleanup')
+def _cleanup(**kwargs):
     if hasattr(_state, "active"):
         del _state.active
     if hasattr(_state, "flag"):
