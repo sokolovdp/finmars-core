@@ -2985,7 +2985,7 @@ class ReportTestCase(TestCase):
         i1.rebuild_event_schedules()
 
         _l.info('get_future_coupons: %s',
-            [(str(d), v) for d, v in i1.get_future_coupons(begin_date=date(2101, 1, 1))])
+                [(str(d), v) for d, v in i1.get_future_coupons(begin_date=date(2101, 1, 1))])
 
         BaseReportItem.dumps(
             items=EventSchedule.objects.filter(instrument=i1),
@@ -3030,8 +3030,7 @@ class ReportTestCase(TestCase):
         # Transaction.objects.filter(master_user=self.m).exclude(transaction_class_id=TransactionClass.TRANSACTION_PL).delete()
         # Transaction.objects.filter(master_user=self.m).exclude(transaction_code__in=[7859, 7860]).delete()
         # Transaction.objects.filter(master_user=self.m).exclude(
-        #     instrument__user_code__in=['GB0031544546'],
-        #     portfolio__user_code__in=['FinMARS-5'],
+        #     instrument__user_code__in=['CH0336352825'],
         # ).delete()
 
         cost_method = self._avco
@@ -3183,6 +3182,10 @@ class ReportTestCase(TestCase):
             'user_code', 'name',
         ]
 
+        # trn_cols = trn_cols + ['ytm', ]
+        # trn_cols = ['pk', 'trn_code', 'trn_cls', 'instr', 'pos_size', 'is_cloned', 'is_hidden', 'trade_price', 'ytm', 'weighted_ytm',
+        #             'remaining_pos_size_percent', 'remaining_pos_size', 'balance_pos_size', 'multiplier']
+
         # trn_cols = self.TRN_COLS_ALL
         # item_cols = self.ITEM_COLS_ALL
 
@@ -3311,8 +3314,8 @@ class ReportTestCase(TestCase):
         #                                 pl_reports.append(pl)
 
         _l.warn('write results')
-        self._write_results(balance_reports, '%s_balance.xlsx' % test_prefix,
-                            trn_cols=trn_cols, item_cols=item_cols)
+        # self._write_results(balance_reports, '%s_balance.xlsx' % test_prefix,
+        #                     trn_cols=trn_cols, item_cols=item_cols)
         # self._write_results(pl_reports, '%s_pl_report.xlsx' % test_prefix,
         #                     trn_cols=trn_cols, item_cols=item_cols)
         pass

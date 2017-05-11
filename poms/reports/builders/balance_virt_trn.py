@@ -1,12 +1,11 @@
 import uuid
 
-from poms.common.formula_accruals import f_xirr
 from poms.reports.builders.balance_item import Report
-from poms.reports.builders.base_item import BaseReportItem
+from poms.reports.builders.base_item import BaseReportItem, YTMMixin
 from poms.transactions.models import TransactionClass
 
 
-class VirtualTransaction(BaseReportItem):
+class VirtualTransaction(YTMMixin, BaseReportItem):
     trn = None
     lid = None
     key = None
@@ -576,6 +575,18 @@ class VirtualTransaction(BaseReportItem):
             self.stl_ccy_cur_fx = self.stl_ccy_cur.fx_rate * report_ccy_cur_fx
             self.stl_ccy_cur_fx_loc = self.stl_ccy_cur.fx_rate * pricing_ccy_cur_fx
 
+    def get_instr_ytm_data_d0_v0(self):
+        return self.acc_date, -(self.trade_price * self.instr.price_multiplier)
+
+    def get_instr_ytm_x0(self):
+        try:
+            accrual_size = self.instr.get_accrual_size(self.report.report_date)
+            return (accrual_size * self.instr.accrued_multiplier) * \
+                   (self.instr_accrued_ccy_cur_fx / self.instr_pricing_ccy_cur_fx) / \
+                   (self.instr_price_cur_principal_price * self.instr.price_multiplier)
+        except ArithmeticError:
+            return 0
+
     def calc(self):
         # if not self.is_hidden:
         #     print(1)
@@ -721,7 +732,7 @@ class VirtualTransaction(BaseReportItem):
             #
             if not self.is_cloned and self.instr:
 
-                if self.trn_cls.id in [TransactionClass.BUY, TransactionClass.SELL] and self.instr:
+                if self.trn_cls.id in [TransactionClass.BUY, TransactionClass.SELL]:
                     try:
                         self.cost_res = self.principal * (self.stl_ccy_cur.fx_rate / self.report_ccy_cur.fx_rate) * \
                                         (1.0 - self.multiplier)
@@ -765,7 +776,7 @@ class VirtualTransaction(BaseReportItem):
                     try:
                         self.principal_invested_res = self.principal * self.ref_fx * \
                                                       (
-                                                      self.trn_ccy_acc_hist.fx_rate / self.report_ccy_acc_hist.fx_rate) * \
+                                                          self.trn_ccy_acc_hist.fx_rate / self.report_ccy_acc_hist.fx_rate) * \
                                                       (1.0 - self.multiplier)
                     except ArithmeticError:
                         self.principal_invested_res = 0.0
@@ -773,7 +784,7 @@ class VirtualTransaction(BaseReportItem):
                     try:
                         self.principal_invested_loc = self.principal * self.ref_fx * \
                                                       (
-                                                      self.trn_ccy_acc_hist.fx_rate / self.pricing_ccy_acc_hist.fx_rate) * \
+                                                          self.trn_ccy_acc_hist.fx_rate / self.pricing_ccy_acc_hist.fx_rate) * \
                                                       (1.0 - self.multiplier)
                     except ArithmeticError:
                         self.principal_invested_loc = 0.0
@@ -794,18 +805,19 @@ class VirtualTransaction(BaseReportItem):
                     except ArithmeticError:
                         self.amount_invested_loc = 0.0
 
-                    # other
-
-                    try:
-                        future_accrual_payments = self.instr.get_future_accrual_payments(
-                            d0=self.acc_date,
-                            v0=self.trade_price,
-                            principal_ccy_fx=self.instr_pricing_ccy_cur_fx,
-                            accrual_ccy_fx=self.instr_accrued_ccy_cur_fx
-                        )
-                    except (ValueError, TypeError):
-                        future_accrual_payments = False
-                    self.ytm = f_xirr(future_accrual_payments)
+                    # ytm_data = ReportBuilder.instr_ytm_data(
+                    #     instr=self.instr,
+                    #     d0=self.acc_date,
+                    #     v0=self.trade_price,
+                    #     pricing_ccy_fx=self.instr_pricing_ccy_cur_fx,
+                    #     accrued_ccy_fx=self.instr_accrued_ccy_cur_fx,
+                    # )
+                    # self.ytm = ReportBuilder.instr_ytm(
+                    #     instr=self.instr,
+                    #     data=ytm_data,
+                    #     x0=self.trade_price * self.instr.price_multiplier
+                    # )
+                    self.ytm = self.get_instr_ytm()
 
                     self.time_invested_days = (self.report.report_date - self.acc_date).days
                     self.time_invested = self.time_invested_days / 365.0
