@@ -2985,7 +2985,7 @@ class ReportTestCase(TestCase):
         i1.rebuild_event_schedules()
 
         _l.info('get_future_coupons: %s',
-            [(str(d), v) for d, v in i1.get_future_coupons(begin_date=date(2101, 1, 1))])
+                [(str(d), v) for d, v in i1.get_future_coupons(begin_date=date(2101, 1, 1))])
 
         BaseReportItem.dumps(
             items=EventSchedule.objects.filter(instrument=i1),
@@ -3031,6 +3031,7 @@ class ReportTestCase(TestCase):
         # Transaction.objects.filter(master_user=self.m).exclude(transaction_code__in=[7859, 7860]).delete()
         Transaction.objects.filter(master_user=self.m).exclude(
             instrument__user_code__in=['CH0336352825'],
+            trade_price__lt=0
         ).delete()
 
         cost_method = self._avco
@@ -3044,10 +3045,10 @@ class ReportTestCase(TestCase):
             ]
         elif test_prefix == 'td_2':
             report_dates = [
-                date(2017, 2, 3),  # 1,  2,  3
+                # date(2017, 2, 3),  # 1,  2,  3
                 # date(2017, 2, 7),  # 4,  5,  6
                 # date(2017, 2, 15),  # 7,  8,  9
-                # date(2017, 2, 23),  # 10, 11, 12
+                date(2017, 2, 23),  # 10, 11, 12
             ]
         else:
             report_dates = []
@@ -3088,22 +3089,22 @@ class ReportTestCase(TestCase):
         }
 
         bl_consolidations = [
-            # {
-            #     'portfolio_mode': Report.MODE_IGNORE,
-            #     'account_mode': Report.MODE_IGNORE,
-            #     'strategy1_mode': Report.MODE_IGNORE,
-            #     'strategy2_mode': Report.MODE_IGNORE,
-            #     'strategy3_mode': Report.MODE_IGNORE,
-            #     'show_transaction_details': True,
-            # },
             {
-                'portfolio_mode': Report.MODE_INDEPENDENT,
-                'account_mode': Report.MODE_INDEPENDENT,
-                'strategy1_mode': Report.MODE_INDEPENDENT,
-                'strategy2_mode': Report.MODE_INDEPENDENT,
-                'strategy3_mode': Report.MODE_INDEPENDENT,
+                'portfolio_mode': Report.MODE_IGNORE,
+                'account_mode': Report.MODE_IGNORE,
+                'strategy1_mode': Report.MODE_IGNORE,
+                'strategy2_mode': Report.MODE_IGNORE,
+                'strategy3_mode': Report.MODE_IGNORE,
                 'show_transaction_details': True,
             },
+            # {
+            #     'portfolio_mode': Report.MODE_INDEPENDENT,
+            #     'account_mode': Report.MODE_INDEPENDENT,
+            #     'strategy1_mode': Report.MODE_INDEPENDENT,
+            #     'strategy2_mode': Report.MODE_INDEPENDENT,
+            #     'strategy3_mode': Report.MODE_INDEPENDENT,
+            #     'show_transaction_details': True,
+            # },
             # {
             #     'portfolio_mode': Report.MODE_INDEPENDENT,
             #     'account_mode': Report.MODE_INDEPENDENT,
@@ -3181,6 +3182,10 @@ class ReportTestCase(TestCase):
             'total_fixed_opened_loc', 'group_code', 'detail_trn',
             'user_code', 'name',
         ]
+
+        trn_cols = trn_cols + ['ytm', ]
+        # trn_cols = ['pk', 'trn_code', 'trn_cls', 'instr', 'pos_size', 'is_cloned', 'is_hidden', 'trade_price', 'ytm', 'weighted_ytm',
+        #             'remaining_pos_size_percent', 'remaining_pos_size', 'balance_pos_size', 'multiplier']
 
         # trn_cols = self.TRN_COLS_ALL
         # item_cols = self.ITEM_COLS_ALL
@@ -3310,8 +3315,8 @@ class ReportTestCase(TestCase):
         #                                 pl_reports.append(pl)
 
         _l.warn('write results')
-        self._write_results(balance_reports, '%s_balance.xlsx' % test_prefix,
-                            trn_cols=trn_cols, item_cols=item_cols)
+        # self._write_results(balance_reports, '%s_balance.xlsx' % test_prefix,
+        #                     trn_cols=trn_cols, item_cols=item_cols)
         # self._write_results(pl_reports, '%s_pl_report.xlsx' % test_prefix,
         #                     trn_cols=trn_cols, item_cols=item_cols)
         pass

@@ -4,7 +4,7 @@ import logging
 from abc import abstractmethod
 from datetime import date
 from io import StringIO
-from math import isnan
+from math import isnan, copysign
 
 from poms.common.formula_accruals import f_xirr, f_duration
 from poms.common.utils import isclose
@@ -161,8 +161,8 @@ class YTMMixin:
             prev_factor_value = prev_factor.factor_value if prev_factor else 1.0
             factor_value = factor.factor_value
 
-            v = (factor_value - prev_factor_value) * instr.price_multiplier * instr.maturity_price
-            data.append((factor.effective_date, v))
+            k = (factor_value - prev_factor_value) * instr.price_multiplier
+            data.append((factor.effective_date, instr.maturity_price * k))
 
         factor = instr.get_factor(instr.maturity_price)
         k = instr.price_multiplier * factor
