@@ -6,6 +6,9 @@ from django.utils.text import Truncator
 from django.utils.translation import ugettext_lazy
 
 
+EXPRESSION_FIELD_LENGTH = 1024
+
+
 @python_2_unicode_compatible
 class NamedModel(models.Model):
     user_code = models.CharField(max_length=25, null=True, blank=True, verbose_name=ugettext_lazy('user code'))

@@ -7,14 +7,14 @@ from django.core.serializers.json import DjangoJSONEncoder
 from django.db import models
 from django.utils.translation import ugettext_lazy
 
-from poms.common.models import NamedModel, AbstractClassModel
+from poms.common.models import NamedModel, AbstractClassModel, EXPRESSION_FIELD_LENGTH
 from poms.users.models import MasterUser
 
 
 class CustomField(models.Model):
     master_user = models.ForeignKey(MasterUser, related_name='custom_fields', verbose_name=ugettext_lazy('master user'))
     name = models.CharField(max_length=255, verbose_name=ugettext_lazy('name'))
-    expr = models.CharField(max_length=2000, verbose_name=ugettext_lazy('expression'))
+    expr = models.CharField(max_length=EXPRESSION_FIELD_LENGTH, verbose_name=ugettext_lazy('expression'))
     layout_json = models.TextField(null=True, blank=True, verbose_name=ugettext_lazy('layout json'))
 
     class Meta:

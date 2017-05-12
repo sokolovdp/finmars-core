@@ -6,7 +6,7 @@ from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy
 from mptt.models import MPTTModel
 
-from poms.common.models import NamedModel, FakeDeletableModel
+from poms.common.models import NamedModel, FakeDeletableModel, EXPRESSION_FIELD_LENGTH
 from poms.currencies.models import Currency
 from poms.obj_attrs.models import GenericAttribute
 from poms.obj_perms.models import GenericObjectPermission
@@ -19,7 +19,7 @@ class AccountType(NamedModel, FakeDeletableModel):
     master_user = models.ForeignKey(MasterUser, related_name='account_types', verbose_name=ugettext_lazy('master user'))
     show_transaction_details = models.BooleanField(default=False,
                                                    verbose_name=ugettext_lazy('show transaction details'))
-    transaction_details_expr = models.CharField(max_length=255, null=True, blank=True,
+    transaction_details_expr = models.CharField(max_length=EXPRESSION_FIELD_LENGTH, null=True, blank=True,
                                                 verbose_name=ugettext_lazy('transaction details expr'))
 
     object_permissions = GenericRelation(GenericObjectPermission, verbose_name=ugettext_lazy('object permissions'))

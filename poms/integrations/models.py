@@ -15,7 +15,7 @@ from django.utils import timezone
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext, ugettext_lazy
 
-from poms.common.models import TimeStampedModel, AbstractClassModel
+from poms.common.models import TimeStampedModel, AbstractClassModel, EXPRESSION_FIELD_LENGTH
 from poms.instruments.models import Instrument
 from poms.integrations.storage import import_config_storage
 
@@ -139,28 +139,35 @@ class InstrumentDownloadScheme(models.Model):
 
     reference_for_pricing = models.CharField(max_length=255, blank=True, default='',
                                              verbose_name=ugettext_lazy('reference for pricing'))
-    user_code = models.CharField(max_length=255, blank=True, default='', verbose_name=ugettext_lazy('user code'))
-    name = models.CharField(max_length=255, verbose_name=ugettext_lazy('name'))
-    short_name = models.CharField(max_length=255, blank=True, default='', verbose_name=ugettext_lazy('short name'))
-    public_name = models.CharField(max_length=255, blank=True, default='', verbose_name=ugettext_lazy('public name'))
-    notes = models.CharField(max_length=255, blank=True, default='', verbose_name=ugettext_lazy('notes'))
-    instrument_type = models.CharField(max_length=255, blank=True, default='',
+    user_code = models.CharField(max_length=EXPRESSION_FIELD_LENGTH, blank=True, default='',
+                                 verbose_name=ugettext_lazy('user code'))
+    name = models.CharField(max_length=EXPRESSION_FIELD_LENGTH, verbose_name=ugettext_lazy('name'))
+    short_name = models.CharField(max_length=EXPRESSION_FIELD_LENGTH, blank=True, default='',
+                                  verbose_name=ugettext_lazy('short name'))
+    public_name = models.CharField(max_length=EXPRESSION_FIELD_LENGTH, blank=True, default='',
+                                   verbose_name=ugettext_lazy('public name'))
+    notes = models.CharField(max_length=EXPRESSION_FIELD_LENGTH, blank=True, default='',
+                             verbose_name=ugettext_lazy('notes'))
+    instrument_type = models.CharField(max_length=EXPRESSION_FIELD_LENGTH, blank=True, default='',
                                        verbose_name=ugettext_lazy('instrument type'))
-    pricing_currency = models.CharField(max_length=255, blank=True, default='',
+    pricing_currency = models.CharField(max_length=EXPRESSION_FIELD_LENGTH, blank=True, default='',
                                         verbose_name=ugettext_lazy('pricing currency'))
-    price_multiplier = models.CharField(max_length=255, blank=True, default='1.0',
+    price_multiplier = models.CharField(max_length=EXPRESSION_FIELD_LENGTH, blank=True, default='1.0',
                                         verbose_name=ugettext_lazy('price multiplier'))
-    accrued_currency = models.CharField(max_length=255, blank=True, default='',
+    accrued_currency = models.CharField(max_length=EXPRESSION_FIELD_LENGTH, blank=True, default='',
                                         verbose_name=ugettext_lazy('accrued currency'))
-    accrued_multiplier = models.CharField(max_length=255, blank=True, default='1.0',
+    accrued_multiplier = models.CharField(max_length=EXPRESSION_FIELD_LENGTH, blank=True, default='1.0',
                                           verbose_name=ugettext_lazy('accrued multiplier'))
-    maturity_date = models.CharField(max_length=255, blank=True, default='',
+    maturity_date = models.CharField(max_length=EXPRESSION_FIELD_LENGTH, blank=True, default='',
                                      verbose_name=ugettext_lazy('maturity date'))
-    maturity_price = models.CharField(max_length=255, blank=True, default='',
+    maturity_price = models.CharField(max_length=EXPRESSION_FIELD_LENGTH, blank=True, default='',
                                       verbose_name=ugettext_lazy('maturity price'))
-    user_text_1 = models.CharField(max_length=255, blank=True, default='', verbose_name=ugettext_lazy('user text 1'))
-    user_text_2 = models.CharField(max_length=255, blank=True, default='', verbose_name=ugettext_lazy('user text 2'))
-    user_text_3 = models.CharField(max_length=255, blank=True, default='', verbose_name=ugettext_lazy('user text 3'))
+    user_text_1 = models.CharField(max_length=EXPRESSION_FIELD_LENGTH, blank=True, default='',
+                                   verbose_name=ugettext_lazy('user text 1'))
+    user_text_2 = models.CharField(max_length=EXPRESSION_FIELD_LENGTH, blank=True, default='',
+                                   verbose_name=ugettext_lazy('user text 2'))
+    user_text_3 = models.CharField(max_length=EXPRESSION_FIELD_LENGTH, blank=True, default='',
+                                   verbose_name=ugettext_lazy('user text 3'))
 
     payment_size_detail = models.ForeignKey('instruments.PaymentSizeDetail', on_delete=models.PROTECT,
                                             null=True, blank=True, verbose_name=ugettext_lazy('payment size detail'))
@@ -226,7 +233,8 @@ class InstrumentDownloadSchemeAttribute(models.Model):
                                verbose_name=ugettext_lazy('scheme'))
     attribute_type = models.ForeignKey('obj_attrs.GenericAttributeType', null=True, blank=True,
                                        verbose_name=ugettext_lazy('attribute_ type'))
-    value = models.CharField(max_length=255, blank=True, default='', verbose_name=ugettext_lazy('value'))
+    value = models.CharField(max_length=EXPRESSION_FIELD_LENGTH, blank=True, default='',
+                             verbose_name=ugettext_lazy('value'))
 
     class Meta:
         verbose_name = ugettext_lazy('instrument download scheme attribute')
@@ -779,7 +787,7 @@ class PricingAutomatedSchedule(models.Model):
 class ComplexTransactionImportScheme(models.Model):
     master_user = models.ForeignKey('users.MasterUser', verbose_name=ugettext_lazy('master user'))
     scheme_name = models.CharField(max_length=255, verbose_name=ugettext_lazy('scheme name'))
-    rule_expr = models.CharField(max_length=1000, verbose_name=ugettext_lazy('rule expressions'))
+    rule_expr = models.CharField(max_length=EXPRESSION_FIELD_LENGTH, verbose_name=ugettext_lazy('rule expressions'))
 
     class Meta:
         verbose_name = ugettext_lazy('complex transaction import scheme')
