@@ -1,9 +1,9 @@
 from __future__ import unicode_literals
 
-from rest_framework import serializers
-
 from poms.accounts.fields import AccountTypeField, AccountTypeDefault
 from poms.accounts.models import Account, AccountType
+from poms.common.fields import ExpressionField
+from poms.common.models import EXPRESSION_FIELD_LENGTH
 from poms.common.serializers import ModelWithUserCodeSerializer
 from poms.obj_attrs.serializers import ModelWithAttributesSerializer
 from poms.obj_perms.serializers import ModelWithObjectPermissionSerializer
@@ -24,6 +24,8 @@ from poms.users.fields import MasterUserField
 
 class AccountTypeSerializer(ModelWithObjectPermissionSerializer, ModelWithUserCodeSerializer, ModelWithTagSerializer):
     master_user = MasterUserField()
+    transaction_details_expr = ExpressionField(max_length=EXPRESSION_FIELD_LENGTH, required=False, allow_blank=True,
+                                               allow_null=True, default='""')
 
     # tags = TagField(many=True, required=False, allow_null=True)
     # # tags_object = ReadonlyNamedModelWithObjectPermissionSerializer(source='tags', many=True)
@@ -71,6 +73,7 @@ class AccountSerializer(ModelWithObjectPermissionSerializer, ModelWithAttributes
     master_user = MasterUserField()
     type = AccountTypeField(default=AccountTypeDefault())
     portfolios = PortfolioField(many=True, required=False, allow_null=True)
+
     # portfolios_object = serializers.PrimaryKeyRelatedField(source='portfolios', many=True, read_only=True)
     # type_object = AccountTypeViewSerializer(source='type', read_only=True)
 
@@ -82,7 +85,7 @@ class AccountSerializer(ModelWithObjectPermissionSerializer, ModelWithAttributes
     class Meta(ModelWithObjectPermissionSerializer.Meta):
         model = Account
         fields = [
-            'id', 'master_user', 'type','user_code', 'name', 'short_name', 'public_name',
+            'id', 'master_user', 'type', 'user_code', 'name', 'short_name', 'public_name',
             'notes', 'is_default', 'is_valid_for_all_portfolios', 'is_deleted', 'portfolios',
             # 'type_object',  'portfolios_object',
             # 'attributes',

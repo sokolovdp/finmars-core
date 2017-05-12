@@ -12,7 +12,7 @@ from django.utils.translation import ugettext_lazy
 from mptt.models import MPTTModel
 
 from poms.accounts.models import Account
-from poms.common.models import NamedModel, AbstractClassModel, FakeDeletableModel
+from poms.common.models import NamedModel, AbstractClassModel, FakeDeletableModel, EXPRESSION_FIELD_LENGTH
 from poms.common.utils import date_now
 from poms.counterparties.models import Responsible, Counterparty
 from poms.currencies.models import Currency
@@ -363,8 +363,10 @@ class TransactionType(NamedModel, FakeDeletableModel):
                                     verbose_name=ugettext_lazy('master user'))
     group = models.ForeignKey(TransactionTypeGroup, null=True, blank=True, on_delete=models.PROTECT,
                               verbose_name=ugettext_lazy('group'))
-    date_expr = models.CharField(max_length=255, blank=True, default='', verbose_name=ugettext_lazy('date expr'))
-    display_expr = models.CharField(max_length=255, blank=True, default='', verbose_name=ugettext_lazy('display expr'))
+    date_expr = models.CharField(max_length=EXPRESSION_FIELD_LENGTH, blank=True, default='',
+                                 verbose_name=ugettext_lazy('date expr'))
+    display_expr = models.CharField(max_length=EXPRESSION_FIELD_LENGTH, blank=True, default='',
+                                    verbose_name=ugettext_lazy('display expr'))
     instrument_types = models.ManyToManyField('instruments.InstrumentType', related_name='transaction_types',
                                               blank=True, verbose_name=ugettext_lazy('instrument types'))
     is_valid_for_all_portfolios = models.BooleanField(default=True,
@@ -469,11 +471,13 @@ class TransactionTypeInput(models.Model):
                                                   verbose_name=ugettext_lazy('value type'))
     content_type = models.ForeignKey(ContentType, null=True, blank=True, verbose_name=ugettext_lazy('content type'))
     order = models.IntegerField(default=0, verbose_name=ugettext_lazy('order'))
-    value_expr = models.CharField(max_length=255, null=True, blank=True, verbose_name=ugettext_lazy('value expression'),
+    value_expr = models.CharField(max_length=EXPRESSION_FIELD_LENGTH, null=True, blank=True,
+                                  verbose_name=ugettext_lazy('value expression'),
                                   help_text=ugettext_lazy('this is expression for recalculate value'))
 
     is_fill_from_context = models.BooleanField(default=False, verbose_name=ugettext_lazy('is fill from context'))
-    value = models.CharField(max_length=255, null=True, blank=True, verbose_name=ugettext_lazy('value'),
+    value = models.CharField(max_length=EXPRESSION_FIELD_LENGTH, null=True, blank=True,
+                             verbose_name=ugettext_lazy('value'),
                              help_text=ugettext_lazy('this is expression for default value'))
     account = models.ForeignKey('accounts.Account', null=True, blank=True, on_delete=models.PROTECT, related_name='+',
                                 verbose_name=ugettext_lazy('account'))
@@ -527,6 +531,7 @@ class TransactionTypeInput(models.Model):
             self.verbose_name = self.name
         super(TransactionTypeInput, self).save(force_insert=force_insert, force_update=force_update, using=using,
                                                update_fields=update_fields)
+
     @property
     def can_recalculate(self):
         return bool(self.value_expr) and self.value_type in [TransactionTypeInput.STRING, TransactionTypeInput.DATE,
@@ -556,11 +561,16 @@ class TransactionTypeAction(models.Model):
 
 
 class TransactionTypeActionInstrument(TransactionTypeAction):
-    user_code = models.CharField(max_length=255, blank=True, default='', verbose_name=ugettext_lazy('user code'))
-    name = models.CharField(max_length=255, blank=True, default='', verbose_name=ugettext_lazy('name'))
-    public_name = models.CharField(max_length=255, blank=True, default='', verbose_name=ugettext_lazy('public name'))
-    short_name = models.CharField(max_length=255, blank=True, default='', verbose_name=ugettext_lazy('short name'))
-    notes = models.CharField(max_length=255, blank=True, default='', verbose_name=ugettext_lazy('notes'))
+    user_code = models.CharField(max_length=EXPRESSION_FIELD_LENGTH, blank=True, default='',
+                                 verbose_name=ugettext_lazy('user code'))
+    name = models.CharField(max_length=EXPRESSION_FIELD_LENGTH, blank=True, default='',
+                            verbose_name=ugettext_lazy('name'))
+    public_name = models.CharField(max_length=EXPRESSION_FIELD_LENGTH, blank=True, default='',
+                                   verbose_name=ugettext_lazy('public name'))
+    short_name = models.CharField(max_length=EXPRESSION_FIELD_LENGTH, blank=True, default='',
+                                  verbose_name=ugettext_lazy('short name'))
+    notes = models.CharField(max_length=EXPRESSION_FIELD_LENGTH, blank=True, default='',
+                             verbose_name=ugettext_lazy('notes'))
 
     instrument_type = models.ForeignKey('instruments.InstrumentType', null=True, blank=True, on_delete=models.PROTECT,
                                         related_name='+', verbose_name=ugettext_lazy('instrument type'))
@@ -572,14 +582,15 @@ class TransactionTypeActionInstrument(TransactionTypeAction):
     pricing_currency_input = models.ForeignKey(TransactionTypeInput, null=True, blank=True, on_delete=models.PROTECT,
                                                related_name='+', verbose_name=ugettext_lazy('pricing currency input'))
 
-    price_multiplier = models.CharField(max_length=255, default='0.0', verbose_name=ugettext_lazy('price multiplier'))
+    price_multiplier = models.CharField(max_length=EXPRESSION_FIELD_LENGTH, default='0.0',
+                                        verbose_name=ugettext_lazy('price multiplier'))
 
     accrued_currency = models.ForeignKey('currencies.Currency', null=True, blank=True, on_delete=models.PROTECT,
                                          related_name='+', verbose_name=ugettext_lazy('accrued currency'))
     accrued_currency_input = models.ForeignKey(TransactionTypeInput, null=True, blank=True, on_delete=models.PROTECT,
                                                related_name='+', verbose_name=ugettext_lazy('accrued currency input'))
 
-    accrued_multiplier = models.CharField(max_length=255, default='0.0',
+    accrued_multiplier = models.CharField(max_length=EXPRESSION_FIELD_LENGTH, default='0.0',
                                           verbose_name=ugettext_lazy('accrued multiplier'))
 
     payment_size_detail = models.ForeignKey('instruments.PaymentSizeDetail', null=True, blank=True,
@@ -589,12 +600,17 @@ class TransactionTypeActionInstrument(TransactionTypeAction):
                                                   related_name='+',
                                                   verbose_name=ugettext_lazy('payment size detail input'))
 
-    default_price = models.CharField(max_length=255, default='0.0', verbose_name=ugettext_lazy('default price'))
-    default_accrued = models.CharField(max_length=255, default='0.0', verbose_name=ugettext_lazy('default accrued'))
+    default_price = models.CharField(max_length=EXPRESSION_FIELD_LENGTH, default='0.0',
+                                     verbose_name=ugettext_lazy('default price'))
+    default_accrued = models.CharField(max_length=EXPRESSION_FIELD_LENGTH, default='0.0',
+                                       verbose_name=ugettext_lazy('default accrued'))
 
-    user_text_1 = models.CharField(max_length=255, blank=True, default='', verbose_name=ugettext_lazy('user text 1'))
-    user_text_2 = models.CharField(max_length=255, blank=True, default='', verbose_name=ugettext_lazy('user text 2'))
-    user_text_3 = models.CharField(max_length=255, blank=True, default='', verbose_name=ugettext_lazy('user text 3'))
+    user_text_1 = models.CharField(max_length=EXPRESSION_FIELD_LENGTH, blank=True, default='',
+                                   verbose_name=ugettext_lazy('user text 1'))
+    user_text_2 = models.CharField(max_length=EXPRESSION_FIELD_LENGTH, blank=True, default='',
+                                   verbose_name=ugettext_lazy('user text 2'))
+    user_text_3 = models.CharField(max_length=EXPRESSION_FIELD_LENGTH, blank=True, default='',
+                                   verbose_name=ugettext_lazy('user text 3'))
 
     reference_for_pricing = models.CharField(max_length=100, blank=True, default='',
                                              verbose_name=ugettext_lazy('reference for pricing'))
@@ -609,8 +625,10 @@ class TransactionTypeActionInstrument(TransactionTypeAction):
     price_download_scheme_input = models.ForeignKey(TransactionTypeInput, null=True, blank=True,
                                                     on_delete=models.PROTECT, related_name='+',
                                                     verbose_name=ugettext_lazy('price download scheme input'))
-    maturity_date = models.CharField(max_length=255, default='now()', verbose_name=ugettext_lazy('maturity date'))
-    maturity_price = models.CharField(max_length=255, default='0.0', verbose_name=ugettext_lazy('default price'))
+    maturity_date = models.CharField(max_length=EXPRESSION_FIELD_LENGTH, default='now()',
+                                     verbose_name=ugettext_lazy('maturity date'))
+    maturity_price = models.CharField(max_length=EXPRESSION_FIELD_LENGTH, default='0.0',
+                                      verbose_name=ugettext_lazy('default price'))
 
     class Meta:
         verbose_name = ugettext_lazy('transaction type action instrument')
@@ -638,7 +656,7 @@ class TransactionTypeActionTransaction(TransactionTypeAction):
                                                    on_delete=models.PROTECT, related_name='+',
                                                    verbose_name=ugettext_lazy('transaction currency input'))
 
-    position_size_with_sign = models.CharField(max_length=255, default='0.',
+    position_size_with_sign = models.CharField(max_length=EXPRESSION_FIELD_LENGTH, default='0.',
                                                verbose_name=ugettext_lazy('position size with sign'))
 
     settlement_currency = models.ForeignKey(Currency, null=True, blank=True, on_delete=models.PROTECT,
@@ -647,12 +665,13 @@ class TransactionTypeActionTransaction(TransactionTypeAction):
                                                   related_name='+',
                                                   verbose_name=ugettext_lazy('settlement currency input'))
 
-    cash_consideration = models.CharField(max_length=255, default='0.',
+    cash_consideration = models.CharField(max_length=EXPRESSION_FIELD_LENGTH, default='0.',
                                           verbose_name=ugettext_lazy('cash consideration'))
-    principal_with_sign = models.CharField(max_length=255, default='0.',
+    principal_with_sign = models.CharField(max_length=EXPRESSION_FIELD_LENGTH, default='0.',
                                            verbose_name=ugettext_lazy('principal with sign'))
-    carry_with_sign = models.CharField(max_length=255, default='0.', verbose_name=ugettext_lazy('carry with sign'))
-    overheads_with_sign = models.CharField(max_length=255, default='0.',
+    carry_with_sign = models.CharField(max_length=EXPRESSION_FIELD_LENGTH, default='0.',
+                                       verbose_name=ugettext_lazy('carry with sign'))
+    overheads_with_sign = models.CharField(max_length=EXPRESSION_FIELD_LENGTH, default='0.',
                                            verbose_name=ugettext_lazy('overheads with sign'))
 
     portfolio = models.ForeignKey(Portfolio, null=True, blank=True, on_delete=models.PROTECT, related_name='+',
@@ -675,10 +694,10 @@ class TransactionTypeActionTransaction(TransactionTypeAction):
     account_interim_input = models.ForeignKey(TransactionTypeInput, null=True, blank=True, on_delete=models.PROTECT,
                                               related_name='+', verbose_name=ugettext_lazy('account interim input'))
 
-    accounting_date = models.CharField(max_length=255, blank=True, default='',
+    accounting_date = models.CharField(max_length=EXPRESSION_FIELD_LENGTH, blank=True, default='',
                                        verbose_name=ugettext_lazy('accounting date'))
-
-    cash_date = models.CharField(max_length=255, blank=True, default='', verbose_name=ugettext_lazy('cash date'))
+    cash_date = models.CharField(max_length=EXPRESSION_FIELD_LENGTH, blank=True, default='',
+                                 verbose_name=ugettext_lazy('cash date'))
 
     strategy1_position = models.ForeignKey(Strategy1, null=True, blank=True, on_delete=models.PROTECT,
                                            related_name='+', verbose_name=ugettext_lazy('strategy 1 position'))
@@ -748,16 +767,24 @@ class TransactionTypeActionTransaction(TransactionTypeAction):
     counterparty_input = models.ForeignKey(TransactionTypeInput, null=True, blank=True, on_delete=models.PROTECT,
                                            related_name='+', verbose_name=ugettext_lazy('counterparty input'))
 
-    reference_fx_rate = models.CharField(max_length=255, default='0.0', verbose_name=ugettext_lazy('reference FX-rate'))
+    reference_fx_rate = models.CharField(max_length=EXPRESSION_FIELD_LENGTH, default='0.0',
+                                         verbose_name=ugettext_lazy('reference FX-rate'))
 
-    factor = models.CharField(max_length=255, default='0.0', verbose_name=ugettext_lazy('factor'))
-    trade_price = models.CharField(max_length=255, default='0.0', verbose_name=ugettext_lazy('trade price'))
-    position_amount = models.CharField(max_length=255, default='0.0', verbose_name=ugettext_lazy('position amount'))
-    principal_amount = models.CharField(max_length=255, default='0.0', verbose_name=ugettext_lazy('principal amount'))
-    carry_amount = models.CharField(max_length=255, default='0.0', verbose_name=ugettext_lazy('carry amount'))
-    overheads = models.CharField(max_length=255, default='0.0', verbose_name=ugettext_lazy('overheads'))
+    factor = models.CharField(max_length=EXPRESSION_FIELD_LENGTH, default='0.0',
+                              verbose_name=ugettext_lazy('factor'))
+    trade_price = models.CharField(max_length=EXPRESSION_FIELD_LENGTH, default='0.0',
+                                   verbose_name=ugettext_lazy('trade price'))
+    position_amount = models.CharField(max_length=EXPRESSION_FIELD_LENGTH, default='0.0',
+                                       verbose_name=ugettext_lazy('position amount'))
+    principal_amount = models.CharField(max_length=EXPRESSION_FIELD_LENGTH, default='0.0',
+                                        verbose_name=ugettext_lazy('principal amount'))
+    carry_amount = models.CharField(max_length=EXPRESSION_FIELD_LENGTH, default='0.0',
+                                    verbose_name=ugettext_lazy('carry amount'))
+    overheads = models.CharField(max_length=EXPRESSION_FIELD_LENGTH, default='0.0',
+                                 verbose_name=ugettext_lazy('overheads'))
 
-    notes = models.CharField(max_length=255, blank=True, default='', verbose_name=ugettext_lazy('notes'))
+    notes = models.CharField(max_length=EXPRESSION_FIELD_LENGTH, blank=True, default='',
+                             verbose_name=ugettext_lazy('notes'))
 
     class Meta:
         verbose_name = ugettext_lazy('transaction type action transaction')

@@ -17,7 +17,7 @@ from mptt.models import MPTTModel
 
 from poms.common import formula
 from poms.common.formula_accruals import get_coupon
-from poms.common.models import NamedModel, AbstractClassModel, FakeDeletableModel
+from poms.common.models import NamedModel, AbstractClassModel, FakeDeletableModel, EXPRESSION_FIELD_LENGTH
 from poms.common.utils import date_now, isclose
 from poms.obj_attrs.models import GenericAttribute
 from poms.obj_perms.models import GenericObjectPermission
@@ -281,7 +281,8 @@ class PricingPolicy(NamedModel):
     master_user = models.ForeignKey(MasterUser, related_name='pricing_policies',
                                     verbose_name=ugettext_lazy('master user'))
     # type = models.PositiveIntegerField(default=DISABLED, choices=TYPES)
-    expr = models.CharField(max_length=255, default='', blank=True, verbose_name=ugettext_lazy('expression'))
+    expr = models.CharField(max_length=EXPRESSION_FIELD_LENGTH, default='', blank=True,
+                            verbose_name=ugettext_lazy('expression'))
 
     class Meta(AbstractClassModel.Meta):
         verbose_name = ugettext_lazy('pricing policy')
@@ -1040,8 +1041,9 @@ class EventSchedule(models.Model):
 
     # T O D O: name & description is expression
     # T O D O: default settings.POMS_EVENT_*
-    name = models.CharField(max_length=255, verbose_name=ugettext_lazy('name'))
-    description = models.TextField(blank=True, default='', verbose_name=ugettext_lazy('description'))
+    name = models.CharField(max_length=EXPRESSION_FIELD_LENGTH, verbose_name=ugettext_lazy('name'))
+    description = models.CharField(max_length=EXPRESSION_FIELD_LENGTH, blank=True, default='',
+                                   verbose_name=ugettext_lazy('description'))
 
     event_class = models.ForeignKey('transactions.EventClass', on_delete=models.PROTECT,
                                     verbose_name=ugettext_lazy('event class'))
@@ -1191,7 +1193,8 @@ class EventScheduleAction(models.Model):
     transaction_type = models.ForeignKey('transactions.TransactionType', on_delete=models.PROTECT,
                                          verbose_name=ugettext_lazy('transaction type'))
     # T O D O: on auto generate fill 'Book: ' + transaction_type
-    text = models.CharField(max_length=100, blank=True, default='', verbose_name=ugettext_lazy('text'))
+    text = models.CharField(max_length=EXPRESSION_FIELD_LENGTH, blank=True, default='',
+                            verbose_name=ugettext_lazy('text'))
     # T O D O: add to MasterUser defaults
     is_sent_to_pending = models.BooleanField(default=True, verbose_name=ugettext_lazy('is sent to pending'))
     # T O D O: add to MasterUser defaults
@@ -1369,8 +1372,10 @@ class EventScheduleConfig(models.Model):
     master_user = models.OneToOneField('users.MasterUser', related_name='instrument_event_schedule_config',
                                        verbose_name=ugettext_lazy('master user'))
 
-    name = models.CharField(max_length=255, blank=True, default='', verbose_name=ugettext_lazy('name'))
-    description = models.CharField(max_length=255, blank=True, default='', verbose_name=ugettext_lazy('description'))
+    name = models.CharField(max_length=EXPRESSION_FIELD_LENGTH, blank=True, default='',
+                            verbose_name=ugettext_lazy('name'))
+    description = models.CharField(max_length=EXPRESSION_FIELD_LENGTH, blank=True, default='',
+                                   verbose_name=ugettext_lazy('description'))
     notification_class = models.ForeignKey('transactions.NotificationClass', null=True, blank=True,
                                            on_delete=models.PROTECT, verbose_name=ugettext_lazy('notification class'))
     notify_in_n_days = models.PositiveSmallIntegerField(default=0, verbose_name=ugettext_lazy('notify in N days'))

@@ -8,8 +8,8 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.fields import empty
 from rest_framework.serializers import ListSerializer
 
-from poms.common import formula
 from poms.common.fields import ExpressionField, FloatEvalField, DateTimeTzAwareField
+from poms.common.models import EXPRESSION_FIELD_LENGTH
 from poms.common.serializers import PomsClassSerializer, ModelWithUserCodeSerializer
 from poms.common.utils import date_now
 from poms.currencies.fields import CurrencyDefault
@@ -59,7 +59,7 @@ class CostMethodSerializer(PomsClassSerializer):
 
 class PricingPolicySerializer(ModelWithUserCodeSerializer):
     master_user = MasterUserField()
-    expr = ExpressionField(allow_blank=False, allow_null=False)
+    expr = ExpressionField(max_length=EXPRESSION_FIELD_LENGTH, allow_blank=False, allow_null=False)
 
     class Meta:
         model = PricingPolicy
@@ -440,6 +440,7 @@ class InstrumentFactorScheduleSerializer(serializers.ModelSerializer):
 
 class EventScheduleActionSerializer(serializers.ModelSerializer):
     id = serializers.IntegerField(read_only=False, required=False, allow_null=True)
+    text = ExpressionField(max_length=EXPRESSION_FIELD_LENGTH, required=True, allow_blank=True, allow_null=True)
     transaction_type = TransactionTypeField()
     transaction_type_object = serializers.PrimaryKeyRelatedField(source='transaction_type', read_only=True)
     display_text = serializers.SerializerMethodField()
@@ -472,8 +473,8 @@ class EventScheduleSerializer(serializers.ModelSerializer):
     event_class_object = serializers.PrimaryKeyRelatedField(source='event_class', read_only=True)
     notification_class_object = serializers.PrimaryKeyRelatedField(source='notification_class', read_only=True)
     periodicity_object = PeriodicitySerializer(source='periodicity', read_only=True)
-    name = ExpressionField(required=True, allow_blank=True, allow_null=True)
-    description = ExpressionField(required=False, allow_blank=True, allow_null=True)
+    name = ExpressionField(max_length=EXPRESSION_FIELD_LENGTH, required=True, allow_blank=True, allow_null=True)
+    description = ExpressionField(max_length=EXPRESSION_FIELD_LENGTH, required=False, allow_blank=True, allow_null=True)
 
     display_name = serializers.SerializerMethodField()
     display_description = serializers.SerializerMethodField()
@@ -656,8 +657,8 @@ class GeneratedEventSerializer(serializers.ModelSerializer):
 
 class EventScheduleConfigSerializer(serializers.ModelSerializer):
     master_user = MasterUserField()
-    name = ExpressionField()
-    description = ExpressionField()
+    name = ExpressionField(max_length=EXPRESSION_FIELD_LENGTH)
+    description = ExpressionField(max_length=EXPRESSION_FIELD_LENGTH)
     notification_class_object = serializers.PrimaryKeyRelatedField(source='notification_class', read_only=True)
 
     class Meta:

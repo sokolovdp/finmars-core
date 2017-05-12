@@ -15,6 +15,7 @@ from rest_framework.validators import UniqueTogetherValidator
 
 from poms.accounts.fields import AccountField
 from poms.common.fields import ExpressionField, DateTimeTzAwareField
+from poms.common.models import EXPRESSION_FIELD_LENGTH
 from poms.common.serializers import PomsClassSerializer, ModelWithUserCodeSerializer
 from poms.counterparties.fields import CounterpartyField, ResponsibleField
 from poms.currencies.fields import CurrencyField, CurrencyDefault
@@ -88,7 +89,7 @@ class InstrumentDownloadSchemeAttributeSerializer(serializers.ModelSerializer):
     id = serializers.IntegerField(read_only=False, required=False, allow_null=True)
     attribute_type = GenericAttributeTypeField()
     attribute_type_object = serializers.PrimaryKeyRelatedField(source='attribute_type', read_only=True)
-    value = ExpressionField(allow_blank=True)
+    value = ExpressionField(max_length=EXPRESSION_FIELD_LENGTH, allow_blank=True)
 
     class Meta:
         model = InstrumentDownloadSchemeAttribute
@@ -116,26 +117,26 @@ class InstrumentDownloadSchemeSerializer(serializers.ModelSerializer):
 
     inputs = InstrumentDownloadSchemeInputSerializer(many=True, read_only=False)
 
-    user_code = ExpressionField(allow_blank=True)
-    name = ExpressionField()
-    short_name = ExpressionField(allow_blank=True)
-    public_name = ExpressionField(allow_blank=True)
-    notes = ExpressionField(allow_blank=True)
-    instrument_type = ExpressionField(allow_blank=True)
-    pricing_currency = ExpressionField(allow_blank=True)
-    price_multiplier = ExpressionField(allow_blank=True)
-    accrued_currency = ExpressionField(allow_blank=True)
-    accrued_multiplier = ExpressionField(allow_blank=True)
+    user_code = ExpressionField(max_length=EXPRESSION_FIELD_LENGTH, allow_blank=True)
+    name = ExpressionField(max_length=EXPRESSION_FIELD_LENGTH)
+    short_name = ExpressionField(max_length=EXPRESSION_FIELD_LENGTH, allow_blank=True)
+    public_name = ExpressionField(max_length=EXPRESSION_FIELD_LENGTH, allow_blank=True)
+    notes = ExpressionField(max_length=EXPRESSION_FIELD_LENGTH, allow_blank=True)
+    instrument_type = ExpressionField(max_length=EXPRESSION_FIELD_LENGTH, allow_blank=True)
+    pricing_currency = ExpressionField(max_length=EXPRESSION_FIELD_LENGTH, allow_blank=True)
+    price_multiplier = ExpressionField(max_length=EXPRESSION_FIELD_LENGTH, allow_blank=True)
+    accrued_currency = ExpressionField(max_length=EXPRESSION_FIELD_LENGTH, allow_blank=True)
+    accrued_multiplier = ExpressionField(max_length=EXPRESSION_FIELD_LENGTH, allow_blank=True)
     # daily_pricing_model = ExpressionField(allow_blank=True)
     # payment_size_detail = ExpressionField(allow_blank=True)
     # default_price = ExpressionField(allow_blank=True)
     # default_accrued = ExpressionField(allow_blank=True)
-    user_text_1 = ExpressionField(allow_blank=True)
-    user_text_2 = ExpressionField(allow_blank=True)
-    user_text_3 = ExpressionField(allow_blank=True)
     # price_download_mode = ExpressionField(allow_blank=True)
-    maturity_date = ExpressionField(allow_blank=True)
-    maturity_price = ExpressionField(allow_blank=True)
+    maturity_date = ExpressionField(max_length=EXPRESSION_FIELD_LENGTH, allow_blank=True)
+    maturity_price = ExpressionField(max_length=EXPRESSION_FIELD_LENGTH, allow_blank=True)
+    user_text_1 = ExpressionField(max_length=EXPRESSION_FIELD_LENGTH, allow_blank=True)
+    user_text_2 = ExpressionField(max_length=EXPRESSION_FIELD_LENGTH, allow_blank=True)
+    user_text_3 = ExpressionField(max_length=EXPRESSION_FIELD_LENGTH, allow_blank=True)
 
     payment_size_detail_object = serializers.PrimaryKeyRelatedField(source='payment_size_detail', read_only=True)
     daily_pricing_model_object = serializers.PrimaryKeyRelatedField(source='daily_pricing_model', read_only=True)
@@ -1215,7 +1216,7 @@ class ComplexTransactionImportSchemeRuleSerializer(serializers.ModelSerializer):
 
 class ComplexTransactionImportSchemeSerializer(serializers.ModelSerializer):
     master_user = MasterUserField()
-    rule_expr = ExpressionField()
+    rule_expr = ExpressionField(max_length=EXPRESSION_FIELD_LENGTH)
 
     inputs = ComplexTransactionImportSchemeInputSerializer(many=True, read_only=False)
     rules = ComplexTransactionImportSchemeRuleSerializer(many=True, read_only=False)

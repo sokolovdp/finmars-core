@@ -1,48 +1,16 @@
 from __future__ import unicode_literals
 
-from datetime import timedelta, date
-
-from dateutil.relativedelta import relativedelta
-from django.conf import settings
-from django.utils.functional import cached_property
-from django.utils.translation import ugettext_lazy, ugettext
 from rest_framework import serializers
-from rest_framework.exceptions import ValidationError
 
-from poms.accounts.fields import AccountField
-from poms.accounts.serializers import AccountSerializer, AccountViewSerializer
-from poms.common import formula
 from poms.common.fields import ExpressionField
-from poms.common.utils import date_now
-from poms.counterparties.serializers import ResponsibleSerializer, \
-    CounterpartySerializer
-from poms.currencies.fields import CurrencyField, SystemCurrencyDefault
-from poms.currencies.serializers import CurrencySerializer, CurrencyViewSerializer, CurrencyHistorySerializer
-from poms.instruments.fields import PricingPolicyField
-from poms.instruments.models import CostMethod
-from poms.instruments.serializers import InstrumentSerializer, PricingPolicyViewSerializer, CostMethodSerializer, \
-    PriceHistorySerializer, AccrualCalculationScheduleSerializer
-from poms.obj_attrs.serializers import GenericAttributeTypeSerializer, GenericAttributeSerializer
-from poms.portfolios.fields import PortfolioField
-from poms.portfolios.serializers import PortfolioSerializer, PortfolioViewSerializer
-from poms.reports.builders.balance_item import ReportItem, Report
-from poms.reports.builders.cash_flow_projection_item import CashFlowProjectionReport
-from poms.reports.builders.cash_flow_projection_item import CashFlowProjectionReportItem
-from poms.reports.builders.transaction_item import TransactionReport
-from poms.reports.fields import CustomFieldField
+from poms.common.models import EXPRESSION_FIELD_LENGTH
 from poms.reports.models import CustomField
-from poms.strategies.fields import Strategy1Field, Strategy2Field, Strategy3Field
-from poms.strategies.serializers import Strategy1Serializer, Strategy2Serializer, Strategy3Serializer, \
-    Strategy1ViewSerializer, Strategy2ViewSerializer, Strategy3ViewSerializer
-from poms.transactions.models import TransactionClass
-from poms.transactions.serializers import TransactionClassSerializer, ComplexTransactionSerializer, \
-    TransactionTypeViewSerializer
-from poms.users.fields import MasterUserField, HiddenMemberField
+from poms.users.fields import MasterUserField
 
 
 class CustomFieldSerializer(serializers.ModelSerializer):
     master_user = MasterUserField()
-    expr = ExpressionField(max_length=2000, required=False, allow_blank=True, default='""')
+    expr = ExpressionField(max_length=EXPRESSION_FIELD_LENGTH, required=False, allow_blank=True, default='""')
     layout = serializers.JSONField(required=False, allow_null=True)
 
     class Meta:
@@ -50,7 +18,6 @@ class CustomFieldSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'master_user', 'name', 'expr', 'layout'
         ]
-
 
 # class CustomFieldViewSerializer(serializers.ModelSerializer):
 #     master_user = MasterUserField()

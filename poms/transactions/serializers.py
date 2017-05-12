@@ -6,12 +6,12 @@ from django.core.exceptions import ObjectDoesNotExist
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 from rest_framework.fields import empty
-from django.utils import timezone
 
 from poms.accounts.fields import AccountField, AccountDefault
 from poms.accounts.models import Account
 from poms.common import formula
 from poms.common.fields import ExpressionField
+from poms.common.models import EXPRESSION_FIELD_LENGTH
 from poms.common.serializers import PomsClassSerializer, ModelWithUserCodeSerializer
 from poms.counterparties.fields import ResponsibleField, CounterpartyField, ResponsibleDefault, CounterpartyDefault
 from poms.counterparties.models import Counterparty, Responsible
@@ -36,7 +36,6 @@ from poms.transactions.models import TransactionClass, Transaction, TransactionT
     TransactionTypeActionTransaction, TransactionTypeActionInstrument, TransactionTypeInput, TransactionTypeGroup, \
     ComplexTransaction, EventClass, NotificationClass, ComplexTransactionInput
 from poms.users.fields import MasterUserField
-from poms.users.utils import get_master_user_from_context
 
 
 class EventClassSerializer(PomsClassSerializer):
@@ -105,9 +104,11 @@ class TransactionTypeInputSerializer(serializers.ModelSerializer):
                                  ])
     content_type = TransactionTypeInputContentTypeField(required=False, allow_null=True, allow_empty=True)
     can_recalculate = serializers.BooleanField(read_only=True)
-    value_expr = ExpressionField(required=False, allow_null=True, allow_blank=True, default='')
+    value_expr = ExpressionField(max_length=EXPRESSION_FIELD_LENGTH, required=False, allow_null=True, allow_blank=True,
+                                 default='')
     is_fill_from_context = serializers.BooleanField(default=False, initial=False, required=False)
-    value = ExpressionField(required=False, allow_null=True, allow_blank=True, default='')
+    value = ExpressionField(max_length=EXPRESSION_FIELD_LENGTH, required=False, allow_null=True, allow_blank=True,
+                            default='')
     account = AccountField(required=False, allow_null=True)
     instrument_type = InstrumentTypeField(required=False, allow_null=True)
     instrument = InstrumentField(required=False, allow_null=True)
@@ -250,34 +251,35 @@ class TransactionTypeInputViewSerializer(serializers.ModelSerializer):
 
 
 class TransactionTypeActionInstrumentSerializer(serializers.ModelSerializer):
-    user_code = ExpressionField(required=False, allow_blank=True, default='')
-    name = ExpressionField(required=False, allow_blank=True, default='')
-    public_name = ExpressionField(required=False, allow_blank=True, default='')
-    short_name = ExpressionField(required=False, allow_blank=True, default='')
-    notes = ExpressionField(required=False, allow_blank=True, default='')
+    user_code = ExpressionField(max_length=EXPRESSION_FIELD_LENGTH, required=False, allow_blank=True, default='')
+    name = ExpressionField(max_length=EXPRESSION_FIELD_LENGTH, required=False, allow_blank=True, default='')
+    public_name = ExpressionField(max_length=EXPRESSION_FIELD_LENGTH, required=False, allow_blank=True, default='')
+    short_name = ExpressionField(max_length=EXPRESSION_FIELD_LENGTH, required=False, allow_blank=True, default='')
+    notes = ExpressionField(max_length=EXPRESSION_FIELD_LENGTH, required=False, allow_blank=True, default='')
 
     instrument_type = InstrumentTypeField(required=False, allow_null=True)
     instrument_type_input = TransactionInputField(required=False, allow_null=True)
     pricing_currency = CurrencyField(required=False, allow_null=True)
     pricing_currency_input = TransactionInputField(required=False, allow_null=True)
-    price_multiplier = ExpressionField(required=False, default="1.0")
+    price_multiplier = ExpressionField(max_length=EXPRESSION_FIELD_LENGTH, required=False, default="1.0")
     accrued_currency = CurrencyField(required=False, allow_null=True)
     accrued_currency_input = TransactionInputField(required=False, allow_null=True)
-    accrued_multiplier = ExpressionField(required=False, default="1.0")
-    default_price = ExpressionField(required=False, default="0.0")
-    default_accrued = ExpressionField(required=False, default="0.0")
-    user_text_1 = ExpressionField(required=False, allow_blank=True, default='')
-    user_text_2 = ExpressionField(required=False, allow_blank=True, default='')
-    user_text_3 = ExpressionField(required=False, allow_blank=True, default='')
+    accrued_multiplier = ExpressionField(max_length=EXPRESSION_FIELD_LENGTH, required=False, default="1.0")
+    default_price = ExpressionField(max_length=EXPRESSION_FIELD_LENGTH, required=False, default="0.0")
+    default_accrued = ExpressionField(max_length=EXPRESSION_FIELD_LENGTH, required=False, default="0.0")
+    user_text_1 = ExpressionField(max_length=EXPRESSION_FIELD_LENGTH, required=False, allow_blank=True, default='')
+    user_text_2 = ExpressionField(max_length=EXPRESSION_FIELD_LENGTH, required=False, allow_blank=True, default='')
+    user_text_3 = ExpressionField(max_length=EXPRESSION_FIELD_LENGTH, required=False, allow_blank=True, default='')
 
-    reference_for_pricing = ExpressionField(required=False, allow_blank=True, default='')
+    reference_for_pricing = ExpressionField(max_length=EXPRESSION_FIELD_LENGTH, required=False, allow_blank=True,
+                                            default='')
     daily_pricing_model_input = TransactionInputField(required=False, allow_null=True)
     payment_size_detail_input = TransactionInputField(required=False, allow_null=True)
     price_download_scheme = PriceDownloadSchemeField(required=False, allow_null=True)
     price_download_scheme_input = TransactionInputField(required=False, allow_null=True)
 
-    maturity_date = ExpressionField(required=False, allow_blank=True)
-    maturity_price = ExpressionField(required=False, default="0.0")
+    maturity_date = ExpressionField(max_length=EXPRESSION_FIELD_LENGTH, required=False, allow_blank=True)
+    maturity_price = ExpressionField(max_length=EXPRESSION_FIELD_LENGTH, required=False, default="0.0")
 
     # instrument_type_object = serializers.PrimaryKeyRelatedField(source='instrument_type', read_only=True)
     # pricing_currency_object = serializers.PrimaryKeyRelatedField(source='pricing_currency', read_only=True)
@@ -348,13 +350,13 @@ class TransactionTypeActionTransactionSerializer(serializers.ModelSerializer):
     instrument_phantom = TransactionTypeActionInstrumentPhantomField(required=False, allow_null=True)
     transaction_currency = CurrencyField(required=False, allow_null=True)
     transaction_currency_input = TransactionInputField(required=False, allow_null=True)
-    position_size_with_sign = ExpressionField(required=False, default="0.0")
+    position_size_with_sign = ExpressionField(max_length=EXPRESSION_FIELD_LENGTH, required=False, default="0.0")
     settlement_currency = CurrencyField(required=False, allow_null=True)
     settlement_currency_input = TransactionInputField(required=False, allow_null=True)
-    cash_consideration = ExpressionField(required=False, default="0.0")
-    principal_with_sign = ExpressionField(required=False, default="0.0")
-    carry_with_sign = ExpressionField(required=False, default="0.0")
-    overheads_with_sign = ExpressionField(required=False, default="0.0")
+    cash_consideration = ExpressionField(max_length=EXPRESSION_FIELD_LENGTH, required=False, default="0.0")
+    principal_with_sign = ExpressionField(max_length=EXPRESSION_FIELD_LENGTH, required=False, default="0.0")
+    carry_with_sign = ExpressionField(max_length=EXPRESSION_FIELD_LENGTH, required=False, default="0.0")
+    overheads_with_sign = ExpressionField(max_length=EXPRESSION_FIELD_LENGTH, required=False, default="0.0")
     portfolio = PortfolioField(required=False, allow_null=True)
     portfolio_input = TransactionInputField(required=False, allow_null=True)
     account_position = AccountField(required=False, allow_null=True)
@@ -363,8 +365,8 @@ class TransactionTypeActionTransactionSerializer(serializers.ModelSerializer):
     account_cash_input = TransactionInputField(required=False, allow_null=True)
     account_interim = AccountField(required=False, allow_null=True)
     account_interim_input = TransactionInputField(required=False, allow_null=True)
-    accounting_date = ExpressionField(required=False, default="now()")
-    cash_date = ExpressionField(required=False, default="now()")
+    accounting_date = ExpressionField(max_length=EXPRESSION_FIELD_LENGTH, required=False, default="now()")
+    cash_date = ExpressionField(max_length=EXPRESSION_FIELD_LENGTH, required=False, default="now()")
     strategy1_position = Strategy1Field(required=False, allow_null=True)
     strategy1_position_input = TransactionInputField(required=False, allow_null=True)
     strategy1_cash = Strategy1Field(required=False, allow_null=True)
@@ -391,15 +393,15 @@ class TransactionTypeActionTransactionSerializer(serializers.ModelSerializer):
     allocation_pl_input = TransactionInputField(required=False, allow_null=True)
     allocation_pl_phantom = TransactionTypeActionInstrumentPhantomField(required=False, allow_null=True)
 
-    reference_fx_rate = ExpressionField(required=False, default="0.0")
-    factor = ExpressionField(required=False, default="0.0")
-    trade_price = ExpressionField(required=False, default="0.0")
-    position_amount = ExpressionField(required=False, default="0.0")
-    principal_amount = ExpressionField(required=False, default="0.0")
-    carry_amount = ExpressionField(required=False, default="0.0")
-    overheads = ExpressionField(required=False, default="0.0")
+    reference_fx_rate = ExpressionField(max_length=EXPRESSION_FIELD_LENGTH, required=False, default="0.0")
+    factor = ExpressionField(max_length=EXPRESSION_FIELD_LENGTH, required=False, default="0.0")
+    trade_price = ExpressionField(max_length=EXPRESSION_FIELD_LENGTH, required=False, default="0.0")
+    position_amount = ExpressionField(max_length=EXPRESSION_FIELD_LENGTH, required=False, default="0.0")
+    principal_amount = ExpressionField(max_length=EXPRESSION_FIELD_LENGTH, required=False, default="0.0")
+    carry_amount = ExpressionField(max_length=EXPRESSION_FIELD_LENGTH, required=False, default="0.0")
+    overheads = ExpressionField(max_length=EXPRESSION_FIELD_LENGTH, required=False, default="0.0")
 
-    notes = ExpressionField(required=False, allow_blank=True, default='')
+    notes = ExpressionField(max_length=EXPRESSION_FIELD_LENGTH, required=False, allow_blank=True, default='')
 
     # transaction_class_object = TransactionClassSerializer(source='transaction_class', read_only=True)
     # instrument_object = serializers.PrimaryKeyRelatedField(source='instrument', read_only=True)
@@ -555,8 +557,10 @@ class TransactionTypeSerializer(ModelWithObjectPermissionSerializer, ModelWithUs
                                 ModelWithTagSerializer):
     master_user = MasterUserField()
     group = TransactionTypeGroupField(required=False, allow_null=False)
-    date_expr = ExpressionField(required=False, allow_blank=True, allow_null=True, default='now()')
-    display_expr = ExpressionField(required=False, allow_blank=True, allow_null=True, default='')
+    date_expr = ExpressionField(max_length=EXPRESSION_FIELD_LENGTH, required=False, allow_blank=True,
+                                allow_null=True, default='now()')
+    display_expr = ExpressionField(max_length=EXPRESSION_FIELD_LENGTH, required=False, allow_blank=True,
+                                   allow_null=True, default='')
     instrument_types = InstrumentTypeField(required=False, allow_null=True, many=True)
     portfolios = PortfolioField(required=False, allow_null=True, many=True)
     # tags = TagField(required=False, many=True, allow_null=True)
