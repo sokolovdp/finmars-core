@@ -555,9 +555,8 @@ class Instrument(NamedModel, FakeDeletableModel):
             if old_event:
                 processed.append(old_event.id)
 
-    def get_accrual_calculation_schedules_all(self, accruals=None):
-        if accruals is None:
-            accruals = list(self.accrual_calculation_schedules.all())
+    def get_accrual_calculation_schedules_all(self):
+        accruals = list(self.accrual_calculation_schedules.all())
 
         if not accruals:
             return accruals
@@ -578,12 +577,11 @@ class Instrument(NamedModel, FakeDeletableModel):
 
         return accruals
 
-    def find_accrual(self, d, accruals=None):
+    def find_accrual(self, d):
         if d >= self.maturity_date:
             return None
 
-        accruals = self.get_accrual_calculation_schedules_all(accruals=accruals)
-
+        accruals = self.get_accrual_calculation_schedules_all()
         accrual = None
         for a in accruals:
             if a.accrual_start_date <= d:
@@ -604,7 +602,7 @@ class Instrument(NamedModel, FakeDeletableModel):
             for price in existed_prices:
                 if price.date >= self.maturity_date:
                     continue
-                accrued_price = self.get_accrued_price(price.date, accruals=accruals)
+                accrued_price = self.get_accrued_price(price.date)
                 if accrued_price is None:
                     accrued_price = 0.0
                 price.accrued_price = accrued_price
@@ -618,7 +616,7 @@ class Instrument(NamedModel, FakeDeletableModel):
                     if d >= self.maturity_date:
                         continue
                     price = existed_prices.get((pp.id, d), None)
-                    accrued_price = self.get_accrued_price(d, accruals=accruals)
+                    accrued_price = self.get_accrued_price(d)
                     if price is None:
                         if accrued_price is not None:
                             price = PriceHistory()
@@ -633,28 +631,24 @@ class Instrument(NamedModel, FakeDeletableModel):
                         price.accrued_price = accrued_price
                         price.save(update_fields=['accrued_price'])
 
-    def get_accrual_size(self, price_date, accruals=None, accrual=None):
+    def get_accrual_size(self, price_date):
         if price_date >= self.maturity_date:
             return 0.0
 
-        if accrual is None:
-            accrual = self.find_accrual(price_date, accruals=accruals)
-
+        accrual = self.find_accrual(price_date)
         if accrual is None:
             return 0.0
 
         return accrual.accrual_size
 
-    def get_accrual_factor(self, price_date, accruals=None, accrual=None):
+    def get_accrual_factor(self, price_date):
         from poms.common.formula_accruals import coupon_accrual_factor
 
         if price_date >= self.maturity_date:
             # return self.maturity_price
             return 0.0
 
-        if accrual is None:
-            accrual = self.find_accrual(price_date, accruals=accruals)
-
+        accrual = self.find_accrual(price_date)
         if accrual is None:
             return 0.0
 
@@ -665,16 +659,14 @@ class Instrument(NamedModel, FakeDeletableModel):
 
         return factor
 
-    def get_accrued_price(self, price_date, accruals=None, accrual=None):
+    def get_accrued_price(self, price_date):
         from poms.common.formula_accruals import coupon_accrual_factor
 
         if price_date >= self.maturity_date:
             # return self.maturity_price
             return 0.0
 
-        if accrual is None:
-            accrual = self.find_accrual(price_date, accruals=accruals)
-
+        accrual = self.find_accrual(price_date)
         if accrual is None:
             return 0.0
 
@@ -685,93 +677,17 @@ class Instrument(NamedModel, FakeDeletableModel):
 
         return accrual.accrual_size * factor
 
-    # def get_future_accrual_payments(self, data=None, d0=None, v0=None, begin_date=None, accruals=None,
-    #                                 accrual_mul=None, principal_ccy_fx=1.0, accrual_ccy_fx=1.0):
-    #     accruals = self.get_accrual_calculation_schedules_all(accruals=accruals)
-    #
-    #     if data is None:
-    #         data = []
-    #
-    #     if d0 is not None and v0 is not None:
-    #         data.append((d0, v0))
-    #
-    #     if begin_date is None:
-    #         if data:
-    #             d0, v0 = data[-1]
-    #             begin_date = d0
-    #         else:
-    #             begin_date = date.min
-    #
-    #     # a = None
-    #     # for next_a in accruals:
-    #     #     if a is not None:
-    #     #         a.accrual_end_date = next_a.accrual_start_date
-    #     #     a = next_a
-    #     # if a:
-    #     #     a.accrual_end_date = self.maturity_date
-    #
-    #     if accrual_mul is None:
-    #         try:
-    #             accrual_mul = (self.accrued_multiplier / self.price_multiplier) * (accrual_ccy_fx / principal_ccy_fx)
-    #         except ArithmeticError:
-    #             accrual_mul = 0.0
-    #
-    #     for a in accruals:
-    #         if a.accrual_end_date <= begin_date:
-    #             continue
-    #         for i in range(0, settings.INSTRUMENT_EVENTS_REGULAR_MAX_INTERVALS):
-    #             d = a.first_payment_date + a.periodicity.to_timedelta(n=a.periodicity_n, i=i,
-    #                                                                   same_date=a.accrual_start_date)
-    #             if d > a.accrual_end_date:
-    #                 break
-    #             if d <= begin_date:
-    #                 continue
-    #
-    #             # if a_to_p_mul is None:
-    #             #     try:
-    #             #         a_to_p_mul = self.accrued_multiplier / self.price_multiplier
-    #             #     except ArithmeticError:
-    #             #         a_to_p_mul = 0.0
-    #             #     if not isclose(principal_ccy_fx, accrual_ccy_fx):
-    #             #         try:
-    #             #             v = accrual_ccy_fx / principal_ccy_fx
-    #             #         except ArithmeticError:
-    #             #             v = 0
-    #             #         a_to_p_mul *= v
-    #
-    #             data.append((d, a.accrual_size * accrual_mul))
-    #
-    #     if self.maturity_date >= begin_date:
-    #         if data:
-    #             last_d, last_p = data[-1]
-    #             if last_d == self.maturity_date:
-    #                 data[-1] = (last_d, last_p + self.maturity_price)
-    #             else:
-    #                 data.append((self.maturity_date, self.maturity_price))
-    #         else:
-    #             data.append((self.maturity_date, self.maturity_price))
-    #
-    #     return data
-
-    def get_factor(self, fdate):
-        fndf = None
-        for f in self.factor_schedules.all():
-            if f.effective_date < fdate:
-                fndf = f
-        if fndf:
-            return fndf.factor_value
-        return 1.0
-
-    def get_coupon(self, cpn_date, accruals=None):
-        accruals = self.get_accrual_calculation_schedules_all(accruals=accruals)
-
+    def get_coupon(self, cpn_date, with_maturity=False, factor=False):
         if cpn_date == self.maturity_date:
-            # _l.info('  %s, d=%s', cpn_date == self.maturity_date, cpn_date,)
-            return self.maturity_price, True
+            if with_maturity:
+                return self.maturity_price, True
+            else:
+                return 0.0, False
 
         elif cpn_date > self.maturity_date:
             return 0.0, False
 
+        accruals = self.get_accrual_calculation_schedules_all()
         for accrual in accruals:
             if accrual.accrual_start_date <= cpn_date < accrual.accrual_end_date:
                 prev_d = accrual.accrual_start_date
@@ -789,56 +705,19 @@ class Instrument(NamedModel, FakeDeletableModel):
                         d = accrual.accrual_end_date - timedelta(days=1)
 
                     if d == cpn_date:
-                        return get_coupon(accrual, prev_d, d, maturity_date=self.maturity_date), True
+                        val_or_factor = get_coupon(accrual, prev_d, d, maturity_date=self.maturity_date, factor=factor)
+                        return val_or_factor, True
 
                     if d >= accrual.accrual_end_date - timedelta(days=1):
                         break
 
                     prev_d = d
 
-                    # if d == cpn_date:
-                    #     # _l.info('  %s, d=%s, prev_d=%s', d == cpn_date, d, prev_d)
-                    #     return get_coupon(accrual, prev_d, d, maturity_date=self.maturity_date), True
-
         return 0.0, False
 
-    # def get_future_coupons(self, data=None, d0=None, v0=None, begin_date=None, accruals=None,
-    #                        principal_ccy_fx=1.0, accrual_ccy_fx=1.0):
-    #     accruals = self.get_accrual_calculation_schedules_all(accruals=accruals)
-    #
-    #     if data is None:
-    #         data = []
-    #
-    #     if d0 is not None and v0 is not None:
-    #         data.append((d0, v0))
-    #
-    #     if begin_date is None:
-    #         if data:
-    #             d0, v0 = data[-1]
-    #             begin_date = d0
-    #         else:
-    #             begin_date = date.min
-    #
-    #     a_to_p_mul = None  # lazy
-    #
-    #     d = begin_date
-    #     td1 = timedelta(days=1)
-    #     while d <= self.maturity_date:
-    #         cpn_val, is_cpn = self.get_coupon(cpn_date=d, accruals=accruals)
-    #         if is_cpn:
-    #             data.append((d, cpn_val))
-    #         try:
-    #             d += td1
-    #         except (OverflowError, ValueError):
-    #             break
-    #
-    #     return data
-
-    def get_future_coupons(self, begin_date=None, accruals=None, with_maturity=True):
-        accruals = self.get_accrual_calculation_schedules_all(accruals=accruals)
-
-        data = []
-
+    def get_future_coupons(self, begin_date=None, with_maturity=False, factor=False):
+        res = []
+        accruals = self.get_accrual_calculation_schedules_all()
         for accrual in accruals:
             if begin_date > accrual.accrual_end_date:
                 continue
@@ -861,8 +740,8 @@ class Instrument(NamedModel, FakeDeletableModel):
                 if d >= accrual.accrual_end_date:
                     d = accrual.accrual_end_date - timedelta(days=1)
 
-                cpn = get_coupon(accrual, prev_d, d, maturity_date=self.maturity_date)
-                data.append((d, cpn))
+                val_or_factor = get_coupon(accrual, prev_d, d, maturity_date=self.maturity_date, factor=factor)
+                res.append((d, val_or_factor))
 
                 if d == date.max or d >= accrual.accrual_end_date - timedelta(days=1):
                     break
@@ -870,85 +749,28 @@ class Instrument(NamedModel, FakeDeletableModel):
                 prev_d = d
 
         if with_maturity:
-            data.append((self.maturity_date, self.maturity_price))
+            if factor:
+                val_or_factor = 1.0
+            else:
+                val_or_factor = self.maturity_price
+            res.append((self.maturity_date, val_or_factor))
 
-        return data
+        return res
 
-        # def get_ytm_data_k(self, pricing_ccy_fx=1.0, accrued_ccy_fx=1.0):
-        #     try:
-        #         return (self.accrued_multiplier / self.price_multiplier) * (accrued_ccy_fx / pricing_ccy_fx)
-        #     except ArithmeticError:
-        #         return 0.0
-        #
-        # def get_ytm_data(self, d0, v0, k=None, v0_apply_k=False, pricing_ccy_fx=1.0, accrued_ccy_fx=1.0):
-        #     if self.maturity_date is None or self.maturity_date == date.max:
-        #         _l.debug('get_ytm_data: [], maturity_date rule')
-        #         return []
-        #     if self.maturity_price is None or math.isnan(self.maturity_price) or isclose(self.maturity_price, 0.0):
-        #         _l.debug('get_ytm_data: [], maturity_price rule')
-        #         return []
-        #
-        #     accruals = self.get_accrual_calculation_schedules_all()
-        #
-        #     if k is None:
-        #         k = self.get_ytm_data_k(pricing_ccy_fx=pricing_ccy_fx, accrued_ccy_fx=accrued_ccy_fx)
-        #
-        #     if v0_apply_k:
-        #         v0 *= k
-        #
-        #     data = [(d0, v0)]
-        #
-        #     for accrual in accruals:
-        #         if d0 > accrual.accrual_end_date:
-        #             continue
-        #
-        #         prev_d = accrual.accrual_start_date
-        #         for i in range(0, 3652058):
-        #             if i == 0:
-        #                 d = accrual.first_payment_date
-        #             else:
-        #                 try:
-        #                     d = accrual.first_payment_date + accrual.periodicity.to_timedelta(
-        #                         n=accrual.periodicity_n, i=i, same_date=accrual.accrual_start_date)
-        #                 except (OverflowError, ValueError):  # date is out of range
-        #                     d = date.max
-        #
-        #             if d < d0:
-        #                 continue
-        #
-        #             if d >= accrual.accrual_end_date:
-        #                 # accrual last day value
-        #                 d = accrual.accrual_end_date - timedelta(days=1)
-        #
-        #             cpn = get_coupon(accrual, prev_d, d, maturity_date=self.maturity_date)
-        #             data.append((d, cpn * k))
-        #
-        #             if d == date.max or d >= accrual.accrual_end_date - timedelta(days=1):
-        #                 break
-        #
-        #             prev_d = d
-        #
-        #     data.append((self.maturity_date, self.maturity_price))
-        #
-        #     _l.debug('get_ytm_data: data=%s', [(str(d), v) for d, v in data])
-        #
-        #     return data
-        #
-        # def get_ytm(self, data, x0):
-        #     if data:
-        #         res = f_xirr(data, x0=x0)
-        #     else:
-        #         res = 0.0
-        #     _l.debug('get_ytm: %s, data=%s, x0=%s', res, data, x0)
-        #     return res
-        #
-        # def get_duration(self, data, ytm):
-        #     if data:
-        #         res = f_duration(data, ytm=ytm)
-        #     else:
-        #         res = 0.0
-        #     _l.debug('get_duration: %s, data=%s, x0=%s', res, data)
-        #     return res
+    def get_factors(self):
+        factors = list(self.factor_schedules.all())
+        factors.sort(key=lambda x: x.effective_date)
+        return factors
+
+    def get_factor(self, fdate):
+        res = None
+        factors = self.get_factors()
+        for f in factors:
+            if f.effective_date < fdate:
+                res = f
+        if res:
+            return res.factor_value
+        return 1.0
 
 
 @python_2_unicode_compatible

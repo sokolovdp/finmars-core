@@ -164,7 +164,7 @@ class YTMMixin:
             k = (factor_value - prev_factor_value) * instr.price_multiplier
             data.append((factor.effective_date, instr.maturity_price * k))
 
-        factor = instr.get_factor(instr.maturity_price)
+        factor = instr.get_factor(instr.maturity_date)
         k = instr.price_multiplier * factor
         data.append((instr.maturity_date, instr.maturity_price * k))
 
