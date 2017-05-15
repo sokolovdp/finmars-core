@@ -99,7 +99,8 @@ def deactivate():
         del _state.entries4
 
 
-@receiver([request_finished, got_request_exception], dispatch_uid='poms_history_cleanup')
+# @receiver([request_finished, got_request_exception], dispatch_uid='poms_history_cleanup')
+@receiver(request_finished, dispatch_uid='poms_history_cleanup')
 def _cleanup(**kwargs):
     if hasattr(_state, "active"):
         del _state.active
