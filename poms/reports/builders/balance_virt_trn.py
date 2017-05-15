@@ -576,7 +576,7 @@ class VirtualTransaction(YTMMixin, BaseReportItem):
             self.stl_ccy_cur_fx_loc = self.stl_ccy_cur.fx_rate * pricing_ccy_cur_fx
 
     def get_instr_ytm_data_d0_v0(self):
-        return self.acc_date, -(self.trade_price * self.instr.price_multiplier)
+        return self.acc_date, -(self.trade_price * self.instr.price_multiplier * self.instr.get_factor(self.report.report_date))
 
     def get_instr_ytm_x0(self):
         try:
