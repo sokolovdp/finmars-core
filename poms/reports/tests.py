@@ -18,14 +18,13 @@ from poms.accounts.models import AccountType, Account
 from poms.counterparties.models import Counterparty, Responsible, CounterpartyGroup, ResponsibleGroup
 from poms.currencies.models import Currency, CurrencyHistory
 from poms.instruments.models import Instrument, PriceHistory, PricingPolicy, CostMethod, InstrumentType, \
-    InstrumentClass, AccrualCalculationSchedule, AccrualCalculationModel, Periodicity, PaymentSizeDetail, EventSchedule
+    InstrumentClass, AccrualCalculationSchedule, AccrualCalculationModel, Periodicity, PaymentSizeDetail, \
+    InstrumentFactorSchedule
 from poms.portfolios.models import Portfolio
 from poms.reports.builders.balance_item import ReportItem, Report
 from poms.reports.builders.balance_pl import ReportBuilder
 from poms.reports.builders.balance_virt_trn import VirtualTransaction
-from poms.reports.builders.base_item import BaseReportItem
-from poms.reports.builders.cash_flow_projection import CashFlowProjectionReportBuilder
-from poms.reports.builders.cash_flow_projection_item import CashFlowProjectionReport
+from poms.reports.builders.base_item import YTMMixin
 from poms.strategies.models import Strategy1Group, Strategy1Subgroup, Strategy1, Strategy2Group, Strategy2Subgroup, \
     Strategy2, Strategy3Subgroup, Strategy3Group, Strategy3
 from poms.transactions.models import Transaction, TransactionClass, TransactionType, ComplexTransaction
@@ -1060,7 +1059,7 @@ class ReportTestCase(TestCase):
         return val
 
     def _instr(self, code, instr_type=None, pricing_ccy=None, price_mult=1.0, accrued_ccy=None, accrued_mult=1.0,
-               code_fmt='%(code)s %(pricing_ccy)s/%(accrued_ccy)s'):
+               maturity_date=date.max, maturity_price=0.0, code_fmt='%(code)s %(pricing_ccy)s/%(accrued_ccy)s'):
         instr_type = instr_type or self.m.instrument_type
         pricing_ccy = pricing_ccy or self.usd
         accrued_ccy = accrued_ccy or self.usd
@@ -1075,7 +1074,9 @@ class ReportTestCase(TestCase):
             pricing_currency=pricing_ccy,
             price_multiplier=price_mult,
             accrued_currency=accrued_ccy,
-            accrued_multiplier=accrued_mult
+            accrued_multiplier=accrued_mult,
+            maturity_date=maturity_date,
+            maturity_price=maturity_price,
         )
 
     def _instr_hist(self, instr, d, principal_price, accrued_price):
@@ -2940,7 +2941,83 @@ class ReportTestCase(TestCase):
         # as_json(r)
         pass
 
-    def test_from_csv_td_1(self):
+    def test_ytm(self):
+        instr = self._instr('instr_ytm', pricing_ccy=self.gbp, price_mult=0.01, accrued_ccy=self.eur,
+                            accrued_mult=0.005, maturity_date=date(2017, 12, 31), maturity_price=50)
+
+        InstrumentFactorSchedule.objects.create(instrument=instr, effective_date=date(2016, 5, 11), factor_value=1.0)
+        InstrumentFactorSchedule.objects.create(instrument=instr, effective_date=date(2016, 11, 11), factor_value=0.75)
+        InstrumentFactorSchedule.objects.create(instrument=instr, effective_date=date(2017, 5, 15), factor_value=0.25)
+
+        AccrualCalculationSchedule.objects.create(
+            instrument=instr,
+            accrual_start_date=date(2016, 5, 11),
+            first_payment_date=date(2016, 8, 9),
+            accrual_size=-25.0,
+            accrual_calculation_model=AccrualCalculationModel.objects.get(pk=AccrualCalculationModel.ACT_360),
+            periodicity=Periodicity.objects.get(pk=Periodicity.QUARTERLY),
+            periodicity_n=1,
+        )
+        AccrualCalculationSchedule.objects.create(
+            instrument=instr,
+            accrual_start_date=date(2017, 5, 14),
+            first_payment_date=date(2017, 6, 13),
+            accrual_size=15.0,
+            accrual_calculation_model=AccrualCalculationModel.objects.get(pk=AccrualCalculationModel.ACT_360),
+            periodicity=Periodicity.objects.get(pk=Periodicity.QUARTERLY),
+            periodicity_n=1,
+        )
+
+        test_date = date(2016, 8, 1)
+
+        self._ccy_hist(self.gbp, test_date, 1.4)
+        self._ccy_hist(self.eur, test_date, 1.1)
+
+        data = instr.get_future_coupons(begin_date=test_date, with_maturity=False, factor=True)
+        for d, v in data:
+            _l.info('1.: %s -> %s', d,v)
+
+
+        class DummyReport:
+            report_date = None
+
+
+        class DummyYTM(YTMMixin):
+            instr = None
+            report = DummyReport()
+            instr_price_cur_principal_price = None
+            instr_pricing_ccy_cur_fx = None
+            instr_accrued_ccy_cur_fx = None
+
+            def get_instr_ytm_data_d0_v0(self):
+                return self.report.report_date, -(self.instr_price_cur_principal_price * self.instr.price_multiplier)
+
+            def get_instr_ytm_x0(self):
+                try:
+                    accrual_size = self.instr.get_accrual_size(self.report.report_date)
+                    return (accrual_size * self.instr.accrued_multiplier) * \
+                           (self.instr_accrued_ccy_cur_fx / self.instr_pricing_ccy_cur_fx) / \
+                           (self.instr_price_cur_principal_price * self.instr.price_multiplier)
+                except ArithmeticError:
+                    return 0
+
+
+        ytm = DummyYTM()
+        ytm.instr = instr
+        ytm.report.report_date = test_date
+        ytm.instr_price_cur_principal_price = 1.0
+        ytm.instr_pricing_ccy_cur_fx = 1.4
+        ytm.instr_accrued_ccy_cur_fx = 1.1
+
+        data = ytm.get_instr_ytm_data()
+        for d, v in data:
+            _l.info('2.: %s -> %s', d,v)
+
+        # cpns = instr.get_future_coupons(begin_date=date(2017, 5, 7), with_maturity=False)
+        # for d, v in cpns:
+        #     _l.info('2.: %s -> %s', d,v)
+
+    def _test_from_csv_td_1(self):
         test_prefix = 'td_2'
         base_path = os.path.join(settings.BASE_DIR, 'poms', 'reports', 'tests_data')
         load_from_csv(
