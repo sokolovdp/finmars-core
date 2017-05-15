@@ -2954,7 +2954,7 @@ class ReportTestCase(TestCase):
             accrual_start_date=date(2016, 5, 11),
             first_payment_date=date(2016, 8, 9),
             accrual_size=-25.0,
-            accrual_calculation_model=AccrualCalculationModel.objects.get(pk=AccrualCalculationModel.ACT_360),
+            accrual_calculation_model=AccrualCalculationModel.objects.get(pk=AccrualCalculationModel.ACT_365),
             periodicity=Periodicity.objects.get(pk=Periodicity.QUARTERLY),
             periodicity_n=1,
         )
@@ -2963,24 +2963,28 @@ class ReportTestCase(TestCase):
             accrual_start_date=date(2017, 5, 14),
             first_payment_date=date(2017, 6, 13),
             accrual_size=15.0,
-            accrual_calculation_model=AccrualCalculationModel.objects.get(pk=AccrualCalculationModel.ACT_360),
+            accrual_calculation_model=AccrualCalculationModel.objects.get(pk=AccrualCalculationModel.ACT_365),
             periodicity=Periodicity.objects.get(pk=Periodicity.QUARTERLY),
             periodicity_n=1,
         )
 
-        test_date = date(2016, 8, 1)
+        # test_date = date(2016, 8, 1)
+        test_date = date(2017, 5, 7)
+        _l.info('test_date: %s', test_date)
 
         self._ccy_hist(self.gbp, test_date, 1.4)
         self._ccy_hist(self.eur, test_date, 1.1)
 
         data = instr.get_future_coupons(begin_date=test_date, with_maturity=False, factor=True)
         for d, v in data:
-            _l.info('1.: %s -> %s', d,v)
+            _l.info('1: %s -> %s', d, v)
 
+        data = instr.get_future_coupons(begin_date=test_date, with_maturity=False, factor=False)
+        for d, v in data:
+            _l.info('2: %s -> %s', d, v)
 
         class DummyReport:
             report_date = None
-
 
         class DummyYTM(YTMMixin):
             instr = None
@@ -2990,7 +2994,11 @@ class ReportTestCase(TestCase):
             instr_accrued_ccy_cur_fx = None
 
             def get_instr_ytm_data_d0_v0(self):
-                return self.report.report_date, -(self.instr_price_cur_principal_price * self.instr.price_multiplier)
+                return self.report.report_date, -(
+                    self.instr_price_cur_principal_price *
+                    self.instr.price_multiplier *
+                    self.instr.get_factor(self.report.report_date)
+                )
 
             def get_instr_ytm_x0(self):
                 try:
@@ -3001,21 +3009,22 @@ class ReportTestCase(TestCase):
                 except ArithmeticError:
                     return 0
 
-
         ytm = DummyYTM()
         ytm.instr = instr
         ytm.report.report_date = test_date
-        ytm.instr_price_cur_principal_price = 1.0
+        ytm.instr_price_cur_principal_price = 47
         ytm.instr_pricing_ccy_cur_fx = 1.4
         ytm.instr_accrued_ccy_cur_fx = 1.1
 
         data = ytm.get_instr_ytm_data()
         for d, v in data:
-            _l.info('2.: %s -> %s', d,v)
+            _l.info('3: %s -> %s', d, v)
 
-        # cpns = instr.get_future_coupons(begin_date=date(2017, 5, 7), with_maturity=False)
-        # for d, v in cpns:
-        #     _l.info('2.: %s -> %s', d,v)
+        _l.info('4: %s', ytm.get_instr_ytm())
+
+            # cpns = instr.get_future_coupons(begin_date=date(2017, 5, 7), with_maturity=False)
+            # for d, v in cpns:
+            #     _l.info('2.: %s -> %s', d,v)
 
     def _test_from_csv_td_1(self):
         test_prefix = 'td_2'

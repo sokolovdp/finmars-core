@@ -156,13 +156,17 @@ class YTMMixin:
 
         prev_factor = None
         for factor in instr.factor_schedules.all():
-            if factor.effective_date > instr.maturity_date:
+            if factor.effective_date < d0 or factor.effective_date > instr.maturity_date:
+                prev_factor = factor
                 continue
+
             prev_factor_value = prev_factor.factor_value if prev_factor else 1.0
             factor_value = factor.factor_value
 
-            k = (factor_value - prev_factor_value) * instr.price_multiplier
+            k = (prev_factor_value - factor_value) * instr.price_multiplier
             data.append((factor.effective_date, instr.maturity_price * k))
+
+            prev_factor = factor
 
         factor = instr.get_factor(instr.maturity_date)
         k = instr.price_multiplier * factor

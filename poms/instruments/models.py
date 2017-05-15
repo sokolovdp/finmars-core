@@ -570,7 +570,7 @@ class Instrument(NamedModel, FakeDeletableModel):
         a = None
         for next_a in accruals:
             if a is not None:
-                a.accrual_end_date = next_a.accrual_start_date
+                a.accrual_end_date = next_a.accrual_start_date - timedelta(days=1)
             a = next_a
         if a:
             a.accrual_end_date = self.maturity_date
@@ -702,13 +702,13 @@ class Instrument(NamedModel, FakeDeletableModel):
                             return 0.0, False
 
                     if d >= accrual.accrual_end_date:
-                        d = accrual.accrual_end_date - timedelta(days=1)
+                        d = accrual.accrual_end_date
 
                     if d == cpn_date:
                         val_or_factor = get_coupon(accrual, prev_d, d, maturity_date=self.maturity_date, factor=factor)
                         return val_or_factor, True
 
-                    if d >= accrual.accrual_end_date - timedelta(days=1):
+                    if d >= accrual.accrual_end_date:
                         break
 
                     prev_d = d
@@ -738,12 +738,12 @@ class Instrument(NamedModel, FakeDeletableModel):
                     continue
 
                 if d >= accrual.accrual_end_date:
-                    d = accrual.accrual_end_date - timedelta(days=1)
+                    d = accrual.accrual_end_date
 
                 val_or_factor = get_coupon(accrual, prev_d, d, maturity_date=self.maturity_date, factor=factor)
                 res.append((d, val_or_factor))
 
-                if d == date.max or d >= accrual.accrual_end_date - timedelta(days=1):
+                if d == date.max or d >= accrual.accrual_end_date:
                     break
 
                 prev_d = d
