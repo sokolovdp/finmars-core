@@ -77,6 +77,7 @@ class FullDataCloner(object):
                            'responsible_group',
                            'responsible',
                            'instrument_type',
+                           'instrument',
                            'portfolio',
                            'strategy1_group',
                            'strategy1_subgroup',
@@ -88,6 +89,9 @@ class FullDataCloner(object):
                            'strategy3_subgroup',
                            'strategy3',
                            'thread_group',
+                           'transaction_type_group',
+                           'mismatch_portfolio',
+                           'mismatch_account',
                            'notification_business_days'
                            )
 
