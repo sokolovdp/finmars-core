@@ -1041,7 +1041,7 @@ class Transaction(FakeDeletableModel):
         super(Transaction, self).save(*args, **kwargs)
 
         if calc_cash:
-            self.calc_cash_by_formula()
+            self.calc_cash_by_formulas()
 
     def is_can_calc_cash_by_formulas(self):
         return self.transaction_class_id in [TransactionClass.BUY, TransactionClass.SELL] \
