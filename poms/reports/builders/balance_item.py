@@ -1047,8 +1047,7 @@ class ReportItem(YTMMixin, BaseReportItem):
                 # _l.debug('< instr_accrual: %s', self.instr_accrual)
                 if self.instr_accrual:
                     # _l.debug('> instr_accrual_accrued_price: instr=%s', self.instr.id)
-                    self.instr_accrual_accrued_price = self.instr.get_accrued_price(self.report.report_date,
-                                                                                    accrual=self.instr_accrual)
+                    self.instr_accrual_accrued_price = self.instr.get_accrued_price(self.report.report_date)
                     # _l.debug('< instr_accrual_accrued_price: %s', self.instr_accrual_accrued_price)
             else:
                 self.instr_principal_res = 0.0
