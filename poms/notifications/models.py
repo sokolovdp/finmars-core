@@ -43,7 +43,7 @@ class NotificationSetting(models.Model):
 class Notification(models.Model):
     recipient = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='notifications', blank=False,
                                   verbose_name=ugettext_lazy('recipient'))
-    recipient_member = models.ForeignKey('users.Member', related_name='notifications', null=True,
+    recipient_member = models.ForeignKey('users.Member', related_name='notifications', null=True, blank=True,
                                          verbose_name=ugettext_lazy('recipient member'))
 
     # level = models.PositiveSmallIntegerField(choices=LEVELS, default=messages.INFO)
