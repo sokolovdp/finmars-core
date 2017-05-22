@@ -369,8 +369,8 @@ class FullDataCloner(object):
         #                         'strategy1_groups', 'strategy1_subgroups', 'strategies1', 'strategy2_groups',
         #                         'strategy2_subgroups', 'strategies2', 'strategy3_groups', 'strategy3_subgroups',
         #                         'strategies3', 'thread_groups', )
-        self._simple_list_clone(Tag, 'master_user', 'user_code', 'name', 'short_name', 'public_name', 'notes',
-                                'content_types')
+        self._simple_list_clone(Tag, 'master_user', 'master_user', 'user_code', 'name', 'short_name', 'public_name',
+                                'notes', 'content_types')
 
     def _ui(self):
         self._simple_list_clone(TemplateListLayout, None, 'content_type', 'json_data', 'name', 'is_default',
