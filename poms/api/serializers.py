@@ -59,8 +59,8 @@ class ExpressionSerializer(serializers.Serializer):
     names = serializers.ReadOnlyField()
     is_eval = serializers.BooleanField()
     result = serializers.ReadOnlyField()
-    help_raw = serializers.SerializerMethodField()
-    help = serializers.SerializerMethodField()
+    # help_raw = serializers.SerializerMethodField()
+    # help = serializers.SerializerMethodField()
 
     def __init__(self, *args, **kwargs):
         super(ExpressionSerializer, self).__init__(*args, **kwargs)
