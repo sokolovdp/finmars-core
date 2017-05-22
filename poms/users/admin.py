@@ -76,7 +76,7 @@ class MasterUserAdmin(AbstractModelAdmin):
         'strategy1_group', 'strategy1_subgroup', 'strategy1',
         'strategy2_group', 'strategy2_subgroup', 'strategy2',
         'strategy3_group', 'strategy3_subgroup', 'strategy3',
-        'thread_group', 'mismatch_portfolio', 'mismatch_account',
+        'thread_group', 'transaction_type_group', 'mismatch_portfolio', 'mismatch_account',
     ]
 
     actions = [
