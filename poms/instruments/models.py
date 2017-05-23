@@ -573,7 +573,7 @@ class Instrument(NamedModel, FakeDeletableModel):
                 a.accrual_end_date = next_a.accrual_start_date - timedelta(days=1)
             a = next_a
         if a:
-            a.accrual_end_date = self.maturity_date
+            a.accrual_end_date = self.maturity_date - timedelta(days=1)
 
         return accruals
 
@@ -689,7 +689,7 @@ class Instrument(NamedModel, FakeDeletableModel):
 
         accruals = self.get_accrual_calculation_schedules_all()
         for accrual in accruals:
-            if accrual.accrual_start_date <= cpn_date < accrual.accrual_end_date:
+            if accrual.accrual_start_date <= cpn_date <= accrual.accrual_end_date:
                 prev_d = accrual.accrual_start_date
                 for i in range(0, 3652058):
                     if i == 0:
@@ -822,7 +822,7 @@ class AccrualCalculationSchedule(models.Model):
     instrument = models.ForeignKey(Instrument, related_name='accrual_calculation_schedules',
                                    verbose_name=ugettext_lazy('instrument'))
     accrual_start_date = models.DateField(default=date_now, verbose_name=ugettext_lazy('accrual start date'))
-    accrual_end_date = None
+    accrual_end_date = None # included date
     first_payment_date = models.DateField(default=date_now, verbose_name=ugettext_lazy('first payment date'))
     # TODO: is %
     accrual_size = models.FloatField(default=0.0, verbose_name=ugettext_lazy('accrual size'))
@@ -883,7 +883,7 @@ class EventSchedule(models.Model):
                                     verbose_name=ugettext_lazy('periodicity'))
     periodicity_n = models.IntegerField(default=0, verbose_name=ugettext_lazy('N'))
     # TODO: =see next accrual_calculation_schedule.accrual_start_date or instrument.maturity_date (if last)
-    final_date = models.DateField(default=date.max, verbose_name=ugettext_lazy('final date'))
+    final_date = models.DateField(default=date.max, verbose_name=ugettext_lazy('final date')) # excluded date
 
     is_auto_generated = models.BooleanField(default=False, verbose_name=ugettext_lazy('is auto generated'))
     accrual_calculation_schedule = models.ForeignKey(AccrualCalculationSchedule, null=True, blank=True, editable=False,

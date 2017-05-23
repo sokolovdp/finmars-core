@@ -1903,32 +1903,16 @@ accrual_NL_365_NO_EOM(date(2000, 1, 1), date(2000, 1, 25))
         from poms.users.models import Member
         member = Member.objects.get(user__username='a')
         master_user = member.master_user
-
-        _l.info(safe_eval('get_instrument_accrued_price("testaccruals", "2010-03-10")', context={
+        context = {
             'master_user': master_user,
             'member': member,
-        }))
+        }
 
-        _l.info(safe_eval('get_instrument_accrued_price("testaccruals", "2010-03-10")', context={
-            'master_user': master_user,
-        }))
-
-        _l.info(safe_eval('get_instrument_coupon("testaccruals", "2010-03-10")', context={
-            'master_user': master_user,
-        }))
-
-        _l.info(
-            'get_instrument_factor: 2015-02-01: %s',
-            safe_eval('get_instrument_factor("testaccruals", "2015-02-01")', context={
-                'master_user': master_user,
-            }))
-
-        _l.info(
-            'get_instrument_factor: 2017-02-01: %s',
-            safe_eval('get_instrument_factor("testaccruals", "2017-02-01")', context={
-                'master_user': master_user,
-                'member': member,
-            }))
+        # _l.info('1: %s', safe_eval('get_instrument_accrued_price("petrolios", "2017-11-01")', context=context))
+        # _l.info('2: %s', safe_eval('get_instrument_accrued_price("petrolios", "2017-11-01")', context=context))
+        _l.info('3: %s', safe_eval('get_instrument_coupon("petrolios", "2017-11-01")', context=context))
+        # _l.info('4: %s', safe_eval('get_instrument_factor("petrolios", "2017-11-01")', context=context))
+        # _l.info('5: %s', safe_eval('get_instrument_factor("petrolios", "2017-11-01")', context=context))
 
 
     accrued_test()
