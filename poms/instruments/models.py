@@ -916,8 +916,9 @@ class EventSchedule(models.Model):
 
         def add_date(edate):
             ndate = edate - notify_in_n_days
-            if self.effective_date <= ndate <= self.final_date or self.effective_date <= edate <= self.final_date:
-                dates.append((edate, ndate))
+            # if self.effective_date <= ndate < self.final_date or self.effective_date <= edate < self.final_date:
+            #     dates.append((edate, ndate))
+            dates.append((edate, ndate))
 
         if self.event_class_id == EventClass.ONE_OFF:
             # effective_date = self.effective_date
@@ -937,7 +938,7 @@ class EventSchedule(models.Model):
                     stop = True
 
                 if self.accrual_calculation_schedule_id is not None:
-                    if effective_date > self.final_date:
+                    if effective_date >= self.final_date:
                         # magic date
                         effective_date = self.final_date - timedelta(days=1)
                         stop = True
@@ -947,7 +948,7 @@ class EventSchedule(models.Model):
                 #     dates.append((effective_date, notification_date))
                 add_date(effective_date)
 
-                if stop or effective_date > self.final_date:
+                if stop or effective_date >= self.final_date:
                     break
 
         return dates
@@ -987,24 +988,21 @@ class EventSchedule(models.Model):
         #             break
         #
         # return False, None, None
-        if self.effective_date <= now <= self.final_date:
-            for edate, ndate in self.all_dates:
-                if edate == now or ndate == now:
-                    return True, edate, ndate
+        for edate, ndate in self.all_dates:
+            if edate == now or ndate == now:
+                return True, edate, ndate
         return False, None, None
 
     def check_effective_date(self, now):
-        if self.effective_date <= now <= self.final_date:
-            for edate, ndate in self.all_dates:
-                if edate == now:
-                    return True, edate, ndate
+        for edate, ndate in self.all_dates:
+            if edate == now:
+                return True, edate, ndate
         return False, None, None
 
     def check_notification_date(self, now):
-        if self.effective_date <= now <= self.final_date:
-            for edate, ndate in self.all_dates:
-                if ndate == now:
-                    return True, edate, ndate
+        for edate, ndate in self.all_dates:
+            if ndate == now:
+                return True, edate, ndate
         return False, None, None
 
 
