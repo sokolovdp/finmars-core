@@ -1,14 +1,41 @@
 from datetime import timedelta, date
 
+from random import random
+
 from poms.common.utils import date_now
 
 
 class PerformanceReportItem:
     def __init__(self,
                  report,
+                 portfolio=None,
+                 account=None,
+                 strategy1=None,
+                 strategy2=None,
+                 strategy3=None,
                  ):
         self.report = report
         self.id = None
+
+        self.portfolio = portfolio
+        self.account = account
+        self.strategy1 = strategy1
+        self.strategy2 = strategy2
+        self.strategy3 = strategy3
+
+        self.return_pl = random()
+        self.return_nav = random()
+        self.pl_in_period = random()
+        self.nav_change = random()
+        self.nav_period_start = random()
+        self.nav_period_end = random()
+        self.cash_inflows = random()
+        self.cash_outflows = random()
+        self.time_weighted_cash_inflows = random()
+        self.time_weighted_cash_outflows = random()
+        self.avg_nav_in_period = random()
+        self.cumulative_return_pl = random()
+        self.cumulative_return_nav = random()
 
         self.custom_fields = []
 
@@ -81,4 +108,3 @@ class PerformanceReport:
     def close(self):
         for item in self.items:
             item.eval_custom_fields()
-

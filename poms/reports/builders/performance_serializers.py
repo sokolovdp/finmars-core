@@ -24,6 +24,26 @@ from poms.users.fields import MasterUserField, HiddenMemberField
 class PerformanceReportItemSerializer(serializers.Serializer):
     id = serializers.ReadOnlyField()
 
+    portfolio = serializers.PrimaryKeyRelatedField(read_only=True)
+    account = serializers.PrimaryKeyRelatedField(read_only=True)
+    strategy1 = serializers.PrimaryKeyRelatedField(read_only=True)
+    strategy2 = serializers.PrimaryKeyRelatedField(read_only=True)
+    strategy3 = serializers.PrimaryKeyRelatedField(read_only=True)
+
+    return_pl = serializers.FloatField(read_only=True)
+    return_nav = serializers.FloatField(read_only=True)
+    pl_in_period = serializers.FloatField(read_only=True)
+    nav_change = serializers.FloatField(read_only=True)
+    nav_period_start = serializers.FloatField(read_only=True)
+    nav_period_end = serializers.FloatField(read_only=True)
+    cash_inflows = serializers.FloatField(read_only=True)
+    cash_outflows = serializers.FloatField(read_only=True)
+    time_weighted_cash_inflows = serializers.FloatField(read_only=True)
+    time_weighted_cash_outflows = serializers.FloatField(read_only=True)
+    avg_nav_in_period = serializers.FloatField(read_only=True)
+    cumulative_return_pl = serializers.FloatField(read_only=True)
+    cumulative_return_nav = serializers.FloatField(read_only=True)
+
     def __init__(self, *args, **kwargs):
         kwargs.setdefault('read_only', True)
 
