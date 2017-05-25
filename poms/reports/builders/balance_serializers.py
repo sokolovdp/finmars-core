@@ -350,13 +350,13 @@ class ReportSerializer(serializers.Serializer):
 
     master_user = MasterUserField()
     member = HiddenMemberField()
-    pricing_policy = PricingPolicyField()
     pl_first_date = serializers.DateField(required=False, allow_null=True,
                                           help_text=ugettext_lazy('First date for pl report'))
     report_type = serializers.ChoiceField(read_only=True, choices=Report.TYPE_CHOICES)
     report_date = serializers.DateField(required=False, allow_null=True, default=date_now,
                                         help_text=ugettext_lazy('Report date or second date for pl report'))
     report_currency = CurrencyField(required=False, allow_null=True, default=SystemCurrencyDefault())
+    pricing_policy = PricingPolicyField()
     cost_method = serializers.PrimaryKeyRelatedField(queryset=CostMethod.objects, allow_null=True, allow_empty=True)
 
     portfolio_mode = serializers.ChoiceField(default=Report.MODE_INDEPENDENT, initial=Report.MODE_INDEPENDENT,
@@ -378,6 +378,8 @@ class ReportSerializer(serializers.Serializer):
 
     portfolios = PortfolioField(many=True, required=False, allow_null=True, allow_empty=True)
     accounts = AccountField(many=True, required=False, allow_null=True, allow_empty=True)
+    accounts_position = AccountField(many=True, required=False, allow_null=True, allow_empty=True)
+    accounts_cash = AccountField(many=True, required=False, allow_null=True, allow_empty=True)
     strategies1 = Strategy1Field(many=True, required=False, allow_null=True, allow_empty=True)
     strategies2 = Strategy2Field(many=True, required=False, allow_null=True, allow_empty=True)
     strategies3 = Strategy3Field(many=True, required=False, allow_null=True, allow_empty=True)
@@ -396,11 +398,12 @@ class ReportSerializer(serializers.Serializer):
     cost_method_object = CostMethodSerializer(source='cost_method', read_only=True)
     portfolios_object = PortfolioViewSerializer(source='portfolios', read_only=True, many=True)
     accounts_object = AccountViewSerializer(source='accounts', read_only=True, many=True)
+    accounts_position_object = AccountViewSerializer(source='accounts_position', read_only=True, many=True)
+    accounts_cash_object = AccountViewSerializer(source='accounts_cash', read_only=True, many=True)
     strategies1_object = Strategy1ViewSerializer(source='strategies1', read_only=True, many=True)
     strategies2_object = Strategy2ViewSerializer(source='strategies2', read_only=True, many=True)
     strategies3_object = Strategy3ViewSerializer(source='strategies3', read_only=True, many=True)
-    custom_fields_object = CustomFieldViewSerializer(source='custom_fields', read_only=True,
-                                                     many=True)
+    custom_fields_object = CustomFieldViewSerializer(source='custom_fields', read_only=True, many=True)
     transaction_classes_object = TransactionClassSerializer(source='transaction_classes',
                                                             read_only=True, many=True)
 

@@ -4,14 +4,11 @@ import time
 from collections import Counter, defaultdict
 from datetime import date, timedelta
 from itertools import groupby
-from math import isnan
 
 from django.conf import settings
 from django.db.models import Q
 from django.utils.functional import cached_property
 
-from poms.common.formula_accruals import f_xirr
-from poms.common.formula_accruals import get_coupon, f_duration
 from poms.common.utils import isclose
 from poms.instruments.models import CostMethod, InstrumentClass
 from poms.reports.builders.balance_item import ReportItem, Report
@@ -338,6 +335,12 @@ class ReportBuilder(BaseReportBuilder):
             kw_filters['account_position__in'] = self.instance.accounts
             kw_filters['account_cash__in'] = self.instance.accounts
             kw_filters['account_interim__in'] = self.instance.accounts
+
+        if self.instance.accounts_position:
+            kw_filters['account_position__in'] = self.instance.accounts_position
+
+        if self.instance.accounts_position:
+            kw_filters['account_cash__in'] = self.instance.accounts_cash
 
         if self.instance.strategies1:
             kw_filters['strategy1_position__in'] = self.instance.strategies1

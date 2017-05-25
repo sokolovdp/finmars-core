@@ -3,13 +3,19 @@ from __future__ import unicode_literals
 from django.utils.translation import ugettext
 from rest_framework import serializers
 
+from poms.accounts.fields import AccountField
+from poms.accounts.serializers import AccountViewSerializer
 from poms.common import formula
+from poms.portfolios.fields import PortfolioField
+from poms.portfolios.serializers import PortfolioViewSerializer
 from poms.reports.builders.base_serializers import ReportItemCustomFieldSerializer, ReportPortfolioSerializer, \
     ReportAccountSerializer, ReportStrategy1Serializer, ReportStrategy2Serializer, ReportStrategy3Serializer, \
     ReportInstrumentSerializer, ReportCurrencySerializer, CustomFieldViewSerializer, ReportGenericAttributeSerializer, \
     ReportComplexTransactionSerializer, ReportResponsibleSerializer, ReportCounterpartySerializer
 from poms.reports.builders.transaction_item import TransactionReport
 from poms.reports.fields import CustomFieldField
+from poms.strategies.fields import Strategy1Field, Strategy2Field, Strategy3Field
+from poms.strategies.serializers import Strategy1ViewSerializer, Strategy2ViewSerializer, Strategy3ViewSerializer
 from poms.transactions.serializers import TransactionClassSerializer
 from poms.users.fields import MasterUserField, HiddenMemberField
 
@@ -70,27 +76,39 @@ class TransactionReportSerializer(serializers.Serializer):
 
     master_user = MasterUserField()
     member = HiddenMemberField()
-
     begin_date = serializers.DateField(required=False, allow_null=True)
     end_date = serializers.DateField(required=False, allow_null=True)
-
+    portfolios = PortfolioField(many=True, required=False, allow_null=True, allow_empty=True)
+    accounts = AccountField(many=True, required=False, allow_null=True, allow_empty=True)
+    accounts_position = AccountField(many=True, required=False, allow_null=True, allow_empty=True)
+    accounts_cash = AccountField(many=True, required=False, allow_null=True, allow_empty=True)
+    strategies1 = Strategy1Field(many=True, required=False, allow_null=True, allow_empty=True)
+    strategies2 = Strategy2Field(many=True, required=False, allow_null=True, allow_empty=True)
+    strategies3 = Strategy3Field(many=True, required=False, allow_null=True, allow_empty=True)
     custom_fields = CustomFieldField(many=True, allow_empty=True, allow_null=True, required=False)
 
-    items = TransactionReportItemSerializer(many=True, read_only=True)
+    portfolios_object = PortfolioViewSerializer(source='portfolios', read_only=True, many=True)
+    accounts_object = AccountViewSerializer(source='accounts', read_only=True, many=True)
+    accounts_position_object = AccountViewSerializer(source='accounts_position', read_only=True, many=True)
+    accounts_cash_object = AccountViewSerializer(source='accounts_cash', read_only=True, many=True)
+    strategies1_object = Strategy1ViewSerializer(source='strategies1', read_only=True, many=True)
+    strategies2_object = Strategy2ViewSerializer(source='strategies2', read_only=True, many=True)
+    strategies3_object = Strategy3ViewSerializer(source='strategies3', read_only=True, many=True)
+    custom_fields_object = CustomFieldViewSerializer(source='custom_fields', read_only=True, many=True)
 
-    item_transaction_classes = TransactionClassSerializer(source='transaction_classes', many=True, read_only=True)
-    item_complex_transactions = ReportComplexTransactionSerializer(source='complex_transactions', many=True,
-                                                                   read_only=True)
+    items = TransactionReportItemSerializer(many=True, read_only=True)
+    item_transaction_classes = TransactionClassSerializer(many=True, read_only=True)
+    item_complex_transactions = ReportComplexTransactionSerializer(many=True, read_only=True)
     # item_transaction_types = TransactionTypeViewSerializer(source='transaction_types', many=True, read_only=True)
-    item_instruments = ReportInstrumentSerializer(source='instruments', many=True, read_only=True)
-    item_currencies = ReportCurrencySerializer(source='currencies', many=True, read_only=True)
-    item_portfolios = ReportPortfolioSerializer(source='portfolios', many=True, read_only=True)
-    item_accounts = ReportAccountSerializer(source='accounts', many=True, read_only=True)
-    item_strategies1 = ReportStrategy1Serializer(source='strategies1', many=True, read_only=True)
-    item_strategies2 = ReportStrategy2Serializer(source='strategies2', many=True, read_only=True)
-    item_strategies3 = ReportStrategy3Serializer(source='strategies3', many=True, read_only=True)
-    item_responsibles = ReportResponsibleSerializer(source='responsibles', many=True, read_only=True)
-    item_counterparties = ReportCounterpartySerializer(source='counterparties', many=True, read_only=True)
+    item_instruments = ReportInstrumentSerializer(many=True, read_only=True)
+    item_currencies = ReportCurrencySerializer(many=True, read_only=True)
+    item_portfolios = ReportPortfolioSerializer(many=True, read_only=True)
+    item_accounts = ReportAccountSerializer(many=True, read_only=True)
+    item_strategies1 = ReportStrategy1Serializer(many=True, read_only=True)
+    item_strategies2 = ReportStrategy2Serializer(many=True, read_only=True)
+    item_strategies3 = ReportStrategy3Serializer(many=True, read_only=True)
+    item_responsibles = ReportResponsibleSerializer(many=True, read_only=True)
+    item_counterparties = ReportCounterpartySerializer(many=True, read_only=True)
 
     # item_complex_transaction_attribute_types = ReportGenericAttributeTypeSerializer(source='complex_transaction_attribute_types', many=True, read_only=True, show_classifiers=True)
     # item_transaction_attribute_types = ReportGenericAttributeTypeSerializer(source='transaction_attribute_types', many=True, read_only=True, show_classifiers=True)
@@ -125,8 +143,8 @@ class TransactionReportSerializer(serializers.Serializer):
     def __init__(self, *args, **kwargs):
         super(TransactionReportSerializer, self).__init__(*args, **kwargs)
 
-        self.fields['custom_fields_object'] = CustomFieldViewSerializer(source='custom_fields', read_only=True,
-                                                                        many=True)
+        # self.fields['custom_fields_object'] = CustomFieldViewSerializer(source='custom_fields', read_only=True,
+        #                                                                 many=True)
 
     def create(self, validated_data):
         return TransactionReport(**validated_data)

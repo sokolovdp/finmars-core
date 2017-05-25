@@ -2145,6 +2145,8 @@ class Report(object):
                  instruments=None,
                  portfolios=None,
                  accounts=None,
+                 accounts_position=None,
+                 accounts_cash=None,
                  strategies1=None,
                  strategies2=None,
                  strategies3=None,
@@ -2162,11 +2164,11 @@ class Report(object):
             'master_user': self.master_user,
             'member': self.member,
         }
+        self.report_type = report_type if report_type is not None else Report.TYPE_BALANCE
+        self.report_currency = report_currency or master_user.system_currency
         self.pricing_policy = pricing_policy
         self.pl_first_date = pl_first_date
-        self.report_type = report_type if report_type is not None else Report.TYPE_BALANCE
         self.report_date = report_date or (date_now() - timedelta(days=1))
-        self.report_currency = report_currency or master_user.system_currency
         self.cost_method = cost_method or CostMethod.objects.get(pk=CostMethod.AVCO)
 
         self.portfolio_mode = portfolio_mode
@@ -2183,9 +2185,12 @@ class Report(object):
         self.instruments = instruments or []
         self.portfolios = portfolios or []
         self.accounts = accounts or []
+        self.accounts_position = accounts_position or []
+        self.accounts_cash = accounts_cash or []
         self.strategies1 = strategies1 or []
         self.strategies2 = strategies2 or []
         self.strategies3 = strategies3 or []
+
         self.transaction_classes = transaction_classes or []
         # self.date_field = date_field or 'transaction_date'
         if date_field:

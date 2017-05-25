@@ -164,17 +164,54 @@ class TransactionReportBuilder(BaseReportBuilder):
             get_attributes_prefetch('linked_instrument__attributes'),
             get_attributes_prefetch('allocation_balance__attributes'),
             get_attributes_prefetch('allocation_pl__attributes'),
-        ).order_by(
-            'complex_transaction__date', 'complex_transaction__code', 'transaction_code'
         )
-        # if settings.DEBUG:
-        #     qs = qs.filter(id__gt=1000)
-        begin_date = getattr(self.instance, 'begin_date', None)
-        if begin_date:
-            qs = qs.filter(complex_transaction__date__gte=begin_date)
-        end_date = getattr(self.instance, 'end_date', None)
-        if end_date:
-            qs = qs.filter(complex_transaction__date__lte=end_date)
+
+        a_filters = [
+            Q(complex_transaction__isnull=True) | Q(complex_transaction__status=ComplexTransaction.PRODUCTION,
+                                                    complex_transaction__is_deleted=False)
+        ]
+        kw_filters = {
+            'master_user': self.instance.master_user,
+            'is_deleted': False,
+        }
+
+        if self.instance.begin_date:
+            # a_filters.append(Q(complex_transaction__date__gte=self.instance.begin_date))
+            kw_filters['complex_transaction__date__gte'] = self.instance.begin_date
+
+        if self.instance.end_date:
+            # a_filters.append(Q(complex_transaction__date__lte=self.instance.end_date))
+            kw_filters['complex_transaction__date__lte'] = self.instance.end_date
+
+        if self.instance.portfolios:
+            kw_filters['portfolio__in'] = self.instance.portfolios
+
+        if self.instance.accounts:
+            kw_filters['account_position__in'] = self.instance.accounts
+            kw_filters['account_cash__in'] = self.instance.accounts
+            kw_filters['account_interim__in'] = self.instance.accounts
+
+        if self.instance.accounts_position:
+            kw_filters['account_position__in'] = self.instance.accounts_position
+
+        if self.instance.accounts_position:
+            kw_filters['account_cash__in'] = self.instance.accounts_cash
+
+        if self.instance.strategies1:
+            kw_filters['strategy1_position__in'] = self.instance.strategies1
+            kw_filters['strategy1_cash__in'] = self.instance.strategies1
+
+        if self.instance.strategies2:
+            kw_filters['strategy2_position__in'] = self.instance.strategies2
+            kw_filters['strategy2_cash__in'] = self.instance.strategies2
+
+        if self.instance.strategies3:
+            kw_filters['strategy3_position__in'] = self.instance.strategies3
+            kw_filters['strategy3_cash__in'] = self.instance.strategies3
+
+        qs = qs.filter(*a_filters, **kw_filters)
+
+        qs = qs.order_by('complex_transaction__date', 'complex_transaction__code', 'transaction_code')
 
         from poms.transactions.filters import TransactionObjectPermissionFilter
         qs = TransactionObjectPermissionFilter.filter_qs(qs, self.instance.master_user, self.instance.member)
@@ -350,7 +387,7 @@ class TransactionReportBuilder(BaseReportBuilder):
     def _refresh_from_db(self):
         _l.info('> _refresh_from_db')
 
-        self.instance.complex_transactions = self._refresh_complex_transactions(
+        self.instance.item_complex_transactions = self._refresh_complex_transactions(
             master_user=self.instance.master_user,
             items=self.instance.items,
             attrs=['complex_transaction']
@@ -361,60 +398,60 @@ class TransactionReportBuilder(BaseReportBuilder):
         #     attrs=['complex_transaction']
         # )
 
-        self.instance.transaction_classes = self._refresh_transaction_classes(
+        self.instance.item_transaction_classes = self._refresh_transaction_classes(
             master_user=self.instance.master_user,
             items=self.instance.items,
             attrs=['transaction_class']
         )
 
-        self.instance.instruments = self._refresh_instruments(
+        self.instance.item_instruments = self._refresh_instruments(
             master_user=self.instance.master_user,
             items=self.instance.items,
             attrs=['instrument', 'linked_instrument', 'allocation_balance', 'allocation_pl']
         )
 
-        self.instance.currencies = self._refresh_currencies(
+        self.instance.item_currencies = self._refresh_currencies(
             master_user=self.instance.master_user,
             items=self.instance.items,
             attrs=['transaction_currency', 'settlement_currency']
         )
 
-        self.instance.portfolios = self._refresh_portfolios(
+        self.instance.item_portfolios = self._refresh_portfolios(
             master_user=self.instance.master_user,
             items=self.instance.items,
             attrs=['portfolio']
         )
 
-        self.instance.accounts = self._refresh_accounts(
+        self.instance.item_accounts = self._refresh_accounts(
             master_user=self.instance.master_user,
             items=self.instance.items,
             attrs=['account_position', 'account_cash', 'account_interim']
         )
 
-        self.instance.strategies1 = self._refresh_strategies1(
+        self.instance.item_strategies1 = self._refresh_strategies1(
             master_user=self.instance.master_user,
             items=self.instance.items,
             attrs=['strategy1_position', 'strategy1_cash']
         )
 
-        self.instance.strategies2 = self._refresh_strategies2(
+        self.instance.item_strategies2 = self._refresh_strategies2(
             master_user=self.instance.master_user,
             items=self.instance.items,
             attrs=['strategy2_position', 'strategy2_cash']
         )
 
-        self.instance.strategies3 = self._refresh_strategies3(
+        self.instance.item_strategies3 = self._refresh_strategies3(
             master_user=self.instance.master_user,
             items=self.instance.items,
             attrs=['strategy3_position', 'strategy3_cash']
         )
 
-        self.instance.counterparties = self._refresh_counterparties(
+        self.instance.item_counterparties = self._refresh_counterparties(
             master_user=self.instance.master_user,
             items=self.instance.items,
             attrs=['counterparty']
         )
-        self.instance.responsibles = self._refresh_responsibles(
+        self.instance.item_responsibles = self._refresh_responsibles(
             master_user=self.instance.master_user,
             items=self.instance.items,
             attrs=['responsible']

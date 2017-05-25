@@ -164,8 +164,23 @@ class TransactionReportItem:
 
 
 class TransactionReport:
-    def __init__(self, id=None, task_id=None, task_status=None, master_user=None, member=None,
-                 begin_date=None, end_date=None, custom_fields=None, items=None):
+    def __init__(self,
+                 id=None,
+                 task_id=None,
+                 task_status=None,
+                 master_user=None,
+                 member=None,
+                 begin_date=None,
+                 end_date=None,
+                 portfolios=None,
+                 accounts=None,
+                 accounts_position=None,
+                 accounts_cash=None,
+                 strategies1=None,
+                 strategies2=None,
+                 strategies3=None,
+                 custom_fields=None,
+                 items=None):
         self.has_errors = False
         self.id = id
         self.task_id = task_id
@@ -174,6 +189,13 @@ class TransactionReport:
         self.member = member
         self.begin_date = begin_date
         self.end_date = end_date
+        self.portfolios = portfolios or []
+        self.accounts = accounts or []
+        self.accounts_position = accounts_position or []
+        self.accounts_cash = accounts_cash or []
+        self.strategies1 = strategies1 or []
+        self.strategies2 = strategies2 or []
+        self.strategies3 = strategies3 or []
         self.custom_fields = custom_fields or []
 
         self.context = {
@@ -183,27 +205,18 @@ class TransactionReport:
 
         self.items = items
 
-        self.complex_transactions = []
-        self.transaction_types = []
-        self.transaction_classes = []
-        self.instruments = []
-        self.currencies = []
-        self.portfolios = []
-        self.accounts = []
-        self.strategies1 = []
-        self.strategies2 = []
-        self.strategies3 = []
-        self.responsibles = []
-        self.counterparties = []
-
-        # self.complex_transaction_attribute_types = []
-        # self.transaction_attribute_types = []
-        # self.instrument_attribute_types = []
-        # self.currency_attribute_types = []
-        # self.portfolio_attribute_types = []
-        # self.account_attribute_types = []
-        # self.responsible_attribute_types = []
-        # self.counterparty_attribute_types = []
+        self.item_transaction_classes = []
+        self.item_complex_transactions = []
+        self.item_transaction_types = []
+        self.item_instruments = []
+        self.item_currencies = []
+        self.item_portfolios = []
+        self.item_accounts = []
+        self.item_strategies1 = []
+        self.item_strategies2 = []
+        self.item_strategies3 = []
+        self.item_responsibles = []
+        self.item_counterparties = []
 
     def __str__(self):
         return 'TransactionReport:%s' % self.id

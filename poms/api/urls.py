@@ -137,6 +137,8 @@ router.register(r'reports/pl-report', reports.PLReportViewSet, "pl-report")
 router.register(r'reports/transaction-report', reports.TransactionReportViewSet, "transaction-report")
 router.register(r'reports/cash-flow-projection-report', reports.CashFlowProjectionReportViewSet,
                 "cash-flow-projection-report")
+router.register(r'reports/performance-report', reports.PerformanceReportViewSet, "performance-report")
+
 
 router.register(r'notifications/notification', notifications.NotificationViewSet)
 
