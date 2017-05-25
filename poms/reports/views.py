@@ -8,10 +8,12 @@ from poms.common.filters import NoOpFilter, CharFilter
 from poms.common.views import AbstractModelViewSet, AbstractAsyncViewSet
 from poms.reports.builders.balance_serializers import BalanceReportSerializer, PLReportSerializer
 from poms.reports.builders.cash_flow_projection_serializers import CashFlowProjectionReportSerializer
+from poms.reports.builders.performance_serializers import PerformanceReportSerializer
 from poms.reports.builders.transaction_serializers import TransactionReportSerializer
 from poms.reports.models import CustomField
 from poms.reports.serializers import CustomFieldSerializer
-from poms.reports.tasks import balance_report, pl_report, transaction_report, cash_flow_projection_report
+from poms.reports.tasks import balance_report, pl_report, transaction_report, cash_flow_projection_report, \
+    performance_report
 from poms.users.filters import OwnerByMasterUserFilter
 
 _l = logging.getLogger('poms.reports')
@@ -70,3 +72,8 @@ class CashFlowProjectionReportViewSet(AbstractAsyncViewSet):
         context['attributes_hide_objects'] = True
         context['custom_fields_hide_objects'] = True
         return context
+
+
+class PerformanceReportViewSet(AbstractAsyncViewSet):
+    serializer_class = PerformanceReportSerializer
+    celery_task = performance_report
