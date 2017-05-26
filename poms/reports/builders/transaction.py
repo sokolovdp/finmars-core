@@ -279,7 +279,7 @@ class TransactionReportBuilder(BaseReportBuilder):
 
         self._transactions = list(qs)
 
-        _l.debug('< _load %s', len(self._transactions))
+        _l.debug('< _load: %s', len(self._transactions))
 
     # def _set_trns_refs(self, transactions):
     #     # make all refs to single object
