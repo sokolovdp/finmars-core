@@ -488,8 +488,8 @@ def _date_group(evaluator, val, ranges, default=None):
     # _l.info('_date_group: val=%s', val)
 
     def _make_name(begin, end, fmt):
-        if end != datetime.date.max:
-            end -= datetime.timedelta(days=1)
+        # if end != datetime.date.max:
+        #     end -= datetime.timedelta(days=1)
         if isinstance(fmt, (list, tuple)):
             ifmt = iter(fmt)
             s1 = str(next(ifmt, '') or '')
@@ -500,11 +500,16 @@ def _date_group(evaluator, val, ranges, default=None):
             s6 = str(next(ifmt, '') or '')
             sbegin = _format_date(begin, begin_fmt) if begin_fmt else ''
             send = _format_date(end, end_fmt) if end_fmt else ''
-            return ''.join([s1, sbegin, s3, s4, send, s6])
+            ret = ''.join([s1, sbegin, s3, s4, send, s6])
         else:
-            return str(fmt)
+            ret = str(fmt)
+        if evaluator.context.get('date_group_with_dates', False):
+            return ret, begin, end
+        return ret
 
     for begin, end, step, fmt in ranges:
+        evaluator.check_time()
+
         if not begin:
             # begin = datetime.date.min
             begin = datetime.date(1900, 1, 1)
@@ -517,33 +522,23 @@ def _date_group(evaluator, val, ranges, default=None):
         else:
             end = _parse_date(end)
 
-        if begin < val <= end:
+        if begin <= val <= end:
             if step:
                 if not isinstance(step, (datetime.timedelta, relativedelta.relativedelta,)):
                     step = _timedelta(days=step)
                 # _l.info('start=%s, end=%s, step=%s', start, end, step)
 
-                lbegin = begin
-                while lbegin < end:
-                    lend = lbegin + step
-                    # _l.info('  lstart=%s, lend=%s', lstart, lend)
-                    if lbegin < val <= lend:
-                        # if isinstance(fmt, (list, tuple)):
-                        #     ifmt = iter(fmt)
-                        #     s1 = str(next(ifmt, ''))
-                        #     start_fmt = str(next(ifmt, ''))
-                        #     s3 = str(next(ifmt, ''))
-                        #     s4 = str(next(ifmt, ''))
-                        #     end_fmt = str(next(ifmt, ''))
-                        #     s6 = str(next(ifmt, ''))
-                        #     sstart = _format_date(lstart, start_fmt) if start_fmt else ''
-                        #     send = _format_date(lend, end_fmt) if end_fmt else ''
-                        #     return ''.join([s1, sstart, s3, s4, send, s6])
-                        # else:
-                        #     return str(fmt)
-                        return _make_name(lbegin, lend, fmt)
-                    lbegin = lend
+                ld = begin
+                while ld < end:
                     evaluator.check_time()
+                    lbegin = ld
+                    lend = ld + step - datetime.timedelta(days=1)
+                    if lend > end:
+                        lend = end
+                    # _l.info('  lstart=%s, lend=%s', lbegin, lend)
+                    if lbegin <= val <= lend:
+                        return _make_name(lbegin, lend, fmt)
+                    ld = ld + step
             else:
                 return _make_name(begin, end, fmt)
 
@@ -1946,7 +1941,7 @@ accrual_NL_365_NO_EOM(date(2000, 1, 1), date(2000, 1, 25))
                                      '], "o3")'))
 
         _l.info('110: %s', safe_eval('date_group("2000-11-21", ['
-                                     '["2000-01-01","2001-01-01",10, ["<","%Y-%m-%d-%B",">","<","%Y-%m-%d",">"]],'
+                                     '["2000-01-01","2001-01-01", 10, ["<","%Y-%m-%d-%B",">","<","%Y-%m-%d",">"]],'
                                      '["2000-01-01","2002-01-01",timedelta(months=1, day=31),"o2"]'
                                      '], "o3")'))
 
