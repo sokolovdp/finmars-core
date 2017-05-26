@@ -5,7 +5,7 @@ from django.utils.translation import ugettext_lazy, ugettext
 
 from poms.common.utils import isclose, date_now
 from poms.instruments.models import CostMethod
-from poms.reports.builders.base_item import BaseReportItem, YTMMixin
+from poms.reports.builders.base_item import BaseReportItem, YTMMixin, BaseReport
 from poms.transactions.models import TransactionClass
 
 _l = logging.getLogger('poms.reports')
@@ -2103,21 +2103,12 @@ class ReportItem(YTMMixin, BaseReportItem):
         return all(isclose(v, 0.0) for v in values)
 
 
-class Report(object):
+class Report(BaseReport):
     TYPE_BALANCE = 1
     TYPE_PL = 2
     TYPE_CHOICES = (
         (TYPE_BALANCE, 'Balance'),
         (TYPE_PL, 'P&L'),
-    )
-
-    MODE_IGNORE = 0
-    MODE_INDEPENDENT = 1
-    MODE_INTERDEPENDENT = 2
-    MODE_CHOICES = (
-        (MODE_IGNORE, 'Ignore'),
-        (MODE_INDEPENDENT, 'Independent'),
-        (MODE_INTERDEPENDENT, 'Offsetting (Interdependent - 0/100, 100/0, 50/50)'),
     )
 
     def __init__(self,
@@ -2132,12 +2123,12 @@ class Report(object):
                  report_currency=None,
                  pricing_policy=None,
                  cost_method=None,
-                 portfolio_mode=MODE_INDEPENDENT,
-                 account_mode=MODE_INDEPENDENT,
-                 strategy1_mode=MODE_INDEPENDENT,
-                 strategy2_mode=MODE_INDEPENDENT,
-                 strategy3_mode=MODE_INDEPENDENT,
-                 allocation_mode=MODE_INDEPENDENT,
+                 portfolio_mode=BaseReport.MODE_INDEPENDENT,
+                 account_mode=BaseReport.MODE_INDEPENDENT,
+                 strategy1_mode=BaseReport.MODE_INDEPENDENT,
+                 strategy2_mode=BaseReport.MODE_INDEPENDENT,
+                 strategy3_mode=BaseReport.MODE_INDEPENDENT,
+                 allocation_mode=BaseReport.MODE_INDEPENDENT,
                  show_transaction_details=False,
                  approach_multiplier=0.5,
                  allocation_detailing=True,
@@ -2154,16 +2145,19 @@ class Report(object):
                  date_field=None,
                  custom_fields=None,
                  items=None):
-        self.id = id
-        self.task_id = task_id
-        self.task_status = task_status
+        super(Report, self).__init__(id=id, master_user=master_user, member=member,
+                                     task_id=task_id, task_status=task_status)
 
-        self.master_user = master_user
-        self.member = member
-        self.context = {
-            'master_user': self.master_user,
-            'member': self.member,
-        }
+        # self.id = id
+        # self.task_id = task_id
+        # self.task_status = task_status
+        # self.master_user = master_user
+        # self.member = member
+        # self.context = {
+        #     'master_user': self.master_user,
+        #     'member': self.member,
+        # }
+
         self.report_type = report_type if report_type is not None else Report.TYPE_BALANCE
         self.report_currency = report_currency or master_user.system_currency
         self.pricing_policy = pricing_policy

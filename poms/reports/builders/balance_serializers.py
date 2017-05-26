@@ -359,16 +359,32 @@ class ReportSerializer(serializers.Serializer):
     pricing_policy = PricingPolicyField()
     cost_method = serializers.PrimaryKeyRelatedField(queryset=CostMethod.objects, allow_null=True, allow_empty=True)
 
-    portfolio_mode = serializers.ChoiceField(default=Report.MODE_INDEPENDENT, initial=Report.MODE_INDEPENDENT,
-                                             choices=Report.MODE_CHOICES, required=False)
-    account_mode = serializers.ChoiceField(default=Report.MODE_INDEPENDENT, initial=Report.MODE_INDEPENDENT,
-                                           choices=Report.MODE_CHOICES, required=False)
-    strategy1_mode = serializers.ChoiceField(default=Report.MODE_INDEPENDENT, initial=Report.MODE_INDEPENDENT,
-                                             choices=Report.MODE_CHOICES, required=False)
-    strategy2_mode = serializers.ChoiceField(default=Report.MODE_INDEPENDENT, initial=Report.MODE_INDEPENDENT,
-                                             choices=Report.MODE_CHOICES, required=False)
-    strategy3_mode = serializers.ChoiceField(default=Report.MODE_INDEPENDENT, initial=Report.MODE_INDEPENDENT,
-                                             choices=Report.MODE_CHOICES, required=False)
+    portfolio_mode = serializers.ChoiceField(default=Report.MODE_INDEPENDENT,
+                                             initial=Report.MODE_INDEPENDENT,
+                                             choices=Report.MODE_CHOICES,
+                                             required=False,
+                                             help_text='Portfolio consolidation')
+    account_mode = serializers.ChoiceField(default=Report.MODE_INDEPENDENT,
+                                           initial=Report.MODE_INDEPENDENT,
+                                           choices=Report.MODE_CHOICES,
+                                           required=False,
+                                           help_text='Account consolidation')
+    strategy1_mode = serializers.ChoiceField(default=Report.MODE_INDEPENDENT,
+                                             initial=Report.MODE_INDEPENDENT,
+                                             choices=Report.MODE_CHOICES,
+                                             required=False,
+                                             help_text='Strategy1 consolidation')
+    strategy2_mode = serializers.ChoiceField(default=Report.MODE_INDEPENDENT,
+                                             initial=Report.MODE_INDEPENDENT,
+                                             choices=Report.MODE_CHOICES,
+                                             required=False,
+                                             help_text='Strategy2 consolidation')
+    strategy3_mode = serializers.ChoiceField(default=Report.MODE_INDEPENDENT,
+                                             initial=Report.MODE_INDEPENDENT,
+                                             choices=Report.MODE_CHOICES,
+                                             required=False,
+                                             help_text='Strategy3 consolidation')
+
     show_transaction_details = serializers.BooleanField(default=False, initial=False)
     approach_multiplier = serializers.FloatField(default=0.5, initial=0.5, min_value=0.0, max_value=1.0, required=False)
     allocation_detailing = serializers.BooleanField(default=True, initial=True)

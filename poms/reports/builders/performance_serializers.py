@@ -61,6 +61,33 @@ class PerformanceReportSerializer(serializers.Serializer):
     periods = ExpressionField(required=False, allow_blank=False, default='""')
     report_currency = CurrencyField(required=False, allow_null=True, default=SystemCurrencyDefault())
     pricing_policy = PricingPolicyField()
+
+    portfolio_mode = serializers.ChoiceField(default=PerformanceReport.MODE_INDEPENDENT,
+                                             initial=PerformanceReport.MODE_INDEPENDENT,
+                                             choices=PerformanceReport.MODE_CHOICES,
+                                             required=False,
+                                             help_text='Portfolio consolidation')
+    account_mode = serializers.ChoiceField(default=PerformanceReport.MODE_INDEPENDENT,
+                                           initial=PerformanceReport.MODE_INDEPENDENT,
+                                           choices=PerformanceReport.MODE_CHOICES,
+                                           required=False,
+                                           help_text='Account consolidation')
+    strategy1_mode = serializers.ChoiceField(default=PerformanceReport.MODE_INDEPENDENT,
+                                             initial=PerformanceReport.MODE_INDEPENDENT,
+                                             choices=PerformanceReport.MODE_CHOICES,
+                                             required=False,
+                                             help_text='Strategy1 consolidation')
+    strategy2_mode = serializers.ChoiceField(default=PerformanceReport.MODE_INDEPENDENT,
+                                             initial=PerformanceReport.MODE_INDEPENDENT,
+                                             choices=PerformanceReport.MODE_CHOICES,
+                                             required=False,
+                                             help_text='Strategy2 consolidation')
+    strategy3_mode = serializers.ChoiceField(default=PerformanceReport.MODE_INDEPENDENT,
+                                             initial=PerformanceReport.MODE_INDEPENDENT,
+                                             choices=PerformanceReport.MODE_CHOICES,
+                                             required=False,
+                                             help_text='Strategy3 consolidation')
+
     portfolios = PortfolioField(many=True, required=False, allow_null=True, allow_empty=True)
     accounts = AccountField(many=True, required=False, allow_null=True, allow_empty=True)
     accounts_position = AccountField(many=True, required=False, allow_null=True, allow_empty=True)

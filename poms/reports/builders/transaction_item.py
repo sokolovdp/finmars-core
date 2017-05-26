@@ -4,6 +4,7 @@ from datetime import date
 from django.utils.translation import ugettext
 
 from poms.common import formula
+from poms.reports.builders.base_item import BaseReport
 
 empty = object()
 
@@ -163,7 +164,7 @@ class TransactionReportItem:
         self.custom_fields = res
 
 
-class TransactionReport:
+class TransactionReport(BaseReport):
     def __init__(self,
                  id=None,
                  task_id=None,
@@ -181,12 +182,17 @@ class TransactionReport:
                  strategies3=None,
                  custom_fields=None,
                  items=None):
+        super(TransactionReport, self).__init__(id=id, master_user=master_user, member=member,
+                                                task_id=task_id, task_status=task_status)
+
         self.has_errors = False
-        self.id = id
-        self.task_id = task_id
-        self.task_status = task_status
-        self.master_user = master_user
-        self.member = member
+
+        # self.id = id
+        # self.task_id = task_id
+        # self.task_status = task_status
+        # self.master_user = master_user
+        # self.member = member
+
         self.begin_date = begin_date
         self.end_date = end_date
         self.portfolios = portfolios or []
@@ -198,10 +204,10 @@ class TransactionReport:
         self.strategies3 = strategies3 or []
         self.custom_fields = custom_fields or []
 
-        self.context = {
-            'master_user': self.master_user,
-            'member': self.member,
-        }
+        # self.context = {
+        #     'master_user': self.master_user,
+        #     'member': self.member,
+        # }
 
         self.items = items
 

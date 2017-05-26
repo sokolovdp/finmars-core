@@ -3,6 +3,7 @@ from datetime import timedelta, date
 from random import random
 
 from poms.common.utils import date_now
+from poms.reports.builders.base_item import BaseReport
 
 
 class PerformanceReportItem:
@@ -48,7 +49,7 @@ class PerformanceReportItem:
         self.custom_fields = res
 
 
-class PerformanceReport:
+class PerformanceReport(BaseReport):
     def __init__(self,
                  id=None,
                  task_id=None,
@@ -60,6 +61,11 @@ class PerformanceReport:
                  report_currency=None,
                  pricing_policy=None,
                  periods=None,
+                 portfolio_mode=BaseReport.MODE_INDEPENDENT,
+                 account_mode=BaseReport.MODE_INDEPENDENT,
+                 strategy1_mode=BaseReport.MODE_INDEPENDENT,
+                 strategy2_mode=BaseReport.MODE_INDEPENDENT,
+                 strategy3_mode=BaseReport.MODE_INDEPENDENT,
                  portfolios=None,
                  accounts=None,
                  accounts_position=None,
@@ -69,17 +75,32 @@ class PerformanceReport:
                  strategies3=None,
                  custom_fields=None,
                  items=None):
+
+        super(PerformanceReport, self).__init__(id=id, master_user=master_user, member=member,
+                                     task_id=task_id, task_status=task_status)
+
+        # self.id = id
+        # self.task_id = task_id
+        # self.task_status = task_status
+        # self.master_user = master_user
+        # self.member = member
+        # self.context = {
+        #     'master_user': self.master_user,
+        #     'member': self.member,
+        # }
+
         self.has_errors = False
-        self.id = id
-        self.task_id = task_id
-        self.task_status = task_status
-        self.master_user = master_user
-        self.member = member
+
         self.begin_date = begin_date or date.min
         self.end_date = end_date or (date_now() - timedelta(days=1))
         self.report_currency = report_currency or master_user.system_currency
         self.pricing_policy = pricing_policy
         self.periods = periods
+        self.portfolio_mode = portfolio_mode
+        self.account_mode = account_mode
+        self.strategy1_mode = strategy1_mode
+        self.strategy2_mode = strategy2_mode
+        self.strategy3_mode = strategy3_mode
         self.portfolios = portfolios or []
         self.accounts = accounts or []
         self.accounts_position = accounts_position or []
@@ -89,13 +110,7 @@ class PerformanceReport:
         self.strategies3 = strategies3 or []
         self.custom_fields = custom_fields or []
 
-        self.context = {
-            'master_user': self.master_user,
-            'member': self.member,
-        }
-
         self.items = items
-
         self.item_portfolios = []
         self.item_accounts = []
         self.item_strategies1 = []
