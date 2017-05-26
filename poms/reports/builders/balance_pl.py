@@ -2,12 +2,11 @@ import logging
 import sys
 import time
 from collections import Counter, defaultdict
-from datetime import date, timedelta
+from datetime import date
 from itertools import groupby
 
 from django.conf import settings
 from django.db.models import Q
-from django.utils.functional import cached_property
 
 from poms.common.utils import isclose
 from poms.instruments.models import CostMethod, InstrumentClass
