@@ -61,7 +61,7 @@ class PerformanceReportSerializer(serializers.Serializer):
     member = HiddenMemberField()
     begin_date = serializers.DateField(required=False, allow_null=True, default=date.min)
     end_date = serializers.DateField(required=False, allow_null=True, default=date_now)
-    periods = ExpressionField(required=False, allow_blank=False, default='""')
+    periods = ExpressionField(required=False, allow_blank=True, allow_null=True, default='')
     report_currency = CurrencyField(required=False, allow_null=True, default=SystemCurrencyDefault())
     pricing_policy = PricingPolicyField()
 
@@ -109,6 +109,7 @@ class PerformanceReportSerializer(serializers.Serializer):
     strategies3_object = Strategy3ViewSerializer(source='strategies3', read_only=True, many=True)
     custom_fields_object = CustomFieldViewSerializer(source='custom_fields', read_only=True, many=True)
 
+    has_errors = serializers.ReadOnlyField()
     items = PerformanceReportItemSerializer(many=True, read_only=True)
     item_portfolios = ReportPortfolioSerializer(many=True, read_only=True)
     item_accounts = ReportAccountSerializer(many=True, read_only=True)

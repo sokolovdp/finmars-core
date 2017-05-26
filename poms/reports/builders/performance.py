@@ -4,17 +4,9 @@ import time
 from django.db import transaction
 from django.db.models import Q
 
-from poms.accounts.models import Account
-from poms.accounts.models import AccountType
-from poms.counterparties.models import Responsible, ResponsibleGroup, Counterparty, CounterpartyGroup
-from poms.instruments.models import Instrument, InstrumentType
-from poms.obj_perms.utils import get_permissions_prefetch_lookups
-from poms.portfolios.models import Portfolio
+from poms.common import formula
 from poms.reports.builders.base_builder import BaseReportBuilder
 from poms.reports.builders.performance_item import PerformanceReportItem
-from poms.strategies.models import Strategy1, Strategy1Subgroup, Strategy1Group, Strategy2, Strategy2Subgroup, \
-    Strategy2Group, Strategy3, Strategy3Subgroup, Strategy3Group
-from poms.transactions.models import Transaction, ComplexTransaction, TransactionType
 
 _l = logging.getLogger('poms.reports')
 
@@ -32,8 +24,11 @@ class PerformanceReportBuilder(BaseReportBuilder):
         with transaction.atomic():
             try:
                 self._load()
-
                 self._clone_transactions_if_need()
+                self._process_periods()
+
+                if not self.instance.has_errors:
+                    pass
 
                 self.instance.items = [
                     PerformanceReportItem(
@@ -45,6 +40,9 @@ class PerformanceReportBuilder(BaseReportBuilder):
                         strategy3=self.instance.master_user.strategy3,
                     )
                 ]
+
+                if not self.instance.has_errors:
+                    self.instance.items = []
 
                 self._refresh_from_db()
             finally:
@@ -173,7 +171,7 @@ class PerformanceReportBuilder(BaseReportBuilder):
 
         # t2
         t2 = self._clone(trn)
-        t2.trn_cls = self._trn_cls_cash_in
+        t2.transaction_class = self._trn_cls_cash_in
 
         t2.position_size_with_sign = -trn.position_size_with_sign
         t2.cash_consideration = trn.cash_consideration
@@ -191,6 +189,28 @@ class PerformanceReportBuilder(BaseReportBuilder):
         t2.strategy3_cash = trn.strategy3_position
 
         return t1, t2
+
+    def _process_periods(self):
+        context = self.instance.context.copy()
+        context['date_group_with_dates'] = True
+
+        for trn in self._transactions:
+            try:
+                period = formula.safe_eval(self.instance.periods, names={'transaction': trn}, context=context)
+            except formula.InvalidExpression:
+                self.instance.has_errors = True
+                _l.debug('periods error', exc_info=True)
+                return
+
+            if isinstance(period, (tuple, list)):
+                name, begin, end = period
+            else:
+                name, begin, end = None, None, None
+            # _l.debug('period: %s -> %s', trn, (name, begin, end))
+
+            trn.period_name = name
+            trn.period_begin = begin
+            trn.period_end = end
 
     def _refresh_from_db(self):
         _l.info('> _refresh_from_db')
@@ -236,32 +256,6 @@ class PerformanceReportBuilder(BaseReportBuilder):
             items=None,
             attrs=None,
             objects=self.instance.strategies3
-        )
-
-        self.instance.item_portfolios = self._refresh_portfolios(
-            master_user=self.instance.master_user,
-            items=self.instance.items,
-            attrs=['portfolio']
-        )
-        self.instance.item_accounts = self._refresh_accounts(
-            master_user=self.instance.master_user,
-            items=self.instance.items,
-            attrs=['account']
-        )
-        self.instance.item_strategies1 = self._refresh_strategies1(
-            master_user=self.instance.master_user,
-            items=self.instance.items,
-            attrs=['strategy1']
-        )
-        self.instance.item_strategies2 = self._refresh_strategies2(
-            master_user=self.instance.master_user,
-            items=self.instance.items,
-            attrs=['strategy2']
-        )
-        self.instance.item_strategies3 = self._refresh_strategies3(
-            master_user=self.instance.master_user,
-            items=self.instance.items,
-            attrs=['strategy3']
         )
 
         self.instance.item_portfolios = self._refresh_portfolios(
