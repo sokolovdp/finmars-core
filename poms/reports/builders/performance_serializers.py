@@ -1,10 +1,13 @@
 from __future__ import unicode_literals
 
 from datetime import date
+
+from django.utils.translation import ugettext
 from rest_framework import serializers
 
 from poms.accounts.fields import AccountField
 from poms.accounts.serializers import AccountViewSerializer
+from poms.common import formula
 from poms.common.fields import ExpressionField
 from poms.common.utils import date_now
 from poms.currencies.fields import CurrencyField, SystemCurrencyDefault
@@ -121,5 +124,48 @@ class PerformanceReportSerializer(serializers.Serializer):
 
     def to_representation(self, instance):
         data = super(PerformanceReportSerializer, self).to_representation(instance)
+
+        items = data['items']
+        custom_fields = data['custom_fields_object']
+        if custom_fields and items:
+            item_portfolios = {o['id']: o for o in data['item_portfolios']}
+            item_accounts = {o['id']: o for o in data['item_accounts']}
+            item_strategies1 = {o['id']: o for o in data['item_strategies1']}
+            item_strategies2 = {o['id']: o for o in data['item_strategies2']}
+            item_strategies3 = {o['id']: o for o in data['item_strategies3']}
+
+            def _set_object(names, pk_attr, objs):
+                pk = names[pk_attr]
+                if pk is not None:
+                    names['%s_object' % pk_attr] = objs[pk]
+
+            for item in items:
+                names = {n: v for n, v in item.items()}
+
+                _set_object(names, 'portfolio', item_portfolios)
+                _set_object(names, 'account', item_accounts)
+                _set_object(names, 'strategy1', item_strategies1)
+                _set_object(names, 'strategy2', item_strategies2)
+                _set_object(names, 'strategy3', item_strategies3)
+
+                names = formula.value_prepare(names)
+
+                cfv = []
+                for cf in custom_fields:
+                    expr = cf['expr']
+
+                    if expr:
+                        try:
+                            value = formula.safe_eval(expr, names={'item': names}, context=self.context)
+                        except formula.InvalidExpression:
+                            value = ugettext('Invalid expression')
+                    else:
+                        value = None
+                    cfv.append({
+                        'custom_field': cf['id'],
+                        'value': value,
+                    })
+
+                item['custom_fields'] = cfv
 
         return data
