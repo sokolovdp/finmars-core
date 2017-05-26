@@ -40,47 +40,48 @@ class TransactionReportBuilder(BaseReportBuilder):
         _l.debug('build transaction')
 
         with transaction.atomic():
-            # if settings.DEBUG:
-            #     _l.debug('> _make_transactions')
-            #     self._make_transactions(10000)
-            #     _l.debug('< _make_transactions')
+            try:
+                # if settings.DEBUG:
+                #     _l.debug('> _make_transactions')
+                #     self._make_transactions(10000)
+                #     _l.debug('< _make_transactions')
 
-            self._load()
-            # self._set_trns_refs(self._transactions)
-            self._items = [TransactionReportItem(self.instance, trn=t) for t in self._transactions]
-            self.instance.items = self._items
-            self._refresh_from_db()
-            # self._set_items_refs(self._items)
-            # self._update_instance()
-            self.instance.close()
+                self._load()
+                # self._set_trns_refs(self._transactions)
+                self._items = [TransactionReportItem(self.instance, trn=t) for t in self._transactions]
+                self.instance.items = self._items
+                self._refresh_from_db()
+                # self._set_items_refs(self._items)
+                # self._update_instance()
+                self.instance.close()
 
-            # if settings.DEBUG:
-            #     _l.debug('> pickle')
-            #     import pickle
-            #     data = pickle.dumps(self.instance, protocol=pickle.HIGHEST_PROTOCOL)
-            #     _l.debug('< pickle: %s', len(data))
-            #     _l.debug('> pickle.zlib')
-            #     import zlib
-            #     data1 = zlib.compress(data)
-            #     _l.debug('< pickle.zlib: %s', len(data1))
-            #
-            #     _l.debug('> json')
-            #     from poms.reports.serializers import TransactionReportSerializer
-            #     from rest_framework.renderers import JSONRenderer
-            #     s = TransactionReportSerializer(instance=self.instance, context={
-            #         'master_user': self.instance.master_user,
-            #         'member': self.instance.member,
-            #     })
-            #     data_dict = s.data
-            #     r = JSONRenderer()
-            #     data = r.render(data_dict)
-            #     _l.debug('< json: %s', len(data))
-            #     _l.debug('> json.zlib')
-            #     import zlib
-            #     data1 = zlib.compress(data)
-            #     _l.debug('< json.zlib: %s', len(data1))
-
-            transaction.set_rollback(True)
+                # if settings.DEBUG:
+                #     _l.debug('> pickle')
+                #     import pickle
+                #     data = pickle.dumps(self.instance, protocol=pickle.HIGHEST_PROTOCOL)
+                #     _l.debug('< pickle: %s', len(data))
+                #     _l.debug('> pickle.zlib')
+                #     import zlib
+                #     data1 = zlib.compress(data)
+                #     _l.debug('< pickle.zlib: %s', len(data1))
+                #
+                #     _l.debug('> json')
+                #     from poms.reports.serializers import TransactionReportSerializer
+                #     from rest_framework.renderers import JSONRenderer
+                #     s = TransactionReportSerializer(instance=self.instance, context={
+                #         'master_user': self.instance.master_user,
+                #         'member': self.instance.member,
+                #     })
+                #     data_dict = s.data
+                #     r = JSONRenderer()
+                #     data = r.render(data_dict)
+                #     _l.debug('< json: %s', len(data))
+                #     _l.debug('> json.zlib')
+                #     import zlib
+                #     data1 = zlib.compress(data)
+                #     _l.debug('< json.zlib: %s', len(data1))
+            finally:
+                transaction.set_rollback(True)
 
         _l.debug('done: %s', (time.perf_counter() - st))
         return self.instance
@@ -123,13 +124,7 @@ class TransactionReportBuilder(BaseReportBuilder):
     def _trn_qs(self):
         from poms.obj_attrs.utils import get_attributes_prefetch
 
-        qs = Transaction.objects.filter(
-            master_user=self.instance.master_user,
-            is_deleted=False,
-        ).filter(
-            Q(complex_transaction__isnull=True) | Q(complex_transaction__status=ComplexTransaction.PRODUCTION,
-                                                    complex_transaction__is_deleted=False)
-        ).prefetch_related(
+        qs = Transaction.objects.prefetch_related(
             'complex_transaction',
             'transaction_class',
             'instrument',
@@ -194,7 +189,7 @@ class TransactionReportBuilder(BaseReportBuilder):
         if self.instance.accounts_position:
             kw_filters['account_position__in'] = self.instance.accounts_position
 
-        if self.instance.accounts_position:
+        if self.instance.accounts_cash:
             kw_filters['account_cash__in'] = self.instance.accounts_cash
 
         if self.instance.strategies1:

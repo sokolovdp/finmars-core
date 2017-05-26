@@ -339,7 +339,7 @@ class ReportBuilder(BaseReportBuilder):
         if self.instance.accounts_position:
             kw_filters['account_position__in'] = self.instance.accounts_position
 
-        if self.instance.accounts_position:
+        if self.instance.accounts_cash:
             kw_filters['account_cash__in'] = self.instance.accounts_cash
 
         if self.instance.strategies1:
