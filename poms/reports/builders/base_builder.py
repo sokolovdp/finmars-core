@@ -1,5 +1,7 @@
 import logging
 
+from django.db.models import Q
+
 from poms.accounts.models import Account, AccountType
 from poms.counterparties.models import Responsible, ResponsibleGroup, Counterparty, CounterpartyGroup
 from poms.currencies.models import Currency
@@ -12,15 +14,190 @@ from poms.strategies.models import Strategy1, Strategy1Subgroup, Strategy1Group,
 from poms.tags.utils import get_tag_prefetch
 from poms.transactions.models import ComplexTransaction, TransactionClass, TransactionType, TransactionTypeGroup
 
+from poms.accounts.models import Account
+from poms.accounts.models import AccountType
+from poms.counterparties.models import Responsible, ResponsibleGroup, Counterparty, CounterpartyGroup
+from poms.instruments.models import Instrument, InstrumentType
+from poms.obj_perms.utils import get_permissions_prefetch_lookups
+from poms.obj_attrs.utils import get_attributes_prefetch
+from poms.portfolios.models import Portfolio
+from poms.strategies.models import Strategy1, Strategy1Subgroup, Strategy1Group, Strategy2, Strategy2Subgroup, \
+    Strategy2Group, Strategy3, Strategy3Subgroup, Strategy3Group
+from poms.transactions.models import Transaction, ComplexTransaction, TransactionType
+
+
 _l = logging.getLogger('poms.reports')
 
 
 class BaseReportBuilder:
+    def __init__(self, instance, queryset=None):
+        self.instance = instance
+        self._queryset = queryset
+
+    def _trn_qs(self):
+        qs = self._queryset or Transaction.objects
+        qs = qs.filter(
+            master_user=self.instance.master_user,
+            is_deleted=False,
+        ).filter(
+            Q(complex_transaction__isnull=True) | Q(complex_transaction__status=ComplexTransaction.PRODUCTION,
+                                                    complex_transaction__is_deleted=False)
+        ).prefetch_related(
+            'complex_transaction',
+            'complex_transaction__transaction_type',
+            'transaction_class',
+            'instrument__instrument_type',
+            'instrument__instrument_type__instrument_class',
+            'instrument__pricing_currency',
+            'instrument__accrued_currency',
+            'instrument__accrual_calculation_schedules',
+            'instrument__accrual_calculation_schedules__accrual_calculation_model',
+            'instrument__accrual_calculation_schedules__periodicity',
+            'instrument__factor_schedules',
+            'transaction_currency',
+            'settlement_currency',
+            'portfolio',
+            'account_position',
+            'account_cash',
+            'account_interim',
+            'strategy1_position',
+            'strategy1_cash',
+            'strategy2_position',
+            'strategy2_cash',
+            'strategy3_position',
+            'strategy3_cash',
+            'responsible',
+            'counterparty',
+            'linked_instrument__instrument_type',
+            'linked_instrument__instrument_type__instrument_class',
+            'linked_instrument__pricing_currency',
+            'linked_instrument__accrued_currency',
+            'linked_instrument__accrual_calculation_schedules',
+            'linked_instrument__accrual_calculation_schedules__accrual_calculation_model',
+            'linked_instrument__accrual_calculation_schedules__periodicity',
+            'linked_instrument__factor_schedules',
+            'allocation_balance',
+            'allocation_balance__instrument_type',
+            'allocation_balance__instrument_type__instrument_class',
+            'allocation_balance__pricing_currency',
+            'allocation_balance__accrued_currency',
+            'allocation_balance__accrual_calculation_schedules',
+            'allocation_balance__accrual_calculation_schedules__accrual_calculation_model',
+            'allocation_balance__accrual_calculation_schedules__periodicity',
+            'allocation_balance__factor_schedules',
+            'allocation_pl',
+            'allocation_pl__instrument_type',
+            'allocation_pl__instrument_type__instrument_class',
+            'allocation_pl__pricing_currency',
+            'allocation_pl__accrued_currency',
+            'allocation_pl__accrual_calculation_schedules',
+            'allocation_pl__accrual_calculation_schedules__accrual_calculation_model',
+            'allocation_pl__accrual_calculation_schedules__periodicity',
+            'allocation_pl__factor_schedules',
+            get_attributes_prefetch(),
+            get_attributes_prefetch('complex_transaction__attributes'),
+            get_attributes_prefetch('instrument__attributes'),
+            get_attributes_prefetch('transaction_currency__attributes'),
+            get_attributes_prefetch('settlement_currency__attributes'),
+            get_attributes_prefetch('portfolio__attributes'),
+            get_attributes_prefetch('account_position__attributes'),
+            get_attributes_prefetch('account_cash__attributes'),
+            get_attributes_prefetch('account_interim__attributes'),
+            get_attributes_prefetch('responsible__attributes'),
+            get_attributes_prefetch('counterparty__attributes'),
+            get_attributes_prefetch('linked_instrument__attributes'),
+            get_attributes_prefetch('allocation_balance__attributes'),
+            get_attributes_prefetch('allocation_pl__attributes'),
+            *get_permissions_prefetch_lookups(
+                ('complex_transaction__transaction_type', TransactionType),
+                ('instrument', Instrument),
+                ('instrument__instrument_type', InstrumentType),
+                ('portfolio', Portfolio),
+                ('account_cash', Account),
+                ('account_cash__type', AccountType),
+                ('account_position', Account),
+                ('account_position__type', AccountType),
+                ('account_interim', Account),
+                ('account_interim__type', AccountType),
+                ('strategy1_position', Strategy1),
+                ('strategy1_position__subgroup', Strategy1Subgroup),
+                ('strategy1_position__subgroup__group', Strategy1Group),
+                ('strategy1_cash', Strategy1),
+                ('strategy1_cash__subgroup', Strategy1Subgroup),
+                ('strategy1_cash__subgroup__group', Strategy1Group),
+                ('strategy2_position', Strategy2),
+                ('strategy2_position__subgroup', Strategy2Subgroup),
+                ('strategy2_position__subgroup__group', Strategy2Group),
+                ('strategy2_cash', Strategy2),
+                ('strategy2_cash__subgroup', Strategy2Subgroup),
+                ('strategy2_cash__subgroup__group', Strategy2Group),
+                ('strategy3_position', Strategy3),
+                ('strategy3_position__subgroup', Strategy3Subgroup),
+                ('strategy3_position__subgroup__group', Strategy3Group),
+                ('strategy3_cash', Strategy3),
+                ('strategy3_cash__subgroup', Strategy3Subgroup),
+                ('strategy3_cash__subgroup__group', Strategy3Group),
+                ('responsible', Responsible),
+                ('responsible__group', ResponsibleGroup),
+                ('counterparty', Counterparty),
+                ('counterparty__group', CounterpartyGroup),
+                ('linked_instrument', Instrument),
+                ('linked_instrument__instrument_type', InstrumentType),
+                ('allocation_balance', Instrument),
+                ('allocation_balance__instrument_type', InstrumentType),
+                ('allocation_pl', Instrument),
+                ('allocation_pl__instrument_type', InstrumentType),
+            )
+        )
+
+        filters = Q()
+
+        if self.instance.portfolios:
+            filters &= Q(portfolio__in=self.instance.portfolios)
+
+        if self.instance.accounts:
+            filters &= Q(account_position__in=self.instance.accounts,
+                         account_cash__in=self.instance.accounts,
+                         account_interim__in=self.instance.accounts)
+
+        if self.instance.accounts_position:
+            filters &= Q(account_position__in=self.instance.accounts_position)
+
+        if self.instance.accounts_cash:
+            filters &= Q(account_cash__in=self.instance.accounts_cash)
+
+        if self.instance.strategies1:
+            filters &= Q(strategy1_position__in=self.instance.strategies1,
+                         strategy1_cash__in=self.instance.strategies1)
+
+        if self.instance.strategies2:
+            filters &= Q(strategy2_position__in=self.instance.strategies2,
+                         strategy2_cash__in=self.instance.strategies2)
+
+        if self.instance.strategies3:
+            filters &= Q(strategy3_position__in=self.instance.strategies3,
+                         strategy3_cash__in=self.instance.strategies3)
+
+        qs = qs.filter(filters)
+
+        if self.instance.member is not None:
+            from poms.transactions.filters import TransactionObjectPermissionFilter
+            qs = TransactionObjectPermissionFilter.filter_qs(qs, self.instance.master_user, self.instance.member)
+
+        return qs
+
     def _refresh_attrs(self, items, attrs, queryset):
         _l.debug('refresh: %s -> %s', attrs, queryset.model)
 
         if not items or not attrs:
             return []
+
+        # objs = {}
+        # for item in items:
+        #     for attr in attrs:
+        #         obj = getattr(item, attr, None)
+        #         if obj:
+        #             objs[obj.id] = obj
 
         pks = set()
         for item in items:
