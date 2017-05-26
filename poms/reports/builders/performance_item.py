@@ -106,9 +106,6 @@ class PerformanceReport(BaseReport):
         self.item_strategies2 = []
         self.item_strategies3 = []
 
-        if not self.periods:
-            self.periods = 'date_group(transaction.accounting_date, [[None,None,timedelta(months=1),["[","%Y-%m-%d","/","","%Y-%m-%d","]"]]], "Err")'
-
     def __str__(self):
         return 'PerformanceReport:%s' % self.id
 

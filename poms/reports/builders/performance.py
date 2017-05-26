@@ -1,6 +1,7 @@
 import logging
 import time
 
+from datetime import date
 from django.db import transaction
 from django.db.models import Q
 
@@ -206,6 +207,9 @@ class PerformanceReportBuilder(BaseReportBuilder):
 
             if isinstance(period, (tuple, list)):
                 name, begin, end = period
+                name = str(name)
+                if not isinstance(begin, date) or not isinstance(end, date):
+                    _l.debug('hacked detected on: %s', self.instance.periodss)
             else:
                 name, begin, end = None, None, None
             # _l.debug('period: %s -> %s', trn, (name, begin, end))

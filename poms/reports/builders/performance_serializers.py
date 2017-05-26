@@ -61,7 +61,8 @@ class PerformanceReportSerializer(serializers.Serializer):
     member = HiddenMemberField()
     begin_date = serializers.DateField(required=False, allow_null=True, default=date.min)
     end_date = serializers.DateField(required=False, allow_null=True, default=date_now)
-    periods = ExpressionField(required=False, allow_blank=True, allow_null=True, default='')
+    periods = ExpressionField(required=False, allow_blank=True, allow_null=True, default='',
+                              initial='date_group(transaction.accounting_date, [[None,None,timedelta(months=1),["[","%Y-%m-%d","/","","%Y-%m-%d","]"]]], "Err")')
     report_currency = CurrencyField(required=False, allow_null=True, default=SystemCurrencyDefault())
     pricing_policy = PricingPolicyField()
 
@@ -122,6 +123,12 @@ class PerformanceReportSerializer(serializers.Serializer):
 
     def create(self, validated_data):
         return PerformanceReport(**validated_data)
+
+    def validate(self, attrs):
+        periods = attrs['periods']
+        if 'date_group' not in periods:
+            raise serializers.ValidationError({'periods': ugettext('function "date_group" not found')})
+        return attrs
 
     def to_representation(self, instance):
         data = super(PerformanceReportSerializer, self).to_representation(instance)
