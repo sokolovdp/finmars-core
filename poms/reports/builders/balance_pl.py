@@ -159,26 +159,6 @@ class ReportBuilder(BaseReportBuilder):
     def transactions(self):
         return self._transactions
 
-    @cached_property
-    def _trn_cls_sell(self):
-        return TransactionClass.objects.get(pk=TransactionClass.SELL)
-
-    @cached_property
-    def _trn_cls_buy(self):
-        return TransactionClass.objects.get(pk=TransactionClass.BUY)
-
-    @cached_property
-    def _trn_cls_fx_trade(self):
-        return TransactionClass.objects.get(pk=TransactionClass.FX_TRADE)
-
-    @cached_property
-    def _trn_cls_cash_in(self):
-        return TransactionClass.objects.get(pk=TransactionClass.CASH_INFLOW)
-
-    @cached_property
-    def _trn_cls_cash_out(self):
-        return TransactionClass.objects.get(pk=TransactionClass.CASH_OUTFLOW)
-
     def _trn_qs(self):
         # if self._queryset is None:
         #     qs = Transaction.objects.all()

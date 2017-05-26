@@ -1,6 +1,8 @@
+import copy
 import logging
 
 from django.db.models import Q
+from django.utils.functional import cached_property
 
 from poms.accounts.models import Account, AccountType
 from poms.counterparties.models import Responsible, ResponsibleGroup, Counterparty, CounterpartyGroup
@@ -32,6 +34,42 @@ class BaseReportBuilder:
     def __init__(self, instance, queryset=None):
         self.instance = instance
         self._queryset = queryset
+
+    @cached_property
+    def _trn_cls_sell(self):
+        return TransactionClass.objects.get(pk=TransactionClass.SELL)
+
+    @cached_property
+    def _trn_cls_buy(self):
+        return TransactionClass.objects.get(pk=TransactionClass.BUY)
+
+    @cached_property
+    def _trn_cls_fx_trade(self):
+        return TransactionClass.objects.get(pk=TransactionClass.FX_TRADE)
+
+    @cached_property
+    def _trn_clsinstr_pl(self):
+        return TransactionClass.objects.get(pk=TransactionClass.INSTRUMENT_PL)
+
+    @cached_property
+    def _trn_cls_trn_pl(self):
+        return TransactionClass.objects.get(pk=TransactionClass.TRANSACTION_PL)
+
+    @cached_property
+    def _trn_cls_transfer(self):
+        return TransactionClass.objects.get(pk=TransactionClass.TRANSFER)
+
+    @cached_property
+    def _trn_cls_fx_transfer(self):
+        return TransactionClass.objects.get(pk=TransactionClass.FX_TRANSFER)
+
+    @cached_property
+    def _trn_cls_cash_in(self):
+        return TransactionClass.objects.get(pk=TransactionClass.CASH_INFLOW)
+
+    @cached_property
+    def _trn_cls_cash_out(self):
+        return TransactionClass.objects.get(pk=TransactionClass.CASH_OUTFLOW)
 
     def _trn_qs(self):
         qs = self._queryset or Transaction.objects
@@ -184,6 +222,11 @@ class BaseReportBuilder:
             qs = TransactionObjectPermissionFilter.filter_qs(qs, self.instance.master_user, self.instance.member)
 
         return qs
+
+    def _clone(self, obj):
+        ret = copy.copy(obj)
+        ret._is_cloned = True
+        return ret
 
     def _refresh_attrs(self, items, attrs, queryset, objects=None):
         _l.debug('refresh: %s -> %s', attrs, queryset.model)

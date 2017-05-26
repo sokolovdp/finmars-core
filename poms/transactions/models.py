@@ -1029,6 +1029,42 @@ class Transaction(FakeDeletableModel):
     def __str__(self):
         return str(self.transaction_code)
 
+    @property
+    def is_buy(self):
+        return self.transaction_class_id == TransactionClass.BUY
+
+    @property
+    def is_sell(self):
+        return self.transaction_class_id == TransactionClass.SELL
+
+    @property
+    def is_fx_trade(self):
+        return self.transaction_class_id == TransactionClass.FX_TRADE
+
+    @property
+    def is_instrument_pl(self):
+        return self.transaction_class_id == TransactionClass.INSTRUMENT_PL
+
+    @property
+    def is_transaction_pl(self):
+        return self.transaction_class_id == TransactionClass.TRANSACTION_PL
+
+    @property
+    def is_transfer(self):
+        return self.transaction_class_id == TransactionClass.TRANSFER
+
+    @property
+    def is_fx_transfer(self):
+        return self.transaction_class_id == TransactionClass.FX_TRANSFER
+
+    @property
+    def is_cash_inflow(self):
+        return self.transaction_class_id == TransactionClass.CASH_INFLOW
+
+    @property
+    def is_cash_outflow(self):
+        return self.transaction_class_id == TransactionClass.CASH_OUTFLOW
+
     def save(self, *args, **kwargs):
         calc_cash = kwargs.pop('calc_cash', False)
 
