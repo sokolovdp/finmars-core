@@ -1,12 +1,20 @@
-import time
 import logging
+import time
 
 from django.db import transaction
 from django.db.models import Q
 
+from poms.accounts.models import Account
+from poms.accounts.models import AccountType
+from poms.counterparties.models import Responsible, ResponsibleGroup, Counterparty, CounterpartyGroup
+from poms.instruments.models import Instrument, InstrumentType
+from poms.obj_perms.utils import get_permissions_prefetch_lookups
+from poms.portfolios.models import Portfolio
 from poms.reports.builders.base_builder import BaseReportBuilder
 from poms.reports.builders.performance_item import PerformanceReportItem
-from poms.transactions.models import Transaction, ComplexTransaction
+from poms.strategies.models import Strategy1, Strategy1Subgroup, Strategy1Group, Strategy2, Strategy2Subgroup, \
+    Strategy2Group, Strategy3, Strategy3Subgroup, Strategy3Group
+from poms.transactions.models import Transaction, ComplexTransaction, TransactionType
 
 _l = logging.getLogger('poms.reports')
 
@@ -54,6 +62,7 @@ class PerformanceReportBuilder(BaseReportBuilder):
 
         qs = Transaction.objects.prefetch_related(
             'complex_transaction',
+            'complex_transaction__transaction_type',
             'transaction_class',
             'instrument',
             'transaction_currency',
@@ -87,6 +96,46 @@ class PerformanceReportBuilder(BaseReportBuilder):
             get_attributes_prefetch('linked_instrument__attributes'),
             get_attributes_prefetch('allocation_balance__attributes'),
             get_attributes_prefetch('allocation_pl__attributes'),
+            *get_permissions_prefetch_lookups(
+                ('complex_transaction__transaction_type', TransactionType),
+                ('instrument', Instrument),
+                ('instrument__instrument_type', InstrumentType),
+                ('portfolio', Portfolio),
+                ('account_cash', Account),
+                ('account_cash__type', AccountType),
+                ('account_position', Account),
+                ('account_position__type', AccountType),
+                ('account_interim', Account),
+                ('account_interim__type', AccountType),
+                ('strategy1_position', Strategy1),
+                ('strategy1_position__subgroup', Strategy1Subgroup),
+                ('strategy1_position__subgroup__group', Strategy1Group),
+                ('strategy1_cash', Strategy1),
+                ('strategy1_cash__subgroup', Strategy1Subgroup),
+                ('strategy1_cash__subgroup__group', Strategy1Group),
+                ('strategy2_position', Strategy2),
+                ('strategy2_position__subgroup', Strategy2Subgroup),
+                ('strategy2_position__subgroup__group', Strategy2Group),
+                ('strategy2_cash', Strategy2),
+                ('strategy2_cash__subgroup', Strategy2Subgroup),
+                ('strategy2_cash__subgroup__group', Strategy2Group),
+                ('strategy3_position', Strategy3),
+                ('strategy3_position__subgroup', Strategy3Subgroup),
+                ('strategy3_position__subgroup__group', Strategy3Group),
+                ('strategy3_cash', Strategy3),
+                ('strategy3_cash__subgroup', Strategy3Subgroup),
+                ('strategy3_cash__subgroup__group', Strategy3Group),
+                ('responsible', Responsible),
+                ('responsible__group', ResponsibleGroup),
+                ('counterparty', Counterparty),
+                ('counterparty__group', CounterpartyGroup),
+                ('linked_instrument', Instrument),
+                ('linked_instrument__instrument_type', InstrumentType),
+                ('allocation_balance', Instrument),
+                ('allocation_balance__instrument_type', InstrumentType),
+                ('allocation_pl', Instrument),
+                ('allocation_pl__instrument_type', InstrumentType),
+            )
         )
 
         a_filters = [

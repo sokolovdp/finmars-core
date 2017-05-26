@@ -75,19 +75,8 @@ class PerformanceReport(BaseReport):
                  strategies3=None,
                  custom_fields=None,
                  items=None):
-
         super(PerformanceReport, self).__init__(id=id, master_user=master_user, member=member,
-                                     task_id=task_id, task_status=task_status)
-
-        # self.id = id
-        # self.task_id = task_id
-        # self.task_status = task_status
-        # self.master_user = master_user
-        # self.member = member
-        # self.context = {
-        #     'master_user': self.master_user,
-        #     'member': self.member,
-        # }
+                                                task_id=task_id, task_status=task_status)
 
         self.has_errors = False
 
