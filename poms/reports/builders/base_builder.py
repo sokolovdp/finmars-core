@@ -25,7 +25,6 @@ from poms.strategies.models import Strategy1, Strategy1Subgroup, Strategy1Group,
     Strategy2Group, Strategy3, Strategy3Subgroup, Strategy3Group
 from poms.transactions.models import Transaction, ComplexTransaction, TransactionType
 
-
 _l = logging.getLogger('poms.reports')
 
 
@@ -186,58 +185,68 @@ class BaseReportBuilder:
 
         return qs
 
-    def _refresh_attrs(self, items, attrs, queryset):
+    def _refresh_attrs(self, items, attrs, queryset, objects=None):
         _l.debug('refresh: %s -> %s', attrs, queryset.model)
 
-        if not items or not attrs:
-            return []
-
-        # objs = {}
-        # for item in items:
-        #     for attr in attrs:
-        #         obj = getattr(item, attr, None)
-        #         if obj:
-        #             objs[obj.id] = obj
+        # return self._refresh_attrs_simple(items=items, attrs=attrs, objects=objects)
 
         pks = set()
-        for item in items:
-            for attr in attrs:
-                obj = getattr(item, attr, None)
+        if objects is not None:
+            for obj in objects:
                 if obj:
                     pks.add(obj.id)
+        else:
+            if not items or not attrs:
+                return []
+
+            for item in items:
+                for attr in attrs:
+                    obj = getattr(item, attr, None)
+                    if obj:
+                        pks.add(obj.id)
 
         objs = queryset.in_bulk(pks)
         _l.debug('objs: %s', objs.keys())
 
-        for item in items:
-            for attr in attrs:
-                obj = getattr(item, attr, None)
-                if obj:
-                    setattr(item, attr, objs[obj.id])
+        if objects is not None:
+            objects.clear()
+            objects.extend(objs.values())
+        else:
+            for item in items:
+                for attr in attrs:
+                    obj = getattr(item, attr, None)
+                    if obj:
+                        setattr(item, attr, objs[obj.id])
 
         return list(objs.values())
 
-    def _refresh_attrs_simple(self, items, attrs):
+    def _refresh_attrs_simple(self, items, attrs, objects=None):
         _l.debug('refresh: %s', attrs)
 
         if not items or not attrs:
             return []
 
         objs = {}
-        for item in items:
-            for attr in attrs:
-                obj = getattr(item, attr, None)
+        if objects is not None:
+            for obj in objects:
                 if obj:
                     objs[obj.id] = obj
-        # _l.debug('objs: %s', sorted(objs.keys()))
+        else:
+            for item in items:
+                for attr in attrs:
+                    obj = getattr(item, attr, None)
+                    if obj:
+                        objs[obj.id] = obj
+
         _l.debug('objs: %s', objs.keys())
 
         return list(objs.values())
 
-    def _refresh_complex_transactions(self, master_user, items, attrs):
+    def _refresh_complex_transactions(self, master_user, items, attrs, objects=None):
         return self._refresh_attrs(
             items=items,
             attrs=attrs,
+            objects=objects,
             queryset=ComplexTransaction.objects.filter(
                 transaction_type__master_user=master_user
             ).prefetch_related(
@@ -251,17 +260,19 @@ class BaseReportBuilder:
             )
         )
 
-    def _refresh_transaction_classes(self, master_user, items, attrs):
+    def _refresh_transaction_classes(self, master_user, items, attrs, objects=None):
         return self._refresh_attrs(
             items=items,
             attrs=attrs,
+            objects=objects,
             queryset=TransactionClass.objects.all()
         )
 
-    def _refresh_instruments(self, master_user, items, attrs):
+    def _refresh_instruments(self, master_user, items, attrs, objects=None):
         return self._refresh_attrs(
             items=items,
             attrs=attrs,
+            objects=objects,
             queryset=Instrument.objects.filter(
                 master_user=master_user
             ).prefetch_related(
@@ -283,10 +294,11 @@ class BaseReportBuilder:
             )
         )
 
-    def _refresh_currencies(self, master_user, items, attrs):
+    def _refresh_currencies(self, master_user, items, attrs, objects=None):
         return self._refresh_attrs(
             items=items,
             attrs=attrs,
+            objects=objects,
             queryset=Currency.objects.filter(
                 master_user=master_user,
             ).prefetch_related(
@@ -294,10 +306,11 @@ class BaseReportBuilder:
             )
         )
 
-    def _refresh_portfolios(self, master_user, items, attrs):
+    def _refresh_portfolios(self, master_user, items, attrs, objects=None):
         return self._refresh_attrs(
             items=items,
             attrs=attrs,
+            objects=objects,
             queryset=Portfolio.objects.filter(
                 master_user=master_user,
             ).prefetch_related(
@@ -308,10 +321,11 @@ class BaseReportBuilder:
             )
         )
 
-    def _refresh_accounts(self, master_user, items, attrs):
+    def _refresh_accounts(self, master_user, items, attrs, objects=None):
         return self._refresh_attrs(
             items=items,
             attrs=attrs,
+            objects=objects,
             queryset=Account.objects.filter(
                 master_user=master_user,
             ).prefetch_related(
@@ -324,10 +338,11 @@ class BaseReportBuilder:
             )
         )
 
-    def _refresh_strategies1(self, master_user, items, attrs):
+    def _refresh_strategies1(self, master_user, items, attrs, objects=None):
         return self._refresh_attrs(
             items=items,
             attrs=attrs,
+            objects=objects,
             queryset=Strategy1.objects.filter(
                 master_user=master_user,
             ).prefetch_related(
@@ -341,10 +356,11 @@ class BaseReportBuilder:
             )
         )
 
-    def _refresh_strategies2(self, master_user, items, attrs):
+    def _refresh_strategies2(self, master_user, items, attrs, objects=None):
         return self._refresh_attrs(
             items=items,
             attrs=attrs,
+            objects=objects,
             queryset=Strategy2.objects.filter(
                 master_user=master_user,
             ).prefetch_related(
@@ -358,10 +374,11 @@ class BaseReportBuilder:
             )
         )
 
-    def _refresh_strategies3(self, master_user, items, attrs):
+    def _refresh_strategies3(self, master_user, items, attrs, objects=None):
         return self._refresh_attrs(
             items=items,
             attrs=attrs,
+            objects=objects,
             queryset=Strategy3.objects.filter(
                 master_user=master_user,
             ).prefetch_related(
@@ -375,10 +392,11 @@ class BaseReportBuilder:
             )
         )
 
-    def _refresh_responsibles(self, master_user, items, attrs):
+    def _refresh_responsibles(self, master_user, items, attrs, objects=None):
         return self._refresh_attrs(
             items=items,
             attrs=attrs,
+            objects=objects,
             queryset=Responsible.objects.filter(
                 master_user=master_user,
             ).prefetch_related(
@@ -391,10 +409,11 @@ class BaseReportBuilder:
             )
         )
 
-    def _refresh_counterparties(self, master_user, items, attrs):
+    def _refresh_counterparties(self, master_user, items, attrs, objects=None):
         return self._refresh_attrs(
             items=items,
             attrs=attrs,
+            objects=objects,
             queryset=Counterparty.objects.filter(
                 master_user=master_user,
             ).prefetch_related(
@@ -407,11 +426,11 @@ class BaseReportBuilder:
             )
         )
 
-    def _refresh_currency_fx_rates(self, master_user, items, attrs):
-        return self._refresh_attrs_simple(items, attrs)
+    def _refresh_currency_fx_rates(self, master_user, items, attrs, objects=None):
+        return self._refresh_attrs_simple(items=items, attrs=attrs, objects=objects)
 
-    def _refresh_item_instrument_pricings(self, master_user, items, attrs):
-        return self._refresh_attrs_simple(items, attrs)
+    def _refresh_item_instrument_pricings(self, master_user, items, attrs, objects=None):
+        return self._refresh_attrs_simple(items=items, attrs=attrs, objects=objects)
 
-    def _refresh_item_instrument_accruals(self, master_user, items, attrs):
-        return self._refresh_attrs_simple(items, attrs)
+    def _refresh_item_instrument_accruals(self, master_user, items, attrs, objects=None):
+        return self._refresh_attrs_simple(items=items, attrs=attrs, objects=objects)

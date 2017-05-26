@@ -1198,6 +1198,49 @@ class ReportBuilder(BaseReportBuilder):
     def _refresh_with_perms(self):
         _l.debug('items - refresh all objects with permissions')
 
+        self.instance.portfolios = self._refresh_portfolios(
+            master_user=self.instance.master_user,
+            items=None,
+            attrs=None,
+            objects=self.instance.portfolios
+        )
+        self.instance.accounts = self._refresh_accounts(
+            master_user=self.instance.master_user,
+            items=None,
+            attrs=None,
+            objects=self.instance.accounts
+        )
+        self.instance.accounts_position = self._refresh_accounts(
+            master_user=self.instance.master_user,
+            items=None,
+            attrs=None,
+            objects=self.instance.accounts_position
+        )
+        self.instance.accounts_cash = self._refresh_accounts(
+            master_user=self.instance.master_user,
+            items=None,
+            attrs=None,
+            objects=self.instance.accounts_cash
+        )
+        self.instance.strategies1 = self._refresh_strategies1(
+            master_user=self.instance.master_user,
+            items=None,
+            attrs=None,
+            objects=self.instance.strategies1
+        )
+        self.instance.strategies2 = self._refresh_strategies2(
+            master_user=self.instance.master_user,
+            items=None,
+            attrs=None,
+            objects=self.instance.strategies2
+        )
+        self.instance.strategies3 = self._refresh_strategies3(
+            master_user=self.instance.master_user,
+            items=None,
+            attrs=None,
+            objects=self.instance.strategies3
+        )
+
         self.instance.item_instruments = self._refresh_instruments(
             master_user=self.instance.master_user,
             items=self.instance.items,
