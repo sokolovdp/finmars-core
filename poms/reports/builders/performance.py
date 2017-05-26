@@ -11,6 +11,8 @@ from poms.reports.builders.performance_item import PerformanceReportItem
 _l = logging.getLogger('poms.reports')
 
 
+# added fields to transcation model: _is_cloned, period_name, period_begin, period_end
+
 class PerformanceReportBuilder(BaseReportBuilder):
     def __init__(self, instance):
         super(PerformanceReportBuilder, self).__init__(instance)
