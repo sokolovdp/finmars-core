@@ -168,9 +168,9 @@ class TransactionReportSerializer(serializers.Serializer):
             item_counterparties = {o['id']: o for o in data['item_counterparties']}
 
             def _set_object(names, pk_attr, objs):
-                pk = item[pk_attr]
+                pk = names[pk_attr]
                 if pk is not None:
-                    item['%s_object' % pk_attr] = objs[pk]
+                    names['%s_object' % pk_attr] = objs[pk]
 
             for item in items:
                 names = {n: v for n, v in item.items()}
@@ -195,6 +195,8 @@ class TransactionReportSerializer(serializers.Serializer):
                 _set_object(names, 'linked_instrument', item_instruments)
                 _set_object(names, 'allocation_balance', item_instruments)
                 _set_object(names, 'allocation_pl', item_instruments)
+
+                names = formula.value_prepare(names)
 
                 cfv = []
                 for cf in custom_fields:

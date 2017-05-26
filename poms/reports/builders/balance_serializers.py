@@ -498,9 +498,9 @@ class ReportSerializer(serializers.Serializer):
             item_instrument_accruals = {o['id']: o for o in data['item_instrument_accruals']}
 
             def _set_object(names, pk_attr, objs):
-                pk = item[pk_attr]
+                pk = names[pk_attr]
                 if pk is not None:
-                    item['%s_object' % pk_attr] = objs[pk]
+                    names['%s_object' % pk_attr] = objs[pk]
 
             for item in items:
                 names = {n: v for n, v in item.items()}
@@ -523,6 +523,8 @@ class ReportSerializer(serializers.Serializer):
                 _set_object(names, 'currency_history', item_currency_fx_rates)
                 _set_object(names, 'pricing_currency_history', item_currency_fx_rates)
                 _set_object(names, 'instrument_accrual', item_instrument_accruals)
+
+                names = formula.value_prepare(names)
 
                 cfv = []
                 for cf in custom_fields:
