@@ -1,5 +1,6 @@
 import logging
 import time
+from collections import OrderedDict
 
 from datetime import date, timedelta
 from django.db import transaction
@@ -45,6 +46,7 @@ class PerformanceReportBuilder(BaseReportBuilder):
         self._pricing_provider = pricing_provider
         self._fx_rate_provider = fx_rate_provider
         self._transactions = None
+        self._items_cache = OrderedDict()
 
     def build(self):
         st = time.perf_counter()
@@ -61,7 +63,7 @@ class PerformanceReportBuilder(BaseReportBuilder):
                     PerformanceReportItem(
                         self.instance,
                         id=x,
-                        period_name='P%s' % (x // 10),
+                        period_name='P-%s' % (x // 10),
                         period_begin=date_now() + timedelta(days=x // 10),
                         period_end=date_now() + timedelta(days=(x + 1) // 10 - 1),
                         portfolio=self.instance.master_user.portfolio,
@@ -71,6 +73,8 @@ class PerformanceReportBuilder(BaseReportBuilder):
                         strategy3=self.instance.master_user.strategy3,
                     )
                     for x in range(0, 200)]
+                for i in self.instance.items:
+                    i.random()
 
                 if self.instance.has_errors:
                     self.instance.items = []
@@ -320,15 +324,24 @@ class PerformanceReportBuilder(BaseReportBuilder):
     def _instruments(self):
         assert self._transactions is not None
         # return [t.instrument for t in self._transactions]
-        instruments = {t.instrument_id: t.instrument for t in self._transactions if t.instrument is not None}
+        # instruments = {t.instrument_id: t.instrument for t in self._transactions if t.instrument is not None}
+        instruments = {}
+        for trn in self._transactions:
+            if trn.instrument:
+                instruments[trn.instrument.id] = trn.instrument
         return list(instruments.values())
 
     @cached_property
     def _currencies(self):
         assert self._transactions is not None
         # return [t.settlement_currency for t in self._transactions]
-        currencies = {t.settlement_currency_id: t.settlement_currency for t in self._transactions}
-        currencies[self.instance.report_currency.id] = self.instance.report_currency
+        # currencies = {t.settlement_currency_id: t.settlement_currency for t in self._transactions}
+        # currencies[self.instance.report_currency.id] = self.instance.report_currency
+        currencies = {self.instance.report_currency.id: self.instance.report_currency}
+        for trn in self._transactions:
+            if trn.transaction_currency:
+                currencies[trn.transaction_currency.id] = trn.transaction_currency
+            currencies[trn.settlement_currency.id] = trn.settlement_currency
         return list(currencies.values())
 
     @cached_property
@@ -396,6 +409,47 @@ class PerformanceReportBuilder(BaseReportBuilder):
     #
     #     _l.debug('< fill prices')
 
+    def _get_item(self, trn, account=None, strategy1=None, strategy2=None, strategy3=None):
+        period_begin = trn.period_begin,
+        period_end = trn.period_end
+        period_name = trn.period_name
+
+        portfolio = trn.portfolio
+
+        assert account is not None
+        assert strategy1 is not None
+        assert strategy2 is not None
+        assert strategy3 is not None
+
+        key = (
+            period_begin,
+            period_end,
+            period_name,
+            getattr(portfolio, 'id', -1),
+            getattr(account, 'id', -1),
+            getattr(strategy1, 'id', -1),
+            getattr(strategy2, 'id', -1),
+            getattr(strategy3, 'id', -1),
+        )
+
+        try:
+            item = self._items_cache[key]
+        except KeyError:
+            item = PerformanceReportItem(
+                self.instance,
+                id=key,
+                period_begin=period_begin,
+                period_end=period_end,
+                period_name=period_name,
+                portfolio=portfolio,
+                account=account,
+                strategy1=strategy1,
+                strategy2=strategy2,
+                strategy3=strategy3
+            )
+            self._items_cache[key] = item
+        return item
+
     def _calc(self):
         _l.debug('> calc')
 
@@ -408,6 +462,21 @@ class PerformanceReportBuilder(BaseReportBuilder):
                 # already ordered by accounting_date
                 if trn.accounting_date > period_end:
                     break
+
+                item1 = self._get_item(
+                    trn,
+                    account=trn.account_cash,
+                    strategy1=trn.strategy1_cash,
+                    strategy2=trn.strategy2_cash,
+                    strategy3=trn.strategy3_cash
+                )
+                item2 = self._get_item(
+                    trn,
+                    account=trn.account_position,
+                    strategy1=trn.strategy1_position,
+                    strategy2=trn.strategy2_position,
+                    strategy3=trn.strategy3_position
+                )
 
                 # load pricing and fx-rates
 
@@ -425,10 +494,12 @@ class PerformanceReportBuilder(BaseReportBuilder):
                     instrument_principal_price = instrument_price.principal_price
                     instrument_accrued_price = instrument_price.accrued_price
 
-                    instrument_pricing_currency_history = self.fx_rate_provider[trn.instrument.pricing_currency, period_end]
+                    instrument_pricing_currency_history = self.fx_rate_provider[
+                        trn.instrument.pricing_currency, period_end]
                     instrument_pricing_ccy_cur_fx_rate = instrument_pricing_currency_history.fx_rate
 
-                    instrument_accrued_currency_history = self.fx_rate_provider[trn.instrument.accrued_currency, period_end]
+                    instrument_accrued_currency_history = self.fx_rate_provider[
+                        trn.instrument.accrued_currency, period_end]
                     instrument_accrued_currency_fx_rate = instrument_accrued_currency_history.fx_rate
                 else:
                     instrument_price = None

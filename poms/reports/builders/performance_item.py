@@ -1,7 +1,5 @@
 from datetime import timedelta, date
 
-from random import random
-
 from poms.common.utils import date_now
 from poms.reports.builders.base_item import BaseReport
 
@@ -10,9 +8,9 @@ class PerformanceReportItem:
     def __init__(self,
                  report,
                  id=None,
-                 period_name=None,
                  period_begin=None,
                  period_end=None,
+                 period_name=None,
                  portfolio=None,
                  account=None,
                  strategy1=None,
@@ -22,15 +20,36 @@ class PerformanceReportItem:
         self.report = report
         self.id = id
 
-        self.period_name = period_name
         self.period_begin = period_begin
         self.period_end = period_end
-
+        self.period_name = period_name
         self.portfolio = portfolio
         self.account = account
         self.strategy1 = strategy1
         self.strategy2 = strategy2
         self.strategy3 = strategy3
+
+        self.return_pl = 0
+        self.return_nav = 0
+        self.pl_in_period = 0
+        self.nav_change = 0
+        self.nav_period_start = 0
+        self.nav_period_end = 0
+        self.cash_inflows = 0
+        self.cash_outflows = 0
+        self.time_weighted_cash_inflows = 0
+        self.time_weighted_cash_outflows = 0
+        self.avg_nav_in_period = 0
+        self.cumulative_return_pl = 0
+        self.cumulative_return_nav = 0
+
+        self.custom_fields = []
+
+    def __str__(self):
+        return 'PerformanceReportItem:%s' % self.id
+
+    def random(self):
+        from random import random
 
         self.return_pl = random()
         self.return_nav = random()
@@ -45,11 +64,6 @@ class PerformanceReportItem:
         self.avg_nav_in_period = random()
         self.cumulative_return_pl = random()
         self.cumulative_return_nav = random()
-
-        self.custom_fields = []
-
-    def __str__(self):
-        return 'PerformanceReportItem:%s' % self.id
 
     def eval_custom_fields(self):
         # use optimization inside serialization
