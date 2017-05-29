@@ -55,7 +55,6 @@ class PerformanceReportBuilder(BaseReportBuilder):
                 self._load()
                 self._clone_transactions_if_need()
                 self._process_periods()
-                self._fill_prices()
                 self._calc()
 
                 self.instance.items = [
@@ -146,6 +145,10 @@ class PerformanceReportBuilder(BaseReportBuilder):
 
             elif trn.is_fx_transfer:
                 trns = self._trn_fx_transfer_clone(trn)
+                res.extend(trns)
+
+            elif trn.t.is_fx_trade:
+                trns = self._trn_fx_trade_clone(trn)
                 res.extend(trns)
 
             else:
@@ -310,9 +313,6 @@ class PerformanceReportBuilder(BaseReportBuilder):
             trn.period_name = name
             trn.period_begin = begin
             trn.period_end = end
-            trn.period_key = name, begin, end
-
-        self._transactions.sort(key=lambda x: x.period_key)
 
         _l.debug('< process periods')
 
@@ -360,66 +360,129 @@ class PerformanceReportBuilder(BaseReportBuilder):
             self._fx_rate_provider = p
         return self._fx_rate_provider
 
-    def _fill_prices(self):
-        _l.debug('> fill prices')
-
-        for t in self._transactions:
-            t.report_currency = self.instance.report_currency
-            t.report_currency_history = self.fx_rate_provider[t.report_currency, t.period_end]
-            t.report_currency_fx_rate = t.report_currency_history.fx_rate
-
-            if t.instrument:
-                t.instrument_price = self.pricing_provider[t.instrument, t.period_end]
-                t.instrument_principal_price = t.instrument_price.principal_price
-                t.instrument_accrued_price = t.instrument_price.accrued_price
-
-                t.instrument_pricing_currency_history = self.fx_rate_provider[
-                    t.instrument.pricing_currency, t.period_end]
-                t.instrument_pricing_ccy_cur_fx_rate = t.instrument_pricing_currency_history.fx_rate
-
-                t.instrument_accrued_currency_history = self.fx_rate_provider[
-                    t.instrument.accrued_currency, t.period_end]
-                t.instrument_accrued_currency_fx_rate = t.instrument_accrued_currency_history.fx_rate
-            else:
-                t.instrument_price = None
-                t.instrument_principal_price = 0
-                t.instrument_accrued_price = 0
-
-                t.instrument_pricing_currency_history = None
-                t.instrument_pricing_ccy_cur_fx_rate = 0
-
-                t.instrument_accrued_currency_history = None
-                t.instrument_accrued_currency_fx_rate = 0
-
-            t.settlement_currency_history = self.fx_rate_provider[t.settlement_currency, t.period_end]
-            t.settlement_currency_fx_rate = t.settlement_currency_history.fx_rate
-
-        _l.debug('< fill prices')
+    # def _fill_prices(self):
+    #     _l.debug('> fill prices')
+    #
+    #     for t in self._transactions:
+    #         t.report_currency = self.instance.report_currency
+    #         t.report_currency_history = self.fx_rate_provider[t.report_currency, t.period_end]
+    #         t.report_currency_fx_rate = t.report_currency_history.fx_rate
+    #
+    #         if t.instrument:
+    #             t.instrument_price = self.pricing_provider[t.instrument, t.period_end]
+    #             t.instrument_principal_price = t.instrument_price.principal_price
+    #             t.instrument_accrued_price = t.instrument_price.accrued_price
+    #
+    #             t.instrument_pricing_currency_history = self.fx_rate_provider[
+    #                 t.instrument.pricing_currency, t.period_end]
+    #             t.instrument_pricing_ccy_cur_fx_rate = t.instrument_pricing_currency_history.fx_rate
+    #
+    #             t.instrument_accrued_currency_history = self.fx_rate_provider[
+    #                 t.instrument.accrued_currency, t.period_end]
+    #             t.instrument_accrued_currency_fx_rate = t.instrument_accrued_currency_history.fx_rate
+    #         else:
+    #             t.instrument_price = None
+    #             t.instrument_principal_price = 0
+    #             t.instrument_accrued_price = 0
+    #
+    #             t.instrument_pricing_currency_history = None
+    #             t.instrument_pricing_ccy_cur_fx_rate = 0
+    #
+    #             t.instrument_accrued_currency_history = None
+    #             t.instrument_accrued_currency_fx_rate = 0
+    #
+    #         t.settlement_currency_history = self.fx_rate_provider[t.settlement_currency, t.period_end]
+    #         t.settlement_currency_fx_rate = t.settlement_currency_history.fx_rate
+    #
+    #     _l.debug('< fill prices')
 
     def _calc(self):
         _l.debug('> calc')
 
-        for t in self._transactions:
-            t.cash_consideration_sys = t.cash_consideration * t.settlement_currency_fx_rate
+        periods = sorted({(x.period_begin, x.period_end, x.period_name) for x in self._transactions})
 
-            t.principal_with_sign_sys = t.principal_with_sign * t.settlement_currency_fx_rate
-            t.carry_with_sign_sys = t.carry_with_sign * t.settlement_currency_fx_rate
-            t.overheads_with_sign_sys = t.overheads_with_sign * t.settlement_currency_fx_rate
+        for period in periods:
+            period_begin, period_end, period_name = period
 
-            if t.is_buy or t.is_sell or t.is_instrument_pl:
-                pass
+            for t in self._transactions:
+                # already ordered by accounting_date
+                if t.accounting_date > period_end:
+                    break
 
-            elif t.is_fx_trade:
-                pass
+                # load pricing and fx-rates
 
-            elif t.is_transaction_pl:
-                pass
+                report_currency = self.instance.report_currency
+                report_currency_history = self.fx_rate_provider[report_currency, period_end]
+                report_currency_fx_rate = report_currency_history.fx_rate
 
-            elif t.is_cash_inflow or t.is_cash_outflow:
-                pass
+                try:
+                    sys_to_rep_rate = 1.0 / report_currency_fx_rate
+                except ArithmeticError:
+                    sys_to_rep_rate = 0.0
 
-            else:
-                raise RuntimeError('code bug')
+                if t.instrument:
+                    instrument_price = self.pricing_provider[t.instrument, period_end]
+                    instrument_principal_price = instrument_price.principal_price
+                    instrument_accrued_price = instrument_price.accrued_price
+
+                    instrument_pricing_currency_history = self.fx_rate_provider[t.instrument.pricing_currency, period_end]
+                    instrument_pricing_ccy_cur_fx_rate = instrument_pricing_currency_history.fx_rate
+
+                    instrument_accrued_currency_history = self.fx_rate_provider[t.instrument.accrued_currency, period_end]
+                    instrument_accrued_currency_fx_rate = instrument_accrued_currency_history.fx_rate
+                else:
+                    instrument_price = None
+                    instrument_principal_price = 0
+                    instrument_accrued_price = 0
+
+                    instrument_pricing_currency_history = None
+                    instrument_pricing_ccy_cur_fx_rate = 0
+
+                    instrument_accrued_currency_history = None
+                    instrument_accrued_currency_fx_rate = 0
+
+                settlement_currency_history = self.fx_rate_provider[t.settlement_currency, period_end]
+                settlement_currency_fx_rate = settlement_currency_history.fx_rate
+
+                # -------------------------------------
+
+                cash_consideration_sys = t.cash_consideration * settlement_currency_fx_rate
+                principal_with_sign_sys = t.principal_with_sign * settlement_currency_fx_rate
+                carry_with_sign_sys = t.carry_with_sign * settlement_currency_fx_rate
+                overheads_with_sign_sys = t.overheads_with_sign * settlement_currency_fx_rate
+
+                instrument_principal_sys = 0.0
+                instrument_accrued_sys = 0.0
+                # market_value_sys = 0.0
+
+                if t.is_buy or t.is_sell or t.is_instrument_pl:
+                    instrument_principal_sys = t.position_size_with_sign * t.instrument.price_multiplier * instrument_principal_price * instrument_pricing_ccy_cur_fx_rate
+                    instrument_accrued_sys = t.position_size_with_sign * t.instrument.accrued_multiplier * instrument_accrued_price * instrument_accrued_currency_fx_rate
+
+                    market_value_sys = instrument_principal_sys + instrument_accrued_sys
+
+                elif t.is_fx_trade:
+                    market_value_sys = t.position_size_with_sign * settlement_currency_fx_rate
+
+                elif t.is_transaction_pl:
+                    market_value_sys = t.position_size_with_sign * settlement_currency_fx_rate
+
+                elif t.is_cash_inflow or t.is_cash_outflow:
+                    market_value_sys = cash_consideration_sys
+
+                else:
+                    _l.warn('Unknown transaction class: id=%s, transaction_class=%s', t.id, t.transaction_class)
+                    continue
+
+                cash_consideration_res = cash_consideration_sys * sys_to_rep_rate
+                principal_with_sign_res = principal_with_sign_sys * sys_to_rep_rate
+                carry_with_sign_res = carry_with_sign_sys * sys_to_rep_rate
+                overheads_with_sign_res = overheads_with_sign_sys * sys_to_rep_rate
+
+                instrument_principal_res = instrument_principal_sys * sys_to_rep_rate
+                instrument_accrued_res = instrument_accrued_sys * sys_to_rep_rate
+
+                market_value_res = market_value_sys * sys_to_rep_rate
 
         _l.debug('< calc')
 
