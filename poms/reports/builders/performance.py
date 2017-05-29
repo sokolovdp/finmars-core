@@ -8,16 +8,25 @@ from django.db.models import Q
 from poms.common import formula
 from poms.reports.builders.base_builder import BaseReportBuilder
 from poms.reports.builders.performance_item import PerformanceReportItem
+from poms.reports.builders.pricing import FakeInstrumentPricingProvider, InstrumentPricingProvider, \
+    FakeCurrencyFxRateProvider, CurrencyFxRateProvider
 
 _l = logging.getLogger('poms.reports')
 
 
-# added fields to transcation model: _is_cloned, period_name, period_begin, period_end
+# added fields to transaction model:
+# _is_cloned
+# period_name
+# period_begin
+# period_end
+# settlement_currency_history
 
 class PerformanceReportBuilder(BaseReportBuilder):
-    def __init__(self, instance):
+    def __init__(self, instance, pricing_provider=None, fx_rate_provider=None):
         super(PerformanceReportBuilder, self).__init__(instance)
 
+        self._pricing_provider = pricing_provider
+        self._fx_rate_provider = fx_rate_provider
         self._transactions = []
 
     def build(self):
@@ -29,6 +38,7 @@ class PerformanceReportBuilder(BaseReportBuilder):
                 self._load()
                 self._clone_transactions_if_need()
                 self._process_periods()
+                self._fill_prices()
 
                 if not self.instance.has_errors:
                     pass
@@ -209,14 +219,68 @@ class PerformanceReportBuilder(BaseReportBuilder):
                 name, begin, end = period
                 name = str(name)
                 if not isinstance(begin, date) or not isinstance(end, date):
-                    _l.debug('hacked detected on: %s', self.instance.periodss)
+                    _l.debug('hacker detected on: %s', self.instance.periodss)
             else:
                 name, begin, end = None, None, None
             # _l.debug('period: %s -> %s', trn, (name, begin, end))
 
+            if name is None:
+                name = ''
+            if begin is None:
+                begin = date.min
+            if end is None:
+                end = date.min
+
             trn.period_name = name
             trn.period_begin = begin
             trn.period_end = end
+            trn.period_key = name, begin, end
+
+        self._transactions.sort(key=lambda x: x.period_key)
+
+    @property
+    def _instruments(self):
+        return [t.instrument for t in self._transactions]
+
+    @property
+    def _currencies(self):
+        return [t.settlement_currency for t in self._transactions]
+
+    @property
+    def _dates(self):
+        return [self.instance.report_date] + [t.period_end for t in self._transactions if t.period_end != date.min]
+
+    @property
+    def pricing_provider(self):
+        if self._pricing_provider is None:
+            if self.instance.pricing_policy is None:
+                p = FakeInstrumentPricingProvider(self.instance.master_user, None, self.instance.report_date)
+            else:
+                p = InstrumentPricingProvider(self.instance.master_user, self.instance.pricing_policy,
+                                              self.instance.report_date)
+                p.fill_using_instruments_and_dates(instruments=self._instruments, dates=self._dates)
+            self._pricing_provider = p
+        return self._pricing_provider
+
+    @property
+    def fx_rate_provider(self):
+        if self._fx_rate_provider is None:
+            if self.instance.pricing_policy is None:
+                p = FakeCurrencyFxRateProvider(self.instance.master_user, None, self.instance.report_date)
+            else:
+                p = CurrencyFxRateProvider(self.instance.master_user, self.instance.pricing_policy,
+                                           self.instance.report_date)
+                p.fill_using_currencies_and_dates(currencies=self._currencies, dates=self._dates)
+            self._fx_rate_provider = p
+        return self._fx_rate_provider
+
+    def _fill_prices(self):
+        for t in self._transactions:
+            t.settlement_currency_history = self.fx_rate_provider[t.settlement_currency, t.period_end]
+
+    def _calc_mkt_val_and_pl(self):
+        for t in self._transactions:
+            pass
 
     def _refresh_from_db(self):
         _l.info('> _refresh_from_db')

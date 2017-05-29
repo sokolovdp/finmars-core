@@ -384,7 +384,7 @@ class ReportBuilder(BaseReportBuilder):
             else:
                 p = InstrumentPricingProvider(self.instance.master_user, self.instance.pricing_policy,
                                               self.instance.report_date)
-                p.fill_using_transactions(self._trn_qs(), lazy=False)
+                p.fill_using_transactions(self._trn_qs())
             self._pricing_provider = p
         return self._pricing_provider
 
@@ -396,7 +396,7 @@ class ReportBuilder(BaseReportBuilder):
             else:
                 p = CurrencyFxRateProvider(self.instance.master_user, self.instance.pricing_policy,
                                            self.instance.report_date)
-                p.fill_using_transactions(self._trn_qs(), currencies=[self.instance.report_currency], lazy=False)
+                p.fill_using_transactions(self._trn_qs(), currencies=[self.instance.report_currency])
             self._fx_rate_provider = p
         return self._fx_rate_provider
 
