@@ -27,6 +27,10 @@ from poms.users.fields import MasterUserField, HiddenMemberField
 class PerformanceReportItemSerializer(serializers.Serializer):
     id = serializers.ReadOnlyField()
 
+    period_name = serializers.CharField(read_only=True)
+    period_begin = serializers.DateField(read_only=True)
+    period_end = serializers.DateField(read_only=True)
+
     portfolio = serializers.PrimaryKeyRelatedField(read_only=True)
     account = serializers.PrimaryKeyRelatedField(read_only=True)
     strategy1 = serializers.PrimaryKeyRelatedField(read_only=True)

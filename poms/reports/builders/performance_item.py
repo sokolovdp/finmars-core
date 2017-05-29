@@ -9,6 +9,10 @@ from poms.reports.builders.base_item import BaseReport
 class PerformanceReportItem:
     def __init__(self,
                  report,
+                 id=None,
+                 period_name=None,
+                 period_begin=None,
+                 period_end=None,
                  portfolio=None,
                  account=None,
                  strategy1=None,
@@ -16,7 +20,11 @@ class PerformanceReportItem:
                  strategy3=None,
                  ):
         self.report = report
-        self.id = None
+        self.id = id
+
+        self.period_name = period_name
+        self.period_begin = period_begin
+        self.period_end = period_end
 
         self.portfolio = portfolio
         self.account = account
