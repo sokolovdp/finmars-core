@@ -29,6 +29,13 @@ class PerformanceReportItem:
         self.strategy2 = strategy2
         self.strategy3 = strategy3
 
+        # temporal fields
+        self.principal_res = 0
+        self.carry_res = 0
+        self.overheads_res = 0
+        self.total_res = 0
+
+        # final fields
         self.return_pl = 0
         self.return_nav = 0
         self.pl_in_period = 0
@@ -102,8 +109,9 @@ class PerformanceReport(BaseReport):
 
         self.has_errors = False
 
-        self.begin_date = begin_date or date.min
-        self.end_date = end_date or (date_now() - timedelta(days=1))
+        d = date_now() - timedelta(days=1)
+        self.begin_date = begin_date or date(d.year, 1, 1)
+        self.end_date = end_date or d
         self.report_currency = report_currency or master_user.system_currency
         self.pricing_policy = pricing_policy
         self.periods = periods
