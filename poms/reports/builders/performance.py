@@ -4,6 +4,7 @@ from collections import defaultdict, OrderedDict
 
 from datetime import date, timedelta
 
+from django.conf import settings
 from django.db import transaction
 from django.db.models import Q
 from django.utils.functional import cached_property, SimpleLazyObject
@@ -15,7 +16,7 @@ from poms.reports.builders.performance_item import PerformanceReportItem, Perfor
 from poms.reports.builders.performance_virt_trn import PerformanceVirtualTransaction
 from poms.reports.builders.pricing import FakeInstrumentPricingProvider, InstrumentPricingProvider, \
     FakeCurrencyFxRateProvider, CurrencyFxRateProvider
-from poms.transactions.models import TransactionClass
+from poms.transactions.models import TransactionClass, Transaction
 
 _l = logging.getLogger('poms.reports')
 
@@ -60,27 +61,33 @@ class PerformanceReportBuilder(BaseReportBuilder):
 
         with transaction.atomic():
             try:
+                # if settings.DEBUG and self.instance.begin_date == date.min:
+                #     qs = Transaction.objects.filter(master_user=self.instance.master_user).order_by('accounting_date')
+                #     trn = qs.first()
+                #     if trn:
+                #         self.instance.begin_date = trn.accounting_date
+
                 self._load()
                 self._clone_if_need()
                 self._process_periods()
                 self._calc()
 
-                self.instance.items = [
-                    PerformanceReportItem(
-                        self.instance,
-                        id=x,
-                        period_name='P-%s' % (x // 10),
-                        period_begin=date_now() + timedelta(days=x // 10),
-                        period_end=date_now() + timedelta(days=(x + 1) // 10 - 1),
-                        portfolio=self.instance.master_user.portfolio,
-                        account=self.instance.master_user.account,
-                        strategy1=self.instance.master_user.strategy1,
-                        strategy2=self.instance.master_user.strategy2,
-                        strategy3=self.instance.master_user.strategy3,
-                    )
-                    for x in range(0, 200)]
-                for i in self.instance.items:
-                    i.random()
+                # self.instance.items = [
+                #     PerformanceReportItem(
+                #         self.instance,
+                #         id=x,
+                #         period_name='P-%s' % (x // 10),
+                #         period_begin=date_now() + timedelta(days=x // 10),
+                #         period_end=date_now() + timedelta(days=(x + 1) // 10 - 1),
+                #         portfolio=self.instance.master_user.portfolio,
+                #         account=self.instance.master_user.account,
+                #         strategy1=self.instance.master_user.strategy1,
+                #         strategy2=self.instance.master_user.strategy2,
+                #         strategy3=self.instance.master_user.strategy3,
+                #     )
+                #     for x in range(0, 200)]
+                # for i in self.instance.items:
+                #     i.random()
 
                 if self.instance.has_errors:
                     self.instance.items = []
@@ -319,37 +326,37 @@ class PerformanceReportBuilder(BaseReportBuilder):
         if self.instance.portfolio_mode == PerformanceReport.MODE_IGNORE:
             prtfl = getattr(prtfl, 'id', None)
         elif self.instance.portfolio_mode == PerformanceReport.MODE_INDEPENDENT:
-            pass
+            prtfl = None
         elif self.instance.portfolio_mode == PerformanceReport.MODE_INTERDEPENDENT:
-            pass
+            prtfl = None
 
         if self.instance.account_mode == PerformanceReport.MODE_IGNORE:
             acc = getattr(acc, 'id', None)
         elif self.instance.account_mode == PerformanceReport.MODE_INDEPENDENT:
-            pass
+            acc = None
         elif self.instance.account_mode == PerformanceReport.MODE_INTERDEPENDENT:
-            pass
+            acc = None
 
         if self.instance.strategy1_mode == PerformanceReport.MODE_IGNORE:
             str1 = getattr(str1, 'id', None)
         elif self.instance.strategy1_mode == PerformanceReport.MODE_INDEPENDENT:
-            pass
+            str1 = None
         elif self.instance.strategy1_mode == PerformanceReport.MODE_INTERDEPENDENT:
-            pass
+            str1 = None
 
         if self.instance.strategy2_mode == PerformanceReport.MODE_IGNORE:
             str2 = getattr(str2, 'id', None)
         elif self.instance.strategy2_mode == PerformanceReport.MODE_INDEPENDENT:
-            pass
+            str2 = None
         elif self.instance.strategy2_mode == PerformanceReport.MODE_INTERDEPENDENT:
-            pass
+            str2 = None
 
         if self.instance.strategy3_mode == PerformanceReport.MODE_IGNORE:
             str3 = getattr(str3, 'id', None)
         elif self.instance.strategy3_mode == PerformanceReport.MODE_INDEPENDENT:
-            pass
+            str3 = None
         elif self.instance.strategy3_mode == PerformanceReport.MODE_INTERDEPENDENT:
-            pass
+            str3 = None
 
         return (
             pbegin if pbegin is not None else date.min,
@@ -610,6 +617,7 @@ class PerformanceReportBuilder(BaseReportBuilder):
     #         prev_period_begin, prev_period_end, prev_period_name = period_begin, period_end, period_name
     #
     #     _l.debug('< calc')
+
     def _get_item(self, trn, is_pos=False, is_cash=False):
         pbegin = trn.period_begin
         pend = trn.period_end
@@ -651,11 +659,15 @@ class PerformanceReportBuilder(BaseReportBuilder):
 
         periods = sorted({(x.period_begin, x.period_end, x.period_name) for x in self._transactions})
 
+        _l.debug('periods: len=%s', len(periods))
+
         trns_per_periods = OrderedDict()
 
         for period in periods:
             period_begin, period_end, period_name = period
             period_key = (period_begin, period_end, period_name,)
+
+            # _l.debug('period: [%s:%s] %s', period_begin, period_end, period_name)
 
             trns_per_period = []
             trns_per_periods[period_key] = trns_per_period
@@ -707,7 +719,8 @@ class PerformanceReportBuilder(BaseReportBuilder):
                 cash_item, cash_item_created = self._get_cash_item(trn)
                 pos_item, pos_item_created = self._get_pos_item(trn)
 
-            self.instance.items = list(self._items.values())
+        _l.debug('items: len=%s', len(self._items))
+        self.instance.items = list(self._items.values())
 
         _l.debug('< calc')
 
