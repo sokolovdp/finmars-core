@@ -79,6 +79,9 @@ class PerformanceReportItem:
 
 
 class PerformanceReport(BaseReport):
+    report_type = 0  # VirtualTransaction
+    report_date = date.min  # VirtualTransaction
+
     def __init__(self,
                  id=None,
                  task_id=None,

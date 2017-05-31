@@ -6,14 +6,16 @@ from datetime import date, timedelta
 
 from django.db import transaction
 from django.db.models import Q
-from django.utils.functional import cached_property
+from django.utils.functional import cached_property, SimpleLazyObject
 
 from poms.common import formula
 from poms.common.utils import date_now
 from poms.reports.builders.base_builder import BaseReportBuilder
 from poms.reports.builders.performance_item import PerformanceReportItem, PerformanceReport
+from poms.reports.builders.performance_virt_trn import PerformanceVirtualTransaction
 from poms.reports.builders.pricing import FakeInstrumentPricingProvider, InstrumentPricingProvider, \
     FakeCurrencyFxRateProvider, CurrencyFxRateProvider
+from poms.transactions.models import TransactionClass
 
 _l = logging.getLogger('poms.reports')
 
@@ -59,7 +61,7 @@ class PerformanceReportBuilder(BaseReportBuilder):
         with transaction.atomic():
             try:
                 self._load()
-                self._clone_transactions_if_need()
+                self._clone_if_need()
                 self._process_periods()
                 self._calc()
 
@@ -114,179 +116,82 @@ class PerformanceReportBuilder(BaseReportBuilder):
 
         qs = self._trn_qs()
         for t in qs:
-            # first consolidation processing
+            overrides = {}
 
             if self.instance.portfolio_mode == PerformanceReport.MODE_IGNORE:
-                t.portfolio = self.instance.master_user.portfolio
+                overrides['portfolio'] = self.instance.master_user.portfolio
 
             if self.instance.account_mode == PerformanceReport.MODE_IGNORE:
-                t.account_position = self.instance.master_user.account
-                t.account_cash = self.instance.master_user.account
-                t.account_interim = self.instance.master_user.account
+                overrides['account_position'] = self.instance.master_user.account
+                overrides['account_cash'] = self.instance.master_user.account
+                overrides['account_interim'] = self.instance.master_user.account
 
             if self.instance.strategy1_mode == PerformanceReport.MODE_IGNORE:
-                t.strategy1_position = self.instance.master_user.strategy1
-                t.strategy1_cash = self.instance.master_user.strategy1
+                overrides['strategy1_position'] = self.instance.master_user.strategy1
+                overrides['strategy1_cash'] = self.instance.master_user.strategy1
 
             if self.instance.strategy2_mode == PerformanceReport.MODE_IGNORE:
-                t.strategy2_position = self.instance.master_user.strategy2
-                t.strategy2_cash = self.instance.master_user.strategy2
+                overrides['strategy2_position'] = self.instance.master_user.strategy2
+                overrides['strategy2_cash'] = self.instance.master_user.strategy2
 
             if self.instance.strategy3_mode == PerformanceReport.MODE_IGNORE:
-                t.strategy3_position = self.instance.master_user.strategy3
-                t.strategy3_cash = self.instance.master_user.strategy3
+                overrides['strategy3_position'] = self.instance.master_user.strategy3
+                overrides['strategy3_cash'] = self.instance.master_user.strategy3
 
-            trns.append(t)
+            # if self.instance.allocation_mode == PerformanceReport.MODE_IGNORE:
+            #     overrides['allocation_balance'] = self.instance.master_user.instrument
+            #     overrides['allocation_pl'] = self.instance.master_user.instrument
+
+            trn = PerformanceVirtualTransaction(
+                report=self.instance,
+                pricing_provider=self.pricing_provider,
+                fx_rate_provider=self.fx_rate_provider,
+                trn=t,
+                overrides=overrides
+            )
+            trns.append(trn)
 
         self._transactions = trns
 
         _l.debug('< _load: %s', len(self._transactions))
 
-    def _clone_transactions_if_need(self):
+    def _clone_if_need(self):
         _l.debug('> clone_transactions_if_need')
 
         res = []
         for trn in self._transactions:
-            if trn.is_transfer:
-                trns = self._trn_transfer_clone(trn)
-                res.extend(trns)
+            res.append(trn)
 
-            elif trn.is_fx_transfer:
-                trns = self._trn_fx_transfer_clone(trn)
-                res.extend(trns)
+            if trn.trn_cls.id == TransactionClass.FX_TRADE:
+                trn.is_hidden = True
 
-            elif trn.is_fx_trade:
-                trns = self._trn_fx_trade_clone(trn)
-                res.extend(trns)
+                trn1, trn2 = trn.fx_trade_clone()
+                res.append(trn1)
+                res.append(trn2)
 
-            else:
-                res.append(trn)
+            elif trn.trn_cls.id == TransactionClass.TRANSFER:
+                trn.is_hidden = True
+                # split TRANSFER to sell/buy or buy/sell
+                if trn.pos_size >= 0:
+                    trn1, trn2 = trn.transfer_clone(self._trn_cls_sell, self._trn_cls_buy,
+                                                    t1_pos_sign=1.0, t1_cash_sign=-1.0)
+                else:
+                    trn1, trn2 = trn.transfer_clone(self._trn_cls_buy, self._trn_cls_sell,
+                                                    t1_pos_sign=-1.0, t1_cash_sign=1.0)
+                res.append(trn1)
+                res.append(trn2)
+
+            elif trn.trn_cls.id == TransactionClass.FX_TRANSFER:
+                trn.is_hidden = True
+
+                trn1, trn2 = trn.fx_transfer_clone(trn_cls_out=self._trn_cls_cash_out,
+                                                   trn_cls_in=self._trn_cls_cash_in)
+                res.append(trn1)
+                res.append(trn2)
 
         self._transactions = res
 
         _l.debug('< clone_transactions_if_need: %s', len(self._transactions))
-
-    def _trn_transfer_clone(self, trn):
-        # split TRANSFER to sell/buy or buy/sell
-        if trn.position_size_with_sign >= 0:
-            t1_cls = self._trn_cls_sell
-            t2_cls = self._trn_cls_buy
-            t1_pos_sign = 1.0
-            t1_cash_sign = -1.0
-        else:
-            t1_cls = self._trn_cls_buy
-            t2_cls = self._trn_cls_sell
-            t1_pos_sign = -1.0
-            t1_cash_sign = 1.0
-
-        # t1
-        t1 = self._clone(trn)
-        t1.transaction_class = t1_cls
-
-        t1.position_size_with_sign = abs(trn.position_size_with_sign) * t1_pos_sign
-        t1.cash_consideration = abs(trn.cash_consideration) * t1_cash_sign
-        t1.principal_with_sign = abs(trn.principal_with_sign) * t1_cash_sign
-        t1.carry_with_sign = abs(trn.carry_with_sign) * t1_cash_sign
-        t1.overheads_with_sign = abs(trn.overheads_with_sign) * t1_cash_sign
-
-        t1.account_position = trn.account_cash
-        t1.account_cash = trn.account_cash
-        t1.strategy1_position = trn.strategy1_cash
-        t1.strategy1_cash = trn.strategy1_cash
-        t1.strategy2_position = trn.strategy2_cash
-        t1.strategy2_cash = trn.strategy2_cash
-        t1.strategy3_position = trn.strategy3_cash
-        t1.strategy3_cash = trn.strategy3_cash
-
-        # t2
-        t2 = self._clone(trn)
-        t2.transaction_class = t2_cls
-
-        t2.position_size_with_sign = -t1.position_size_with_sign
-        t2.cash_consideration = -t1.cash_consideration
-        t2.principal_with_sign = -t1.principal_with_sign
-        t2.carry_with_sign = -t1.carry_with_sign
-        t2.overheads_with_sign = -t1.overheads_with_sign
-
-        t2.account_position = trn.account_position
-        t2.account_cash = trn.account_position
-        t2.strategy1_position = trn.strategy1_position
-        t2.strategy1_cash = trn.strategy1_position
-        t2.strategy2_position = trn.strategy2_position
-        t2.strategy2_cash = trn.strategy2_position
-        t2.strategy3_position = trn.strategy3_position
-        t2.strategy3_cash = trn.strategy3_position
-
-        return t1, t2
-
-    def _trn_fx_transfer_clone(self, trn):
-        # t1
-        t1 = self._clone(trn)
-        t1.transaction_class = self._trn_cls_cash_out
-
-        t1.position_size_with_sign = -trn.position_size_with_sign
-        t1.cash_consideration = -trn.cash_consideration
-        t1.principal_with_sign = -trn.principal_with_sign
-        t1.carry_with_sign = -trn.carry_with_sign
-        t1.overheads_with_sign = -trn.overheads_with_sign
-
-        t1.account_position = trn.account_cash
-        t1.account_cash = trn.account_cash
-        t1.strategy1_position = trn.strategy1_cash
-        t1.strategy1_cash = trn.strategy1_cash
-        t1.strategy2_position = trn.strategy2_cash
-        t1.strategy2_cash = trn.strategy2_cash
-        t1.strategy3_position = trn.strategy3_cash
-        t1.strategy3_cash = trn.strategy3_cash
-
-        # t2
-        t2 = self._clone(trn)
-        t2.transaction_class = self._trn_cls_cash_in
-
-        t2.position_size_with_sign = -trn.position_size_with_sign
-        t2.cash_consideration = trn.cash_consideration
-        t2.principal_with_sign = trn.principal_with_sign
-        t2.carry_with_sign = trn.carry_with_sign
-        t2.overheads_with_sign = trn.overheads_with_sign
-
-        t2.account_position = trn.account_position
-        t2.account_cash = trn.account_position
-        t2.strategy1_position = trn.strategy1_position
-        t2.strategy1_cash = trn.strategy1_position
-        t2.strategy2_position = trn.strategy2_position
-        t2.strategy2_cash = trn.strategy2_position
-        t2.strategy3_position = trn.strategy3_position
-        t2.strategy3_cash = trn.strategy3_position
-
-        return t1, t2
-
-    def _trn_fx_trade_clone(self, trn):
-        # always used *_cash for groupping!
-        # t1
-        t1 = self._clone(trn)
-        t1.transaction_currency = trn.transaction_currency
-        t1.settlement_currency = trn.transaction_currency
-        t1.cash_consideration = trn.position_size_with_sign
-        t1.principal_with_sign = trn.position_size_with_sign
-        t1.carry_with_sign = 0.0
-        t1.overheads_with_sign = 0.0
-        t1.reference_fx_rate = 1.0
-        t1.account_cash = trn.account_position
-        t1.strategy1_cash = trn.strategy1_position
-        t1.strategy2_cash = trn.strategy2_position
-        t1.strategy3_cash = trn.strategy3_position
-
-        # t2
-        t2 = self._clone(trn)
-        t2.transaction_currency = trn.transaction_currency
-        t2.settlement_currency = trn.settlement_currency
-        t2.position_size_with_sign = trn.principal_with_sign
-        try:
-            t2.reference_fx_rate = abs(trn.position_size_with_sign / trn.principal_with_sign)
-        except ArithmeticError:
-            t2.reference_fx_rate = 0.0
-
-        return t1, t2
 
     def _process_periods(self):
         _l.debug('> process periods')
@@ -296,7 +201,7 @@ class PerformanceReportBuilder(BaseReportBuilder):
 
         for trn in self._transactions:
             try:
-                period = formula.safe_eval(self.instance.periods, names={'transaction': trn}, context=context)
+                period = formula.safe_eval(self.instance.periods, names={'transaction': trn.trn}, context=context)
             except formula.InvalidExpression:
                 self.instance.has_errors = True
                 _l.debug('periods error', exc_info=True)
@@ -309,18 +214,8 @@ class PerformanceReportBuilder(BaseReportBuilder):
                     _l.debug('hacker detected on: %s', self.instance.periodss)
             else:
                 name, begin, end = None, None, None
-            # _l.debug('period: %s -> %s', trn, (name, begin, end))
 
-            if name is None:
-                name = ''
-            if begin is None:
-                begin = date.min
-            if end is None:
-                end = date.min
-
-            trn.period_name = name
-            trn.period_begin = begin
-            trn.period_end = end
+            trn.set_period(name=name, begin=begin, end=end)
 
         _l.debug('< process periods')
 
@@ -331,8 +226,8 @@ class PerformanceReportBuilder(BaseReportBuilder):
         # instruments = {t.instrument_id: t.instrument for t in self._transactions if t.instrument is not None}
         instruments = {}
         for trn in self._transactions:
-            if trn.instrument:
-                instruments[trn.instrument.id] = trn.instrument
+            if trn.instr:
+                instruments[trn.instr.id] = trn.instr
         return list(instruments.values())
 
     @cached_property
@@ -343,9 +238,9 @@ class PerformanceReportBuilder(BaseReportBuilder):
         # currencies[self.instance.report_currency.id] = self.instance.report_currency
         currencies = {self.instance.report_currency.id: self.instance.report_currency}
         for trn in self._transactions:
-            if trn.transaction_currency:
-                currencies[trn.transaction_currency.id] = trn.transaction_currency
-            currencies[trn.settlement_currency.id] = trn.settlement_currency
+            if trn.trn_ccy:
+                currencies[trn.trn_ccy.id] = trn.trn_ccy
+            currencies[trn.stl_ccy.id] = trn.stl_ccy
         return list(currencies.values())
 
     @cached_property
@@ -357,25 +252,31 @@ class PerformanceReportBuilder(BaseReportBuilder):
 
     @property
     def pricing_provider(self):
-        if self._pricing_provider is None:
-            if self.instance.pricing_policy is None:
-                p = FakeInstrumentPricingProvider(self.instance.master_user, None, None)
-            else:
-                p = InstrumentPricingProvider(self.instance.master_user, self.instance.pricing_policy, None)
-                p.fill_using_instruments_and_dates(instruments=self._instruments, dates=self._dates)
-            self._pricing_provider = p
-        return self._pricing_provider
+        def _factory():
+            if self._pricing_provider is None:
+                if self.instance.pricing_policy is None:
+                    p = FakeInstrumentPricingProvider(self.instance.master_user, None, None)
+                else:
+                    p = InstrumentPricingProvider(self.instance.master_user, self.instance.pricing_policy, None)
+                    p.fill_using_instruments_and_dates(instruments=self._instruments, dates=self._dates)
+                self._pricing_provider = p
+            return self._pricing_provider
+
+        return SimpleLazyObject(_factory)
 
     @property
     def fx_rate_provider(self):
-        if self._fx_rate_provider is None:
-            if self.instance.pricing_policy is None:
-                p = FakeCurrencyFxRateProvider(self.instance.master_user, None, None)
-            else:
-                p = CurrencyFxRateProvider(self.instance.master_user, self.instance.pricing_policy, None)
-                p.fill_using_currencies_and_dates(currencies=self._currencies, dates=self._dates)
-            self._fx_rate_provider = p
-        return self._fx_rate_provider
+        def _factory():
+            if self._fx_rate_provider is None:
+                if self.instance.pricing_policy is None:
+                    p = FakeCurrencyFxRateProvider(self.instance.master_user, None, None)
+                else:
+                    p = CurrencyFxRateProvider(self.instance.master_user, self.instance.pricing_policy, None)
+                    p.fill_using_currencies_and_dates(currencies=self._currencies, dates=self._dates)
+                self._fx_rate_provider = p
+            return self._fx_rate_provider
+
+        return SimpleLazyObject(_factory)
 
     # def _fill_prices(self):
     #     _l.debug('> fill prices')
@@ -531,182 +432,213 @@ class PerformanceReportBuilder(BaseReportBuilder):
 
             return item, True
 
+    # def _calc(self):
+    #     _l.debug('> calc')
+    #
+    #     periods = sorted({(x.period_begin, x.period_end, x.period_name) for x in self._transactions})
+    #
+    #     prev_period_begin, prev_period_end, prev_period_name = None, None, None
+    #     for period in periods:
+    #         period_begin, period_end, period_name = period
+    #         period_key = (period_begin, period_end, period_name,)
+    #
+    #         self._periods.append(period_key)
+    #         items_mkt_val = []
+    #
+    #         for trn in self._transactions:
+    #             # already ordered by accounting_date
+    #             if trn.accounting_date > period_end:
+    #                 break
+    #
+    #             # load pricing and fx-rates
+    #
+    #             report_currency = self.instance.report_currency
+    #             report_currency_history = self.fx_rate_provider[report_currency, period_end]
+    #             report_currency_fx_rate = report_currency_history.fx_rate
+    #
+    #             try:
+    #                 sys_to_rep_rate = 1.0 / report_currency_fx_rate
+    #             except ArithmeticError:
+    #                 sys_to_rep_rate = 0.0
+    #
+    #             if trn.instrument:
+    #                 instrument_price = self.pricing_provider[trn.instrument, period_end]
+    #                 instrument_principal_price = instrument_price.principal_price
+    #                 instrument_accrued_price = instrument_price.accrued_price
+    #
+    #                 instrument_pricing_currency_history = self.fx_rate_provider[
+    #                     trn.instrument.pricing_currency, period_end]
+    #                 instrument_pricing_ccy_cur_fx_rate = instrument_pricing_currency_history.fx_rate
+    #
+    #                 instrument_accrued_currency_history = self.fx_rate_provider[
+    #                     trn.instrument.accrued_currency, period_end]
+    #                 instrument_accrued_currency_fx_rate = instrument_accrued_currency_history.fx_rate
+    #             else:
+    #                 instrument_price = None
+    #                 instrument_principal_price = 0
+    #                 instrument_accrued_price = 0
+    #
+    #                 instrument_pricing_currency_history = None
+    #                 instrument_pricing_ccy_cur_fx_rate = 0
+    #
+    #                 instrument_accrued_currency_history = None
+    #                 instrument_accrued_currency_fx_rate = 0
+    #
+    #             settlement_currency_history = self.fx_rate_provider[trn.settlement_currency, period_end]
+    #             settlement_currency_fx_rate = settlement_currency_history.fx_rate
+    #
+    #             # -------------------------------------
+    #
+    #             cash_consideration_sys = trn.cash_consideration * settlement_currency_fx_rate
+    #             principal_with_sign_sys = trn.principal_with_sign * settlement_currency_fx_rate
+    #             carry_with_sign_sys = trn.carry_with_sign * settlement_currency_fx_rate
+    #             overheads_with_sign_sys = trn.overheads_with_sign * settlement_currency_fx_rate
+    #
+    #             instrument_principal_sys = 0
+    #             instrument_accrued_sys = 0
+    #             # market_value_sys = 0
+    #
+    #             if trn.is_buy or trn.is_sell or trn.is_instrument_pl:
+    #                 instrument_principal_sys = trn.position_size_with_sign * trn.instrument.price_multiplier * instrument_principal_price * instrument_pricing_ccy_cur_fx_rate
+    #                 instrument_accrued_sys = trn.position_size_with_sign * trn.instrument.accrued_multiplier * instrument_accrued_price * instrument_accrued_currency_fx_rate
+    #
+    #                 # market_value_sys = instrument_principal_sys + instrument_accrued_sys
+    #
+    #             elif trn.is_fx_trade:
+    #                 # market_value_sys = trn.position_size_with_sign * settlement_currency_fx_rate
+    #                 pass
+    #
+    #             elif trn.is_transaction_pl:
+    #                 # market_value_sys = cash_consideration_sys
+    #                 pass
+    #
+    #             elif trn.is_cash_inflow or trn.is_cash_outflow:
+    #                 # market_value_sys = cash_consideration_sys
+    #                 pass
+    #
+    #             else:
+    #                 _l.warn('Unknown transaction class: id=%s, transaction_class=%s', trn.id, trn.transaction_class)
+    #                 continue
+    #
+    #             # cash_consideration_res = cash_consideration_sys * sys_to_rep_rate
+    #             principal_with_sign_res = principal_with_sign_sys * sys_to_rep_rate
+    #             carry_with_sign_res = carry_with_sign_sys * sys_to_rep_rate
+    #             overheads_with_sign_res = overheads_with_sign_sys * sys_to_rep_rate
+    #
+    #             total_with_sign_sys = principal_with_sign_sys + carry_with_sign_sys + overheads_with_sign_sys
+    #             total_with_sign_res = principal_with_sign_res + carry_with_sign_res + overheads_with_sign_res
+    #
+    #             instrument_principal_res = instrument_principal_sys * sys_to_rep_rate
+    #             instrument_accrued_res = instrument_accrued_sys * sys_to_rep_rate
+    #
+    #             # market_value_res = market_value_sys * sys_to_rep_rate
+    #
+    #             global_time_weight = (self.instance.end_date - trn.accounting_date).days / \
+    #                                  (self.instance.end_date - self.instance.begin_date).days
+    #             period_time_weight = (period_end - trn.accounting_date).days / \
+    #                                  (period_end - period_begin).days
+    #
+    #             cash_flow_cash_sys = total_with_sign_sys
+    #             cash_flow_pos_sys = -total_with_sign_sys
+    #
+    #             cash_flow_cash_res = total_with_sign_res
+    #             cash_flow_pos_res = -total_with_sign_res
+    #
+    #             time_weight_cash_flow_cash_sys = cash_flow_cash_sys * period_time_weight
+    #             time_weight_cash_flow_pos_sys = cash_flow_pos_sys * period_time_weight
+    #
+    #             time_weight_cash_flow_cash_res = cash_flow_cash_res * period_time_weight
+    #             time_weight_cash_flow_pos_res = cash_flow_pos_res * period_time_weight
+    #
+    #             # mkt_val
+    #             item_mkt_val, item_mkt_val_created = self._get_mkt_value_item(
+    #                 period_begin=period_begin,
+    #                 period_end=period_end,
+    #                 period_name=period_name,
+    #                 portfolio=trn.portfolio,
+    #                 account=trn.account_pos,
+    #                 strategy1=trn.strategy1_pos,
+    #                 strategy2=trn.strategy2_pos,
+    #                 strategy3=trn.strategy3_pos
+    #             )
+    #             item_mkt_val.principal_res += principal_with_sign_res + instrument_principal_res
+    #             item_mkt_val.carry_res += carry_with_sign_res + instrument_accrued_res
+    #             item_mkt_val.overheads_res += overheads_with_sign_res
+    #             item_mkt_val.total_res += (principal_with_sign_res + instrument_principal_res) + \
+    #                                       (carry_with_sign_res + instrument_accrued_res) + \
+    #                                       overheads_with_sign_res
+    #             if item_mkt_val_created:
+    #                 items_mkt_val.append(item_mkt_val)
+    #
+    #             # 1
+    #             item_cash, item_cash_created = self._get_item(
+    #                 period_begin=period_begin,
+    #                 period_end=period_end,
+    #                 period_name=period_name,
+    #                 portfolio=trn.portfolio,
+    #                 account=trn.account_cash,
+    #                 strategy1=trn.strategy1_cash,
+    #                 strategy2=trn.strategy2_cash,
+    #                 strategy3=trn.strategy3_cash
+    #             )
+    #             item_cash.cash_inflows += cash_flow_cash_res
+    #             item_cash.cash_outflows += 0
+    #             item_cash.time_weighted_cash_inflows += time_weight_cash_flow_cash_res
+    #             item_cash.time_weighted_cash_outflows += 0
+    #
+    #             # 2
+    #             item_pos, item_pos_created = self._get_item(
+    #                 period_begin=period_begin,
+    #                 period_end=period_end,
+    #                 period_name=period_name,
+    #                 portfolio=trn.portfolio,
+    #                 account=trn.account_position,
+    #                 strategy1=trn.strategy1_position,
+    #                 strategy2=trn.strategy2_position,
+    #                 strategy3=trn.strategy3_position
+    #             )
+    #             item_pos.cash_inflows += cash_flow_pos_res
+    #             item_pos.cash_outflows += 0
+    #             item_pos.time_weighted_cash_inflows += time_weight_cash_flow_pos_res
+    #             item_pos.time_weighted_cash_outflows += 0
+    #
+    #         # process market value rows
+    #         for item_mkt_val in items_mkt_val:
+    #             global_time_weight = (self.instance.end_date - item_mkt_val.period_end).days / \
+    #                                  (self.instance.end_date - self.instance.begin_date).days
+    #
+    #         prev_period_begin, prev_period_end, prev_period_name = period_begin, period_end, period_name
+    #
+    #     _l.debug('< calc')
+
     def _calc(self):
         _l.debug('> calc')
 
         periods = sorted({(x.period_begin, x.period_end, x.period_name) for x in self._transactions})
 
-        prev_period_begin, prev_period_end, prev_period_name = None, None, None
+        trns_per_periods = OrderedDict()
+
         for period in periods:
             period_begin, period_end, period_name = period
             period_key = (period_begin, period_end, period_name,)
 
-            self._periods.append(period_key)
-            items_mkt_val = []
+            trns_per_period = []
+            trns_per_periods[period_key] = trns_per_period
 
+            # already ordered by accounting_date
             for trn in self._transactions:
-                # already ordered by accounting_date
-                if trn.accounting_date > period_end:
-                    break
-
-                # load pricing and fx-rates
-
-                report_currency = self.instance.report_currency
-                report_currency_history = self.fx_rate_provider[report_currency, period_end]
-                report_currency_fx_rate = report_currency_history.fx_rate
-
-                try:
-                    sys_to_rep_rate = 1.0 / report_currency_fx_rate
-                except ArithmeticError:
-                    sys_to_rep_rate = 0.0
-
-                if trn.instrument:
-                    instrument_price = self.pricing_provider[trn.instrument, period_end]
-                    instrument_principal_price = instrument_price.principal_price
-                    instrument_accrued_price = instrument_price.accrued_price
-
-                    instrument_pricing_currency_history = self.fx_rate_provider[
-                        trn.instrument.pricing_currency, period_end]
-                    instrument_pricing_ccy_cur_fx_rate = instrument_pricing_currency_history.fx_rate
-
-                    instrument_accrued_currency_history = self.fx_rate_provider[
-                        trn.instrument.accrued_currency, period_end]
-                    instrument_accrued_currency_fx_rate = instrument_accrued_currency_history.fx_rate
-                else:
-                    instrument_price = None
-                    instrument_principal_price = 0
-                    instrument_accrued_price = 0
-
-                    instrument_pricing_currency_history = None
-                    instrument_pricing_ccy_cur_fx_rate = 0
-
-                    instrument_accrued_currency_history = None
-                    instrument_accrued_currency_fx_rate = 0
-
-                settlement_currency_history = self.fx_rate_provider[trn.settlement_currency, period_end]
-                settlement_currency_fx_rate = settlement_currency_history.fx_rate
-
-                # -------------------------------------
-
-                cash_consideration_sys = trn.cash_consideration * settlement_currency_fx_rate
-                principal_with_sign_sys = trn.principal_with_sign * settlement_currency_fx_rate
-                carry_with_sign_sys = trn.carry_with_sign * settlement_currency_fx_rate
-                overheads_with_sign_sys = trn.overheads_with_sign * settlement_currency_fx_rate
-
-                instrument_principal_sys = 0
-                instrument_accrued_sys = 0
-                # market_value_sys = 0
-
-                if trn.is_buy or trn.is_sell or trn.is_instrument_pl:
-                    instrument_principal_sys = trn.position_size_with_sign * trn.instrument.price_multiplier * instrument_principal_price * instrument_pricing_ccy_cur_fx_rate
-                    instrument_accrued_sys = trn.position_size_with_sign * trn.instrument.accrued_multiplier * instrument_accrued_price * instrument_accrued_currency_fx_rate
-
-                    # market_value_sys = instrument_principal_sys + instrument_accrued_sys
-
-                elif trn.is_fx_trade:
-                    # market_value_sys = trn.position_size_with_sign * settlement_currency_fx_rate
-                    pass
-
-                elif trn.is_transaction_pl:
-                    # market_value_sys = cash_consideration_sys
-                    pass
-
-                elif trn.is_cash_inflow or trn.is_cash_outflow:
-                    # market_value_sys = cash_consideration_sys
-                    pass
-
-                else:
-                    _l.warn('Unknown transaction class: id=%s, transaction_class=%s', trn.id, trn.transaction_class)
+                if trn.is_hidden:
                     continue
 
-                # cash_consideration_res = cash_consideration_sys * sys_to_rep_rate
-                principal_with_sign_res = principal_with_sign_sys * sys_to_rep_rate
-                carry_with_sign_res = carry_with_sign_sys * sys_to_rep_rate
-                overheads_with_sign_res = overheads_with_sign_sys * sys_to_rep_rate
+                if trn.acc_date > period_end:
+                    break
 
-                total_with_sign_sys = principal_with_sign_sys + carry_with_sign_sys + overheads_with_sign_sys
-                total_with_sign_res = principal_with_sign_res + carry_with_sign_res + overheads_with_sign_res
+                trn2 = trn.clone()
+                trns_per_period.append(trn2)
 
-                instrument_principal_res = instrument_principal_sys * sys_to_rep_rate
-                instrument_accrued_res = instrument_accrued_sys * sys_to_rep_rate
-
-                # market_value_res = market_value_sys * sys_to_rep_rate
-
-                global_time_weight = (self.instance.end_date - trn.accounting_date).days / \
-                                     (self.instance.end_date - self.instance.begin_date).days
-                period_time_weight = (period_end - trn.accounting_date).days / \
-                                     (period_end - period_begin).days
-
-                cash_flow_cash_sys = total_with_sign_sys
-                cash_flow_pos_sys = -total_with_sign_sys
-
-                cash_flow_cash_res = total_with_sign_res
-                cash_flow_pos_res = -total_with_sign_res
-
-                time_weight_cash_flow_cash_sys = cash_flow_cash_sys * period_time_weight
-                time_weight_cash_flow_pos_sys = cash_flow_pos_sys * period_time_weight
-
-                time_weight_cash_flow_cash_res = cash_flow_cash_res * period_time_weight
-                time_weight_cash_flow_pos_res = cash_flow_pos_res * period_time_weight
-
-                # mkt_val
-                item_mkt_val, item_mkt_val_created = self._get_mkt_value_item(
-                    period_begin=period_begin,
-                    period_end=period_end,
-                    period_name=period_name,
-                    portfolio=trn.portfolio,
-                    account=trn.account_pos,
-                    strategy1=trn.strategy1_pos,
-                    strategy2=trn.strategy2_pos,
-                    strategy3=trn.strategy3_pos
-                )
-                item_mkt_val.principal_res += principal_with_sign_res + instrument_principal_res
-                item_mkt_val.carry_res += carry_with_sign_res + instrument_accrued_res
-                item_mkt_val.overheads_res += overheads_with_sign_res
-                item_mkt_val.total_res += (principal_with_sign_res + instrument_principal_res) + \
-                                          (carry_with_sign_res + instrument_accrued_res) + \
-                                          overheads_with_sign_res
-                if item_mkt_val_created:
-                    items_mkt_val.append(item_mkt_val)
-
-                # 1
-                item_cash, item_cash_created = self._get_item(
-                    period_begin=period_begin,
-                    period_end=period_end,
-                    period_name=period_name,
-                    portfolio=trn.portfolio,
-                    account=trn.account_cash,
-                    strategy1=trn.strategy1_cash,
-                    strategy2=trn.strategy2_cash,
-                    strategy3=trn.strategy3_cash
-                )
-                item_cash.cash_inflows += cash_flow_cash_res
-                item_cash.cash_outflows += 0
-                item_cash.time_weighted_cash_inflows += time_weight_cash_flow_cash_res
-                item_cash.time_weighted_cash_outflows += 0
-
-                # 2
-                item_pos, item_pos_created = self._get_item(
-                    period_begin=period_begin,
-                    period_end=period_end,
-                    period_name=period_name,
-                    portfolio=trn.portfolio,
-                    account=trn.account_position,
-                    strategy1=trn.strategy1_position,
-                    strategy2=trn.strategy2_position,
-                    strategy3=trn.strategy3_position
-                )
-                item_pos.cash_inflows += cash_flow_pos_res
-                item_pos.cash_outflows += 0
-                item_pos.time_weighted_cash_inflows += time_weight_cash_flow_pos_res
-                item_pos.time_weighted_cash_outflows += 0
-
-            # process market value rows
-            for item_mkt_val in items_mkt_val:
-                global_time_weight = (self.instance.end_date - item_mkt_val.period_end).days / \
-                                     (self.instance.end_date - self.instance.begin_date).days
-
-            prev_period_begin, prev_period_end, prev_period_name = period_begin, period_end, period_name
+                trn2.processing_date = period_end
+                trn2.perf_pricing()
+                trn2.perf_calc()
 
         _l.debug('< calc')
 
