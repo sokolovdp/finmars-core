@@ -463,6 +463,42 @@ class VirtualTransaction(YTMMixin, BaseReportItem):
     def __repr__(self):
         return 'VT(%s)' % self.pk
 
+    @property
+    def is_buy(self):
+        return self.trn_cls.id == TransactionClass.BUY
+
+    @property
+    def is_sell(self):
+        return self.trn_cls.id == TransactionClass.SELL
+
+    @property
+    def is_fx_trade(self):
+        return self.trn_cls.id == TransactionClass.FX_TRADE
+
+    @property
+    def is_instrument_pl(self):
+        return self.trn_cls.id == TransactionClass.INSTRUMENT_PL
+
+    @property
+    def is_transaction_pl(self):
+        return self.trn_cls.id == TransactionClass.TRANSACTION_PL
+
+    @property
+    def is_transfer(self):
+        return self.trn_cls.id == TransactionClass.TRANSFER
+
+    @property
+    def is_fx_transfer(self):
+        return self.trn_cls.id == TransactionClass.FX_TRANSFER
+
+    @property
+    def is_cash_inflow(self):
+        return self.trn_cls.id == TransactionClass.CASH_INFLOW
+
+    @property
+    def is_cash_outflow(self):
+        return self.trn_cls.id == TransactionClass.CASH_OUTFLOW
+
     def pricing(self):
         # report ccy
         self.report_ccy_cur = self.fx_rate_provider[self.report.report_currency]

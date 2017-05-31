@@ -50,9 +50,9 @@ class PerformanceReportBuilder(BaseReportBuilder):
         self._fx_rate_provider = fx_rate_provider
         self._transactions = None
         self._periods = []
-        self._mkt_values = {}
-        self._mkt_values_by_period = defaultdict(list)
-        self._items = OrderedDict()
+        # self._mkt_values = {}
+        # self._mkt_values_by_period = defaultdict(list)
+        self._items_items = OrderedDict()
 
     def build(self):
         st = time.perf_counter()
@@ -314,123 +314,123 @@ class PerformanceReportBuilder(BaseReportBuilder):
     #
     #     _l.debug('< fill prices')
 
-    def _get_key(self, period_begin=None, period_end=None, period_name=None,
-                 portfolio=None, account=None, strategy1=None, strategy2=None, strategy3=None):
+    def _get_key(self, pbegin=None, pend=None, pname=None,
+                 prtfl=None, acc=None, str1=None, str2=None, str3=None):
         if self.instance.portfolio_mode == PerformanceReport.MODE_IGNORE:
-            portfolio = getattr(portfolio, 'id', None)
+            prtfl = getattr(prtfl, 'id', None)
         elif self.instance.portfolio_mode == PerformanceReport.MODE_INDEPENDENT:
             pass
         elif self.instance.portfolio_mode == PerformanceReport.MODE_INTERDEPENDENT:
             pass
 
         if self.instance.account_mode == PerformanceReport.MODE_IGNORE:
-            account = getattr(account, 'id', None)
+            acc = getattr(acc, 'id', None)
         elif self.instance.account_mode == PerformanceReport.MODE_INDEPENDENT:
             pass
         elif self.instance.account_mode == PerformanceReport.MODE_INTERDEPENDENT:
             pass
 
         if self.instance.strategy1_mode == PerformanceReport.MODE_IGNORE:
-            strategy1 = getattr(strategy1, 'id', None)
+            str1 = getattr(str1, 'id', None)
         elif self.instance.strategy1_mode == PerformanceReport.MODE_INDEPENDENT:
             pass
         elif self.instance.strategy1_mode == PerformanceReport.MODE_INTERDEPENDENT:
             pass
 
         if self.instance.strategy2_mode == PerformanceReport.MODE_IGNORE:
-            strategy2 = getattr(strategy2, 'id', None)
+            str2 = getattr(str2, 'id', None)
         elif self.instance.strategy2_mode == PerformanceReport.MODE_INDEPENDENT:
             pass
         elif self.instance.strategy2_mode == PerformanceReport.MODE_INTERDEPENDENT:
             pass
 
         if self.instance.strategy3_mode == PerformanceReport.MODE_IGNORE:
-            strategy3 = getattr(strategy3, 'id', None)
+            str3 = getattr(str3, 'id', None)
         elif self.instance.strategy3_mode == PerformanceReport.MODE_INDEPENDENT:
             pass
         elif self.instance.strategy3_mode == PerformanceReport.MODE_INTERDEPENDENT:
             pass
 
         return (
-            period_begin if period_begin is not None else date.min,
-            period_end if period_end is not None else date.min,
-            period_name if period_name is not None else '',
-            portfolio if portfolio is not None else 0,
-            account if portfolio is not None else 0,
-            strategy1 if portfolio is not None else 0,
-            strategy2 if portfolio is not None else 0,
-            strategy3 if portfolio is not None else 0,
+            pbegin if pbegin is not None else date.min,
+            pend if pend is not None else date.min,
+            pname if pname is not None else '',
+            prtfl if prtfl is not None else 0,
+            acc if acc is not None else 0,
+            str1 if str1 is not None else 0,
+            str2 if str2 is not None else 0,
+            str3 if str3 is not None else 0,
         )
 
-    def _get_item(self, period_begin=None, period_end=None, period_name=None,
-                  portfolio=None, account=None, strategy1=None, strategy2=None, strategy3=None):
-        key = self._get_key(
-            period_begin=period_begin,
-            period_end=period_end,
-            period_name=period_name,
-            portfolio=portfolio,
-            account=account,
-            strategy1=strategy1,
-            strategy2=strategy2,
-            strategy3=strategy3
-        )
-        try:
-            item = self._items[key]
-            return item, False
-        except KeyError:
-            item = PerformanceReportItem(
-                self.instance,
-                id=key,
-                period_begin=period_begin,
-                period_end=period_end,
-                period_name=period_name,
-                portfolio=portfolio,
-                account=account,
-                strategy1=strategy1,
-                strategy2=strategy2,
-                strategy3=strategy3
-            )
-            self._items[key] = item
-            return item, True
+    # def _get_item(self, period_begin=None, period_end=None, period_name=None,
+    #               portfolio=None, account=None, strategy1=None, strategy2=None, strategy3=None):
+    #     key = self._get_key(
+    #         period_begin=period_begin,
+    #         period_end=period_end,
+    #         period_name=period_name,
+    #         portfolio=portfolio,
+    #         account=account,
+    #         strategy1=strategy1,
+    #         strategy2=strategy2,
+    #         strategy3=strategy3
+    #     )
+    #     try:
+    #         item = self._items[key]
+    #         return item, False
+    #     except KeyError:
+    #         item = PerformanceReportItem(
+    #             self.instance,
+    #             id=key,
+    #             period_begin=period_begin,
+    #             period_end=period_end,
+    #             period_name=period_name,
+    #             portfolio=portfolio,
+    #             account=account,
+    #             strategy1=strategy1,
+    #             strategy2=strategy2,
+    #             strategy3=strategy3
+    #         )
+    #         self._items[key] = item
+    #         return item, True
 
-    def _get_mkt_value_item(self, period_begin=None, period_end=None, period_name=None,
-                            portfolio=None, account=None, strategy1=None, strategy2=None, strategy3=None):
-        key = self._get_key(
-            period_begin=period_begin,
-            period_end=period_end,
-            period_name=period_name,
-            portfolio=portfolio,
-            account=account,
-            strategy1=strategy1,
-            strategy2=strategy2,
-            strategy3=strategy3
-        )
-        try:
-            item = self._mkt_values[key]
-            return item, False
-        except KeyError:
-            item = PerformanceReportItem(
-                self.instance,
-                id=key,
-                period_begin=period_begin,
-                period_end=period_end,
-                period_name=period_name,
-                portfolio=portfolio,
-                account=account,
-                strategy1=strategy1,
-                strategy2=strategy2,
-                strategy3=strategy3
-            )
-            self._mkt_values[key] = item
-
-            period_key = (
-                period_begin,
-                period_end,
-                period_name,
-            )
-            self._mkt_values_by_period[period_key].add(item)
-
-            return item, True
+    # def _get_mkt_value_item(self, period_begin=None, period_end=None, period_name=None,
+    #                         portfolio=None, account=None, strategy1=None, strategy2=None, strategy3=None):
+    #     key = self._get_key(
+    #         period_begin=period_begin,
+    #         period_end=period_end,
+    #         period_name=period_name,
+    #         portfolio=portfolio,
+    #         account=account,
+    #         strategy1=strategy1,
+    #         strategy2=strategy2,
+    #         strategy3=strategy3
+    #     )
+    #     try:
+    #         item = self._mkt_values[key]
+    #         return item, False
+    #     except KeyError:
+    #         item = PerformanceReportItem(
+    #             self.instance,
+    #             id=key,
+    #             period_begin=period_begin,
+    #             period_end=period_end,
+    #             period_name=period_name,
+    #             portfolio=portfolio,
+    #             account=account,
+    #             strategy1=strategy1,
+    #             strategy2=strategy2,
+    #             strategy3=strategy3
+    #         )
+    #         self._mkt_values[key] = item
+    #
+    #         period_key = (
+    #             period_begin,
+    #             period_end,
+    #             period_name,
+    #         )
+    #         self._mkt_values_by_period[period_key].add(item)
+    #
+    #         return item, True
 
     # def _calc(self):
     #     _l.debug('> calc')
@@ -625,6 +625,8 @@ class PerformanceReportBuilder(BaseReportBuilder):
             trns_per_period = []
             trns_per_periods[period_key] = trns_per_period
 
+            mkt_vals_per_period = OrderedDict()
+
             # already ordered by accounting_date
             for trn in self._transactions:
                 if trn.is_hidden:
@@ -634,11 +636,32 @@ class PerformanceReportBuilder(BaseReportBuilder):
                     break
 
                 trn2 = trn.clone()
-                trns_per_period.append(trn2)
-
                 trn2.processing_date = period_end
                 trn2.perf_pricing()
                 trn2.perf_calc()
+                trns_per_period.append(trn2)
+
+                if trn2.is_buy or trn2.is_sell:
+                    mkt_val_key = self._get_key(
+                        pbegin=period_begin,
+                        pend=period_end,
+                        pname=period_name,
+                        prtfl=trn.prtfl,
+                        acc=trn.acc_pos,
+                        str1=trn.str1_pos,
+                        str2=trn.str2_pos,
+                        str3=trn.str3_pos
+                    )
+                    try:
+                        mkt_val = mkt_vals_per_period[mkt_val_key]
+                    except KeyError:
+                        mkt_val = trn2.perf_clone_as_mkt_val()
+                        mkt_val.perf_calc()
+                        mkt_vals_per_period[mkt_val_key] = mkt_val
+
+                    mkt_val.perf_mkt_val_add(trn2)
+
+            trns_per_period.extend(mkt_vals_per_period.values())
 
         _l.debug('< calc')
 
