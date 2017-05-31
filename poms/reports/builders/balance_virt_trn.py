@@ -440,7 +440,8 @@ class VirtualTransaction(YTMMixin, BaseReportItem):
         elif report.report_type == Report.TYPE_PL:
             self.alloc = self.alloc_pl
         else:
-            raise RuntimeError('Bad report type: %s' % (report.report_type,))
+            # raise RuntimeError('Bad report type: %s' % (report.report_type,))
+            pass
 
         self.trade_price = overrides.get('trade_price', trn.trade_price)
 
