@@ -88,7 +88,11 @@ class PerformanceVirtualTransaction(VirtualTransaction):
 
     def perf_calc(self):
         if self.is_mkt_val:
-            pass
+            try:
+                self.global_time_weight = (self.report.end_date - self.processing_date).days / \
+                                          (self.report.end_date - self.report.begin_date).days
+            except ArithmeticError:
+                self.global_time_weight = 0
         else:
             # if self.trn_cls.id in [TransactionClass.BUY, TransactionClass.SELL, TransactionClass.TRANSACTION_PL,
             #                        TransactionClass.INSTRUMENT_PL, TransactionClass.FX_TRADE]:

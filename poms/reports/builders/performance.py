@@ -52,7 +52,7 @@ class PerformanceReportBuilder(BaseReportBuilder):
         self._periods = []
         # self._mkt_values = {}
         # self._mkt_values_by_period = defaultdict(list)
-        self._items_items = OrderedDict()
+        self._items = OrderedDict()
 
     def build(self):
         st = time.perf_counter()
@@ -610,6 +610,41 @@ class PerformanceReportBuilder(BaseReportBuilder):
     #         prev_period_begin, prev_period_end, prev_period_name = period_begin, period_end, period_name
     #
     #     _l.debug('< calc')
+    def _get_item(self, trn, is_pos=False, is_cash=False):
+        pbegin = trn.period_begin
+        pend = trn.period_end
+        pname = trn.period_name
+        prtfl = trn.prtfl
+        if is_cash:
+            acc = trn.acc_cash
+            str1 = trn.str1_cash
+            str2 = trn.str2_cash
+            str3 = trn.str3_cash
+        elif is_pos:
+            acc = trn.acc_pos
+            str1 = trn.str1_pos
+            str2 = trn.str2_pos
+            str3 = trn.str3_pos
+        else:
+            raise RuntimeError('bad args')
+
+        key = self._get_key(pbegin=pbegin, pend=pend, pname=pname, prtfl=prtfl, acc=acc, str1=str1, str2=str2,
+                            str3=str3)
+        try:
+            item = self._items[key]
+            return item, False
+        except KeyError:
+            item = PerformanceReportItem(self.instance, id=key, period_begin=pbegin, period_end=pend,
+                                         period_name=pname, portfolio=prtfl, account=acc, strategy1=str1,
+                                         strategy2=str2, strategy3=str3)
+            self._items[key] = item
+            return item, True
+
+    def _get_cash_item(self, trn):
+        return self._get_item(trn=trn, is_cash=True)
+
+    def _get_pos_item(self, trn):
+        return self._get_item(trn=trn, is_pos=True)
 
     def _calc(self):
         _l.debug('> calc')
@@ -662,6 +697,17 @@ class PerformanceReportBuilder(BaseReportBuilder):
                     mkt_val.perf_mkt_val_add(trn2)
 
             trns_per_period.extend(mkt_vals_per_period.values())
+
+            # ------
+            for trn in trns_per_period:
+                if trn.is_mkt_val:
+                    pass
+                else:
+                    pass
+                cash_item, cash_item_created = self._get_cash_item(trn)
+                pos_item, pos_item_created = self._get_pos_item(trn)
+
+            self.instance.items = list(self._items.values())
 
         _l.debug('< calc')
 
