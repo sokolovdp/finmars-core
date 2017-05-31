@@ -18,7 +18,7 @@ class PerformanceReportItem:
                  strategy3=None,
                  ):
         self.report = report
-        self.id = id
+        self.id = str(id)
 
         self.period_begin = period_begin
         self.period_end = period_end

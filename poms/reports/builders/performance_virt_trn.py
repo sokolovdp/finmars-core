@@ -1,7 +1,6 @@
 from datetime import date
 
 from poms.reports.builders.balance_virt_trn import VirtualTransaction
-from poms.transactions.models import TransactionClass
 
 
 class PerformanceVirtualTransaction(VirtualTransaction):

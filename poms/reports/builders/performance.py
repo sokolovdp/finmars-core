@@ -359,8 +359,8 @@ class PerformanceReportBuilder(BaseReportBuilder):
             str3 = None
 
         return (
-            pbegin if pbegin is not None else date.min,
-            pend if pend is not None else date.min,
+            str(pbegin if pbegin is not None else date.min),
+            str(pend if pend is not None else date.min),
             pname if pname is not None else '',
             prtfl if prtfl is not None else 0,
             acc if acc is not None else 0,
