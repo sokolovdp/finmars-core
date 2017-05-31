@@ -130,7 +130,7 @@ class PerformanceReportSerializer(serializers.Serializer):
 
     def validate(self, attrs):
         periods = attrs['periods']
-        if 'date_group' not in periods:
+        if not periods.startswith('date_group('):
             raise serializers.ValidationError({'periods': ugettext('function "date_group" not found')})
         return attrs
 
