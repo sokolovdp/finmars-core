@@ -21,28 +21,6 @@ from poms.transactions.models import TransactionClass, Transaction
 _l = logging.getLogger('poms.reports')
 
 
-# added fields to transaction model:
-# _is_cloned
-# period_name
-# period_begin
-# period_end
-# report_currency
-# report_currency_history
-# report_currency_fx_rate
-# instrument_price
-# instrument_principal_price
-# instrument_accrued_price
-# instrument_pricing_currency_history
-# instrument_pricing_ccy_cur_fx_rate
-# instrument_accrued_currency_history
-# instrument_accrued_currency_fx_rate
-# settlement_currency_history
-# settlement_currency_fx_rate
-# cash_consideration_sys
-# principal_with_sign_sys
-# carry_with_sign_sys
-# overheads_with_sign_sys
-
 class PerformanceReportBuilder(BaseReportBuilder):
     def __init__(self, instance, pricing_provider=None, fx_rate_provider=None):
         super(PerformanceReportBuilder, self).__init__(instance)
@@ -51,8 +29,6 @@ class PerformanceReportBuilder(BaseReportBuilder):
         self._fx_rate_provider = fx_rate_provider
         self._transactions = None
         self._periods = []
-        # self._mkt_values = {}
-        # self._mkt_values_by_period = defaultdict(list)
         self._items = OrderedDict()
 
     def build(self):
@@ -61,12 +37,6 @@ class PerformanceReportBuilder(BaseReportBuilder):
 
         with transaction.atomic():
             try:
-                # if settings.DEBUG and self.instance.begin_date == date.min:
-                #     qs = Transaction.objects.filter(master_user=self.instance.master_user).order_by('accounting_date')
-                #     trn = qs.first()
-                #     if trn:
-                #         self.instance.begin_date = trn.accounting_date
-
                 self._load()
                 self._clone_if_need()
                 self._process_periods()
@@ -229,8 +199,6 @@ class PerformanceReportBuilder(BaseReportBuilder):
     @cached_property
     def _instruments(self):
         assert self._transactions is not None
-        # return [t.instrument for t in self._transactions]
-        # instruments = {t.instrument_id: t.instrument for t in self._transactions if t.instrument is not None}
         instruments = {}
         for trn in self._transactions:
             if trn.instr:
@@ -240,9 +208,6 @@ class PerformanceReportBuilder(BaseReportBuilder):
     @cached_property
     def _currencies(self):
         assert self._transactions is not None
-        # return [t.settlement_currency for t in self._transactions]
-        # currencies = {t.settlement_currency_id: t.settlement_currency for t in self._transactions}
-        # currencies[self.instance.report_currency.id] = self.instance.report_currency
         currencies = {self.instance.report_currency.id: self.instance.report_currency}
         for trn in self._transactions:
             if trn.trn_ccy:
@@ -253,13 +218,14 @@ class PerformanceReportBuilder(BaseReportBuilder):
     @cached_property
     def _dates(self):
         assert self._transactions is not None
-        # return [t.period_end for t in self._transactions if t.period_end != date.min]
         dates = {t.period_end for t in self._transactions if t.period_end != date.min}
         return dates
 
     @property
     def pricing_provider(self):
         def _factory():
+            assert self._transactions is not None
+
             if self._pricing_provider is None:
                 if self.instance.pricing_policy is None:
                     p = FakeInstrumentPricingProvider(self.instance.master_user, None, None)
@@ -274,6 +240,8 @@ class PerformanceReportBuilder(BaseReportBuilder):
     @property
     def fx_rate_provider(self):
         def _factory():
+            assert self._transactions is not None
+
             if self._fx_rate_provider is None:
                 if self.instance.pricing_policy is None:
                     p = FakeCurrencyFxRateProvider(self.instance.master_user, None, None)
@@ -285,44 +253,7 @@ class PerformanceReportBuilder(BaseReportBuilder):
 
         return SimpleLazyObject(_factory)
 
-    # def _fill_prices(self):
-    #     _l.debug('> fill prices')
-    #
-    #     for trn in self._transactions:
-    #         trn.report_currency = self.instance.report_currency
-    #         trn.report_currency_history = self.fx_rate_provider[trn.report_currency, trn.period_end]
-    #         trn.report_currency_fx_rate = trn.report_currency_history.fx_rate
-    #
-    #         if trn.instrument:
-    #             trn.instrument_price = self.pricing_provider[trn.instrument, trn.period_end]
-    #             trn.instrument_principal_price = trn.instrument_price.principal_price
-    #             trn.instrument_accrued_price = trn.instrument_price.accrued_price
-    #
-    #             trn.instrument_pricing_currency_history = self.fx_rate_provider[
-    #                 trn.instrument.pricing_currency, trn.period_end]
-    #             trn.instrument_pricing_ccy_cur_fx_rate = trn.instrument_pricing_currency_history.fx_rate
-    #
-    #             trn.instrument_accrued_currency_history = self.fx_rate_provider[
-    #                 trn.instrument.accrued_currency, trn.period_end]
-    #             trn.instrument_accrued_currency_fx_rate = trn.instrument_accrued_currency_history.fx_rate
-    #         else:
-    #             trn.instrument_price = None
-    #             trn.instrument_principal_price = 0
-    #             trn.instrument_accrued_price = 0
-    #
-    #             trn.instrument_pricing_currency_history = None
-    #             trn.instrument_pricing_ccy_cur_fx_rate = 0
-    #
-    #             trn.instrument_accrued_currency_history = None
-    #             trn.instrument_accrued_currency_fx_rate = 0
-    #
-    #         trn.settlement_currency_history = self.fx_rate_provider[trn.settlement_currency, trn.period_end]
-    #         trn.settlement_currency_fx_rate = trn.settlement_currency_history.fx_rate
-    #
-    #     _l.debug('< fill prices')
-
-    def _get_key(self, pbegin=None, pend=None, pname=None,
-                 prtfl=None, acc=None, str1=None, str2=None, str3=None):
+    def _get_key(self, period_key=None, prtfl=None, acc=None, str1=None, str2=None, str3=None):
         if self.instance.portfolio_mode == PerformanceReport.MODE_IGNORE:
             prtfl = getattr(prtfl, 'id', None)
         elif self.instance.portfolio_mode == PerformanceReport.MODE_INDEPENDENT:
@@ -359,9 +290,7 @@ class PerformanceReportBuilder(BaseReportBuilder):
             str3 = None
 
         return (
-            str(pbegin if pbegin is not None else date.min),
-            str(pend if pend is not None else date.min),
-            pname if pname is not None else '',
+            period_key,
             prtfl if prtfl is not None else 0,
             acc if acc is not None else 0,
             str1 if str1 is not None else 0,
@@ -369,259 +298,8 @@ class PerformanceReportBuilder(BaseReportBuilder):
             str3 if str3 is not None else 0,
         )
 
-    # def _get_item(self, period_begin=None, period_end=None, period_name=None,
-    #               portfolio=None, account=None, strategy1=None, strategy2=None, strategy3=None):
-    #     key = self._get_key(
-    #         period_begin=period_begin,
-    #         period_end=period_end,
-    #         period_name=period_name,
-    #         portfolio=portfolio,
-    #         account=account,
-    #         strategy1=strategy1,
-    #         strategy2=strategy2,
-    #         strategy3=strategy3
-    #     )
-    #     try:
-    #         item = self._items[key]
-    #         return item, False
-    #     except KeyError:
-    #         item = PerformanceReportItem(
-    #             self.instance,
-    #             id=key,
-    #             period_begin=period_begin,
-    #             period_end=period_end,
-    #             period_name=period_name,
-    #             portfolio=portfolio,
-    #             account=account,
-    #             strategy1=strategy1,
-    #             strategy2=strategy2,
-    #             strategy3=strategy3
-    #         )
-    #         self._items[key] = item
-    #         return item, True
-
-    # def _get_mkt_value_item(self, period_begin=None, period_end=None, period_name=None,
-    #                         portfolio=None, account=None, strategy1=None, strategy2=None, strategy3=None):
-    #     key = self._get_key(
-    #         period_begin=period_begin,
-    #         period_end=period_end,
-    #         period_name=period_name,
-    #         portfolio=portfolio,
-    #         account=account,
-    #         strategy1=strategy1,
-    #         strategy2=strategy2,
-    #         strategy3=strategy3
-    #     )
-    #     try:
-    #         item = self._mkt_values[key]
-    #         return item, False
-    #     except KeyError:
-    #         item = PerformanceReportItem(
-    #             self.instance,
-    #             id=key,
-    #             period_begin=period_begin,
-    #             period_end=period_end,
-    #             period_name=period_name,
-    #             portfolio=portfolio,
-    #             account=account,
-    #             strategy1=strategy1,
-    #             strategy2=strategy2,
-    #             strategy3=strategy3
-    #         )
-    #         self._mkt_values[key] = item
-    #
-    #         period_key = (
-    #             period_begin,
-    #             period_end,
-    #             period_name,
-    #         )
-    #         self._mkt_values_by_period[period_key].add(item)
-    #
-    #         return item, True
-
-    # def _calc(self):
-    #     _l.debug('> calc')
-    #
-    #     periods = sorted({(x.period_begin, x.period_end, x.period_name) for x in self._transactions})
-    #
-    #     prev_period_begin, prev_period_end, prev_period_name = None, None, None
-    #     for period in periods:
-    #         period_begin, period_end, period_name = period
-    #         period_key = (period_begin, period_end, period_name,)
-    #
-    #         self._periods.append(period_key)
-    #         items_mkt_val = []
-    #
-    #         for trn in self._transactions:
-    #             # already ordered by accounting_date
-    #             if trn.accounting_date > period_end:
-    #                 break
-    #
-    #             # load pricing and fx-rates
-    #
-    #             report_currency = self.instance.report_currency
-    #             report_currency_history = self.fx_rate_provider[report_currency, period_end]
-    #             report_currency_fx_rate = report_currency_history.fx_rate
-    #
-    #             try:
-    #                 sys_to_rep_rate = 1.0 / report_currency_fx_rate
-    #             except ArithmeticError:
-    #                 sys_to_rep_rate = 0.0
-    #
-    #             if trn.instrument:
-    #                 instrument_price = self.pricing_provider[trn.instrument, period_end]
-    #                 instrument_principal_price = instrument_price.principal_price
-    #                 instrument_accrued_price = instrument_price.accrued_price
-    #
-    #                 instrument_pricing_currency_history = self.fx_rate_provider[
-    #                     trn.instrument.pricing_currency, period_end]
-    #                 instrument_pricing_ccy_cur_fx_rate = instrument_pricing_currency_history.fx_rate
-    #
-    #                 instrument_accrued_currency_history = self.fx_rate_provider[
-    #                     trn.instrument.accrued_currency, period_end]
-    #                 instrument_accrued_currency_fx_rate = instrument_accrued_currency_history.fx_rate
-    #             else:
-    #                 instrument_price = None
-    #                 instrument_principal_price = 0
-    #                 instrument_accrued_price = 0
-    #
-    #                 instrument_pricing_currency_history = None
-    #                 instrument_pricing_ccy_cur_fx_rate = 0
-    #
-    #                 instrument_accrued_currency_history = None
-    #                 instrument_accrued_currency_fx_rate = 0
-    #
-    #             settlement_currency_history = self.fx_rate_provider[trn.settlement_currency, period_end]
-    #             settlement_currency_fx_rate = settlement_currency_history.fx_rate
-    #
-    #             # -------------------------------------
-    #
-    #             cash_consideration_sys = trn.cash_consideration * settlement_currency_fx_rate
-    #             principal_with_sign_sys = trn.principal_with_sign * settlement_currency_fx_rate
-    #             carry_with_sign_sys = trn.carry_with_sign * settlement_currency_fx_rate
-    #             overheads_with_sign_sys = trn.overheads_with_sign * settlement_currency_fx_rate
-    #
-    #             instrument_principal_sys = 0
-    #             instrument_accrued_sys = 0
-    #             # market_value_sys = 0
-    #
-    #             if trn.is_buy or trn.is_sell or trn.is_instrument_pl:
-    #                 instrument_principal_sys = trn.position_size_with_sign * trn.instrument.price_multiplier * instrument_principal_price * instrument_pricing_ccy_cur_fx_rate
-    #                 instrument_accrued_sys = trn.position_size_with_sign * trn.instrument.accrued_multiplier * instrument_accrued_price * instrument_accrued_currency_fx_rate
-    #
-    #                 # market_value_sys = instrument_principal_sys + instrument_accrued_sys
-    #
-    #             elif trn.is_fx_trade:
-    #                 # market_value_sys = trn.position_size_with_sign * settlement_currency_fx_rate
-    #                 pass
-    #
-    #             elif trn.is_transaction_pl:
-    #                 # market_value_sys = cash_consideration_sys
-    #                 pass
-    #
-    #             elif trn.is_cash_inflow or trn.is_cash_outflow:
-    #                 # market_value_sys = cash_consideration_sys
-    #                 pass
-    #
-    #             else:
-    #                 _l.warn('Unknown transaction class: id=%s, transaction_class=%s', trn.id, trn.transaction_class)
-    #                 continue
-    #
-    #             # cash_consideration_res = cash_consideration_sys * sys_to_rep_rate
-    #             principal_with_sign_res = principal_with_sign_sys * sys_to_rep_rate
-    #             carry_with_sign_res = carry_with_sign_sys * sys_to_rep_rate
-    #             overheads_with_sign_res = overheads_with_sign_sys * sys_to_rep_rate
-    #
-    #             total_with_sign_sys = principal_with_sign_sys + carry_with_sign_sys + overheads_with_sign_sys
-    #             total_with_sign_res = principal_with_sign_res + carry_with_sign_res + overheads_with_sign_res
-    #
-    #             instrument_principal_res = instrument_principal_sys * sys_to_rep_rate
-    #             instrument_accrued_res = instrument_accrued_sys * sys_to_rep_rate
-    #
-    #             # market_value_res = market_value_sys * sys_to_rep_rate
-    #
-    #             global_time_weight = (self.instance.end_date - trn.accounting_date).days / \
-    #                                  (self.instance.end_date - self.instance.begin_date).days
-    #             period_time_weight = (period_end - trn.accounting_date).days / \
-    #                                  (period_end - period_begin).days
-    #
-    #             cash_flow_cash_sys = total_with_sign_sys
-    #             cash_flow_pos_sys = -total_with_sign_sys
-    #
-    #             cash_flow_cash_res = total_with_sign_res
-    #             cash_flow_pos_res = -total_with_sign_res
-    #
-    #             time_weight_cash_flow_cash_sys = cash_flow_cash_sys * period_time_weight
-    #             time_weight_cash_flow_pos_sys = cash_flow_pos_sys * period_time_weight
-    #
-    #             time_weight_cash_flow_cash_res = cash_flow_cash_res * period_time_weight
-    #             time_weight_cash_flow_pos_res = cash_flow_pos_res * period_time_weight
-    #
-    #             # mkt_val
-    #             item_mkt_val, item_mkt_val_created = self._get_mkt_value_item(
-    #                 period_begin=period_begin,
-    #                 period_end=period_end,
-    #                 period_name=period_name,
-    #                 portfolio=trn.portfolio,
-    #                 account=trn.account_pos,
-    #                 strategy1=trn.strategy1_pos,
-    #                 strategy2=trn.strategy2_pos,
-    #                 strategy3=trn.strategy3_pos
-    #             )
-    #             item_mkt_val.principal_res += principal_with_sign_res + instrument_principal_res
-    #             item_mkt_val.carry_res += carry_with_sign_res + instrument_accrued_res
-    #             item_mkt_val.overheads_res += overheads_with_sign_res
-    #             item_mkt_val.total_res += (principal_with_sign_res + instrument_principal_res) + \
-    #                                       (carry_with_sign_res + instrument_accrued_res) + \
-    #                                       overheads_with_sign_res
-    #             if item_mkt_val_created:
-    #                 items_mkt_val.append(item_mkt_val)
-    #
-    #             # 1
-    #             item_cash, item_cash_created = self._get_item(
-    #                 period_begin=period_begin,
-    #                 period_end=period_end,
-    #                 period_name=period_name,
-    #                 portfolio=trn.portfolio,
-    #                 account=trn.account_cash,
-    #                 strategy1=trn.strategy1_cash,
-    #                 strategy2=trn.strategy2_cash,
-    #                 strategy3=trn.strategy3_cash
-    #             )
-    #             item_cash.cash_inflows += cash_flow_cash_res
-    #             item_cash.cash_outflows += 0
-    #             item_cash.time_weighted_cash_inflows += time_weight_cash_flow_cash_res
-    #             item_cash.time_weighted_cash_outflows += 0
-    #
-    #             # 2
-    #             item_pos, item_pos_created = self._get_item(
-    #                 period_begin=period_begin,
-    #                 period_end=period_end,
-    #                 period_name=period_name,
-    #                 portfolio=trn.portfolio,
-    #                 account=trn.account_position,
-    #                 strategy1=trn.strategy1_position,
-    #                 strategy2=trn.strategy2_position,
-    #                 strategy3=trn.strategy3_position
-    #             )
-    #             item_pos.cash_inflows += cash_flow_pos_res
-    #             item_pos.cash_outflows += 0
-    #             item_pos.time_weighted_cash_inflows += time_weight_cash_flow_pos_res
-    #             item_pos.time_weighted_cash_outflows += 0
-    #
-    #         # process market value rows
-    #         for item_mkt_val in items_mkt_val:
-    #             global_time_weight = (self.instance.end_date - item_mkt_val.period_end).days / \
-    #                                  (self.instance.end_date - self.instance.begin_date).days
-    #
-    #         prev_period_begin, prev_period_end, prev_period_name = period_begin, period_end, period_name
-    #
-    #     _l.debug('< calc')
-
     def _get_item(self, trn, is_pos=False, is_cash=False):
-        pbegin = trn.period_begin
-        pend = trn.period_end
-        pname = trn.period_name
+        period_key = trn.period_key
         prtfl = trn.prtfl
         if is_cash:
             acc = trn.acc_cash
@@ -636,15 +314,31 @@ class PerformanceReportBuilder(BaseReportBuilder):
         else:
             raise RuntimeError('bad args')
 
-        key = self._get_key(pbegin=pbegin, pend=pend, pname=pname, prtfl=prtfl, acc=acc, str1=str1, str2=str2,
-                            str3=str3)
+        key = self._get_key(
+            period_key=period_key,
+            prtfl=prtfl,
+            acc=acc,
+            str1=str1,
+            str2=str2,
+            str3=str3
+        )
         try:
             item = self._items[key]
             return item, False
         except KeyError:
-            item = PerformanceReportItem(self.instance, id=key, period_begin=pbegin, period_end=pend,
-                                         period_name=pname, portfolio=prtfl, account=acc, strategy1=str1,
-                                         strategy2=str2, strategy3=str3)
+            item = PerformanceReportItem(
+                self.instance,
+                id=key,
+                period_begin=trn.period_begin,
+                period_end=trn.period_end,
+                period_name=trn.period_name,
+                period_key=trn.period_key,
+                portfolio=prtfl,
+                account=acc,
+                strategy1=str1,
+                strategy2=str2,
+                strategy3=str3
+            )
             self._items[key] = item
             return item, True
 
@@ -657,11 +351,117 @@ class PerformanceReportBuilder(BaseReportBuilder):
     def _calc(self):
         _l.debug('> calc')
 
+        periods_end = OrderedDict()
+        periods_trns = OrderedDict()
+        periods_trns_all = OrderedDict()
+        periods_mkt_vals = OrderedDict()
+        periods_pls = OrderedDict()
+
+        for trn in self._transactions:
+            if trn.period_key not in periods_end:
+                periods_end[trn.period_key] = trn.period_end
+
+            if trn.period_key not in periods_trns:
+                periods_trns[trn.period_key] = []
+
+            if trn.period_key not in periods_trns_all:
+                periods_trns_all[trn.period_key] = []
+
+            if trn.period_key not in periods_mkt_vals:
+                periods_mkt_vals[trn.period_key] = OrderedDict()
+
+            if trn.period_key not in periods_pls:
+                periods_pls[trn.period_key] = OrderedDict()
+
+        _l.debug('periods_end: %s', len(periods_end))
+        for period_key, period_end in periods_end.items():
+            _l.debug('  %s -> %s', period_key, period_end)
+
+        # prev_period_key = None
+        _l.debug('step 1')
+        for trn in self._transactions:
+            # period_key = trn.period_key
+            _l.debug('  trn: pk=%s, cls=%s, period_key=%s', trn.pk, trn.trn_cls, trn.period_key)
+
+            if trn.is_hidden:
+                _l.debug('    skip trn: is_hidden=%s', trn.is_hidden)
+                continue
+
+            periods_trns[trn.period_key].append(trn)
+
+            for period_key, trns in periods_trns_all.items():
+                if trn.period_key <= period_key:
+                    trns.append(trn.clone())
+
+            # period_changed = period_key != prev_period_key
+
+            trn.perf_pricing()
+            trn.perf_calc()
+
+            # pl_trn = trn.clone()
+            # pl_trn.processing_date = trn.period_end
+            # pl_trn.perf_pricing()
+            # pl_trn.perf_calc()
+
+            cash_item, cash_item_created = self._get_cash_item(trn)
+            # if cash_item_created:
+            #     items_per_period.append(cash_item)
+            cash_item.cash_add(trn)
+
+            pos_item, pos_item_created = self._get_pos_item(trn)
+            # if pos_item_created:
+            #     items_per_period.append(pos_item)
+            pos_item.pos_add(trn)
+
+            # prev_period_key = period_key
+
+        _l.debug('periods_trns: %s', len(periods_trns))
+        for period_key, trns in periods_trns.items():
+            _l.debug('  %s -> %s', period_key, ['%s/%s' % (trn.pk, trn.trn_cls) for trn in trns])
+
+        _l.debug('periods_trns_all: %s', len(periods_trns_all))
+        for period_key, trns in periods_trns_all.items():
+            _l.debug('  %s -> %s', period_key, ['%s/%s' % (trn.pk, trn.trn_cls) for trn in trns])
+
+        _l.debug('periods_mkt_vals: %s', len(periods_mkt_vals))
+        for period_key, mkt_vals in periods_mkt_vals.items():
+            _l.debug('  %s -> %s', period_key, ['%s' % (key) for key, val in mkt_vals.items()])
+        # for period_key, trns in periods_pl.items():
+        #     pass
+
+        _l.debug('step 2')
+        for period_key, trns in periods_trns_all.items():
+            processing_date = periods_end[period_key]
+
+            _l.debug('  period_key: %s, processing_date=%s', period_key, processing_date)
+
+            for trn in trns:
+                _l.debug('    trn: pk=%s, cls=%s, period_key=%s', trn.pk, trn.trn_cls, trn.period_key)
+
+                trn.processing_date = processing_date
+                trn.perf_pricing()
+                trn.perf_calc()
+
+        _l.debug('periods_pls: %s', len(periods_pls))
+        for period_key, pls in periods_pls.items():
+            _l.debug('    %s -> %s', period_key, ['%s' % (key) for key, val in pls.items()])
+
+        _l.debug('items: len=%s', len(self._items))
+        self.instance.items = list(self._items.values())
+
+        _l.debug('< calc')
+
+    def _calc1(self):
+        _l.debug('> calc')
+
         periods = sorted({(x.period_begin, x.period_end, x.period_name) for x in self._transactions})
 
         _l.debug('periods: len=%s', len(periods))
 
         trns_per_periods = OrderedDict()
+        items_per_periods = OrderedDict()
+
+        prev_period = None
 
         for period in periods:
             period_begin, period_end, period_name = period
@@ -711,13 +511,64 @@ class PerformanceReportBuilder(BaseReportBuilder):
             trns_per_period.extend(mkt_vals_per_period.values())
 
             # ------
+
+            items_per_period = []
+            items_per_periods[period_key] = items_per_period
             for trn in trns_per_period:
                 if trn.is_mkt_val:
                     pass
                 else:
                     pass
+
                 cash_item, cash_item_created = self._get_cash_item(trn)
+                if cash_item_created:
+                    items_per_period.append(cash_item)
+                cash_item.cash_add(trn)
+
                 pos_item, pos_item_created = self._get_pos_item(trn)
+                if pos_item_created:
+                    items_per_period.append(pos_item)
+                pos_item.pos_add(trn)
+
+            if prev_period:
+                prev_period_begin, prev_period_end, prev_period_name = prev_period
+            else:
+                prev_period_begin, prev_period_end, prev_period_name = None, None, None
+            for item in items_per_period:
+                if prev_period:
+                    prev_item_key = self._get_key(
+                        pbegin=prev_period_begin,
+                        pend=prev_period_end,
+                        pname=prev_period_name,
+                        prtfl=item.portfolio,
+                        acc=item.account,
+                        str1=item.strategy1,
+                        str2=item.strategy2,
+                        str3=item.strategy3
+                    )
+                    try:
+                        prev_item = self._items[prev_item_key]
+                    except KeyError:
+                        prev_item = None
+                    item.add_prev(prev_item)
+                item.close()
+
+            prev_period = period
+
+        # prev_period = None
+        # prev_items_per_period = None
+        # for period, items_per_period in items_per_periods.items():
+        #     period_begin, period_end, period_name = period
+        #     if prev_period:
+        #         prev_period_begin, prev_period_end, prev_period_name = prev_period
+        #     else:
+        #         prev_period_begin, prev_period_end, prev_period_name = None, None, None
+        #
+        #     for item in items_per_period:
+        #         pass
+        #
+        #     prev_period = period
+        #     prev_items_per_period = items_per_period
 
         _l.debug('items: len=%s', len(self._items))
         self.instance.items = list(self._items.values())

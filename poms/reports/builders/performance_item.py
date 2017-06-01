@@ -5,24 +5,15 @@ from poms.reports.builders.base_item import BaseReport
 
 
 class PerformanceReportItem:
-    def __init__(self,
-                 report,
-                 id=None,
-                 period_begin=None,
-                 period_end=None,
-                 period_name=None,
-                 portfolio=None,
-                 account=None,
-                 strategy1=None,
-                 strategy2=None,
-                 strategy3=None,
-                 ):
+    def __init__(self, report, id=None, period_begin=None, period_end=None, period_name=None, period_key=None,
+                 portfolio=None, account=None, strategy1=None, strategy2=None, strategy3=None):
         self.report = report
         self.id = str(id)
 
         self.period_begin = period_begin
         self.period_end = period_end
         self.period_name = period_name
+        self.period_key = period_key
         self.portfolio = portfolio
         self.account = account
         self.strategy1 = strategy1
@@ -34,6 +25,8 @@ class PerformanceReportItem:
         self.carry_res = 0
         self.overheads_res = 0
         self.total_res = 0
+        self.cash_flow = 0
+        self.time_weighted_cash_flow = 0
 
         # final fields
         self.return_pl = 0
@@ -54,6 +47,48 @@ class PerformanceReportItem:
 
     def __str__(self):
         return 'PerformanceReportItem:%s' % self.id
+
+    def cash_add(self, trn):
+        pass
+
+    def pos_add(self, trn):
+        pass
+
+    def add_prev(self, prev_item):
+        pass
+
+    def close(self):
+        # self.return_pl = 0
+
+        try:
+            self.return_nav = self.nav_change / self.avg_nav_in_period
+        except ArithmeticError:
+            self.return_nav = 0
+
+        # self.pl_in_period = 0
+
+        self.nav_change = (self.nav_period_end - self.nav_period_start) + \
+                          (self.cash_outflows - self.cash_inflows)
+
+        # self.nav_period_start = 0
+
+        # self.nav_period_end = 0
+
+        # self.cash_inflows = 0
+
+        # self.cash_outflows = 0
+
+        # self.time_weighted_cash_inflows = 0
+
+        # self.time_weighted_cash_outflows = 0
+
+        self.avg_nav_in_period = self.nav_period_start + \
+                                 (self.time_weighted_cash_inflows - self.time_weighted_cash_outflows)
+
+        # self.cumulative_return_pl = 0
+
+        # self.cumulative_return_nav = 0
+        pass
 
     def random(self):
         from random import random

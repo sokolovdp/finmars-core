@@ -463,6 +463,11 @@ class VirtualTransaction(YTMMixin, BaseReportItem):
     def __repr__(self):
         return 'VT(%s)' % self.pk
 
+    # def clone(self):
+    #     ret = super(VirtualTransaction, self).clone()
+    #     ret.lid = uuid.uuid1()
+    #     return ret
+
     @property
     def is_buy(self):
         return self.trn_cls.id == TransactionClass.BUY

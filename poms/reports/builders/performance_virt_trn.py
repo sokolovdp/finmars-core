@@ -6,9 +6,10 @@ from poms.reports.builders.balance_virt_trn import VirtualTransaction
 class PerformanceVirtualTransaction(VirtualTransaction):
     is_mkt_val = False
 
-    period_name = None
+    period_key = None
     period_begin = None
     period_end = None
+    period_name = None
 
     processing_date = None
 
@@ -44,6 +45,7 @@ class PerformanceVirtualTransaction(VirtualTransaction):
         self.period_name = name
         self.period_begin = begin
         self.period_end = end
+        self.period_key = (str(self.period_begin), str(self.period_end), self.period_name)
 
         self.processing_date = end
 
