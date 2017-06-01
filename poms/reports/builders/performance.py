@@ -360,17 +360,9 @@ class PerformanceReportBuilder(BaseReportBuilder):
         for trn in self._transactions:
             if trn.period_key not in periods_end:
                 periods_end[trn.period_key] = trn.period_end
-
-            if trn.period_key not in periods_trns:
                 periods_trns[trn.period_key] = []
-
-            if trn.period_key not in periods_trns_all:
                 periods_trns_all[trn.period_key] = []
-
-            if trn.period_key not in periods_mkt_vals:
                 periods_mkt_vals[trn.period_key] = OrderedDict()
-
-            if trn.period_key not in periods_pls:
                 periods_pls[trn.period_key] = OrderedDict()
 
         _l.debug('periods_end: %s', len(periods_end))
