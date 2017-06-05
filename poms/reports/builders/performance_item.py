@@ -1,14 +1,46 @@
+from collections import OrderedDict
 from datetime import timedelta, date
 
 from poms.common.utils import date_now
 from poms.reports.builders.base_item import BaseReport
 
 
+class PerformancePeriod:
+    def __init__(self, id=0, period_begin=None, period_end=None, period_name=None, period_key=None):
+        self.id = id
+        self.period_begin = period_begin
+        self.period_end = period_end
+        self.period_name = period_name
+        self.period_key = period_key
+
+        self.local_trns = []
+        self.trns = []
+
+        self.items = []
+        self.items_mkt_val = []
+        self.items_pls = []
+
+    def __str__(self):
+        return self.__repr__()
+
+    def __repr__(self):
+        return 'Period({}/{},local_trns={},trns={},items={},items_mkt_val={},items_pls={})'.format(
+            self.period_begin, self.period_end, len(self.local_trns), len(self.trns), len(self.items),
+            len(self.items_mkt_val), len(self.items_pls))
+
+
 class PerformanceReportItem:
-    def __init__(self, report, id=None, period_begin=None, period_end=None, period_name=None, period_key=None,
+    TYPE_DEFAULT = 0
+    TYPE_MKT_VAL = 1
+    TYPE_PL = 2
+
+    def __init__(self, report, id=None, item_type=None,
+                 period_begin=None, period_end=None, period_name=None, period_key=None,
                  portfolio=None, account=None, strategy1=None, strategy2=None, strategy3=None):
         self.report = report
-        self.id = str(id)
+        self.id = str(id) if id is not None else ''
+
+        self.item_type = item_type if item_type is not None else PerformanceReportItem.TYPE_DEFAULT
 
         self.period_begin = period_begin
         self.period_end = period_end
@@ -21,12 +53,18 @@ class PerformanceReportItem:
         self.strategy3 = strategy3
 
         # temporal fields
+        self.acc_date = date.min
+        self.processing_date = date.min
+        self.instr_principal_res = 0
+        self.instr_accrued_res = 0
+        self.cash_res = 0
         self.principal_res = 0
         self.carry_res = 0
         self.overheads_res = 0
         self.total_res = 0
-        self.cash_flow = 0
-        self.time_weighted_cash_flow = 0
+        self.mkt_val_res = 0
+        self.global_time_weight = 0
+        self.period_time_weight = 0
 
         # final fields
         self.return_pl = 0
@@ -45,17 +83,108 @@ class PerformanceReportItem:
 
         self.custom_fields = []
 
+    @classmethod
+    def from_trn(cls, trn, item_type=None, portfolio=None, account=None, strategy1=None, strategy2=None, strategy3=None):
+        ret = cls(
+            trn.report,
+            id=-1,
+            item_type=item_type,
+            period_begin=trn.period_begin,
+            period_end=trn.period_end,
+            period_name=trn.period_name,
+            period_key=trn.period_key,
+            portfolio=portfolio,
+            account=account,
+            strategy1=strategy1,
+            strategy2=strategy2,
+            strategy3=strategy3
+        )
+        ret.acc_date = trn.acc_date
+        ret.processing_date = trn.processing_date
+        ret.instr_principal_res = trn.instr_principal_res
+        ret.instr_accrued_res = trn.instr_accrued_res
+        ret.cash_res = trn.cash_res
+        ret.principal_res = trn.principal_res
+        ret.carry_res = trn.carry_res
+        ret.overheads_res = trn.overheads_res
+        ret.total_res = trn.total_res
+        ret.global_time_weight = trn.global_time_weight
+        ret.period_time_weight = trn.period_time_weight
+        return ret
+
+    @classmethod
+    def from_item(cls, item, id=None, item_type=None):
+        ret = cls(
+            item.report,
+            id=id if id is not None else item.id,
+            item_type = item_type if item_type is not None else item.item_type,
+            period_begin=item.period_begin,
+            period_end=item.period_end,
+            period_name=item.period_name,
+            period_key=item.period_key,
+            portfolio=item.portfolio,
+            account=item.account,
+            strategy1=item.strategy1,
+            strategy2=item.strategy2,
+            strategy3=item.strategy3
+        )
+        return ret
+
     def __str__(self):
-        return 'PerformanceReportItem:%s' % self.id
+        return self.__repr__()
 
-    def cash_add(self, trn):
+    def __repr__(self):
+        return 'Item({}/{},prtfl={},acc={},str1={},str2={},str3={})'.format(
+            self.period_begin, self.period_end, getattr(self.portfolio, 'id', -1), getattr(self.account, 'id', -1),
+            getattr(self.strategy1, 'id', -1), getattr(self.strategy2, 'id', -1), getattr(self.strategy3, 'id', -1), )
+
+    @property
+    def group_key(self):
+        return (
+            self.period_key,
+            self.portfolio.id,
+            self.account.id,
+            self.strategy1.id,
+            self.strategy2.id,
+            self.strategy3.id
+        )
+
+    def add(self, item):
+        if self.item_type == self.TYPE_DEFAULT:
+            pass
+
+        elif self.item_type == self.TYPE_MKT_VAL:
+            self.mkt_val_res += item.mkt_val_res
+
+            self.instr_principal_res += item.instr_principal_res
+            self.instr_accrued_res += item.instr_accrued_res
+
+        elif self.item_type == self.TYPE_PL:
+            self.cash_res += item.cash_res
+            self.principal_res += item.principal_res
+            self.carry_res += item.carry_res
+            self.overheads_res += item.overheads_res
+            self.total_res += item.total_res
+
+    def calc(self):
+        # try:
+        #     self.global_time_weight = (self.report.end_date - self.acc_date).days / \
+        #                               (self.report.end_date - self.report.begin_date).days
+        # except ArithmeticError:
+        #     self.global_time_weight = 0
+        #
+        # try:
+        #     self.period_time_weight = (self.period_end - self.acc_date).days / \
+        #                               (self.period_end - self.period_begin).days
+        # except ArithmeticError:
+        #     self.period_time_weight = 0
         pass
 
-    def pos_add(self, trn):
-        pass
+    def set_as_cash(self, trn):
+        self.cash_inflows = trn.total_res
 
-    def add_prev(self, prev_item):
-        pass
+    def set_as_pos(self, trn):
+        self.cash_inflows = -trn.total_res
 
     def close(self):
         # self.return_pl = 0

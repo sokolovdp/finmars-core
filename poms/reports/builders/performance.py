@@ -1,22 +1,21 @@
 import logging
 import time
-from collections import defaultdict, OrderedDict
+from collections import OrderedDict
+from datetime import date
+from itertools import groupby
 
-from datetime import date, timedelta
-
-from django.conf import settings
 from django.db import transaction
 from django.db.models import Q
 from django.utils.functional import cached_property, SimpleLazyObject
 
 from poms.common import formula
-from poms.common.utils import date_now
+from poms.common.utils import isclose
 from poms.reports.builders.base_builder import BaseReportBuilder
-from poms.reports.builders.performance_item import PerformanceReportItem, PerformanceReport
+from poms.reports.builders.performance_item import PerformanceReportItem, PerformanceReport, PerformancePeriod
 from poms.reports.builders.performance_virt_trn import PerformanceVirtualTransaction
 from poms.reports.builders.pricing import FakeInstrumentPricingProvider, InstrumentPricingProvider, \
     FakeCurrencyFxRateProvider, CurrencyFxRateProvider
-from poms.transactions.models import TransactionClass, Transaction
+from poms.transactions.models import TransactionClass
 
 _l = logging.getLogger('poms.reports')
 
@@ -28,8 +27,8 @@ class PerformanceReportBuilder(BaseReportBuilder):
         self._pricing_provider = pricing_provider
         self._fx_rate_provider = fx_rate_provider
         self._transactions = None
-        self._periods = []
-        self._items = OrderedDict()
+        # self._periods = []
+        # self._items = OrderedDict()
 
     def build(self):
         st = time.perf_counter()
@@ -298,79 +297,161 @@ class PerformanceReportBuilder(BaseReportBuilder):
             str3 if str3 is not None else 0,
         )
 
-    def _get_item(self, trn, is_pos=False, is_cash=False):
-        period_key = trn.period_key
-        prtfl = trn.prtfl
-        if is_cash:
-            acc = trn.acc_cash
-            str1 = trn.str1_cash
-            str2 = trn.str2_cash
-            str3 = trn.str3_cash
-        elif is_pos:
-            acc = trn.acc_pos
-            str1 = trn.str1_pos
-            str2 = trn.str2_pos
-            str3 = trn.str3_pos
-        else:
-            raise RuntimeError('bad args')
+    # def _get_pos_key(self, trn):
+    #     # return self._get_key(trn.period_key, prtfl=trn.acc_pos, acc=trn.acc_pos, str1=trn.str1_pos,
+    #     #                                    str2=trn.str3_pos, str3=trn.str3_pos)
+    #     is_pos = False
+    #     if trn.is_buy or trn.is_sell:
+    #         is_pos = True
+    #
+    #     elif trn.is_cash_inflow or trn.is_cash_outflow:
+    #         if trn.case in [0, 1]:
+    #             is_pos = True
+    #
+    #     elif trn.is_instrument_pl:
+    #         is_pos = True
+    #
+    #     elif trn.is_transaction_pl:
+    #         if trn.case in [0, 1]:
+    #             is_pos = True
+    #
+    #     elif trn.is_fx_trade:
+    #         if trn.case in [0, 1]:
+    #             is_pos = True
+    #
+    #     elif trn.is_transfer:
+    #         pass
+    #
+    #     elif trn.is_fx_transfer:
+    #         pass
+    #
+    #     else:
+    #         pass
+    #
+    #     if is_pos:
+    #         return self._get_key(trn.period_key, prtfl=trn.acc_pos, acc=trn.acc_pos,
+    #                              str1=trn.str1_pos, str2=trn.str3_pos, str3=trn.str3_pos)
+    #     return None
+    #
+    # def _get_cash_key(self, trn):
+    #     is_ret = False
+    #     if trn.is_buy or trn.is_sell:
+    #         is_ret = True
+    #
+    #     elif trn.is_cash_inflow or trn.is_cash_outflow:
+    #         is_ret = True
+    #
+    #     elif trn.is_instrument_pl:
+    #         is_ret = True
+    #
+    #     elif trn.is_transaction_pl:
+    #         is_ret = True
+    #
+    #     elif trn.is_fx_trade:
+    #         is_ret = True
+    #
+    #     elif trn.is_transfer:
+    #         pass
+    #
+    #     elif trn.is_fx_transfer:
+    #         pass
+    #
+    #     else:
+    #         pass
+    #
+    #     acc_key = None
+    #     acc_interim_key = None
+    #     if is_ret:
+    #         is_acc = False
+    #         is_acc_interim = False
+    #         if trn.case == 0:
+    #             is_acc = True
+    #
+    #         elif trn.case == 1:
+    #             is_acc_interim = True
+    #
+    #         elif trn.case == 2:
+    #             is_acc = True
+    #             is_acc_interim = True
+    #
+    #         if is_acc:
+    #             acc_key = self._get_key(trn.period_key, prtfl=trn.acc_pos, acc=trn.acc_cash,
+    #                                     str1=trn.str1_cash, str2=trn.str3_cash, str3=trn.str3_cash)
+    #         if is_acc_interim:
+    #             acc_interim_key = self._get_key(trn.period_key, prtfl=trn.acc_interim, acc=trn.acc_cash,
+    #                                             str1=trn.str1_cash, str2=trn.str3_cash, str3=trn.str3_cash)
+    #     return acc_key, acc_interim_key
 
-        key = self._get_key(
-            period_key=period_key,
-            prtfl=prtfl,
-            acc=acc,
-            str1=str1,
-            str2=str2,
-            str3=str3
-        )
-        try:
-            item = self._items[key]
-            return item, False
-        except KeyError:
-            item = PerformanceReportItem(
-                self.instance,
-                id=key,
-                period_begin=trn.period_begin,
-                period_end=trn.period_end,
-                period_name=trn.period_name,
-                period_key=trn.period_key,
-                portfolio=prtfl,
-                account=acc,
-                strategy1=str1,
-                strategy2=str2,
-                strategy3=str3
-            )
-            self._items[key] = item
-            return item, True
-
-    def _get_cash_item(self, trn):
-        return self._get_item(trn=trn, is_cash=True)
-
-    def _get_pos_item(self, trn):
-        return self._get_item(trn=trn, is_pos=True)
+    # def _get_item(self, trn, is_pos=False, is_cash=False):
+    #     period_key = trn.period_key
+    #     prtfl = trn.prtfl
+    #     if is_cash:
+    #         acc = trn.acc_cash
+    #         str1 = trn.str1_cash
+    #         str2 = trn.str2_cash
+    #         str3 = trn.str3_cash
+    #     elif is_pos:
+    #         acc = trn.acc_pos
+    #         str1 = trn.str1_pos
+    #         str2 = trn.str2_pos
+    #         str3 = trn.str3_pos
+    #     else:
+    #         raise RuntimeError('bad args')
+    #
+    #     key = self._get_key(
+    #         period_key=period_key,
+    #         prtfl=prtfl,
+    #         acc=acc,
+    #         str1=str1,
+    #         str2=str2,
+    #         str3=str3
+    #     )
+    #     try:
+    #         item = self._items[key]
+    #         return item, False
+    #     except KeyError:
+    #         item = PerformanceReportItem(
+    #             self.instance,
+    #             id=key,
+    #             period_begin=trn.period_begin,
+    #             period_end=trn.period_end,
+    #             period_name=trn.period_name,
+    #             period_key=trn.period_key,
+    #             portfolio=prtfl,
+    #             account=acc,
+    #             strategy1=str1,
+    #             strategy2=str2,
+    #             strategy3=str3
+    #         )
+    #         self._items[key] = item
+    #         return item, True
+    #
+    # def _get_cash_item(self, trn):
+    #     return self._get_item(trn=trn, is_cash=True)
+    #
+    # def _get_pos_item(self, trn):
+    #     return self._get_item(trn=trn, is_pos=True)
 
     def _calc(self):
         _l.debug('> calc')
 
-        periods_end = OrderedDict()
-        periods_trns = OrderedDict()
-        periods_trns_all = OrderedDict()
-        periods_mkt_vals = OrderedDict()
-        periods_pls = OrderedDict()
+        periods = OrderedDict()
 
         for trn in self._transactions:
-            if trn.period_key not in periods_end:
-                periods_end[trn.period_key] = trn.period_end
-                periods_trns[trn.period_key] = []
-                periods_trns_all[trn.period_key] = []
-                periods_mkt_vals[trn.period_key] = OrderedDict()
-                periods_pls[trn.period_key] = OrderedDict()
+            if trn.period_key not in periods:
+                pid = len(periods)
+                periods[trn.period_key] = PerformancePeriod(
+                    id=pid,
+                    period_begin=trn.period_begin,
+                    period_end=trn.period_end,
+                    period_name=trn.period_name,
+                    period_key=trn.period_key
+                )
 
-        _l.debug('periods_end: %s', len(periods_end))
-        for period_key, period_end in periods_end.items():
-            _l.debug('  %s -> %s', period_key, period_end)
+        periods = list(periods.values())
+        _l.debug('periods: %s', periods)
 
-        # prev_period_key = None
-        _l.debug('step 1')
+        _l.debug('make groups')
         for trn in self._transactions:
             # period_key = trn.period_key
             _l.debug('  trn: pk=%s, cls=%s, period_key=%s', trn.pk, trn.trn_cls, trn.period_key)
@@ -379,193 +460,307 @@ class PerformanceReportBuilder(BaseReportBuilder):
                 _l.debug('    skip trn: is_hidden=%s', trn.is_hidden)
                 continue
 
-            periods_trns[trn.period_key].append(trn)
+            for period in periods:
+                if trn.period_key == period.period_key:
+                    period.local_trns.append(trn)
+                if trn.period_key <= period.period_key:
+                    period.trns.append(trn.clone())
 
-            for period_key, trns in periods_trns_all.items():
-                if trn.period_key <= period_key:
-                    trns.append(trn.clone())
+        _l.debug('periods: %s', periods)
 
-            # period_changed = period_key != prev_period_key
+        _l.debug('calculate by groups')
+        for pid, period in enumerate(periods):
+            _l.debug('period: %s', period)
 
-            trn.perf_pricing()
-            trn.perf_calc()
-
-            # pl_trn = trn.clone()
-            # pl_trn.processing_date = trn.period_end
-            # pl_trn.perf_pricing()
-            # pl_trn.perf_calc()
-
-            cash_item, cash_item_created = self._get_cash_item(trn)
-            # if cash_item_created:
-            #     items_per_period.append(cash_item)
-            cash_item.cash_add(trn)
-
-            pos_item, pos_item_created = self._get_pos_item(trn)
-            # if pos_item_created:
-            #     items_per_period.append(pos_item)
-            pos_item.pos_add(trn)
-
-            # prev_period_key = period_key
-
-        _l.debug('periods_trns: %s', len(periods_trns))
-        for period_key, trns in periods_trns.items():
-            _l.debug('  %s -> %s', period_key, ['%s/%s' % (trn.pk, trn.trn_cls) for trn in trns])
-
-        _l.debug('periods_trns_all: %s', len(periods_trns_all))
-        for period_key, trns in periods_trns_all.items():
-            _l.debug('  %s -> %s', period_key, ['%s/%s' % (trn.pk, trn.trn_cls) for trn in trns])
-
-        _l.debug('periods_mkt_vals: %s', len(periods_mkt_vals))
-        for period_key, mkt_vals in periods_mkt_vals.items():
-            _l.debug('  %s -> %s', period_key, ['%s' % (key) for key, val in mkt_vals.items()])
-        # for period_key, trns in periods_pl.items():
-        #     pass
-
-        _l.debug('step 2')
-        for period_key, trns in periods_trns_all.items():
-            processing_date = periods_end[period_key]
-
-            _l.debug('  period_key: %s, processing_date=%s', period_key, processing_date)
-
-            for trn in trns:
-                _l.debug('    trn: pk=%s, cls=%s, period_key=%s', trn.pk, trn.trn_cls, trn.period_key)
-
-                trn.processing_date = processing_date
+            _l.debug('mkt_val: local_trns=%s', len(period.local_trns))
+            for trn in period.local_trns:
+                _l.debug('  pk=%s, cls=%s, period_key=%s', trn.pk, trn.trn_cls, trn.period_key)
                 trn.perf_pricing()
                 trn.perf_calc()
 
-        _l.debug('periods_pls: %s', len(periods_pls))
-        for period_key, pls in periods_pls.items():
-            _l.debug('    %s -> %s', period_key, ['%s' % (key) for key, val in pls.items()])
+                self._add_mkt_val(period, trn)
 
-        _l.debug('items: len=%s', len(self._items))
-        self.instance.items = list(self._items.values())
+            _l.debug('mkt_val, aggregate: items_mkt_val=%s', len(period.items_mkt_val))
+            tmp_items_mkt_val = sorted(period.items_mkt_val, key=lambda x: x.group_key)
+            items_mkt_val = []
+            for gi, (k, g) in enumerate(groupby(tmp_items_mkt_val, key=lambda x: x.group_key)):
+                gitem = None
+                for item in g:
+                    if gitem is None:
+                        gitem = PerformanceReportItem.from_item(item)
+                    gitem.add(item)
 
-        _l.debug('< calc')
+                if gitem:
+                    gitem.close()
+                    items_mkt_val.append(gitem)
 
-    def _calc1(self):
-        _l.debug('> calc')
+            period.items_mkt_val = items_mkt_val
 
-        periods = sorted({(x.period_begin, x.period_end, x.period_name) for x in self._transactions})
+            _l.debug('pl: trns=%s', len(period.trns))
+            for trn in period.trns:
+                _l.debug('  pk=%s, cls=%s, period_key=%s', trn.pk, trn.trn_cls, trn.period_key)
 
-        _l.debug('periods: len=%s', len(periods))
+                trn.processing_date = period.period_end
+                trn.set_case()
+                trn.perf_pricing()
+                trn.perf_calc()
 
-        trns_per_periods = OrderedDict()
-        items_per_periods = OrderedDict()
+                self._add_pl(period, trn)
 
-        prev_period = None
+            _l.debug('items: local_trns=%s', len(period.trns))
+            for trn in period.local_trns:
+                _l.debug('  pk=%s, cls=%s, period_key=%s', trn.pk, trn.trn_cls, trn.period_key)
+                cash_item = self._create_cash_item(trn, interim=False)
+                cash_item.set_as_cash(trn)
+                period.items.append(cash_item)
 
-        for period in periods:
-            period_begin, period_end, period_name = period
-            period_key = (period_begin, period_end, period_name,)
+                pos_item = self._create_pos_item(trn)
+                pos_item.set_as_pos(trn)
+                period.items.append(pos_item)
 
-            # _l.debug('period: [%s:%s] %s', period_begin, period_end, period_name)
+        _l.debug('periods: %s', periods)
 
-            trns_per_period = []
-            trns_per_periods[period_key] = trns_per_period
+        _l.debug('aggregate: periods=%s', len(periods))
+        for period_index, period in enumerate(periods):
+            _l.debug('aggregate: %s', period)
 
-            mkt_vals_per_period = OrderedDict()
+            _l.debug('aggregate items: items=%s', len(period.items))
+            tmp_items = sorted(period.items, key=lambda x: x.group_key)
+            items = []
+            for gi, (k, g) in enumerate(groupby(tmp_items, key=lambda x: x.group_key)):
+                gitem = None
+                for item in g:
+                    if gitem is None:
+                        gitem = PerformanceReportItem.from_item(item)
+                    gitem.add(item)
 
-            # already ordered by accounting_date
-            for trn in self._transactions:
-                if trn.is_hidden:
-                    continue
+                if gitem:
+                    gitem.close()
+                    items.append(gitem)
 
-                if trn.acc_date > period_end:
-                    break
+            period.items = items
 
-                trn2 = trn.clone()
-                trn2.processing_date = period_end
-                trn2.perf_pricing()
-                trn2.perf_calc()
-                trns_per_period.append(trn2)
+        _l.debug('periods: %s', periods)
 
-                if trn2.is_buy or trn2.is_sell:
-                    mkt_val_key = self._get_key(
-                        pbegin=period_begin,
-                        pend=period_end,
-                        pname=period_name,
-                        prtfl=trn.prtfl,
-                        acc=trn.acc_pos,
-                        str1=trn.str1_pos,
-                        str2=trn.str2_pos,
-                        str3=trn.str3_pos
-                    )
-                    try:
-                        mkt_val = mkt_vals_per_period[mkt_val_key]
-                    except KeyError:
-                        mkt_val = trn2.perf_clone_as_mkt_val()
-                        mkt_val.perf_calc()
-                        mkt_vals_per_period[mkt_val_key] = mkt_val
+        items = []
+        for period_index, period in enumerate(periods):
+            items.extend(period.items)
 
-                    mkt_val.perf_mkt_val_add(trn2)
-
-            trns_per_period.extend(mkt_vals_per_period.values())
-
-            # ------
-
-            items_per_period = []
-            items_per_periods[period_key] = items_per_period
-            for trn in trns_per_period:
-                if trn.is_mkt_val:
-                    pass
-                else:
-                    pass
-
-                cash_item, cash_item_created = self._get_cash_item(trn)
-                if cash_item_created:
-                    items_per_period.append(cash_item)
-                cash_item.cash_add(trn)
-
-                pos_item, pos_item_created = self._get_pos_item(trn)
-                if pos_item_created:
-                    items_per_period.append(pos_item)
-                pos_item.pos_add(trn)
-
-            if prev_period:
-                prev_period_begin, prev_period_end, prev_period_name = prev_period
-            else:
-                prev_period_begin, prev_period_end, prev_period_name = None, None, None
-            for item in items_per_period:
-                if prev_period:
-                    prev_item_key = self._get_key(
-                        pbegin=prev_period_begin,
-                        pend=prev_period_end,
-                        pname=prev_period_name,
-                        prtfl=item.portfolio,
-                        acc=item.account,
-                        str1=item.strategy1,
-                        str2=item.strategy2,
-                        str3=item.strategy3
-                    )
-                    try:
-                        prev_item = self._items[prev_item_key]
-                    except KeyError:
-                        prev_item = None
-                    item.add_prev(prev_item)
-                item.close()
-
-            prev_period = period
-
-        # prev_period = None
-        # prev_items_per_period = None
-        # for period, items_per_period in items_per_periods.items():
-        #     period_begin, period_end, period_name = period
-        #     if prev_period:
-        #         prev_period_begin, prev_period_end, prev_period_name = prev_period
-        #     else:
-        #         prev_period_begin, prev_period_end, prev_period_name = None, None, None
-        #
-        #     for item in items_per_period:
-        #         pass
-        #
-        #     prev_period = period
-        #     prev_items_per_period = items_per_period
-
-        _l.debug('items: len=%s', len(self._items))
-        self.instance.items = list(self._items.values())
+        _l.debug('items: %s', items)
+        self.instance.items = items
 
         _l.debug('< calc')
+
+    def _add_mkt_val(self, period, trn):
+        if trn.case == 0:
+            if not isclose(trn.instr_mkt_val_res, 0):
+                item = self._create_pos_item(trn, item_type=PerformanceReportItem.TYPE_MKT_VAL)
+                item.mkt_val_res = trn.instr_mkt_val_res
+                period.items_mkt_val.append(item)
+
+            if not isclose(trn.cash_mkt_val_res, 0):
+                item = self._create_cash_item(trn, interim=False, item_type=PerformanceReportItem.TYPE_MKT_VAL)
+                item.mkt_val_res = trn.cash_mkt_val_res
+                period.items_mkt_val.append(item)
+
+        elif trn.case == 1:
+            if not isclose(trn.instr_mkt_val_res, 0):
+                item = self._create_pos_item(trn, item_type=PerformanceReportItem.TYPE_MKT_VAL)
+                item.mkt_val_res = trn.instr_mkt_val_res
+                period.items_mkt_val.append(item)
+
+            if not isclose(trn.cash_mkt_val_res, 0):
+                item = self._create_cash_item(trn, interim=True, item_type=PerformanceReportItem.TYPE_MKT_VAL)
+                item.mkt_val_res = trn.cash_mkt_val_res
+                period.items_mkt_val.append(item)
+
+        elif trn.case == 2:
+            if not isclose(trn.instr_mkt_val_res, 0):
+                pass
+
+            if not isclose(trn.cash_mkt_val_res, 0):
+                item = self._create_cash_item(trn, interim=False, item_type=PerformanceReportItem.TYPE_MKT_VAL)
+                item.mkt_val_res = trn.cash_mkt_val_res
+                period.items_mkt_val.append(item)
+
+                item = self._create_cash_item(trn, interim=True, item_type=PerformanceReportItem.TYPE_MKT_VAL)
+                item.mkt_val_res = -trn.cash_mkt_val_res
+                period.items_mkt_val.append(item)
+
+    def _add_pl(self, period, trn):
+        if trn.case == 0:
+            item = self._create_pos_item(trn, item_type=PerformanceReportItem.TYPE_PL)
+            item.acc_date = trn.acc_date
+            item.processing_date = trn.processing_date
+            item.cash_res = trn.cash_res
+            item.principal_res = trn.principal_res
+            item.carry_res = trn.carry_res
+            item.overheads_res = trn.overheads_res
+            item.total_res = trn.total_res
+            period.items_pls.append(item)
+
+        elif trn.case == 1:
+            item = self._create_pos_item(trn, item_type=PerformanceReportItem.TYPE_PL)
+            item.acc_date = trn.acc_date
+            item.processing_date = trn.processing_date
+            item.cash_res = trn.cash_res
+            item.principal_res = trn.principal_res
+            item.carry_res = trn.carry_res
+            item.overheads_res = trn.overheads_res
+            item.total_res = trn.total_res
+            period.items_pls.append(item)
+
+        elif trn.case == 2:
+            pass
+
+        else:
+            raise RuntimeError('Invalid transaction case: %s' % trn.case)
+
+    def _create_pos_item(self, trn, item_type=None):
+        return PerformanceReportItem.from_trn(
+            trn,
+            item_type=item_type,
+            portfolio=trn.prtfl,
+            account=trn.acc_pos,
+            strategy1=trn.str1_pos,
+            strategy2=trn.str2_pos,
+            strategy3=trn.str3_pos
+        )
+
+    def _create_cash_item(self, trn, interim=False, item_type=None):
+        return PerformanceReportItem.from_trn(
+            trn,
+            item_type=item_type,
+            portfolio=trn.prtfl,
+            account=trn.acc_cash if not interim else trn.acc_interim,
+            strategy1=trn.str1_cash,
+            strategy2=trn.str2_cash,
+            strategy3=trn.str3_cash
+        )
+
+    # def _calc1(self):
+    #     _l.debug('> calc')
+    #
+    #     periods = sorted({(x.period_begin, x.period_end, x.period_name) for x in self._transactions})
+    #
+    #     _l.debug('periods: len=%s', len(periods))
+    #
+    #     trns_per_periods = OrderedDict()
+    #     items_per_periods = OrderedDict()
+    #
+    #     prev_period = None
+    #
+    #     for period in periods:
+    #         period_begin, period_end, period_name = period
+    #         period_key = (period_begin, period_end, period_name,)
+    #
+    #         # _l.debug('period: [%s:%s] %s', period_begin, period_end, period_name)
+    #
+    #         trns_per_period = []
+    #         trns_per_periods[period_key] = trns_per_period
+    #
+    #         mkt_vals_per_period = OrderedDict()
+    #
+    #         # already ordered by accounting_date
+    #         for trn in self._transactions:
+    #             if trn.is_hidden:
+    #                 continue
+    #
+    #             if trn.acc_date > period_end:
+    #                 break
+    #
+    #             trn2 = trn.clone()
+    #             trn2.processing_date = period_end
+    #             trn2.perf_pricing()
+    #             trn2.perf_calc()
+    #             trns_per_period.append(trn2)
+    #
+    #             if trn2.is_buy or trn2.is_sell:
+    #                 mkt_val_key = self._get_key(
+    #                     pbegin=period_begin,
+    #                     pend=period_end,
+    #                     pname=period_name,
+    #                     prtfl=trn.prtfl,
+    #                     acc=trn.acc_pos,
+    #                     str1=trn.str1_pos,
+    #                     str2=trn.str2_pos,
+    #                     str3=trn.str3_pos
+    #                 )
+    #                 try:
+    #                     mkt_val = mkt_vals_per_period[mkt_val_key]
+    #                 except KeyError:
+    #                     mkt_val = trn2.perf_clone_as_mkt_val()
+    #                     mkt_val.perf_calc()
+    #                     mkt_vals_per_period[mkt_val_key] = mkt_val
+    #
+    #                 mkt_val.perf_mkt_val_add(trn2)
+    #
+    #         trns_per_period.extend(mkt_vals_per_period.values())
+    #
+    #         # ------
+    #
+    #         items_per_period = []
+    #         items_per_periods[period_key] = items_per_period
+    #         for trn in trns_per_period:
+    #             if trn.is_mkt_val:
+    #                 pass
+    #             else:
+    #                 pass
+    #
+    #             cash_item, cash_item_created = self._get_cash_item(trn)
+    #             if cash_item_created:
+    #                 items_per_period.append(cash_item)
+    #             cash_item.cash_add(trn)
+    #
+    #             pos_item, pos_item_created = self._get_pos_item(trn)
+    #             if pos_item_created:
+    #                 items_per_period.append(pos_item)
+    #             pos_item.pos_add(trn)
+    #
+    #         if prev_period:
+    #             prev_period_begin, prev_period_end, prev_period_name = prev_period
+    #         else:
+    #             prev_period_begin, prev_period_end, prev_period_name = None, None, None
+    #         for item in items_per_period:
+    #             if prev_period:
+    #                 prev_item_key = self._get_key(
+    #                     pbegin=prev_period_begin,
+    #                     pend=prev_period_end,
+    #                     pname=prev_period_name,
+    #                     prtfl=item.portfolio,
+    #                     acc=item.account,
+    #                     str1=item.strategy1,
+    #                     str2=item.strategy2,
+    #                     str3=item.strategy3
+    #                 )
+    #                 try:
+    #                     prev_item = self._items[prev_item_key]
+    #                 except KeyError:
+    #                     prev_item = None
+    #                 item.add_prev(prev_item)
+    #             item.close()
+    #
+    #         prev_period = period
+    #
+    #     # prev_period = None
+    #     # prev_items_per_period = None
+    #     # for period, items_per_period in items_per_periods.items():
+    #     #     period_begin, period_end, period_name = period
+    #     #     if prev_period:
+    #     #         prev_period_begin, prev_period_end, prev_period_name = prev_period
+    #     #     else:
+    #     #         prev_period_begin, prev_period_end, prev_period_name = None, None, None
+    #     #
+    #     #     for item in items_per_period:
+    #     #         pass
+    #     #
+    #     #     prev_period = period
+    #     #     prev_items_per_period = items_per_period
+    #
+    #     _l.debug('items: len=%s', len(self._items))
+    #     self.instance.items = list(self._items.values())
+    #
+    #     _l.debug('< calc')
 
     def _refresh_from_db(self):
         _l.info('> refresh from db')
