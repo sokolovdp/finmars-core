@@ -1,5 +1,5 @@
-from collections import OrderedDict
 from datetime import timedelta, date
+from itertools import groupby
 
 from poms.common.utils import date_now
 from poms.reports.builders.base_item import BaseReport
@@ -17,16 +17,18 @@ class PerformancePeriod:
         self.trns = []
 
         self.items = []
-        self.items_mkt_val = []
+        self.items_nav0 = []
+        self.items_nav1 = []
+
         self.items_pls = []
 
     def __str__(self):
         return self.__repr__()
 
     def __repr__(self):
-        return 'Period({}/{},local_trns={},trns={},items={},items_mkt_val={},items_pls={})'.format(
+        return 'Period({}/{},local_trns={},trns={},items={},items_nav0={},items_nav1={},items_pls={})'.format(
             self.period_begin, self.period_end, len(self.local_trns), len(self.trns), len(self.items),
-            len(self.items_mkt_val), len(self.items_pls))
+            len(self.items_nav0), len(self.items_nav1), len(self.items_pls))
 
 
 class PerformanceReportItem:
@@ -84,7 +86,8 @@ class PerformanceReportItem:
         self.custom_fields = []
 
     @classmethod
-    def from_trn(cls, trn, item_type=None, portfolio=None, account=None, strategy1=None, strategy2=None, strategy3=None):
+    def from_trn(cls, trn, item_type=None, portfolio=None, account=None, strategy1=None, strategy2=None,
+                 strategy3=None):
         ret = cls(
             trn.report,
             id=-1,
@@ -117,7 +120,7 @@ class PerformanceReportItem:
         ret = cls(
             item.report,
             id=id if id is not None else item.id,
-            item_type = item_type if item_type is not None else item.item_type,
+            item_type=item_type if item_type is not None else item.item_type,
             period_begin=item.period_begin,
             period_end=item.period_end,
             period_name=item.period_name,

@@ -454,7 +454,7 @@ class PerformanceReportBuilder(BaseReportBuilder):
         periods = list(periods.values())
         _l.debug('periods: %s', periods)
 
-        _l.debug('make groups')
+        _l.debug('make periods')
         for trn in self._transactions:
             # period_key = trn.period_key
             _l.debug('  trn: pk=%s, cls=%s, period_key=%s', trn.pk, trn.trn_cls, trn.period_key)
@@ -465,44 +465,47 @@ class PerformanceReportBuilder(BaseReportBuilder):
 
             for period in periods:
                 if trn.period_key == period.period_key:
-                    period.local_trns.append(trn)
+                    period.local_trns.append(trn.clone())
                 if trn.period_key <= period.period_key:
                     period.trns.append(trn.clone())
 
         _l.debug('periods: %s', periods)
 
-        _l.debug('calculate by groups:')
-        for pid, period in enumerate(periods):
+        _l.debug('load pricing and first calculations')
+        for period in periods:
+            _l.debug('  %s', period)
+            for trn in period.local_trns:
+                trn.perf_pricing()
+                trn.perf_calc()
+
+            for trn in period.trns:
+                trn.processing_date = period.period_end
+                trn.set_case()
+                trn.perf_pricing()
+                trn.perf_calc()
+
+        _l.debug('calculating')
+        for period in periods:
             _l.debug('period: %s', period)
 
             # --------
 
-            _l.debug('mkt_val: local_trns=%s', len(period.local_trns))
+            _l.debug('nav: trns=%s', len(period.local_trns))
 
-            for trn in period.local_trns:
+            for trn in period.trns:
                 _l.debug('  pk=%s, cls=%s, period_key=%s', trn.pk, trn.trn_cls, trn.period_key)
-                trn.perf_pricing()
-                trn.perf_calc()
+                if trn.period_key < period.period_key:
+                    self._add_mkt_val(period.items_nav0, trn)
+                self._add_mkt_val(period.items_nav1, trn)
 
-                self._add_mkt_val(period, trn)
+            _l.debug('nav, aggregating: items_nav0=%s, items_nav1=%s',
+                     len(period.items_nav0), len(period.items_nav1))
 
-            _l.debug('mkt_val, aggregating: items_mkt_val=%s', len(period.items_mkt_val))
+            period.items_nav0 = self._simple_aggregate(period.items_nav0)
+            period.items_nav1 = self._simple_aggregate(period.items_nav1)
 
-            tmp_items_mkt_val = sorted(period.items_mkt_val, key=lambda x: x.group_key)
-            items_mkt_val = []
-            for gi, (k, g) in enumerate(groupby(tmp_items_mkt_val, key=lambda x: x.group_key)):
-                gitem = None
-                for item in g:
-                    if gitem is None:
-                        gitem = PerformanceReportItem.from_item(item)
-                    gitem.add(item)
-
-                if gitem:
-                    gitem.close()
-                    items_mkt_val.append(gitem)
-            period.items_mkt_val = items_mkt_val
-
-            _l.debug('mkt_val, aggregated: items_mkt_val=%s', len(period.items_mkt_val))
+            _l.debug('nav, aggregating: items_nav0=%s, items_nav1=%s',
+                     len(period.items_nav0), len(period.items_nav1))
 
             # --------
 
@@ -510,29 +513,11 @@ class PerformanceReportBuilder(BaseReportBuilder):
 
             for trn in period.trns:
                 _l.debug('  pk=%s, cls=%s, period_key=%s', trn.pk, trn.trn_cls, trn.period_key)
-
-                trn.processing_date = period.period_end
-                trn.set_case()
-                trn.perf_pricing()
-                trn.perf_calc()
-
                 self._add_pl(period, trn)
 
             _l.debug('pl, aggregating: items_pls=%s', len(period.items_pls))
 
-            tmp_items_pls = sorted(period.items_pls, key=lambda x: x.group_key)
-            items_pls = []
-            for gi, (k, g) in enumerate(groupby(tmp_items_pls, key=lambda x: x.group_k)):
-                gitem = None
-                for item in g:
-                    if gitem is None:
-                        gitem = PerformanceReportItem.from_item(item)
-                    gitem.add(item)
-
-                if gitem:
-                    gitem.close()
-                    items_pls.append(gitem)
-            period.items_pls = items_pls
+            period.items_pls = self._simple_aggregate(period.items_pls)
 
             _l.debug('pl, aggregated: items_pls=%s', len(period.items_pls))
 
@@ -556,25 +541,17 @@ class PerformanceReportBuilder(BaseReportBuilder):
             _l.debug('aggregate: %s', period)
 
             _l.debug('aggregate items: items=%s', len(period.items))
-            tmp_items = sorted(period.items, key=lambda x: x.group_key)
-            items = []
-            for gi, (k, g) in enumerate(groupby(tmp_items, key=lambda x: x.group_key)):
-                gitem = None
-                for item in g:
-                    if gitem is None:
-                        gitem = PerformanceReportItem.from_item(item)
-                    gitem.add(item)
 
-                if gitem:
-                    gitem.close()
-                    items.append(gitem)
+            period.items = self._simple_aggregate(period.items)
+            for item in period.items:
+                item.close()
 
-            period.items = items
+            _l.debug('aggregate items: items=%s', len(period.items))
 
         _l.debug('periods: %s', periods)
 
         items = []
-        for period_index, period in enumerate(periods):
+        for period in periods:
             items.extend(period.items)
 
         _l.debug('items: %s', items)
@@ -582,28 +559,28 @@ class PerformanceReportBuilder(BaseReportBuilder):
 
         _l.debug('< calc')
 
-    def _add_mkt_val(self, period, trn):
+    def _add_mkt_val(self, items, trn):
         if trn.case == 0:
             if not isclose(trn.instr_mkt_val_res, 0):
                 item = self._create_pos_item(trn, item_type=PerformanceReportItem.TYPE_MKT_VAL)
                 item.mkt_val_res = trn.instr_mkt_val_res
-                period.items_mkt_val.append(item)
+                items.append(item)
 
             if not isclose(trn.cash_mkt_val_res, 0):
                 item = self._create_cash_item(trn, interim=False, item_type=PerformanceReportItem.TYPE_MKT_VAL)
                 item.mkt_val_res = trn.cash_mkt_val_res
-                period.items_mkt_val.append(item)
+                items.append(item)
 
         elif trn.case == 1:
             if not isclose(trn.instr_mkt_val_res, 0):
                 item = self._create_pos_item(trn, item_type=PerformanceReportItem.TYPE_MKT_VAL)
                 item.mkt_val_res = trn.instr_mkt_val_res
-                period.items_mkt_val.append(item)
+                items.append(item)
 
             if not isclose(trn.cash_mkt_val_res, 0):
                 item = self._create_cash_item(trn, interim=True, item_type=PerformanceReportItem.TYPE_MKT_VAL)
                 item.mkt_val_res = trn.cash_mkt_val_res
-                period.items_mkt_val.append(item)
+                items.append(item)
 
         elif trn.case == 2:
             if not isclose(trn.instr_mkt_val_res, 0):
@@ -612,11 +589,11 @@ class PerformanceReportBuilder(BaseReportBuilder):
             if not isclose(trn.cash_mkt_val_res, 0):
                 item = self._create_cash_item(trn, interim=False, item_type=PerformanceReportItem.TYPE_MKT_VAL)
                 item.mkt_val_res = trn.cash_mkt_val_res
-                period.items_mkt_val.append(item)
+                items.append(item)
 
                 item = self._create_cash_item(trn, interim=True, item_type=PerformanceReportItem.TYPE_MKT_VAL)
                 item.mkt_val_res = -trn.cash_mkt_val_res
-                period.items_mkt_val.append(item)
+                items.append(item)
 
     def _add_pl(self, period, trn):
         if trn.case == 0:
@@ -668,6 +645,21 @@ class PerformanceReportBuilder(BaseReportBuilder):
             strategy2=trn.str2_cash,
             strategy3=trn.str3_cash
         )
+
+    def _simple_aggregate(self, items):
+        tmp_items = sorted(items, key=lambda x: x.group_key)
+        res_items = []
+        for k, g in groupby(tmp_items, key=lambda x: x.group_key):
+            gitem = None
+            for item in g:
+                if gitem is None:
+                    gitem = PerformanceReportItem.from_item(item)
+                gitem.add(item)
+
+            if gitem:
+                # gitem.close()
+                res_items.append(gitem)
+        return res_items
 
     # def _calc1(self):
     #     _l.debug('> calc')
