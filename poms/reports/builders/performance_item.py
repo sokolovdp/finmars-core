@@ -140,13 +140,46 @@ class PerformanceReportItem:
 
     @property
     def group_key(self):
+        # return (
+        #     self.period_key,
+        #     self.portfolio.id,
+        #     self.account.id,
+        #     self.strategy1.id,
+        #     self.strategy2.id,
+        #     self.strategy3.id
+        # )
+        if self.report.portfolio_mode == PerformanceReport.MODE_INDEPENDENT:
+            portfolio = self.portfolio
+        else:
+            portfolio = None
+
+        if self.report.account_mode == PerformanceReport.MODE_INDEPENDENT:
+            account = self.account
+        else:
+            account = None
+
+        if self.report.strategy1_mode == PerformanceReport.MODE_INDEPENDENT:
+            strategy1 = self.strategy1
+        else:
+            strategy1 = None
+
+        if self.report.strategy2_mode == PerformanceReport.MODE_INDEPENDENT:
+            strategy2 = self.strategy2
+        else:
+            strategy2 = None
+
+        if self.report.strategy3_mode == PerformanceReport.MODE_INDEPENDENT:
+            strategy3 = self.strategy3
+        else:
+            strategy3 = None
+
         return (
             self.period_key,
-            self.portfolio.id,
-            self.account.id,
-            self.strategy1.id,
-            self.strategy2.id,
-            self.strategy3.id
+            getattr(portfolio, 'id', -1),
+            getattr(account, 'id', -1),
+            getattr(strategy1, 'id', -1),
+            getattr(strategy2, 'id', -1),
+            getattr(strategy3, 'id', -1),
         )
 
     def add(self, item):

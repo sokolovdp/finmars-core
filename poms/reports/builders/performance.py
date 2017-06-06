@@ -252,50 +252,50 @@ class PerformanceReportBuilder(BaseReportBuilder):
 
         return SimpleLazyObject(_factory)
 
-    def _get_key(self, period_key=None, prtfl=None, acc=None, str1=None, str2=None, str3=None):
-        if self.instance.portfolio_mode == PerformanceReport.MODE_IGNORE:
-            prtfl = getattr(prtfl, 'id', None)
-        elif self.instance.portfolio_mode == PerformanceReport.MODE_INDEPENDENT:
-            prtfl = None
-        elif self.instance.portfolio_mode == PerformanceReport.MODE_INTERDEPENDENT:
-            prtfl = None
-
-        if self.instance.account_mode == PerformanceReport.MODE_IGNORE:
-            acc = getattr(acc, 'id', None)
-        elif self.instance.account_mode == PerformanceReport.MODE_INDEPENDENT:
-            acc = None
-        elif self.instance.account_mode == PerformanceReport.MODE_INTERDEPENDENT:
-            acc = None
-
-        if self.instance.strategy1_mode == PerformanceReport.MODE_IGNORE:
-            str1 = getattr(str1, 'id', None)
-        elif self.instance.strategy1_mode == PerformanceReport.MODE_INDEPENDENT:
-            str1 = None
-        elif self.instance.strategy1_mode == PerformanceReport.MODE_INTERDEPENDENT:
-            str1 = None
-
-        if self.instance.strategy2_mode == PerformanceReport.MODE_IGNORE:
-            str2 = getattr(str2, 'id', None)
-        elif self.instance.strategy2_mode == PerformanceReport.MODE_INDEPENDENT:
-            str2 = None
-        elif self.instance.strategy2_mode == PerformanceReport.MODE_INTERDEPENDENT:
-            str2 = None
-
-        if self.instance.strategy3_mode == PerformanceReport.MODE_IGNORE:
-            str3 = getattr(str3, 'id', None)
-        elif self.instance.strategy3_mode == PerformanceReport.MODE_INDEPENDENT:
-            str3 = None
-        elif self.instance.strategy3_mode == PerformanceReport.MODE_INTERDEPENDENT:
-            str3 = None
-
-        return (
-            period_key,
-            prtfl if prtfl is not None else 0,
-            acc if acc is not None else 0,
-            str1 if str1 is not None else 0,
-            str2 if str2 is not None else 0,
-            str3 if str3 is not None else 0,
-        )
+    # def _get_key(self, period_key=None, prtfl=None, acc=None, str1=None, str2=None, str3=None):
+    #     if self.instance.portfolio_mode == PerformanceReport.MODE_IGNORE:
+    #         prtfl = getattr(prtfl, 'id', None)
+    #     elif self.instance.portfolio_mode == PerformanceReport.MODE_INDEPENDENT:
+    #         prtfl = None
+    #     elif self.instance.portfolio_mode == PerformanceReport.MODE_INTERDEPENDENT:
+    #         prtfl = None
+    #
+    #     if self.instance.account_mode == PerformanceReport.MODE_IGNORE:
+    #         acc = getattr(acc, 'id', None)
+    #     elif self.instance.account_mode == PerformanceReport.MODE_INDEPENDENT:
+    #         acc = None
+    #     elif self.instance.account_mode == PerformanceReport.MODE_INTERDEPENDENT:
+    #         acc = None
+    #
+    #     if self.instance.strategy1_mode == PerformanceReport.MODE_IGNORE:
+    #         str1 = getattr(str1, 'id', None)
+    #     elif self.instance.strategy1_mode == PerformanceReport.MODE_INDEPENDENT:
+    #         str1 = None
+    #     elif self.instance.strategy1_mode == PerformanceReport.MODE_INTERDEPENDENT:
+    #         str1 = None
+    #
+    #     if self.instance.strategy2_mode == PerformanceReport.MODE_IGNORE:
+    #         str2 = getattr(str2, 'id', None)
+    #     elif self.instance.strategy2_mode == PerformanceReport.MODE_INDEPENDENT:
+    #         str2 = None
+    #     elif self.instance.strategy2_mode == PerformanceReport.MODE_INTERDEPENDENT:
+    #         str2 = None
+    #
+    #     if self.instance.strategy3_mode == PerformanceReport.MODE_IGNORE:
+    #         str3 = getattr(str3, 'id', None)
+    #     elif self.instance.strategy3_mode == PerformanceReport.MODE_INDEPENDENT:
+    #         str3 = None
+    #     elif self.instance.strategy3_mode == PerformanceReport.MODE_INTERDEPENDENT:
+    #         str3 = None
+    #
+    #     return (
+    #         period_key,
+    #         prtfl if prtfl is not None else 0,
+    #         acc if acc is not None else 0,
+    #         str1 if str1 is not None else 0,
+    #         str2 if str2 is not None else 0,
+    #         str3 if str3 is not None else 0,
+    #     )
 
     # def _get_pos_key(self, trn):
     #     # return self._get_key(trn.period_key, prtfl=trn.acc_pos, acc=trn.acc_pos, str1=trn.str1_pos,
@@ -522,7 +522,7 @@ class PerformanceReportBuilder(BaseReportBuilder):
 
             tmp_items_pls = sorted(period.items_pls, key=lambda x: x.group_key)
             items_pls = []
-            for gi, (k, g) in enumerate(groupby(tmp_items_pls, key=lambda x: x.group_key)):
+            for gi, (k, g) in enumerate(groupby(tmp_items_pls, key=lambda x: x.group_k)):
                 gitem = None
                 for item in g:
                     if gitem is None:
