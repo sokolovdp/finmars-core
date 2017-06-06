@@ -437,16 +437,19 @@ class PerformanceReportBuilder(BaseReportBuilder):
 
         periods = OrderedDict()
 
+        _l.debug('find periods')
         for trn in self._transactions:
             if trn.period_key not in periods:
                 pid = len(periods)
-                periods[trn.period_key] = PerformancePeriod(
+                period = PerformancePeriod(
                     id=pid,
                     period_begin=trn.period_begin,
                     period_end=trn.period_end,
                     period_name=trn.period_name,
                     period_key=trn.period_key
                 )
+                _l.debug('  %s', period)
+                periods[trn.period_key] = period
 
         periods = list(periods.values())
         _l.debug('periods: %s', periods)
@@ -468,11 +471,14 @@ class PerformanceReportBuilder(BaseReportBuilder):
 
         _l.debug('periods: %s', periods)
 
-        _l.debug('calculate by groups')
+        _l.debug('calculate by groups:')
         for pid, period in enumerate(periods):
             _l.debug('period: %s', period)
 
+            # --------
+
             _l.debug('mkt_val: local_trns=%s', len(period.local_trns))
+
             for trn in period.local_trns:
                 _l.debug('  pk=%s, cls=%s, period_key=%s', trn.pk, trn.trn_cls, trn.period_key)
                 trn.perf_pricing()
@@ -480,7 +486,8 @@ class PerformanceReportBuilder(BaseReportBuilder):
 
                 self._add_mkt_val(period, trn)
 
-            _l.debug('mkt_val, aggregate: items_mkt_val=%s', len(period.items_mkt_val))
+            _l.debug('mkt_val, aggregating: items_mkt_val=%s', len(period.items_mkt_val))
+
             tmp_items_mkt_val = sorted(period.items_mkt_val, key=lambda x: x.group_key)
             items_mkt_val = []
             for gi, (k, g) in enumerate(groupby(tmp_items_mkt_val, key=lambda x: x.group_key)):
@@ -493,10 +500,14 @@ class PerformanceReportBuilder(BaseReportBuilder):
                 if gitem:
                     gitem.close()
                     items_mkt_val.append(gitem)
-
             period.items_mkt_val = items_mkt_val
 
+            _l.debug('mkt_val, aggregated: items_mkt_val=%s', len(period.items_mkt_val))
+
+            # --------
+
             _l.debug('pl: trns=%s', len(period.trns))
+
             for trn in period.trns:
                 _l.debug('  pk=%s, cls=%s, period_key=%s', trn.pk, trn.trn_cls, trn.period_key)
 
@@ -506,6 +517,26 @@ class PerformanceReportBuilder(BaseReportBuilder):
                 trn.perf_calc()
 
                 self._add_pl(period, trn)
+
+            _l.debug('pl, aggregating: items_pls=%s', len(period.items_pls))
+
+            tmp_items_pls = sorted(period.items_pls, key=lambda x: x.group_key)
+            items_pls = []
+            for gi, (k, g) in enumerate(groupby(tmp_items_pls, key=lambda x: x.group_key)):
+                gitem = None
+                for item in g:
+                    if gitem is None:
+                        gitem = PerformanceReportItem.from_item(item)
+                    gitem.add(item)
+
+                if gitem:
+                    gitem.close()
+                    items_pls.append(gitem)
+            period.items_pls = items_pls
+
+            _l.debug('pl, aggregated: items_pls=%s', len(period.items_pls))
+
+            # --------
 
             _l.debug('items: local_trns=%s', len(period.trns))
             for trn in period.local_trns:
