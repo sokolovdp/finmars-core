@@ -1,3 +1,4 @@
+import uuid
 from collections import OrderedDict
 from datetime import timedelta, date
 from itertools import groupby
@@ -7,9 +8,8 @@ from poms.reports.builders.base_item import BaseReport
 
 
 class PerformancePeriod:
-    def __init__(self, report, id=0, period_begin=None, period_end=None, period_name=None, period_key=None):
+    def __init__(self, report, period_begin=None, period_end=None, period_name=None, period_key=None):
         self.report = report
-        self.id = id
         self.period_begin = period_begin
         self.period_end = period_end
         self.period_name = period_name
@@ -51,6 +51,7 @@ class PerformancePeriod:
         except KeyError:
             item = PerformanceReportItem(
                 self.report,
+                id=str(uuid.uuid4()),
                 period_begin=self.period_begin,
                 period_end=self.period_end,
                 period_name=self.period_name,
