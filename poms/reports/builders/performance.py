@@ -440,9 +440,8 @@ class PerformanceReportBuilder(BaseReportBuilder):
         _l.debug('find periods')
         for trn in self._transactions:
             if trn.period_key not in periods:
-                pid = len(periods)
                 period = PerformancePeriod(
-                    id=pid,
+                    self.instance,
                     period_begin=trn.period_begin,
                     period_end=trn.period_end,
                     period_name=trn.period_name,
@@ -488,65 +487,34 @@ class PerformanceReportBuilder(BaseReportBuilder):
         for period in periods:
             _l.debug('period: %s', period)
 
-            # --------
-
-            _l.debug('nav: trns=%s', len(period.local_trns))
-
-            for trn in period.trns:
-                _l.debug('  pk=%s, cls=%s, period_key=%s', trn.pk, trn.trn_cls, trn.period_key)
-                if trn.period_key < period.period_key:
-                    self._add_mkt_val(period.items_nav0, trn)
-                self._add_mkt_val(period.items_nav1, trn)
-
-            _l.debug('nav, aggregating: items_nav0=%s, items_nav1=%s',
-                     len(period.items_nav0), len(period.items_nav1))
-
-            period.items_nav0 = self._simple_aggregate(period.items_nav0)
-            period.items_nav1 = self._simple_aggregate(period.items_nav1)
-
-            _l.debug('nav, aggregating: items_nav0=%s, items_nav1=%s',
-                     len(period.items_nav0), len(period.items_nav1))
-
-            # --------
-
-            _l.debug('pl: trns=%s', len(period.trns))
-
-            for trn in period.trns:
-                _l.debug('  pk=%s, cls=%s, period_key=%s', trn.pk, trn.trn_cls, trn.period_key)
-                self._add_pl(period, trn)
-
-            _l.debug('pl, aggregating: items_pls=%s', len(period.items_pls))
-
-            period.items_pls = self._simple_aggregate(period.items_pls)
-
-            _l.debug('pl, aggregated: items_pls=%s', len(period.items_pls))
-
-            # --------
-
-            _l.debug('items: local_trns=%s', len(period.trns))
             for trn in period.local_trns:
-                _l.debug('  pk=%s, cls=%s, period_key=%s', trn.pk, trn.trn_cls, trn.period_key)
-                cash_item = self._create_cash_item(trn, interim=False)
-                cash_item.set_as_cash(trn)
-                period.items.append(cash_item)
+                period.cash_in_out_add(trn)
 
-                pos_item = self._create_pos_item(trn)
-                pos_item.set_as_pos(trn)
-                period.items.append(pos_item)
+            for trn in period.trns:
+                period.nav_add(trn)
+                # period.pl_add(trn)
+                # period.cash_in_out_add(trn)
+                pass
+
+            # # --------
+            # _l.debug('items: local_trns=%s', len(period.trns))
+            # for trn in period.local_trns:
+            #     _l.debug('  pk=%s, cls=%s, period_key=%s', trn.pk, trn.trn_cls, trn.period_key)
+            #     cash_item = self._create_cash_item(trn, interim=False)
+            #     cash_item.set_as_cash(trn)
+            #     period.items.append(cash_item)
+            #
+            #     pos_item = self._create_pos_item(trn)
+            #     pos_item.set_as_pos(trn)
+            #     period.items.append(pos_item)
 
         _l.debug('periods: %s', periods)
 
         _l.debug('aggregate: periods=%s', len(periods))
-        for period_index, period in enumerate(periods):
-            _l.debug('aggregate: %s', period)
-
-            _l.debug('aggregate items: items=%s', len(period.items))
-
-            period.items = self._simple_aggregate(period.items)
-            for item in period.items:
-                item.close()
-
-            _l.debug('aggregate items: items=%s', len(period.items))
+        prev_period = None
+        for period in periods:
+            period.close(prev_period)
+            prev_period = period
 
         _l.debug('periods: %s', periods)
 
@@ -559,107 +527,107 @@ class PerformanceReportBuilder(BaseReportBuilder):
 
         _l.debug('< calc')
 
-    def _add_mkt_val(self, items, trn):
-        if trn.case == 0:
-            if not isclose(trn.instr_mkt_val_res, 0):
-                item = self._create_pos_item(trn, item_type=PerformanceReportItem.TYPE_MKT_VAL)
-                item.mkt_val_res = trn.instr_mkt_val_res
-                items.append(item)
+    # def _add_mkt_val(self, items, trn):
+    #     if trn.case == 0:
+    #         if not isclose(trn.instr_mkt_val_res, 0):
+    #             item = self._create_pos_item(trn, item_type=PerformanceReportItem.TYPE_MKT_VAL)
+    #             item.mkt_val_res = trn.instr_mkt_val_res
+    #             items.append(item)
+    #
+    #         if not isclose(trn.cash_mkt_val_res, 0):
+    #             item = self._create_cash_item(trn, interim=False, item_type=PerformanceReportItem.TYPE_MKT_VAL)
+    #             item.mkt_val_res = trn.cash_mkt_val_res
+    #             items.append(item)
+    #
+    #     elif trn.case == 1:
+    #         if not isclose(trn.instr_mkt_val_res, 0):
+    #             item = self._create_pos_item(trn, item_type=PerformanceReportItem.TYPE_MKT_VAL)
+    #             item.mkt_val_res = trn.instr_mkt_val_res
+    #             items.append(item)
+    #
+    #         if not isclose(trn.cash_mkt_val_res, 0):
+    #             item = self._create_cash_item(trn, interim=True, item_type=PerformanceReportItem.TYPE_MKT_VAL)
+    #             item.mkt_val_res = trn.cash_mkt_val_res
+    #             items.append(item)
+    #
+    #     elif trn.case == 2:
+    #         if not isclose(trn.instr_mkt_val_res, 0):
+    #             pass
+    #
+    #         if not isclose(trn.cash_mkt_val_res, 0):
+    #             item = self._create_cash_item(trn, interim=False, item_type=PerformanceReportItem.TYPE_MKT_VAL)
+    #             item.mkt_val_res = trn.cash_mkt_val_res
+    #             items.append(item)
+    #
+    #             item = self._create_cash_item(trn, interim=True, item_type=PerformanceReportItem.TYPE_MKT_VAL)
+    #             item.mkt_val_res = -trn.cash_mkt_val_res
+    #             items.append(item)
 
-            if not isclose(trn.cash_mkt_val_res, 0):
-                item = self._create_cash_item(trn, interim=False, item_type=PerformanceReportItem.TYPE_MKT_VAL)
-                item.mkt_val_res = trn.cash_mkt_val_res
-                items.append(item)
+    # def _add_pl(self, period, trn):
+    #     if trn.case == 0:
+    #         item = self._create_pos_item(trn, item_type=PerformanceReportItem.TYPE_PL)
+    #         item.acc_date = trn.acc_date
+    #         item.processing_date = trn.processing_date
+    #         item.cash_res = trn.cash_res
+    #         item.principal_res = trn.principal_res
+    #         item.carry_res = trn.carry_res
+    #         item.overheads_res = trn.overheads_res
+    #         item.total_res = trn.total_res
+    #         period.items_pls.append(item)
+    #
+    #     elif trn.case == 1:
+    #         item = self._create_pos_item(trn, item_type=PerformanceReportItem.TYPE_PL)
+    #         item.acc_date = trn.acc_date
+    #         item.processing_date = trn.processing_date
+    #         item.cash_res = trn.cash_res
+    #         item.principal_res = trn.principal_res
+    #         item.carry_res = trn.carry_res
+    #         item.overheads_res = trn.overheads_res
+    #         item.total_res = trn.total_res
+    #         period.items_pls.append(item)
+    #
+    #     elif trn.case == 2:
+    #         pass
+    #
+    #     else:
+    #         raise RuntimeError('Invalid transaction case: %s' % trn.case)
 
-        elif trn.case == 1:
-            if not isclose(trn.instr_mkt_val_res, 0):
-                item = self._create_pos_item(trn, item_type=PerformanceReportItem.TYPE_MKT_VAL)
-                item.mkt_val_res = trn.instr_mkt_val_res
-                items.append(item)
-
-            if not isclose(trn.cash_mkt_val_res, 0):
-                item = self._create_cash_item(trn, interim=True, item_type=PerformanceReportItem.TYPE_MKT_VAL)
-                item.mkt_val_res = trn.cash_mkt_val_res
-                items.append(item)
-
-        elif trn.case == 2:
-            if not isclose(trn.instr_mkt_val_res, 0):
-                pass
-
-            if not isclose(trn.cash_mkt_val_res, 0):
-                item = self._create_cash_item(trn, interim=False, item_type=PerformanceReportItem.TYPE_MKT_VAL)
-                item.mkt_val_res = trn.cash_mkt_val_res
-                items.append(item)
-
-                item = self._create_cash_item(trn, interim=True, item_type=PerformanceReportItem.TYPE_MKT_VAL)
-                item.mkt_val_res = -trn.cash_mkt_val_res
-                items.append(item)
-
-    def _add_pl(self, period, trn):
-        if trn.case == 0:
-            item = self._create_pos_item(trn, item_type=PerformanceReportItem.TYPE_PL)
-            item.acc_date = trn.acc_date
-            item.processing_date = trn.processing_date
-            item.cash_res = trn.cash_res
-            item.principal_res = trn.principal_res
-            item.carry_res = trn.carry_res
-            item.overheads_res = trn.overheads_res
-            item.total_res = trn.total_res
-            period.items_pls.append(item)
-
-        elif trn.case == 1:
-            item = self._create_pos_item(trn, item_type=PerformanceReportItem.TYPE_PL)
-            item.acc_date = trn.acc_date
-            item.processing_date = trn.processing_date
-            item.cash_res = trn.cash_res
-            item.principal_res = trn.principal_res
-            item.carry_res = trn.carry_res
-            item.overheads_res = trn.overheads_res
-            item.total_res = trn.total_res
-            period.items_pls.append(item)
-
-        elif trn.case == 2:
-            pass
-
-        else:
-            raise RuntimeError('Invalid transaction case: %s' % trn.case)
-
-    def _create_pos_item(self, trn, item_type=None):
-        return PerformanceReportItem.from_trn(
-            trn,
-            item_type=item_type,
-            portfolio=trn.prtfl,
-            account=trn.acc_pos,
-            strategy1=trn.str1_pos,
-            strategy2=trn.str2_pos,
-            strategy3=trn.str3_pos
-        )
-
-    def _create_cash_item(self, trn, interim=False, item_type=None):
-        return PerformanceReportItem.from_trn(
-            trn,
-            item_type=item_type,
-            portfolio=trn.prtfl,
-            account=trn.acc_cash if not interim else trn.acc_interim,
-            strategy1=trn.str1_cash,
-            strategy2=trn.str2_cash,
-            strategy3=trn.str3_cash
-        )
-
-    def _simple_aggregate(self, items):
-        tmp_items = sorted(items, key=lambda x: x.group_key)
-        res_items = []
-        for k, g in groupby(tmp_items, key=lambda x: x.group_key):
-            gitem = None
-            for item in g:
-                if gitem is None:
-                    gitem = PerformanceReportItem.from_item(item)
-                gitem.add(item)
-
-            if gitem:
-                # gitem.close()
-                res_items.append(gitem)
-        return res_items
+    # def _create_pos_item(self, trn, item_type=None):
+    #     return PerformanceReportItem.from_trn(
+    #         trn,
+    #         item_type=item_type,
+    #         portfolio=trn.prtfl,
+    #         account=trn.acc_pos,
+    #         strategy1=trn.str1_pos,
+    #         strategy2=trn.str2_pos,
+    #         strategy3=trn.str3_pos
+    #     )
+    #
+    # def _create_cash_item(self, trn, interim=False, item_type=None):
+    #     return PerformanceReportItem.from_trn(
+    #         trn,
+    #         item_type=item_type,
+    #         portfolio=trn.prtfl,
+    #         account=trn.acc_cash if not interim else trn.acc_interim,
+    #         strategy1=trn.str1_cash,
+    #         strategy2=trn.str2_cash,
+    #         strategy3=trn.str3_cash
+    #     )
+    #
+    # def _simple_aggregate(self, items):
+    #     tmp_items = sorted(items, key=lambda x: x.group_key)
+    #     res_items = []
+    #     for k, g in groupby(tmp_items, key=lambda x: x.group_key):
+    #         gitem = None
+    #         for item in g:
+    #             if gitem is None:
+    #                 gitem = PerformanceReportItem.from_item(item)
+    #             gitem.add(item)
+    #
+    #         if gitem:
+    #             # gitem.close()
+    #             res_items.append(gitem)
+    #     return res_items
 
     # def _calc1(self):
     #     _l.debug('> calc')
