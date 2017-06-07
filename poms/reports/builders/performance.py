@@ -489,6 +489,7 @@ class PerformanceReportBuilder(BaseReportBuilder):
 
             for trn in period.local_trns:
                 period.cash_in_out_add(trn)
+                pass
 
             for trn in period.trns:
                 period.nav_add(trn)

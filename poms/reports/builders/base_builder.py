@@ -71,15 +71,8 @@ class BaseReportBuilder:
     def _trn_cls_cash_out(self):
         return TransactionClass.objects.get(pk=TransactionClass.CASH_OUTFLOW)
 
-    def _trn_qs(self):
-        qs = self._queryset or Transaction.objects
-        qs = qs.filter(
-            master_user=self.instance.master_user,
-            is_deleted=False,
-        ).filter(
-            Q(complex_transaction__isnull=True) | Q(complex_transaction__status=ComplexTransaction.PRODUCTION,
-                                                    complex_transaction__is_deleted=False)
-        ).prefetch_related(
+    def _trn_qs_prefetch(self, qs):
+        return qs.prefetch_related(
             'complex_transaction',
             'complex_transaction__transaction_type',
             'transaction_class',
@@ -186,6 +179,18 @@ class BaseReportBuilder:
                 ('allocation_pl__instrument_type', InstrumentType),
             )
         )
+
+    def _trn_qs(self):
+        qs = self._queryset or Transaction.objects
+        qs = qs.filter(
+            master_user=self.instance.master_user,
+            is_deleted=False,
+        ).filter(
+            Q(master_user=self.instance.master_user, is_deleted=False),
+            Q(complex_transaction__isnull=True) | Q(complex_transaction__status=ComplexTransaction.PRODUCTION,
+                                                    complex_transaction__is_deleted=False)
+        )
+        qs = self._trn_qs_prefetch(qs)
 
         filters = Q()
 
