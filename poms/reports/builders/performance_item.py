@@ -1,7 +1,6 @@
 import uuid
 from collections import OrderedDict
 from datetime import timedelta, date
-from itertools import groupby
 
 from poms.common.utils import date_now, isclose
 from poms.reports.builders.base_item import BaseReport

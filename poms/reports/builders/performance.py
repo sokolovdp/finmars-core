@@ -2,16 +2,14 @@ import logging
 import time
 from collections import OrderedDict
 from datetime import date
-from itertools import groupby
 
 from django.db import transaction
 from django.db.models import Q
 from django.utils.functional import cached_property, SimpleLazyObject
 
 from poms.common import formula
-from poms.common.utils import isclose
 from poms.reports.builders.base_builder import BaseReportBuilder
-from poms.reports.builders.performance_item import PerformanceReportItem, PerformanceReport, PerformancePeriod
+from poms.reports.builders.performance_item import PerformanceReport, PerformancePeriod
 from poms.reports.builders.performance_virt_trn import PerformanceVirtualTransaction
 from poms.reports.builders.pricing import FakeInstrumentPricingProvider, InstrumentPricingProvider, \
     FakeCurrencyFxRateProvider, CurrencyFxRateProvider
