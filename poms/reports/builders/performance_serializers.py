@@ -12,6 +12,7 @@ from poms.common.fields import ExpressionField
 from poms.common.utils import date_now
 from poms.currencies.fields import CurrencyField, SystemCurrencyDefault
 from poms.instruments.fields import PricingPolicyField
+from poms.instruments.models import CostMethod
 from poms.portfolios.fields import PortfolioField
 from poms.portfolios.serializers import PortfolioViewSerializer
 from poms.reports.builders.base_serializers import ReportPortfolioSerializer, ReportAccountSerializer, \
@@ -95,6 +96,8 @@ class PerformanceReportSerializer(serializers.Serializer):
                                              choices=PerformanceReport.MODE_CHOICES,
                                              required=False,
                                              help_text='Strategy3 consolidation')
+    cost_method = serializers.PrimaryKeyRelatedField(queryset=CostMethod.objects, allow_null=True, allow_empty=True)
+    approach_multiplier = serializers.FloatField(default=0.5, initial=0.5, min_value=0.0, max_value=1.0, required=False)
 
     portfolios = PortfolioField(many=True, required=False, allow_null=True, allow_empty=True)
     accounts = AccountField(many=True, required=False, allow_null=True, allow_empty=True)

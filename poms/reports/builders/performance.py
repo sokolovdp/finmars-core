@@ -509,7 +509,7 @@ class PerformanceReportBuilder(BaseReportBuilder):
 
         _l.debug('periods: %s', periods)
 
-        _l.debug('aggregate: periods=%s', len(periods))
+        _l.debug('aggregate: perids=%s', len(periods))
         prev_period = None
         for period in periods:
             period.close(prev_period)

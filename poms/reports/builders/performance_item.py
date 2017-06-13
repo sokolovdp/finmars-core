@@ -3,6 +3,7 @@ from collections import OrderedDict
 from datetime import timedelta, date
 
 from poms.common.utils import date_now, isclose
+from poms.instruments.models import CostMethod
 from poms.reports.builders.base_item import BaseReport
 
 
@@ -28,8 +29,13 @@ class PerformancePeriod:
         return self.__repr__()
 
     def __repr__(self):
-        return 'Period({}/{},local_trns={},trns={},items={})'.format(
-            self.period_begin, self.period_end, len(self.local_trns), len(self.trns), len(self._items))
+        return 'Period({period_begin}/{period_end},local_trns={local_trns},trns={trns},items={items})'.format(
+            period_begin=self.period_begin,
+            period_end=self.period_end,
+            local_trns=len(self.local_trns),
+            trns=len(self.trns),
+            items=len(self._items)
+        )
 
     @property
     def items(self):
@@ -271,9 +277,15 @@ class PerformanceReportItem:
         return self.__repr__()
 
     def __repr__(self):
-        return 'Item({}/{},prtfl={},acc={},str1={},str2={},str3={})'.format(
-            self.period_begin, self.period_end, getattr(self.portfolio, 'id', -1), getattr(self.account, 'id', -1),
-            getattr(self.strategy1, 'id', -1), getattr(self.strategy2, 'id', -1), getattr(self.strategy3, 'id', -1), )
+        return 'Item({period_begin}/{period_end},portfolio={portfolio},account={account},strategy1={strategy1},strategy2={strategy2},strategy3={strategy3})'.format(
+            period_begin=self.period_begin,
+            period_end=self.period_end,
+            portfolio=getattr(self.portfolio, 'id', -1),
+            account=getattr(self.account, 'id', -1),
+            strategy1=getattr(self.strategy1, 'id', -1),
+            strategy2=getattr(self.strategy2, 'id', -1),
+            strategy3=getattr(self.strategy3, 'id', -1),
+        )
 
     @staticmethod
     def make_group_key(report, period_key=None, portfolio=None, account=None,
@@ -390,25 +402,25 @@ class PerformanceReportItem:
     #         self.overheads_res += item.overheads_res
     #         self.total_res += item.total_res
 
-    def calc(self):
-        # try:
-        #     self.global_time_weight = (self.report.end_date - self.acc_date).days / \
-        #                               (self.report.end_date - self.report.begin_date).days
-        # except ArithmeticError:
-        #     self.global_time_weight = 0
-        #
-        # try:
-        #     self.period_time_weight = (self.period_end - self.acc_date).days / \
-        #                               (self.period_end - self.period_begin).days
-        # except ArithmeticError:
-        #     self.period_time_weight = 0
-        pass
+    # def calc(self):
+    #     # try:
+    #     #     self.global_time_weight = (self.report.end_date - self.acc_date).days / \
+    #     #                               (self.report.end_date - self.report.begin_date).days
+    #     # except ArithmeticError:
+    #     #     self.global_time_weight = 0
+    #     #
+    #     # try:
+    #     #     self.period_time_weight = (self.period_end - self.acc_date).days / \
+    #     #                               (self.period_end - self.period_begin).days
+    #     # except ArithmeticError:
+    #     #     self.period_time_weight = 0
+    #     pass
 
-    def set_as_cash(self, trn):
-        self.cash_inflows = trn.total_res
-
-    def set_as_pos(self, trn):
-        self.cash_inflows = -trn.total_res
+    # def set_as_cash(self, trn):
+    #     self.cash_inflows = trn.total_res
+    #
+    # def set_as_pos(self, trn):
+    #     self.cash_inflows = -trn.total_res
 
     def close(self):
         # self.return_pl = 0
@@ -486,6 +498,8 @@ class PerformanceReport(BaseReport):
                  strategy1_mode=BaseReport.MODE_INDEPENDENT,
                  strategy2_mode=BaseReport.MODE_INDEPENDENT,
                  strategy3_mode=BaseReport.MODE_INDEPENDENT,
+                 cost_method=None,
+                 approach_multiplier=0.5,
                  portfolios=None,
                  accounts=None,
                  accounts_position=None,
@@ -512,6 +526,8 @@ class PerformanceReport(BaseReport):
         self.strategy1_mode = strategy1_mode
         self.strategy2_mode = strategy2_mode
         self.strategy3_mode = strategy3_mode
+        self.cost_method = cost_method or CostMethod.objects.get(pk=CostMethod.AVCO)
+        self.approach_multiplier = approach_multiplier
         self.portfolios = portfolios or []
         self.accounts = accounts or []
         self.accounts_position = accounts_position or []
