@@ -8,7 +8,7 @@ from django.db.models import Q
 from django.utils.functional import cached_property, SimpleLazyObject
 
 from poms.common import formula
-from poms.reports.builders.base_builder import BaseReportBuilder
+from poms.reports.builders.balance_pl import ReportBuilder
 from poms.reports.builders.performance_item import PerformanceReport, PerformancePeriod
 from poms.reports.builders.performance_virt_trn import PerformanceVirtualTransaction
 from poms.reports.builders.pricing import FakeInstrumentPricingProvider, InstrumentPricingProvider, \
@@ -18,26 +18,41 @@ from poms.transactions.models import TransactionClass
 _l = logging.getLogger('poms.reports')
 
 
-class PerformanceReportBuilder(BaseReportBuilder):
-    def __init__(self, instance, pricing_provider=None, fx_rate_provider=None):
-        super(PerformanceReportBuilder, self).__init__(instance)
+class PerformanceReportBuilder(ReportBuilder):
+    trn_cls = PerformanceVirtualTransaction
 
-        self._pricing_provider = pricing_provider
-        self._fx_rate_provider = fx_rate_provider
-        self._transactions = None
+    def __init__(self, instance=None, queryset=None, transactions=None, pricing_provider=None, fx_rate_provider=None):
+        super(PerformanceReportBuilder, self).__init__(
+            instance=instance,
+            queryset=queryset,
+            transactions=transactions,
+            pricing_provider=pricing_provider,
+            fx_rate_provider=fx_rate_provider
+        )
+
+        self._original_transactions = None
+
+        self._periods = OrderedDict()
+
+        # self._pricing_provider = pricing_provider
+        # self._fx_rate_provider = fx_rate_provider
+        # self._transactions = None
         # self._periods = []
         # self._items = OrderedDict()
 
-    def build(self):
+    def build_performance(self):
         st = time.perf_counter()
         _l.debug('build transaction')
 
         with transaction.atomic():
             try:
-                self._load()
-                self._clone_if_need()
+                self._load_transactions()
                 self._process_periods()
+                self._periods_init()
+                self._original_transactions = self.transactions.copy()
+                self._periods_pricing()
                 self._calc()
+                self._make_items()
 
                 # self.instance.items = [
                 #     PerformanceReportItem(
@@ -66,8 +81,8 @@ class PerformanceReportBuilder(BaseReportBuilder):
         _l.debug('done: %s', (time.perf_counter() - st))
         return self.instance
 
-    def _trn_qs(self):
-        qs = super(PerformanceReportBuilder, self)._trn_qs()
+    def _trn_qs_filter(self, qs):
+        # qs = super(PerformanceReportBuilder, self)._trn_qs()
 
         filters = Q()
 
@@ -83,89 +98,89 @@ class PerformanceReportBuilder(BaseReportBuilder):
 
         return qs
 
-    def _load(self):
-        _l.debug('> _load')
+    # def _load_transactions(self):
+    #     _l.debug('> _load')
+    #
+    #     trns = []
+    #
+    #     qs = self._trn_qs()
+    #     for t in qs:
+    #         overrides = {}
+    #
+    #         if self.instance.portfolio_mode == PerformanceReport.MODE_IGNORE:
+    #             overrides['portfolio'] = self.instance.master_user.portfolio
+    #
+    #         if self.instance.account_mode == PerformanceReport.MODE_IGNORE:
+    #             overrides['account_position'] = self.instance.master_user.account
+    #             overrides['account_cash'] = self.instance.master_user.account
+    #             overrides['account_interim'] = self.instance.master_user.account
+    #
+    #         if self.instance.strategy1_mode == PerformanceReport.MODE_IGNORE:
+    #             overrides['strategy1_position'] = self.instance.master_user.strategy1
+    #             overrides['strategy1_cash'] = self.instance.master_user.strategy1
+    #
+    #         if self.instance.strategy2_mode == PerformanceReport.MODE_IGNORE:
+    #             overrides['strategy2_position'] = self.instance.master_user.strategy2
+    #             overrides['strategy2_cash'] = self.instance.master_user.strategy2
+    #
+    #         if self.instance.strategy3_mode == PerformanceReport.MODE_IGNORE:
+    #             overrides['strategy3_position'] = self.instance.master_user.strategy3
+    #             overrides['strategy3_cash'] = self.instance.master_user.strategy3
+    #
+    #         # if self.instance.allocation_mode == PerformanceReport.MODE_IGNORE:
+    #         #     overrides['allocation_balance'] = self.instance.master_user.instrument
+    #         #     overrides['allocation_pl'] = self.instance.master_user.instrument
+    #
+    #         trn = PerformanceVirtualTransaction(
+    #             report=self.instance,
+    #             pricing_provider=self.pricing_provider,
+    #             fx_rate_provider=self.fx_rate_provider,
+    #             trn=t,
+    #             overrides=overrides
+    #         )
+    #         trns.append(trn)
+    #
+    #     self._transactions = trns
+    #
+    #     _l.debug('< _load: %s', len(self._transactions))
 
-        trns = []
-
-        qs = self._trn_qs()
-        for t in qs:
-            overrides = {}
-
-            if self.instance.portfolio_mode == PerformanceReport.MODE_IGNORE:
-                overrides['portfolio'] = self.instance.master_user.portfolio
-
-            if self.instance.account_mode == PerformanceReport.MODE_IGNORE:
-                overrides['account_position'] = self.instance.master_user.account
-                overrides['account_cash'] = self.instance.master_user.account
-                overrides['account_interim'] = self.instance.master_user.account
-
-            if self.instance.strategy1_mode == PerformanceReport.MODE_IGNORE:
-                overrides['strategy1_position'] = self.instance.master_user.strategy1
-                overrides['strategy1_cash'] = self.instance.master_user.strategy1
-
-            if self.instance.strategy2_mode == PerformanceReport.MODE_IGNORE:
-                overrides['strategy2_position'] = self.instance.master_user.strategy2
-                overrides['strategy2_cash'] = self.instance.master_user.strategy2
-
-            if self.instance.strategy3_mode == PerformanceReport.MODE_IGNORE:
-                overrides['strategy3_position'] = self.instance.master_user.strategy3
-                overrides['strategy3_cash'] = self.instance.master_user.strategy3
-
-            # if self.instance.allocation_mode == PerformanceReport.MODE_IGNORE:
-            #     overrides['allocation_balance'] = self.instance.master_user.instrument
-            #     overrides['allocation_pl'] = self.instance.master_user.instrument
-
-            trn = PerformanceVirtualTransaction(
-                report=self.instance,
-                pricing_provider=self.pricing_provider,
-                fx_rate_provider=self.fx_rate_provider,
-                trn=t,
-                overrides=overrides
-            )
-            trns.append(trn)
-
-        self._transactions = trns
-
-        _l.debug('< _load: %s', len(self._transactions))
-
-    def _clone_if_need(self):
-        _l.debug('> clone_transactions_if_need')
-
-        res = []
-        for trn in self._transactions:
-            res.append(trn)
-
-            if trn.trn_cls.id == TransactionClass.FX_TRADE:
-                trn.is_hidden = True
-
-                trn1, trn2 = trn.fx_trade_clone()
-                res.append(trn1)
-                res.append(trn2)
-
-            elif trn.trn_cls.id == TransactionClass.TRANSFER:
-                trn.is_hidden = True
-                # split TRANSFER to sell/buy or buy/sell
-                if trn.pos_size >= 0:
-                    trn1, trn2 = trn.transfer_clone(self._trn_cls_sell, self._trn_cls_buy,
-                                                    t1_pos_sign=1.0, t1_cash_sign=-1.0)
-                else:
-                    trn1, trn2 = trn.transfer_clone(self._trn_cls_buy, self._trn_cls_sell,
-                                                    t1_pos_sign=-1.0, t1_cash_sign=1.0)
-                res.append(trn1)
-                res.append(trn2)
-
-            elif trn.trn_cls.id == TransactionClass.FX_TRANSFER:
-                trn.is_hidden = True
-
-                trn1, trn2 = trn.fx_transfer_clone(trn_cls_out=self._trn_cls_cash_out,
-                                                   trn_cls_in=self._trn_cls_cash_in)
-                res.append(trn1)
-                res.append(trn2)
-
-        self._transactions = res
-
-        _l.debug('< clone_transactions_if_need: %s', len(self._transactions))
+    # def _clone_transactions_if_need(self):
+    #     _l.debug('> clone_transactions_if_need')
+    #
+    #     res = []
+    #     for trn in self._transactions:
+    #         res.append(trn)
+    #
+    #         if trn.trn_cls.id == TransactionClass.FX_TRADE:
+    #             trn.is_hidden = True
+    #
+    #             trn1, trn2 = trn.fx_trade_clone()
+    #             res.append(trn1)
+    #             res.append(trn2)
+    #
+    #         elif trn.trn_cls.id == TransactionClass.TRANSFER:
+    #             trn.is_hidden = True
+    #             # split TRANSFER to sell/buy or buy/sell
+    #             if trn.pos_size >= 0:
+    #                 trn1, trn2 = trn.transfer_clone(self._trn_cls_sell, self._trn_cls_buy,
+    #                                                 t1_pos_sign=1.0, t1_cash_sign=-1.0)
+    #             else:
+    #                 trn1, trn2 = trn.transfer_clone(self._trn_cls_buy, self._trn_cls_sell,
+    #                                                 t1_pos_sign=-1.0, t1_cash_sign=1.0)
+    #             res.append(trn1)
+    #             res.append(trn2)
+    #
+    #         elif trn.trn_cls.id == TransactionClass.FX_TRANSFER:
+    #             trn.is_hidden = True
+    #
+    #             trn1, trn2 = trn.fx_transfer_clone(trn_cls_out=self._trn_cls_cash_out,
+    #                                                trn_cls_in=self._trn_cls_cash_in)
+    #             res.append(trn1)
+    #             res.append(trn2)
+    #
+    #     self._transactions = res
+    #
+    #     _l.debug('< clone_transactions_if_need: %s', len(self._transactions))
 
     def _process_periods(self):
         _l.debug('> process periods')
@@ -430,7 +445,92 @@ class PerformanceReportBuilder(BaseReportBuilder):
     # def _get_pos_item(self, trn):
     #     return self._get_item(trn=trn, is_pos=True)
 
+    def _periods_init(self):
+        _l.debug('> _periods_init')
+
+        for trn in self._transactions:
+            if trn.period_key not in  self._periods:
+                period = PerformancePeriod(
+                    self.instance,
+                    period_begin=trn.period_begin,
+                    period_end=trn.period_end,
+                    period_name=trn.period_name,
+                    period_key=trn.period_key
+                )
+                self._periods[trn.period_key] = period
+
+        _l.debug('count=%s', len(self._periods))
+        _l.debug('periods=%s', ['%s' % p for p in self._periods.values()])
+
+        _l.debug('fill period transaction list')
+        for trn in self._transactions:
+            # period_key = trn.period_key
+            _l.debug('  trn: pk=%s, cls=%s, period_key=%s', trn.pk, trn.trn_cls, trn.period_key)
+
+            if trn.is_hidden:
+                _l.debug('    skip trn: is_hidden=%s', trn.is_hidden)
+                continue
+
+            for period in self._periods.values():
+                if trn.period_key == period.period_key:
+                    period.local_trns.append(trn.clone())
+                if trn.period_key <= period.period_key:
+                    period.trns.append(trn.clone())
+
+        _l.debug('< _periods_init')
+
+    def _periods_pricing(self):
+        _l.debug('> _periods_pricing')
+
+        for period in self._periods.values():
+            _l.debug('%s', period)
+            for trn in period.local_trns:
+                trn.perf_pricing()
+
+            for trn in period.trns:
+                trn.processing_date = period.period_end
+                trn.set_case()
+                trn.perf_pricing()
+
+        _l.debug('< _periods_pricing')
+
     def _calc(self):
+        _l.debug('> calc')
+
+        for period in self._periods.values():
+            _l.debug('%s', period)
+
+            self._transactions = period.trns
+
+            self._transaction_multipliers()
+            self._clone_transactions_if_need()
+
+            for trn in period.local_trns:
+                trn.perf_calc()
+                period.cash_in_out_add(trn)
+
+            for trn in self._transactions:
+                trn.perf_calc()
+                period.nav_add(trn)
+
+        _l.debug('aggregate: periods=%s', len(self._periods))
+        prev_period = None
+        for period in self._periods.values():
+            period.close(prev_period)
+            prev_period = period
+
+        _l.debug('< calc')
+
+    def _make_items(self):
+        _l.debug('> _make_items')
+
+        self.instance.items = []
+        for period in self._periods.values():
+            self.instance.items.extend(period.items)
+
+        _l.debug('< _make_items: %s', len(self.instance.items))
+
+    def _calc2(self):
         _l.debug('> calc')
 
         periods = OrderedDict()

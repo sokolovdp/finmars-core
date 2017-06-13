@@ -180,6 +180,9 @@ class BaseReportBuilder:
             )
         )
 
+    def _trn_qs_filter(self, qs):
+        return qs
+
     def _trn_qs(self):
         qs = self._queryset or Transaction.objects
         qs = qs.filter(
@@ -225,6 +228,8 @@ class BaseReportBuilder:
         if self.instance.member is not None:
             from poms.transactions.filters import TransactionObjectPermissionFilter
             qs = TransactionObjectPermissionFilter.filter_qs(qs, self.instance.master_user, self.instance.member)
+
+        qs = self._trn_qs_filter(qs)
 
         return qs
 

@@ -95,7 +95,7 @@ def performance_report(instance):
     with transaction.atomic():
         try:
             builder = PerformanceReportBuilder(instance)
-            builder.build()
+            builder.build_performance()
             # instance.transactions = None
             return builder.instance
         except:

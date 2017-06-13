@@ -526,6 +526,7 @@ class PerformanceReport(BaseReport):
         self.strategy1_mode = strategy1_mode
         self.strategy2_mode = strategy2_mode
         self.strategy3_mode = strategy3_mode
+        self.allocation_mode = PerformanceReport.MODE_IGNORE
         self.cost_method = cost_method or CostMethod.objects.get(pk=CostMethod.AVCO)
         self.approach_multiplier = approach_multiplier
         self.portfolios = portfolios or []

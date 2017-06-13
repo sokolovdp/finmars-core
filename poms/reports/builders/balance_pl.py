@@ -22,6 +22,8 @@ _l = logging.getLogger('poms.reports')
 
 
 class ReportBuilder(BaseReportBuilder):
+    trn_cls = VirtualTransaction
+
     def __init__(self, instance=None, queryset=None, transactions=None, pricing_provider=None, fx_rate_provider=None):
         super(ReportBuilder, self).__init__(instance, queryset=queryset)
 
@@ -158,7 +160,7 @@ class ReportBuilder(BaseReportBuilder):
     def transactions(self):
         return self._transactions
 
-    def _trn_qs(self):
+    def _trn_qs_filter(self, qs):
         # if self._queryset is None:
         #     qs = Transaction.objects.all()
         # else:
@@ -304,7 +306,7 @@ class ReportBuilder(BaseReportBuilder):
         #     'is_deleted': False,
         #     '%s__lt' % self.instance.date_field: self.instance.report_date
         # }
-        qs = super(ReportBuilder, self)._trn_qs()
+        # qs = super(ReportBuilder, self)._trn_qs()
 
         filters = Q(**{'%s__lt' % self.instance.date_field: self.instance.report_date})
 
@@ -436,7 +438,7 @@ class ReportBuilder(BaseReportBuilder):
                 overrides['allocation_balance'] = self.instance.master_user.instrument
                 overrides['allocation_pl'] = self.instance.master_user.instrument
 
-            trn = VirtualTransaction(
+            trn = self.trn_cls(
                 report=self.instance,
                 pricing_provider=self.pricing_provider,
                 fx_rate_provider=self.fx_rate_provider,
@@ -470,7 +472,7 @@ class ReportBuilder(BaseReportBuilder):
             if trn.trn_cls.id in [TransactionClass.BUY, TransactionClass.SELL]:
                 if trn.closed_by:
                     for closed_by, delta in trn.closed_by:
-                        closed_by2, trn2 = VirtualTransaction.approach_clone(closed_by, trn, delta)
+                        closed_by2, trn2 = self.trn_cls.approach_clone(closed_by, trn, delta)
                         res.append(trn2)
                         res.append(closed_by2)
 
