@@ -192,14 +192,14 @@ class PerformancePeriod:
         elif cash_flow > 0:
             cash_cash_in = cash_flow
             cash_cash_out = 0
-            pos_cash_in = -cash_flow
-            pos_cash_out = 0
+            pos_cash_in = 0
+            pos_cash_out = -cash_flow
 
         elif cash_flow < 0:
             cash_cash_in = 0
             cash_cash_out = cash_flow
-            pos_cash_in = 0
-            pos_cash_out = -cash_flow
+            pos_cash_in = -cash_flow
+            pos_cash_out = 0
 
         cash_item = self.get_by_trn_cash(trn, interim=False)
         cash_item.cash_inflows += cash_cash_in
@@ -231,11 +231,6 @@ class PerformancePeriod:
             # item.close()
 
             item.accumulated_pl += item.mkt_val_res
-
-            try:
-                item.return_nav = item.nav_change / item.avg_nav_in_period
-            except ArithmeticError:
-                item.return_nav = 0
 
             item.pl_in_period = item.accumulated_pl - getattr(prev_item, 'accumulated_pl', 0)
 
