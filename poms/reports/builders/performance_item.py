@@ -112,7 +112,7 @@ class PerformancePeriod:
                 item.mkt_val_res += trn.instr_mkt_val_res
 
     def nav_add(self, trn):
-        is_nav_period_start = trn.period_key < self.period_key
+        # is_nav_period_start = trn.period_key < self.period_key
 
         if trn.is_buy or trn.is_sell:
             # if trn.case == 0:
@@ -160,8 +160,8 @@ class PerformancePeriod:
             #     #     item.nav_period_end += -trn.cash_mkt_val_res
             #     pass
             item = self.get_by_trn_pos(trn)
-            if is_nav_period_start:
-                item.nav_period_start += trn.instr_mkt_val_res
+            # if is_nav_period_start:
+            #     item.nav_period_start += trn.instr_mkt_val_res
             item.nav_period_end += trn.instr_mkt_val_res
 
     def pl_add(self, trn):
@@ -240,16 +240,57 @@ class PerformancePeriod:
         pos_item.time_weighted_cash_outflows += pos_cash_outflows * trn.period_time_weight
 
     def close(self, prev_periods):
+        prev_period = prev_periods[-1] if prev_periods else None
         for item in self._items.values():
-            # prev_item = prev_period.get(
-            #     portfolio=item.portfolio,
-            #     account=item.account,
-            #     strategy1=item.strategy1,
-            #     strategy2=item.strategy2,
-            #     strategy3=item.strategy3,
-            #     create=False
-            # )
-            item.close()
+            prev_item = prev_period.get(
+                portfolio=item.portfolio,
+                account=item.account,
+                strategy1=item.strategy1,
+                strategy2=item.strategy2,
+                strategy3=item.strategy3,
+                create=False
+            )
+
+            # item.close()
+
+            item.accumulated_pl += item.mkt_val_res
+
+            try:
+                item.return_nav = item.nav_change / item.avg_nav_in_period
+            except ArithmeticError:
+                item.return_nav = 0
+
+            item.pl_in_period = item.accumulated_pl - getattr(prev_item, 'accumulated_pl', 0)
+
+            item.nav_change = (item.nav_period_end - item.nav_period_start) + \
+                              (item.cash_outflows - item.cash_inflows)
+
+            item.nav_period_start = getattr(prev_item, 'nav_period_end', 0)
+
+            # item.nav_period_end = 0
+
+            # item.cash_inflows = 0
+            # item.cash_outflows = 0
+            # item.time_weighted_cash_inflows = 0
+            # item.time_weighted_cash_outflows = 0
+
+            item.avg_nav_in_period = item.nav_period_start + \
+                                     (item.time_weighted_cash_inflows - item.time_weighted_cash_outflows)
+
+            try:
+                item.return_pl = item.pl_in_period / item.avg_nav_in_period
+            except ArithmeticError:
+                item.return_pl = 0
+
+            try:
+                item.return_nav = item.nav_change / item.avg_nav_in_period
+            except ArithmeticError:
+                item.return_nav = 0
+
+            # item.cumulative_return_pl = 0
+
+            # item.cumulative_return_nav = 0
+            pass
 
     def same_item_key(self, current, prev):
         return PerformanceReportItem.make_item_key(
@@ -389,65 +430,47 @@ class PerformanceReportItem:
             strategy3=self.strategy3
         )
 
-    def close(self):
-
-        self.accumulated_pl += self.mkt_val_res
-
-        try:
-            self.return_nav = self.nav_change / self.avg_nav_in_period
-        except ArithmeticError:
-            self.return_nav = 0
-
-        # self.pl_in_period = 0
-
-        self.nav_change = (self.nav_period_end - self.nav_period_start) + \
-                          (self.cash_outflows - self.cash_inflows)
-
-        # self.nav_period_start = 0
-
-        # self.nav_period_end = 0
-
-        # self.cash_inflows = 0
-
-        # self.cash_outflows = 0
-
-        # self.time_weighted_cash_inflows = 0
-
-        # self.time_weighted_cash_outflows = 0
-
-        self.avg_nav_in_period = self.nav_period_start + \
-                                 (self.time_weighted_cash_inflows - self.time_weighted_cash_outflows)
-
-        try:
-            self.return_pl = self.pl_in_period / self.avg_nav_in_period
-        except ArithmeticError:
-            self.return_pl = 0
-        try:
-            self.return_nav = self.nav_change / self.avg_nav_in_period
-        except ArithmeticError:
-            self.return_nav = 0
-
-        # self.cumulative_return_pl = 0
-
-        # self.cumulative_return_nav = 0
-        pass
-
-    def random(self):
-        from random import random
-
-        self.return_pl = random()
-        self.return_nav = random()
-        self.pl_in_period = random()
-        self.nav_change = random()
-        self.nav_period_start = random()
-        self.nav_period_end = random()
-        self.cash_inflows = random()
-        self.cash_outflows = random()
-        self.time_weighted_cash_inflows = random()
-        self.time_weighted_cash_outflows = random()
-        self.avg_nav_in_period = random()
-        self.cumulative_return_pl = random()
-        self.cumulative_return_nav = random()
+    # def close(self):
+    #     self.accumulated_pl += self.mkt_val_res
+    #
+    #     try:
+    #         self.return_nav = self.nav_change / self.avg_nav_in_period
+    #     except ArithmeticError:
+    #         self.return_nav = 0
+    #
+    #     # self.pl_in_period = 0
+    #
+    #     self.nav_change = (self.nav_period_end - self.nav_period_start) + \
+    #                       (self.cash_outflows - self.cash_inflows)
+    #
+    #     # self.nav_period_start = 0
+    #
+    #     # self.nav_period_end = 0
+    #
+    #     # self.cash_inflows = 0
+    #
+    #     # self.cash_outflows = 0
+    #
+    #     # self.time_weighted_cash_inflows = 0
+    #
+    #     # self.time_weighted_cash_outflows = 0
+    #
+    #     self.avg_nav_in_period = self.nav_period_start + \
+    #                              (self.time_weighted_cash_inflows - self.time_weighted_cash_outflows)
+    #
+    #     try:
+    #         self.return_pl = self.pl_in_period / self.avg_nav_in_period
+    #     except ArithmeticError:
+    #         self.return_pl = 0
+    #     try:
+    #         self.return_nav = self.nav_change / self.avg_nav_in_period
+    #     except ArithmeticError:
+    #         self.return_nav = 0
+    #
+    #     # self.cumulative_return_pl = 0
+    #
+    #     # self.cumulative_return_nav = 0
+    #     pass
 
     def eval_custom_fields(self):
         # use optimization inside serialization
