@@ -168,39 +168,3 @@ class PerformanceVirtualTransaction(VirtualTransaction):
 
         else:
             pass
-
-    # def perf_clone_as_mkt_val(self):
-    #     trn = self.clone()
-    #
-    #     trn.is_mkt_val = True
-    #
-    #     trn.trn_cls = None
-    #
-    #     trn.total = 0
-    #
-    #     trn.principal_res = 0
-    #     trn.carry_res = 0
-    #     trn.overheads_res = 0
-    #     trn.total_res = 0
-    #
-    #     trn.global_time_weight = 0
-    #     trn.period_time_weight = 0
-    #
-    #     trn.cash_flow_cash_res = 0
-    #     trn.cash_flow_pos_res = 0
-    #
-    #     trn.time_weight_cash_flow_cash_res = 0
-    #     trn.time_weight_cash_flow_pos_res = 0
-    #
-    #     return trn
-
-    # def perf_mkt_val_add(self, trn):
-    #     self.total += trn.total
-    #
-    #     self.principal_res += trn.principal_res
-    #     self.carry_res += trn.carry_res
-    #     self.overheads_res += trn.overheads_res
-    #     self.total_res += trn.total_res
-    #
-    #     self.principal_res += trn.instr_principal_res
-    #     self.principal_res += trn.instr_accrued_res
