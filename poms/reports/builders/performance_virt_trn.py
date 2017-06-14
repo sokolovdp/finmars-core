@@ -57,9 +57,14 @@ class PerformanceVirtualTransaction(VirtualTransaction):
         self.period_name = name
         self.period_begin = begin
         self.period_end = end
-        self.period_key = (str(self.period_begin), str(self.period_end), self.period_name)
 
-        self.processing_date = end
+        # self.period_key = (str(self.period_begin), str(self.period_end), self.period_name)
+        self.period_key = (str(self.period_end), str(self.period_begin), self.period_name)
+
+        self.set_processing_date(self.period_end)
+
+    def set_processing_date(self, processing_date):
+        self.processing_date = processing_date
         self.set_case()
 
     def pricing(self):

@@ -41,8 +41,10 @@ class PerformancePeriod:
     def items(self):
         return self._items.values()
 
-    def get(self, portfolio=None, account=None, strategy1=None, strategy2=None, strategy3=None):
-        key = PerformanceReportItem.make_group_key(
+    def get(self, portfolio=None, account=None, strategy1=None, strategy2=None, strategy3=None, create=None):
+        if create is None:
+            create = True
+        key = PerformanceReportItem.make_item_key(
             self.report,
             period_key=self.period_key,
             portfolio=portfolio,
@@ -54,121 +56,216 @@ class PerformancePeriod:
         try:
             return self._items[key]
         except KeyError:
-            item = PerformanceReportItem(
-                self.report,
-                id=str(uuid.uuid4()),
-                period_begin=self.period_begin,
-                period_end=self.period_end,
-                period_name=self.period_name,
-                period_key=self.period_key,
-                portfolio=portfolio,
-                account=account,
-                strategy1=strategy1,
-                strategy2=strategy2,
-                strategy3=strategy3
-            )
-            self._items[key] = item
-            return item
+            if create:
+                item = PerformanceReportItem(
+                    self.report,
+                    id=str(uuid.uuid4()),
+                    period_begin=self.period_begin,
+                    period_end=self.period_end,
+                    period_name=self.period_name,
+                    period_key=self.period_key,
+                    portfolio=portfolio,
+                    account=account,
+                    strategy1=strategy1,
+                    strategy2=strategy2,
+                    strategy3=strategy3
+                )
+                self._items[key] = item
+                return item
+            else:
+                return None
 
-    def get_by_trn_pos(self, trn):
+    def get_by_trn_pos(self, trn, create=None):
         return self.get(
             portfolio=trn.prtfl,
             account=trn.acc_pos,
             strategy1=trn.str1_pos,
             strategy2=trn.str2_pos,
-            strategy3=trn.str3_pos
+            strategy3=trn.str3_pos,
+            create=create,
         )
 
-    def get_by_trn_cash(self, trn, interim=False):
+    def get_by_trn_cash(self, trn, interim=False, create=None):
         return self.get(
             portfolio=trn.prtfl,
             account=trn.acc_cash if not interim else trn.acc_interim,
             strategy1=trn.str1_cash,
             strategy2=trn.str2_cash,
-            strategy3=trn.str3_cash
+            strategy3=trn.str3_cash,
+            create=create,
         )
+
+    def mkt_val_add(self, trn):
+        if trn.is_buy or trn.is_sell:
+            # if trn.case == 0:
+            #     if not isclose(trn.instr_mkt_val_res, 0):
+            #         item = self.get_by_trn_pos(trn)
+            #         if trn.period_key == self.period_key:
+            #             item.mkt_val_res += trn.instr_mkt_val_res
+            #
+            # elif trn.case == 1:
+            #     if not isclose(trn.instr_mkt_val_res, 0):
+            #         item = self.get_by_trn_pos(trn)
+            #         if trn.period_key == self.period_key:
+            #             item.mkt_val_res += trn.instr_mkt_val_res
+            #
+            # elif trn.case == 2:
+            #     pass
+
+            item = self.get_by_trn_pos(trn)
+            if trn.period_key == self.period_key:
+                item.mkt_val_res += trn.instr_mkt_val_res
 
     def nav_add(self, trn):
         is_nav_period_start = trn.period_key < self.period_key
 
-        if trn.case == 0:
-            if not isclose(trn.instr_mkt_val_res, 0):
-                item = self.get_by_trn_pos(trn)
-                if is_nav_period_start:
-                    item.nav_period_start += trn.instr_mkt_val_res
-                item.nav_period_end += trn.instr_mkt_val_res
+        if trn.is_buy or trn.is_sell:
+            # if trn.case == 0:
+            #     if not isclose(trn.instr_mkt_val_res, 0):
+            #         item = self.get_by_trn_pos(trn)
+            #         if is_nav_period_start:
+            #             item.nav_period_start += trn.instr_mkt_val_res
+            #         item.nav_period_end += trn.instr_mkt_val_res
+            #
+            #     # if not isclose(trn.cash_mkt_val_res, 0):
+            #     #     item = self.get_by_trn_cash(trn, interim=False)
+            #     #     if is_nav_period_start:
+            #     #         item.nav_period_start += trn.cash_mkt_val_res
+            #     #     item.nav_period_end += trn.cash_mkt_val_res
+            #     pass
+            #
+            # elif trn.case == 1:
+            #     if not isclose(trn.instr_mkt_val_res, 0):
+            #         item = self.get_by_trn_pos(trn)
+            #         if is_nav_period_start:
+            #             item.nav_period_start += trn.instr_mkt_val_res
+            #         item.nav_period_end += trn.instr_mkt_val_res
+            #
+            #     # if not isclose(trn.cash_mkt_val_res, 0):
+            #     #     item = self.get_by_trn_cash(trn, interim=True)
+            #     #     if is_nav_period_start:
+            #     #         item.nav_period_start += trn.cash_mkt_val_res
+            #     #     item.nav_period_end += trn.cash_mkt_val_res
+            #     pass
+            #
+            # elif trn.case == 2:
+            #     # if not isclose(trn.instr_mkt_val_res, 0):
+            #     #     pass
+            #     pass
+            #
+            #     # if not isclose(trn.cash_mkt_val_res, 0):
+            #     #     item = self.get_by_trn_cash(trn, interim=False)
+            #     #     if is_nav_period_start:
+            #     #         item.nav_period_start += trn.cash_mkt_val_res
+            #     #     item.nav_period_end += trn.cash_mkt_val_res
+            #     #
+            #     #     item = self.get_by_trn_cash(trn, interim=True)
+            #     #     if is_nav_period_start:
+            #     #         item.nav_period_start += -trn.cash_mkt_val_res
+            #     #     item.nav_period_end += -trn.cash_mkt_val_res
+            #     pass
+            item = self.get_by_trn_pos(trn)
+            if is_nav_period_start:
+                item.nav_period_start += trn.instr_mkt_val_res
+            item.nav_period_end += trn.instr_mkt_val_res
 
-            if not isclose(trn.cash_mkt_val_res, 0):
-                item = self.get_by_trn_cash(trn, interim=False)
-                if is_nav_period_start:
-                    item.nav_period_start += trn.cash_mkt_val_res
-                item.nav_period_end += trn.cash_mkt_val_res
+    def pl_add(self, trn):
+        pos_item = self.get_by_trn_pos(trn)
+        if trn.is_cash_inflow or trn.is_cash_outflow:
+            # = [Cash Consideration] * Current FX ratre of the Sttlm Ccy  / Current FX rate of the Reporting Ccy -
+            # [Cash Consideration]  * [Reference FX rate] * Hist FX  rate of the Transact Ccy / Hist FX rate of the Reportin Ccy
+            pos_item.accumulated_pl += trn.cash_res - trn.cash * trn.ref_fx * trn.trn_ccy_cur_fx
 
-        elif trn.case == 1:
-            if not isclose(trn.instr_mkt_val_res, 0):
-                item = self.get_by_trn_pos(trn)
-                if is_nav_period_start:
-                    item.nav_period_start += trn.instr_mkt_val_res
-                item.nav_period_end += trn.instr_mkt_val_res
-
-            if not isclose(trn.cash_mkt_val_res, 0):
-                item = self.get_by_trn_cash(trn, interim=True)
-                if is_nav_period_start:
-                    item.nav_period_start += trn.cash_mkt_val_res
-                item.nav_period_end += trn.cash_mkt_val_res
-
-        elif trn.case == 2:
-            if not isclose(trn.instr_mkt_val_res, 0):
-                pass
-
-            if not isclose(trn.cash_mkt_val_res, 0):
-                item = self.get_by_trn_cash(trn, interim=False)
-                if is_nav_period_start:
-                    item.nav_period_start += trn.cash_mkt_val_res
-                item.nav_period_end += trn.cash_mkt_val_res
-
-                item = self.get_by_trn_cash(trn, interim=True)
-                if is_nav_period_start:
-                    item.nav_period_start += -trn.cash_mkt_val_res
-                item.nav_period_end += -trn.cash_mkt_val_res
-
-    # def pl_add(self, trn):
-    #     if trn.case == 0 or trn.case == 1:
-    #         item = self.get_by_trn_pos(trn)
-    #
-    #         item.cash_res += trn.cash_res
-    #         item.principal_res += trn.principal_res
-    #         item.carry_res += trn.carry_res
-    #         item.overheads_res += trn.overheads_res
-    #         item.total_res += trn.total_res
-    #
-    #     elif trn.case == 2:
-    #         pass
-    #
-    #     else:
-    #         raise RuntimeError('Invalid transaction case: %s' % trn.case)
+        else:
+            # =( Principal + Carry + Overheads) * Current FX ratre of the Sttlm Ccy / Current FX  rate of the Reporting ccy
+            pos_item.accumulated_pl += trn.total_res
 
     def cash_in_out_add(self, trn):
+        # cash_flow = trn.total_res
+
+        # Cash flow in reporting Ccy =  [Cash Consideration]  * Reference FX rate * Hist FX  rate (accounting date, Trans Ccy -> Sys Ccy) / Hist FX Rate (accounting date, Reporting Ccy -> Sys Ccy)
+        cash_flow = trn.cash * trn.ref_fx * trn.trn_ccy_cur_fx
+
+        cash_cash_inflows = 0
+        cash_cash_outflows = 0
+        pos_cash_inflows = 0
+        pos_cash_outflows = 0
+
+        if trn.is_buy:
+            # cash: out
+            # pos : in
+            cash_cash_inflows = 0
+            cash_cash_outflows = cash_flow
+            pos_cash_inflows = 0
+            pos_cash_outflows = -cash_flow
+            pass
+        elif trn.is_sell:
+            # cash: in
+            # pos : out
+            cash_cash_inflows = cash_flow
+            cash_cash_outflows = 0
+            pos_cash_inflows = -cash_flow
+            pos_cash_outflows = 0
+            pass
+        elif trn.is_fx_trade:
+            # cash: ?
+            # pos : ?
+            pass
+        elif trn.is_instrument_pl:
+            # cash: ?
+            # pos : ?
+            cash_cash_inflows = cash_flow
+            cash_cash_outflows = 0
+            pos_cash_inflows = -cash_flow
+            pos_cash_outflows = 0
+            pass
+        elif trn.is_transaction_pl:
+            # cash: ?
+            # pos : ?
+            pass
+        elif trn.is_cash_inflow:
+            # cash: ?
+            # pos : ?
+            pass
+        elif trn.is_cash_outflow:
+            # cash: ?
+            # pos : ?
+            pass
+
         cash_item = self.get_by_trn_cash(trn, interim=False)
+        cash_item.cash_inflows += cash_cash_inflows
+        cash_item.cash_outflows += cash_cash_outflows
+        cash_item.time_weighted_cash_inflows += cash_cash_inflows * trn.period_time_weight
+        cash_item.time_weighted_cash_outflows += cash_cash_outflows * trn.period_time_weight
+
         pos_item = self.get_by_trn_pos(trn)
+        pos_item.cash_inflows += pos_cash_inflows
+        pos_item.cash_outflows += pos_cash_outflows
+        pos_item.time_weighted_cash_inflows += pos_cash_inflows * trn.period_time_weight
+        pos_item.time_weighted_cash_outflows += pos_cash_outflows * trn.period_time_weight
 
-        cash_proceed = trn.total_res
-
-        cash_item.cash_inflows += cash_proceed
-        cash_item.time_weighted_cash_inflows += cash_proceed * trn.period_time_weight
-
-        cash_item.cash_outflows += cash_proceed
-        cash_item.time_weighted_cash_outflows += cash_proceed * trn.period_time_weight
-
-        pos_item.cash_inflows += -cash_proceed
-        pos_item.time_weighted_cash_inflows += -cash_proceed * trn.period_time_weight
-
-        pos_item.cash_outflows += -cash_proceed
-        pos_item.time_weighted_cash_outflows += -cash_proceed * trn.period_time_weight
-
-    def close(self, prev_period):
+    def close(self, prev_periods):
         for item in self._items.values():
+            # prev_item = prev_period.get(
+            #     portfolio=item.portfolio,
+            #     account=item.account,
+            #     strategy1=item.strategy1,
+            #     strategy2=item.strategy2,
+            #     strategy3=item.strategy3,
+            #     create=False
+            # )
             item.close()
+
+    def same_item_key(self, current, prev):
+        return PerformanceReportItem.make_item_key(
+            self.report,
+            period_key=prev.period_key,
+            portfolio=current.portfolio,
+            account=current.account,
+            strategy1=current.strategy1,
+            strategy2=current.strategy2,
+            strategy3=current.strategy3
+        )
 
 
 class PerformanceReportItem:
@@ -211,6 +308,7 @@ class PerformanceReportItem:
         # final fields
         self.return_pl = 0
         self.return_nav = 0
+        self.accumulated_pl = 0
         self.pl_in_period = 0
         self.nav_change = 0
         self.nav_period_start = 0
@@ -225,53 +323,53 @@ class PerformanceReportItem:
 
         self.custom_fields = []
 
-    @classmethod
-    def from_trn(cls, trn, item_type=None, portfolio=None, account=None, strategy1=None, strategy2=None,
-                 strategy3=None):
-        ret = cls(
-            trn.report,
-            id=-1,
-            item_type=item_type,
-            period_begin=trn.period_begin,
-            period_end=trn.period_end,
-            period_name=trn.period_name,
-            period_key=trn.period_key,
-            portfolio=portfolio,
-            account=account,
-            strategy1=strategy1,
-            strategy2=strategy2,
-            strategy3=strategy3
-        )
-        ret.acc_date = trn.acc_date
-        ret.processing_date = trn.processing_date
-        ret.instr_principal_res = trn.instr_principal_res
-        ret.instr_accrued_res = trn.instr_accrued_res
-        ret.cash_res = trn.cash_res
-        ret.principal_res = trn.principal_res
-        ret.carry_res = trn.carry_res
-        ret.overheads_res = trn.overheads_res
-        ret.total_res = trn.total_res
-        ret.global_time_weight = trn.global_time_weight
-        ret.period_time_weight = trn.period_time_weight
-        return ret
-
-    @classmethod
-    def from_item(cls, item, id=None, item_type=None):
-        ret = cls(
-            item.report,
-            id=id if id is not None else item.id,
-            item_type=item_type if item_type is not None else item.item_type,
-            period_begin=item.period_begin,
-            period_end=item.period_end,
-            period_name=item.period_name,
-            period_key=item.period_key,
-            portfolio=item.portfolio,
-            account=item.account,
-            strategy1=item.strategy1,
-            strategy2=item.strategy2,
-            strategy3=item.strategy3
-        )
-        return ret
+    # @classmethod
+    # def from_trn(cls, trn, item_type=None, portfolio=None, account=None, strategy1=None, strategy2=None,
+    #              strategy3=None):
+    #     ret = cls(
+    #         trn.report,
+    #         id=-1,
+    #         item_type=item_type,
+    #         period_begin=trn.period_begin,
+    #         period_end=trn.period_end,
+    #         period_name=trn.period_name,
+    #         period_key=trn.period_key,
+    #         portfolio=portfolio,
+    #         account=account,
+    #         strategy1=strategy1,
+    #         strategy2=strategy2,
+    #         strategy3=strategy3
+    #     )
+    #     ret.acc_date = trn.acc_date
+    #     ret.processing_date = trn.processing_date
+    #     ret.instr_principal_res = trn.instr_principal_res
+    #     ret.instr_accrued_res = trn.instr_accrued_res
+    #     ret.cash_res = trn.cash_res
+    #     ret.principal_res = trn.principal_res
+    #     ret.carry_res = trn.carry_res
+    #     ret.overheads_res = trn.overheads_res
+    #     ret.total_res = trn.total_res
+    #     ret.global_time_weight = trn.global_time_weight
+    #     ret.period_time_weight = trn.period_time_weight
+    #     return ret
+    #
+    # @classmethod
+    # def from_item(cls, item, id=None, item_type=None):
+    #     ret = cls(
+    #         item.report,
+    #         id=id if id is not None else item.id,
+    #         item_type=item_type if item_type is not None else item.item_type,
+    #         period_begin=item.period_begin,
+    #         period_end=item.period_end,
+    #         period_name=item.period_name,
+    #         period_key=item.period_key,
+    #         portfolio=item.portfolio,
+    #         account=item.account,
+    #         strategy1=item.strategy1,
+    #         strategy2=item.strategy2,
+    #         strategy3=item.strategy3
+    #     )
+    #     return ret
 
     def __str__(self):
         return self.__repr__()
@@ -288,7 +386,7 @@ class PerformanceReportItem:
         )
 
     @staticmethod
-    def make_group_key(report, period_key=None, portfolio=None, account=None,
+    def make_item_key(report, period_key=None, portfolio=None, account=None,
                        strategy1=None, strategy2=None, strategy3=None):
         # return (
         #     self.period_key,
@@ -298,30 +396,30 @@ class PerformanceReportItem:
         #     self.strategy2.id,
         #     self.strategy3.id
         # )
-        if report.portfolio_mode == PerformanceReport.MODE_INDEPENDENT:
-            pass
-        else:
-            portfolio = None
-
-        if report.account_mode == PerformanceReport.MODE_INDEPENDENT:
-            pass
-        else:
-            account = None
-
-        if report.strategy1_mode == PerformanceReport.MODE_INDEPENDENT:
-            pass
-        else:
-            strategy1 = None
-
-        if report.strategy2_mode == PerformanceReport.MODE_INDEPENDENT:
-            pass
-        else:
-            strategy2 = None
-
-        if report.strategy3_mode == PerformanceReport.MODE_INDEPENDENT:
-            pass
-        else:
-            strategy3 = None
+        # if report.portfolio_mode == PerformanceReport.MODE_INDEPENDENT:
+        #     pass
+        # else:
+        #     portfolio = None
+        #
+        # if report.account_mode == PerformanceReport.MODE_INDEPENDENT:
+        #     pass
+        # else:
+        #     account = None
+        #
+        # if report.strategy1_mode == PerformanceReport.MODE_INDEPENDENT:
+        #     pass
+        # else:
+        #     strategy1 = None
+        #
+        # if report.strategy2_mode == PerformanceReport.MODE_INDEPENDENT:
+        #     pass
+        # else:
+        #     strategy2 = None
+        #
+        # if report.strategy3_mode == PerformanceReport.MODE_INDEPENDENT:
+        #     pass
+        # else:
+        #     strategy3 = None
 
         return (
             period_key,
@@ -333,7 +431,7 @@ class PerformanceReportItem:
         )
 
     @property
-    def group_key(self):
+    def item_key(self):
         # return (
         #     self.period_key,
         #     self.portfolio.id,
@@ -375,7 +473,7 @@ class PerformanceReportItem:
         #     getattr(strategy2, 'id', -1),
         #     getattr(strategy3, 'id', -1),
         # )
-        return PerformanceReportItem.make_group_key(
+        return PerformanceReportItem.make_item_key(
             self.report,
             period_key=self.period_key,
             portfolio=self.portfolio,
@@ -423,7 +521,8 @@ class PerformanceReportItem:
     #     self.cash_inflows = -trn.total_res
 
     def close(self):
-        # self.return_pl = 0
+
+        self.accumulated_pl += self.mkt_val_res
 
         try:
             self.return_nav = self.nav_change / self.avg_nav_in_period
@@ -449,6 +548,15 @@ class PerformanceReportItem:
 
         self.avg_nav_in_period = self.nav_period_start + \
                                  (self.time_weighted_cash_inflows - self.time_weighted_cash_outflows)
+
+        try:
+            self.return_pl = self.pl_in_period / self.avg_nav_in_period
+        except ArithmeticError:
+            self.return_pl = 0
+        try:
+            self.return_nav = self.nav_change / self.avg_nav_in_period
+        except ArithmeticError:
+            self.return_nav = 0
 
         # self.cumulative_return_pl = 0
 

@@ -200,7 +200,7 @@ class PerformanceReportBuilder(ReportBuilder):
                 name, begin, end = period
                 name = str(name)
                 if not isinstance(begin, date) or not isinstance(end, date):
-                    _l.debug('hacker detected on: %s', self.instance.periodss)
+                    _l.debug('hacker detected on: trn=%s, period=%s', trn.pk, self.instance.periods)
             else:
                 name, begin, end = None, None, None
 
@@ -488,8 +488,7 @@ class PerformanceReportBuilder(ReportBuilder):
                 trn.perf_pricing()
 
             for trn in period.trns:
-                trn.processing_date = period.period_end
-                trn.set_case()
+                trn.set_processing_date(period.period_end)
                 trn.perf_pricing()
 
         _l.debug('< _periods_pricing')
@@ -505,19 +504,23 @@ class PerformanceReportBuilder(ReportBuilder):
             self._transaction_multipliers()
             self._clone_transactions_if_need()
 
+            self._transactions = [trn for trn in self._transactions if not trn.is_hidden]
+
             for trn in period.local_trns:
                 trn.perf_calc()
+                period.mkt_val_add(trn)
                 period.cash_in_out_add(trn)
 
             for trn in self._transactions:
                 trn.perf_calc()
+                period.pl_add(trn)
                 period.nav_add(trn)
 
-        _l.debug('aggregate: periods=%s', len(self._periods))
-        prev_period = None
+        _l.debug('close periods')
+        prev_periods = []
         for period in self._periods.values():
-            period.close(prev_period)
-            prev_period = period
+            period.close(prev_periods)
+            prev_periods.append(period)
 
         _l.debug('< calc')
 
