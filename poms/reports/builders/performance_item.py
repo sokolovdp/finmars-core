@@ -2,7 +2,7 @@ import uuid
 from collections import OrderedDict
 from datetime import timedelta, date
 
-from poms.common.utils import date_now
+from poms.common.utils import date_now, isclose
 from poms.instruments.models import CostMethod
 from poms.reports.builders.base_item import BaseReport
 
@@ -181,63 +181,37 @@ class PerformancePeriod:
         # Cash flow in reporting Ccy =  [Cash Consideration]  * Reference FX rate * Hist FX  rate (accounting date, Trans Ccy -> Sys Ccy) / Hist FX Rate (accounting date, Reporting Ccy -> Sys Ccy)
         cash_flow = trn.cash * trn.ref_fx * trn.trn_ccy_cur_fx
 
-        cash_cash_inflows = 0
-        cash_cash_outflows = 0
-        pos_cash_inflows = 0
-        pos_cash_outflows = 0
+        cash_cash_in = 0
+        cash_cash_out = 0
+        pos_cash_in = 0
+        pos_cash_out = 0
 
-        if trn.is_buy:
-            # cash: out
-            # pos : in
-            cash_cash_inflows = 0
-            cash_cash_outflows = cash_flow
-            pos_cash_inflows = 0
-            pos_cash_outflows = -cash_flow
+        if isclose(cash_flow, 0):
             pass
-        elif trn.is_sell:
-            # cash: in
-            # pos : out
-            cash_cash_inflows = cash_flow
-            cash_cash_outflows = 0
-            pos_cash_inflows = -cash_flow
-            pos_cash_outflows = 0
-            pass
-        elif trn.is_fx_trade:
-            # cash: ?
-            # pos : ?
-            pass
-        elif trn.is_instrument_pl:
-            # cash: ?
-            # pos : ?
-            cash_cash_inflows = cash_flow
-            cash_cash_outflows = 0
-            pos_cash_inflows = -cash_flow
-            pos_cash_outflows = 0
-            pass
-        elif trn.is_transaction_pl:
-            # cash: ?
-            # pos : ?
-            pass
-        elif trn.is_cash_inflow:
-            # cash: ?
-            # pos : ?
-            pass
-        elif trn.is_cash_outflow:
-            # cash: ?
-            # pos : ?
-            pass
+
+        elif cash_flow > 0:
+            cash_cash_in = cash_flow
+            cash_cash_out = 0
+            pos_cash_in = -cash_flow
+            pos_cash_out = 0
+
+        elif cash_flow < 0:
+            cash_cash_in = 0
+            cash_cash_out = cash_flow
+            pos_cash_in = 0
+            pos_cash_out = -cash_flow
 
         cash_item = self.get_by_trn_cash(trn, interim=False)
-        cash_item.cash_inflows += cash_cash_inflows
-        cash_item.cash_outflows += cash_cash_outflows
-        cash_item.time_weighted_cash_inflows += cash_cash_inflows * trn.period_time_weight
-        cash_item.time_weighted_cash_outflows += cash_cash_outflows * trn.period_time_weight
+        cash_item.cash_inflows += cash_cash_in
+        cash_item.cash_outflows += cash_cash_out
+        cash_item.time_weighted_cash_inflows += cash_cash_in * trn.period_time_weight
+        cash_item.time_weighted_cash_outflows += cash_cash_out * trn.period_time_weight
 
         pos_item = self.get_by_trn_pos(trn)
-        pos_item.cash_inflows += pos_cash_inflows
-        pos_item.cash_outflows += pos_cash_outflows
-        pos_item.time_weighted_cash_inflows += pos_cash_inflows * trn.period_time_weight
-        pos_item.time_weighted_cash_outflows += pos_cash_outflows * trn.period_time_weight
+        pos_item.cash_inflows += pos_cash_in
+        pos_item.cash_outflows += pos_cash_out
+        pos_item.time_weighted_cash_inflows += pos_cash_in * trn.period_time_weight
+        pos_item.time_weighted_cash_outflows += pos_cash_out * trn.period_time_weight
 
     def close(self, prev_periods):
         prev_period = prev_periods[-1] if prev_periods else None
@@ -262,12 +236,11 @@ class PerformancePeriod:
 
             item.pl_in_period = item.accumulated_pl - getattr(prev_item, 'accumulated_pl', 0)
 
+            item.nav_period_start = getattr(prev_item, 'nav_period_end', 0)
+            # item.nav_period_end = 0
+
             item.nav_change = (item.nav_period_end - item.nav_period_start) + \
                               (item.cash_outflows - item.cash_inflows)
-
-            item.nav_period_start = getattr(prev_item, 'nav_period_end', 0)
-
-            # item.nav_period_end = 0
 
             # item.cash_inflows = 0
             # item.cash_outflows = 0
@@ -287,10 +260,11 @@ class PerformancePeriod:
             except ArithmeticError:
                 item.return_nav = 0
 
-            # item.cumulative_return_pl = 0
+            # = ("Cummulative Return (P&L), %  of previous period" + 1) * (Return (P&L), % of the current period + 1) - 1
+            item.cumulative_return_pl = (getattr(prev_item, 'cumulative_return_pl', 0) + 1) * (item.return_pl + 1) - 1
 
-            # item.cumulative_return_nav = 0
-            pass
+            # =  (Cummulative Return (NAV chng ex CF), %  of previous period + 1) * (Return (NAV chng ex CF), % of the current period + 1) - 1
+            item.cumulative_return_nav = (getattr(prev_item, 'cumulative_return_nav', 0) + 1) * (item.return_nav + 1) - 1
 
     def same_item_key(self, current, prev):
         return PerformanceReportItem.make_item_key(
@@ -328,34 +302,34 @@ class PerformanceReportItem:
         self.strategy3 = strategy3
 
         # temporal fields
-        self.acc_date = date.min
-        self.processing_date = date.min
-        self.instr_principal_res = 0
-        self.instr_accrued_res = 0
-        self.cash_res = 0
-        self.principal_res = 0
-        self.carry_res = 0
-        self.overheads_res = 0
-        self.total_res = 0
+        # self.acc_date = date.min
+        # self.processing_date = date.min
+        # self.instr_principal_res = 0
+        # self.instr_accrued_res = 0
+        # self.cash_res = 0
+        # self.principal_res = 0
+        # self.carry_res = 0
+        # self.overheads_res = 0
+        # self.total_res = 0
         self.mkt_val_res = 0
-        self.global_time_weight = 0
-        self.period_time_weight = 0
+        # self.global_time_weight = 0
+        # self.period_time_weight = 0
 
         # final fields
-        self.return_pl = 0
-        self.return_nav = 0
-        self.accumulated_pl = 0
-        self.pl_in_period = 0
-        self.nav_change = 0
-        self.nav_period_start = 0
-        self.nav_period_end = 0
-        self.cash_inflows = 0
-        self.cash_outflows = 0
-        self.time_weighted_cash_inflows = 0
-        self.time_weighted_cash_outflows = 0
+        self.return_pl = 0  # +
+        self.return_nav = 0  # +
+        self.accumulated_pl = 0  # +
+        self.pl_in_period = 0  # +
+        self.nav_change = 0  # +
+        self.nav_period_start = 0  # +
+        self.nav_period_end = 0  # +
+        self.cash_inflows = 0  # +
+        self.cash_outflows = 0  # +
+        self.time_weighted_cash_inflows = 0  # +
+        self.time_weighted_cash_outflows = 0  # +
         self.avg_nav_in_period = 0
-        self.cumulative_return_pl = 0
-        self.cumulative_return_nav = 0
+        self.cumulative_return_pl = 0  # +
+        self.cumulative_return_nav = 0  # +
 
         self.custom_fields = []
 
@@ -363,7 +337,14 @@ class PerformanceReportItem:
         return self.__repr__()
 
     def __repr__(self):
-        return 'Item({period_begin}/{period_end},portfolio={portfolio},account={account},strategy1={strategy1},strategy2={strategy2},strategy3={strategy3})'.format(
+        return 'PerfItem(' \
+               '{period_begin}/{period_end},' \
+               'portfolio={portfolio},' \
+               'account={account},' \
+               'strategy1={strategy1},' \
+               'strategy2={strategy2},' \
+               'strategy3={strategy3}' \
+               ')'.format(
             period_begin=self.period_begin,
             period_end=self.period_end,
             portfolio=getattr(self.portfolio, 'id', -1),
@@ -375,7 +356,7 @@ class PerformanceReportItem:
 
     @staticmethod
     def make_item_key(report, period_key=None, portfolio=None, account=None,
-                       strategy1=None, strategy2=None, strategy3=None):
+                      strategy1=None, strategy2=None, strategy3=None):
         # return (
         #     self.period_key,
         #     self.portfolio.id,

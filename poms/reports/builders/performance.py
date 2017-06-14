@@ -245,101 +245,101 @@ class PerformanceReportBuilder(ReportBuilder):
 
         _l.debug('< _make_items: %s', len(self.instance.items))
 
-    def _calc2(self):
-        _l.debug('> calc')
-
-        periods = OrderedDict()
-
-        _l.debug('find periods')
-        for trn in self._transactions:
-            if trn.period_key not in periods:
-                period = PerformancePeriod(
-                    self.instance,
-                    period_begin=trn.period_begin,
-                    period_end=trn.period_end,
-                    period_name=trn.period_name,
-                    period_key=trn.period_key
-                )
-                _l.debug('  %s', period)
-                periods[trn.period_key] = period
-
-        periods = list(periods.values())
-        _l.debug('periods: %s', periods)
-
-        _l.debug('make periods')
-        for trn in self._transactions:
-            # period_key = trn.period_key
-            _l.debug('  trn: pk=%s, cls=%s, period_key=%s', trn.pk, trn.trn_cls, trn.period_key)
-
-            if trn.is_hidden:
-                _l.debug('    skip trn: is_hidden=%s', trn.is_hidden)
-                continue
-
-            for period in periods:
-                if trn.period_key == period.period_key:
-                    period.local_trns.append(trn.clone())
-                if trn.period_key <= period.period_key:
-                    period.trns.append(trn.clone())
-
-        _l.debug('periods: %s', periods)
-
-        _l.debug('load pricing and first calculations')
-        for period in periods:
-            _l.debug('  %s', period)
-            for trn in period.local_trns:
-                trn.perf_pricing()
-                trn.perf_calc()
-
-            for trn in period.trns:
-                trn.processing_date = period.period_end
-                trn.set_case()
-                trn.perf_pricing()
-                trn.perf_calc()
-
-        _l.debug('calculating')
-        for period in periods:
-            _l.debug('period: %s', period)
-
-            for trn in period.local_trns:
-                period.cash_in_out_add(trn)
-                pass
-
-            for trn in period.trns:
-                period.nav_add(trn)
-                # period.pl_add(trn)
-                # period.cash_in_out_add(trn)
-                pass
-
-            # # --------
-            # _l.debug('items: local_trns=%s', len(period.trns))
-            # for trn in period.local_trns:
-            #     _l.debug('  pk=%s, cls=%s, period_key=%s', trn.pk, trn.trn_cls, trn.period_key)
-            #     cash_item = self._create_cash_item(trn, interim=False)
-            #     cash_item.set_as_cash(trn)
-            #     period.items.append(cash_item)
-            #
-            #     pos_item = self._create_pos_item(trn)
-            #     pos_item.set_as_pos(trn)
-            #     period.items.append(pos_item)
-
-        _l.debug('periods: %s', periods)
-
-        _l.debug('aggregate: perids=%s', len(periods))
-        prev_period = None
-        for period in periods:
-            period.close(prev_period)
-            prev_period = period
-
-        _l.debug('periods: %s', periods)
-
-        items = []
-        for period in periods:
-            items.extend(period.items)
-
-        _l.debug('items: %s', items)
-        self.instance.items = items
-
-        _l.debug('< calc')
+    # def _calc2(self):
+    #     _l.debug('> calc')
+    #
+    #     periods = OrderedDict()
+    #
+    #     _l.debug('find periods')
+    #     for trn in self._transactions:
+    #         if trn.period_key not in periods:
+    #             period = PerformancePeriod(
+    #                 self.instance,
+    #                 period_begin=trn.period_begin,
+    #                 period_end=trn.period_end,
+    #                 period_name=trn.period_name,
+    #                 period_key=trn.period_key
+    #             )
+    #             _l.debug('  %s', period)
+    #             periods[trn.period_key] = period
+    #
+    #     periods = list(periods.values())
+    #     _l.debug('periods: %s', periods)
+    #
+    #     _l.debug('make periods')
+    #     for trn in self._transactions:
+    #         # period_key = trn.period_key
+    #         _l.debug('  trn: pk=%s, cls=%s, period_key=%s', trn.pk, trn.trn_cls, trn.period_key)
+    #
+    #         if trn.is_hidden:
+    #             _l.debug('    skip trn: is_hidden=%s', trn.is_hidden)
+    #             continue
+    #
+    #         for period in periods:
+    #             if trn.period_key == period.period_key:
+    #                 period.local_trns.append(trn.clone())
+    #             if trn.period_key <= period.period_key:
+    #                 period.trns.append(trn.clone())
+    #
+    #     _l.debug('periods: %s', periods)
+    #
+    #     _l.debug('load pricing and first calculations')
+    #     for period in periods:
+    #         _l.debug('  %s', period)
+    #         for trn in period.local_trns:
+    #             trn.perf_pricing()
+    #             trn.perf_calc()
+    #
+    #         for trn in period.trns:
+    #             trn.processing_date = period.period_end
+    #             trn.set_case()
+    #             trn.perf_pricing()
+    #             trn.perf_calc()
+    #
+    #     _l.debug('calculating')
+    #     for period in periods:
+    #         _l.debug('period: %s', period)
+    #
+    #         for trn in period.local_trns:
+    #             period.cash_in_out_add(trn)
+    #             pass
+    #
+    #         for trn in period.trns:
+    #             period.nav_add(trn)
+    #             # period.pl_add(trn)
+    #             # period.cash_in_out_add(trn)
+    #             pass
+    #
+    #         # # --------
+    #         # _l.debug('items: local_trns=%s', len(period.trns))
+    #         # for trn in period.local_trns:
+    #         #     _l.debug('  pk=%s, cls=%s, period_key=%s', trn.pk, trn.trn_cls, trn.period_key)
+    #         #     cash_item = self._create_cash_item(trn, interim=False)
+    #         #     cash_item.set_as_cash(trn)
+    #         #     period.items.append(cash_item)
+    #         #
+    #         #     pos_item = self._create_pos_item(trn)
+    #         #     pos_item.set_as_pos(trn)
+    #         #     period.items.append(pos_item)
+    #
+    #     _l.debug('periods: %s', periods)
+    #
+    #     _l.debug('aggregate: perids=%s', len(periods))
+    #     prev_period = None
+    #     for period in periods:
+    #         period.close(prev_period)
+    #         prev_period = period
+    #
+    #     _l.debug('periods: %s', periods)
+    #
+    #     items = []
+    #     for period in periods:
+    #         items.extend(period.items)
+    #
+    #     _l.debug('items: %s', items)
+    #     self.instance.items = items
+    #
+    #     _l.debug('< calc')
 
     def _refresh_from_db(self):
         _l.info('> refresh from db')

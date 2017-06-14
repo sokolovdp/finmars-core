@@ -11,7 +11,7 @@ class PerformanceVirtualTransaction(VirtualTransaction):
 
     processing_date = None
 
-    global_time_weight = 0
+    # global_time_weight = 0
     period_time_weight = 0
 
     instr_mkt_val_res = 0
@@ -125,11 +125,11 @@ class PerformanceVirtualTransaction(VirtualTransaction):
             self.overheads_res = self.overheads * self.stl_ccy_cur_fx
             self.total_res = self.total * self.stl_ccy_cur_fx
 
-        try:
-            self.global_time_weight = (self.report.end_date - self.acc_date).days / \
-                                      (self.report.end_date - self.report.begin_date).days
-        except ArithmeticError:
-            self.global_time_weight = 0
+        # try:
+        #     self.global_time_weight = (self.report.end_date - self.acc_date).days / \
+        #                               (self.report.end_date - self.report.begin_date).days
+        # except ArithmeticError:
+        #     self.global_time_weight = 0
 
         try:
             self.period_time_weight = (self.processing_date - self.acc_date).days / \
