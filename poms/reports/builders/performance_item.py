@@ -216,14 +216,17 @@ class PerformancePeriod:
     def close(self, prev_periods):
         prev_period = prev_periods[-1] if prev_periods else None
         for item in self._items.values():
-            prev_item = prev_period.get(
-                portfolio=item.portfolio,
-                account=item.account,
-                strategy1=item.strategy1,
-                strategy2=item.strategy2,
-                strategy3=item.strategy3,
-                create=False
-            )
+            if prev_period:
+                prev_item = prev_period.get(
+                    portfolio=item.portfolio,
+                    account=item.account,
+                    strategy1=item.strategy1,
+                    strategy2=item.strategy2,
+                    strategy3=item.strategy3,
+                    create=False
+                )
+            else:
+                prev_item = None
 
             # item.close()
 
