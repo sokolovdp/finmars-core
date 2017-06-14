@@ -132,8 +132,10 @@ class PerformanceVirtualTransaction(VirtualTransaction):
         #     self.global_time_weight = 0
 
         try:
-            self.period_time_weight = (self.processing_date - self.acc_date).days / \
-                                      (self.processing_date - self.period_begin).days
+            # self.period_time_weight = (self.processing_date - self.acc_date).days / \
+            #                           (self.processing_date - self.period_begin).days
+            self.period_time_weight = (self.period_end - self.acc_date).days / \
+                                      (self.period_end - self.period_begin).days
         except ArithmeticError:
             self.period_time_weight = 0
 

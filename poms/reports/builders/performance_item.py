@@ -319,20 +319,20 @@ class PerformanceReportItem:
         # self.period_time_weight = 0
 
         # final fields
-        self.return_pl = 0  # +
-        self.return_nav = 0  # +
-        self.accumulated_pl = 0  # +
-        self.pl_in_period = 0  # +
-        self.nav_change = 0  # +
-        self.nav_period_start = 0  # +
-        self.nav_period_end = 0  # +
-        self.cash_inflows = 0  # +
-        self.cash_outflows = 0  # +
-        self.time_weighted_cash_inflows = 0  # +
-        self.time_weighted_cash_outflows = 0  # +
+        self.return_pl = 0
+        self.return_nav = 0
+        self.accumulated_pl = 0
+        self.pl_in_period = 0
+        self.nav_change = 0
+        self.nav_period_start = 0
+        self.nav_period_end = 0
+        self.cash_inflows = 0
+        self.cash_outflows = 0
+        self.time_weighted_cash_inflows = 0
+        self.time_weighted_cash_outflows = 0
         self.avg_nav_in_period = 0
-        self.cumulative_return_pl = 0  # +
-        self.cumulative_return_nav = 0  # +
+        self.cumulative_return_pl = 0
+        self.cumulative_return_nav = 0
 
         self.custom_fields = []
 
@@ -513,6 +513,8 @@ class PerformanceReport(BaseReport):
         self.allocation_mode = PerformanceReport.MODE_IGNORE
         self.cost_method = cost_method or CostMethod.objects.get(pk=CostMethod.AVCO)
         self.approach_multiplier = approach_multiplier
+        self.approach_begin_multiplier = self.approach_multiplier
+        self.approach_end_multiplier = 1.0 - self.approach_multiplier
         self.portfolios = portfolios or []
         self.accounts = accounts or []
         self.accounts_position = accounts_position or []

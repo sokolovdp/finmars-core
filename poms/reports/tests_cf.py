@@ -232,7 +232,7 @@ class AbstractReportTestMixin:
     def _ccy_hist(self, ccy, d, fx):
         return CurrencyHistory.objects.create(currency=ccy, pricing_policy=self.pp, date=d, fx_rate=fx)
 
-    def _d(self, d, days=None):
+    def _d(self, days=None):
         if isinstance(days, date):
             return days
         if days is None or days == 0:
