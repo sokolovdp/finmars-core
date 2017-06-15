@@ -5,6 +5,7 @@ from django.db import transaction
 
 from poms.reports.builders.balance_pl import ReportBuilder
 from poms.reports.builders.cash_flow_projection import CashFlowProjectionReportBuilder
+from poms.reports.builders.performance import PerformanceReportBuilder
 from poms.reports.builders.transaction import TransactionReportBuilder
 
 _l = logging.getLogger('poms.reports')
@@ -86,3 +87,20 @@ def cash_flow_projection_report(instance):
         finally:
             transaction.set_rollback(True)
             _l.debug('cash_flow_projection_report: <')
+
+
+@shared_task(name='reports.performance_report')
+def performance_report(instance):
+    _l.debug('performance_report: >')
+    with transaction.atomic():
+        try:
+            builder = PerformanceReportBuilder(instance)
+            builder.build_performance()
+            # instance.transactions = None
+            return builder.instance
+        except:
+            _l.error('performance report failed', exc_info=True)
+            raise
+        finally:
+            transaction.set_rollback(True)
+            _l.debug('performance_report: <')

@@ -985,7 +985,9 @@ if __name__ == "__main__":
 
     django.setup()
 
+    from django.db import transaction
     from poms.instruments.models import AccrualCalculationModel, Instrument, Periodicity, AccrualCalculationSchedule
+    from poms.users.models import MasterUser
 
 
     # print('1 -> ', coupon_accrual_factor(
@@ -1123,81 +1125,96 @@ if __name__ == "__main__":
     _test_ytm()
     pass
 
-
+    @transaction.atomic()
     def _test_coupons():
-        i = Instrument.objects.get(pk=19)
+        try:
+            master_user = MasterUser.objects.get(pk=1)
+            usd = master_user.currencies.get(user_code='USD')
+            i = Instrument.objects.create(master_user=master_user, instrument_type=master_user.instrument_type,
+                                          name="i1",
+                                          pricing_currency=usd, accrued_currency=usd)
 
-        _l.info('-' * 10)
-        accruals = [
-            AccrualCalculationSchedule(
-                accrual_start_date=date(2001, 1, 1),
-                first_payment_date=date(2001, 7, 1),
-                accrual_size=10,
-                accrual_calculation_model=AccrualCalculationModel.objects.get(pk=AccrualCalculationModel.ACT_360),
-                periodicity=Periodicity.objects.get(pk=Periodicity.SEMI_ANNUALLY),
-            ),
-            AccrualCalculationSchedule(
-                accrual_start_date=date(2003, 1, 1),
-                first_payment_date=date(2003, 7, 1),
-                accrual_size=20,
-                accrual_calculation_model=AccrualCalculationModel.objects.get(pk=AccrualCalculationModel.ACT_360),
-                periodicity=Periodicity.objects.get(pk=Periodicity.SEMI_ANNUALLY),
-            ),
-        ]
-        i.maturity_date = date(2005, 1, 1)
-        i.maturity_price = 100
+            _l.info('-' * 10)
+            accruals = [
+                AccrualCalculationSchedule.objects.create(
+                    instrument=i,
+                    accrual_start_date=date(2001, 1, 1),
+                    first_payment_date=date(2001, 7, 1),
+                    accrual_size=10,
+                    accrual_calculation_model=AccrualCalculationModel.objects.get(pk=AccrualCalculationModel.ACT_360),
+                    periodicity=Periodicity.objects.get(pk=Periodicity.SEMI_ANNUALLY),
+                ),
+                AccrualCalculationSchedule.objects.create(
+                    instrument=i,
+                    accrual_start_date=date(2003, 1, 1),
+                    first_payment_date=date(2003, 7, 1),
+                    accrual_size=20,
+                    accrual_calculation_model=AccrualCalculationModel.objects.get(pk=AccrualCalculationModel.ACT_360),
+                    periodicity=Periodicity.objects.get(pk=Periodicity.SEMI_ANNUALLY),
+                ),
+            ]
+            i.maturity_date = date(2005, 1, 1)
+            i.maturity_price = 100
+            i.save()
 
-        sd = accruals[0].accrual_start_date - timedelta(days=4)
-        ed = i.maturity_date + timedelta(days=4)
-        cpn_date = sd
-        while cpn_date <= ed:
-            # _l.info('%s', cpn_date)
-            cpn_val, is_cpn = i.get_coupon(cpn_date=cpn_date, accruals=accruals)
-            if is_cpn:
-                _l.info('    %s - %s (is_cpn=%s)', cpn_date, cpn_val, is_cpn)
-            cpn_date += timedelta(days=1)
+            sd = accruals[0].accrual_start_date - timedelta(days=4)
+            ed = i.maturity_date + timedelta(days=4)
+            cpn_date = sd
+            while cpn_date <= ed:
+                # _l.info('%s', cpn_date)
+                cpn_val, is_cpn = i.get_coupon(cpn_date=cpn_date)
+                if is_cpn:
+                    _l.info('    %s - %s (is_cpn=%s)', cpn_date, cpn_val, is_cpn)
+                cpn_date += timedelta(days=1)
 
-        _l.info('get_future_coupons: %s',
-                [(str(d), v) for d, v in i.get_future_coupons(begin_date=date(2000, 1, 1), accruals=accruals)])
-        _l.info('get_future_coupons: %s',
-                [(str(d), v) for d, v in i.get_future_coupons(begin_date=date(2007, 1, 1), accruals=accruals)])
+            _l.info('get_future_coupons: %s',
+                    [(str(d), v) for d, v in i.get_future_coupons(begin_date=date(2000, 1, 1))])
+            _l.info('get_future_coupons: %s',
+                    [(str(d), v) for d, v in i.get_future_coupons(begin_date=date(2007, 1, 1))])
 
-        for d, v in i.get_future_coupons(begin_date=date(2000, 1, 1), accruals=accruals):
-            _l.info('get_coupon: %s - %s', d, i.get_coupon(d, accruals=accruals))
+            for d, v in i.get_future_coupons(begin_date=date(2000, 1, 1)):
+                _l.info('get_coupon: %s - %s', d, i.get_coupon(d))
 
-        _l.info('-' * 10)
-        accruals = [
-            AccrualCalculationSchedule(
-                accrual_start_date=date(2001, 1, 1),
-                first_payment_date=date(2001, 7, 1),
-                accrual_size=10,
-                accrual_calculation_model=AccrualCalculationModel.objects.get(pk=AccrualCalculationModel.ACT_360),
-                periodicity=Periodicity.objects.get(pk=Periodicity.SEMI_ANNUALLY),
-            ),
-            AccrualCalculationSchedule(
-                accrual_start_date=date(2003, 2, 1),
-                first_payment_date=date(2004, 1, 1),
-                accrual_size=20,
-                accrual_calculation_model=AccrualCalculationModel.objects.get(pk=AccrualCalculationModel.ACT_360),
-                periodicity=Periodicity.objects.get(pk=Periodicity.ANNUALLY),
-            ),
-        ]
-        i.maturity_date = date(2007, 2, 1)
-        i.maturity_price = 100
+            i = Instrument.objects.create(master_user=master_user, instrument_type=master_user.instrument_type,
+                                          name="i2",
+                                          pricing_currency=usd, accrued_currency=usd)
+            _l.info('-' * 10)
+            accruals = [
+                AccrualCalculationSchedule.objects.create(
+                    instrument=i,
+                    accrual_start_date=date(2001, 1, 1),
+                    first_payment_date=date(2001, 7, 1),
+                    accrual_size=10,
+                    accrual_calculation_model=AccrualCalculationModel.objects.get(pk=AccrualCalculationModel.ACT_360),
+                    periodicity=Periodicity.objects.get(pk=Periodicity.SEMI_ANNUALLY),
+                ),
+                AccrualCalculationSchedule.objects.create(
+                    instrument=i,
+                    accrual_start_date=date(2003, 2, 1),
+                    first_payment_date=date(2004, 1, 1),
+                    accrual_size=20,
+                    accrual_calculation_model=AccrualCalculationModel.objects.get(pk=AccrualCalculationModel.ACT_360),
+                    periodicity=Periodicity.objects.get(pk=Periodicity.ANNUALLY),
+                ),
+            ]
+            i.maturity_date = date(2007, 2, 1)
+            i.maturity_price = 100
+            i.save()
 
-        sd = accruals[0].accrual_start_date - timedelta(days=4)
-        ed = i.maturity_date + timedelta(days=4)
-        cpn_date = sd
-        while cpn_date <= ed:
-            # _l.info('%s', cpn_date)
-            cpn_val, is_cpn = i.get_coupon(cpn_date=cpn_date, accruals=accruals)
-            if is_cpn:
-                _l.info('    %s - %s (is_cpn=%s)', cpn_date, cpn_val, is_cpn)
-            cpn_date += timedelta(days=1)
+            sd = accruals[0].accrual_start_date - timedelta(days=4)
+            ed = i.maturity_date + timedelta(days=4)
+            cpn_date = sd
+            while cpn_date <= ed:
+                # _l.info('%s', cpn_date)
+                cpn_val, is_cpn = i.get_coupon(cpn_date=cpn_date)
+                if is_cpn:
+                    _l.info('    %s - %s (is_cpn=%s)', cpn_date, cpn_val, is_cpn)
+                cpn_date += timedelta(days=1)
 
-        _l.info('get_future_coupons: %s',
-                [(str(d), v) for d, v in i.get_future_coupons(begin_date=date(2000, 1, 1), accruals=accruals)])
+            _l.info('get_future_coupons: %s',
+                    [(str(d), v) for d, v in i.get_future_coupons(begin_date=date(2000, 1, 1))])
+        finally:
+            transaction.set_rollback(True)
 
-
-    # _test_coupons()
+    _test_coupons()
     pass

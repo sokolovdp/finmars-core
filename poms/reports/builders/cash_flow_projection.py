@@ -38,19 +38,21 @@ class CashFlowProjectionReportBuilder(TransactionReportBuilder):
         _l.debug('build cash flow projection')
 
         with transaction.atomic():
-            self._load()
-            # self._set_trns_refs(self._transactions)
+            try:
+                self._load()
+                # self._set_trns_refs(self._transactions)
 
-            self._calc_balance()
-            self._calc_future()
-            self._calc_before_after()
+                self._calc_balance()
+                self._calc_future()
+                self._calc_before_after()
 
-            self.instance.items = self._items
-            self._refresh_from_db()
-            # self._set_items_refs(self._items)
-            # self._update_instance()
-            self.instance.close()
-            transaction.set_rollback(True)
+                self.instance.items = self._items
+                self._refresh_from_db()
+                # self._set_items_refs(self._items)
+                # self._update_instance()
+                self.instance.close()
+            finally:
+                transaction.set_rollback(True)
 
         _l.debug('done: %s', (time.perf_counter() - st))
         return self.instance

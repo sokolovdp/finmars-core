@@ -224,3 +224,27 @@ class YTMMixin:
             duration = 0
         _l.debug('get_instr_duration: %s', duration)
         return duration
+
+
+class BaseReport:
+    # CONSOLIDATION = 1
+    MODE_IGNORE = 0
+    MODE_INDEPENDENT = 1
+    MODE_INTERDEPENDENT = 2
+    MODE_CHOICES = (
+        (MODE_IGNORE, 'Ignore'),
+        (MODE_INDEPENDENT, 'Independent'),
+        (MODE_INTERDEPENDENT, 'Offsetting (Interdependent - 0/100, 100/0, 50/50)'),
+    )
+
+    def __init__(self, id=None, master_user=None, member=None, task_id=None, task_status=None):
+        self.id = id
+        self.task_id = task_id
+        self.task_status = task_status
+        self.master_user = master_user
+        self.member = member
+
+        self.context = {
+            'master_user': self.master_user,
+            'member': self.member,
+        }

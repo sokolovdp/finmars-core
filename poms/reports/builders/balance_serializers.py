@@ -350,25 +350,41 @@ class ReportSerializer(serializers.Serializer):
 
     master_user = MasterUserField()
     member = HiddenMemberField()
-    pricing_policy = PricingPolicyField()
     pl_first_date = serializers.DateField(required=False, allow_null=True,
                                           help_text=ugettext_lazy('First date for pl report'))
     report_type = serializers.ChoiceField(read_only=True, choices=Report.TYPE_CHOICES)
     report_date = serializers.DateField(required=False, allow_null=True, default=date_now,
                                         help_text=ugettext_lazy('Report date or second date for pl report'))
     report_currency = CurrencyField(required=False, allow_null=True, default=SystemCurrencyDefault())
+    pricing_policy = PricingPolicyField()
     cost_method = serializers.PrimaryKeyRelatedField(queryset=CostMethod.objects, allow_null=True, allow_empty=True)
 
-    portfolio_mode = serializers.ChoiceField(default=Report.MODE_INDEPENDENT, initial=Report.MODE_INDEPENDENT,
-                                             choices=Report.MODE_CHOICES, required=False)
-    account_mode = serializers.ChoiceField(default=Report.MODE_INDEPENDENT, initial=Report.MODE_INDEPENDENT,
-                                           choices=Report.MODE_CHOICES, required=False)
-    strategy1_mode = serializers.ChoiceField(default=Report.MODE_INDEPENDENT, initial=Report.MODE_INDEPENDENT,
-                                             choices=Report.MODE_CHOICES, required=False)
-    strategy2_mode = serializers.ChoiceField(default=Report.MODE_INDEPENDENT, initial=Report.MODE_INDEPENDENT,
-                                             choices=Report.MODE_CHOICES, required=False)
-    strategy3_mode = serializers.ChoiceField(default=Report.MODE_INDEPENDENT, initial=Report.MODE_INDEPENDENT,
-                                             choices=Report.MODE_CHOICES, required=False)
+    portfolio_mode = serializers.ChoiceField(default=Report.MODE_INDEPENDENT,
+                                             initial=Report.MODE_INDEPENDENT,
+                                             choices=Report.MODE_CHOICES,
+                                             required=False,
+                                             help_text='Portfolio consolidation')
+    account_mode = serializers.ChoiceField(default=Report.MODE_INDEPENDENT,
+                                           initial=Report.MODE_INDEPENDENT,
+                                           choices=Report.MODE_CHOICES,
+                                           required=False,
+                                           help_text='Account consolidation')
+    strategy1_mode = serializers.ChoiceField(default=Report.MODE_INDEPENDENT,
+                                             initial=Report.MODE_INDEPENDENT,
+                                             choices=Report.MODE_CHOICES,
+                                             required=False,
+                                             help_text='Strategy1 consolidation')
+    strategy2_mode = serializers.ChoiceField(default=Report.MODE_INDEPENDENT,
+                                             initial=Report.MODE_INDEPENDENT,
+                                             choices=Report.MODE_CHOICES,
+                                             required=False,
+                                             help_text='Strategy2 consolidation')
+    strategy3_mode = serializers.ChoiceField(default=Report.MODE_INDEPENDENT,
+                                             initial=Report.MODE_INDEPENDENT,
+                                             choices=Report.MODE_CHOICES,
+                                             required=False,
+                                             help_text='Strategy3 consolidation')
+
     show_transaction_details = serializers.BooleanField(default=False, initial=False)
     approach_multiplier = serializers.FloatField(default=0.5, initial=0.5, min_value=0.0, max_value=1.0, required=False)
     allocation_detailing = serializers.BooleanField(default=True, initial=True)
@@ -378,6 +394,8 @@ class ReportSerializer(serializers.Serializer):
 
     portfolios = PortfolioField(many=True, required=False, allow_null=True, allow_empty=True)
     accounts = AccountField(many=True, required=False, allow_null=True, allow_empty=True)
+    accounts_position = AccountField(many=True, required=False, allow_null=True, allow_empty=True)
+    accounts_cash = AccountField(many=True, required=False, allow_null=True, allow_empty=True)
     strategies1 = Strategy1Field(many=True, required=False, allow_null=True, allow_empty=True)
     strategies2 = Strategy2Field(many=True, required=False, allow_null=True, allow_empty=True)
     strategies3 = Strategy3Field(many=True, required=False, allow_null=True, allow_empty=True)
@@ -396,11 +414,12 @@ class ReportSerializer(serializers.Serializer):
     cost_method_object = CostMethodSerializer(source='cost_method', read_only=True)
     portfolios_object = PortfolioViewSerializer(source='portfolios', read_only=True, many=True)
     accounts_object = AccountViewSerializer(source='accounts', read_only=True, many=True)
+    accounts_position_object = AccountViewSerializer(source='accounts_position', read_only=True, many=True)
+    accounts_cash_object = AccountViewSerializer(source='accounts_cash', read_only=True, many=True)
     strategies1_object = Strategy1ViewSerializer(source='strategies1', read_only=True, many=True)
     strategies2_object = Strategy2ViewSerializer(source='strategies2', read_only=True, many=True)
     strategies3_object = Strategy3ViewSerializer(source='strategies3', read_only=True, many=True)
-    custom_fields_object = CustomFieldViewSerializer(source='custom_fields', read_only=True,
-                                                     many=True)
+    custom_fields_object = CustomFieldViewSerializer(source='custom_fields', read_only=True, many=True)
     transaction_classes_object = TransactionClassSerializer(source='transaction_classes',
                                                             read_only=True, many=True)
 
@@ -479,9 +498,9 @@ class ReportSerializer(serializers.Serializer):
             item_instrument_accruals = {o['id']: o for o in data['item_instrument_accruals']}
 
             def _set_object(names, pk_attr, objs):
-                pk = item[pk_attr]
+                pk = names[pk_attr]
                 if pk is not None:
-                    item['%s_object' % pk_attr] = objs[pk]
+                    names['%s_object' % pk_attr] = objs[pk]
 
             for item in items:
                 names = {n: v for n, v in item.items()}
@@ -504,6 +523,8 @@ class ReportSerializer(serializers.Serializer):
                 _set_object(names, 'currency_history', item_currency_fx_rates)
                 _set_object(names, 'pricing_currency_history', item_currency_fx_rates)
                 _set_object(names, 'instrument_accrual', item_instrument_accruals)
+
+                names = formula.value_prepare(names)
 
                 cfv = []
                 for cf in custom_fields:

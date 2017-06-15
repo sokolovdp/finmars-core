@@ -570,10 +570,10 @@ class Instrument(NamedModel, FakeDeletableModel):
         a = None
         for next_a in accruals:
             if a is not None:
-                a.accrual_end_date = next_a.accrual_start_date - timedelta(days=1)
+                a.accrual_end_date = next_a.accrual_start_date
             a = next_a
         if a:
-            a.accrual_end_date = self.maturity_date - timedelta(days=1)
+            a.accrual_end_date = self.maturity_date
 
         return accruals
 
@@ -689,9 +689,10 @@ class Instrument(NamedModel, FakeDeletableModel):
 
         accruals = self.get_accrual_calculation_schedules_all()
         for accrual in accruals:
-            if accrual.accrual_start_date <= cpn_date <= accrual.accrual_end_date:
+            if accrual.accrual_start_date <= cpn_date < accrual.accrual_end_date:
                 prev_d = accrual.accrual_start_date
                 for i in range(0, 3652058):
+                    stop = False
                     if i == 0:
                         d = accrual.first_payment_date
                     else:
@@ -702,13 +703,14 @@ class Instrument(NamedModel, FakeDeletableModel):
                             return 0.0, False
 
                     if d >= accrual.accrual_end_date:
-                        d = accrual.accrual_end_date
+                        d = accrual.accrual_end_date - timedelta(days=1)
+                        stop = True
 
                     if d == cpn_date:
                         val_or_factor = get_coupon(accrual, prev_d, d, maturity_date=self.maturity_date, factor=factor)
                         return val_or_factor, True
 
-                    if d >= accrual.accrual_end_date:
+                    if stop or d >= accrual.accrual_end_date:
                         break
 
                     prev_d = d
@@ -719,11 +721,12 @@ class Instrument(NamedModel, FakeDeletableModel):
         res = []
         accruals = self.get_accrual_calculation_schedules_all()
         for accrual in accruals:
-            if begin_date > accrual.accrual_end_date:
+            if begin_date >= accrual.accrual_end_date:
                 continue
 
             prev_d = accrual.accrual_start_date
             for i in range(0, 3652058):
+                stop = False
                 if i == 0:
                     d = accrual.first_payment_date
                 else:
@@ -738,12 +741,13 @@ class Instrument(NamedModel, FakeDeletableModel):
                     continue
 
                 if d >= accrual.accrual_end_date:
-                    d = accrual.accrual_end_date
+                    d = accrual.accrual_end_date - timedelta(days=1)
+                    stop = True
 
                 val_or_factor = get_coupon(accrual, prev_d, d, maturity_date=self.maturity_date, factor=factor)
                 res.append((d, val_or_factor))
 
-                if d == date.max or d >= accrual.accrual_end_date:
+                if stop or d >= accrual.accrual_end_date:
                     break
 
                 prev_d = d
@@ -822,7 +826,7 @@ class AccrualCalculationSchedule(models.Model):
     instrument = models.ForeignKey(Instrument, related_name='accrual_calculation_schedules',
                                    verbose_name=ugettext_lazy('instrument'))
     accrual_start_date = models.DateField(default=date_now, verbose_name=ugettext_lazy('accrual start date'))
-    accrual_end_date = None # included date
+    accrual_end_date = None # excluded date
     first_payment_date = models.DateField(default=date_now, verbose_name=ugettext_lazy('first payment date'))
     # TODO: is %
     accrual_size = models.FloatField(default=0.0, verbose_name=ugettext_lazy('accrual size'))
@@ -928,14 +932,15 @@ class EventSchedule(models.Model):
             add_date(self.effective_date)
 
         elif self.event_class_id == EventClass.REGULAR:
-            for i in range(0, settings.INSTRUMENT_EVENTS_REGULAR_MAX_INTERVALS):
+            for i in range(0, 3652058):
                 stop = False
                 try:
                     effective_date = self.effective_date + self.periodicity.to_timedelta(
                         n=self.periodicity_n, i=i, same_date=self.effective_date)
                 except (OverflowError, ValueError):  # year is out of range
-                    effective_date = date.max
-                    stop = True
+                    # effective_date = date.max
+                    # stop = True
+                    break
 
                 if self.accrual_calculation_schedule_id is not None:
                     if effective_date >= self.final_date:
