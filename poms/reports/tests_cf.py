@@ -48,6 +48,10 @@ class AbstractReportTestMixin:
         self.a1_2 = self._acc('a1_2', t='at1')
         self.a2_3 = self._acc('a2_3', t='at2')
         self.a3_4 = self._acc('a3_4', t='at3')
+        self.a1 = self._acc('a1')
+        self.a2 = self._acc('a2')
+        self.a3 = self._acc('a3')
+        self.a4 = self._acc('a4')
 
         self.p1 = self._prtfl('p1')
         self.p2 = self._prtfl('p2')

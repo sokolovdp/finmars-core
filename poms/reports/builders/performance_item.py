@@ -4,7 +4,7 @@ from datetime import timedelta, date
 
 from poms.common.utils import date_now, isclose
 from poms.instruments.models import CostMethod
-from poms.reports.builders.base_item import BaseReport
+from poms.reports.builders.base_item import BaseReport, BaseReportItem
 
 
 class PerformancePeriod:
@@ -276,7 +276,7 @@ class PerformancePeriod:
         )
 
 
-class PerformanceReportItem:
+class PerformanceReportItem(BaseReportItem):
     # TYPE_DEFAULT = 0
     # TYPE_MKT_VAL = 1
     # TYPE_PL = 2
@@ -284,7 +284,8 @@ class PerformanceReportItem:
     def __init__(self, report, id=None,
                  period_begin=None, period_end=None, period_name=None, period_key=None,
                  portfolio=None, account=None, strategy1=None, strategy2=None, strategy3=None):
-        self.report = report
+        super(PerformanceReportItem, self).__init__(report, None, None)
+        # self.report = report
         self.id = str(id) if id is not None else ''
 
         # self.item_type = item_type if item_type is not None else PerformanceReportItem.TYPE_DEFAULT

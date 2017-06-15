@@ -29,7 +29,7 @@ class PerformanceReportBuilder(ReportBuilder):
             fx_rate_provider=fx_rate_provider
         )
 
-        self._original_transactions = None
+        # self._original_transactions = None
 
         self._periods = OrderedDict()
 
@@ -40,9 +40,9 @@ class PerformanceReportBuilder(ReportBuilder):
         with transaction.atomic():
             try:
                 self._load_transactions()
+                # self._original_transactions = self.transactions.copy()
                 self._process_periods()
                 self._periods_init()
-                self._original_transactions = self.transactions.copy()
                 self._periods_pricing()
                 self._calc()
                 self._make_items()
@@ -93,8 +93,9 @@ class PerformanceReportBuilder(ReportBuilder):
                 name = str(name)
                 if not isinstance(begin, date) or not isinstance(end, date):
                     _l.debug('hacker detected on: trn=%s, period=%s', trn.pk, self.instance.periods)
+                    name, begin, end = name, date.max, date.max
             else:
-                name, begin, end = None, None, None
+                name, begin, end = 'Default', date.max, date.max
 
             trn.set_period(name=name, begin=begin, end=end)
 

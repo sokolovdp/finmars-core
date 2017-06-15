@@ -29,6 +29,7 @@ class ReportBuilder(BaseReportBuilder):
 
         # self._queryset = queryset
         self._transactions = transactions
+        self._original_transactions = transactions
         self._pricing_provider = pricing_provider
         self._fx_rate_provider = fx_rate_provider
 
@@ -406,6 +407,7 @@ class ReportBuilder(BaseReportBuilder):
         _l.debug('transactions - load')
 
         self._transactions = []
+        self._original_transactions = []
 
         trn_qs = self._trn_qs()
         if not trn_qs.exists():
@@ -447,6 +449,14 @@ class ReportBuilder(BaseReportBuilder):
             )
             # trn.key = self._get_trn_group_key(trn)
             self._transactions.append(trn)
+
+            otrn = self.trn_cls(
+                report=self.instance,
+                pricing_provider=self.pricing_provider,
+                fx_rate_provider=self.fx_rate_provider,
+                trn=t,
+            )
+            self._original_transactions.append(otrn)
 
         _l.debug('transactions - len=%s', len(self._transactions))
 
