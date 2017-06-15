@@ -29,7 +29,7 @@ class PerformanceReportBuilder(ReportBuilder):
             fx_rate_provider=fx_rate_provider
         )
 
-        self._original_transactions = None
+        # self._original_transactions = None
 
         self._periods = OrderedDict()
 
@@ -40,7 +40,7 @@ class PerformanceReportBuilder(ReportBuilder):
         with transaction.atomic():
             try:
                 self._load_transactions()
-                self._original_transactions = self.transactions.copy()
+                # self._original_transactions = self.transactions.copy()
                 self._process_periods()
                 self._periods_init()
                 self._periods_pricing()

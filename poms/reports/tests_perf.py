@@ -307,7 +307,7 @@ class PerfReportTestCase(AbstractReportTestMixin, TestCase):
 
     def test_perf2(self):
         # settings.DEBUG = True
-        test_prefix = 'a1'
+        test_prefix = 'td_0'
 
         i1 = Instrument.objects.create(
             master_user=self.m,
@@ -487,4 +487,4 @@ class PerfReportTestCase(AbstractReportTestMixin, TestCase):
                 reports.append(r)
 
         _l.warn('write results')
-        self._write_results(reports, '%s_performance.xlsx' % test_prefix)
+        self._write_results(reports, '%s_perf.xlsx' % test_prefix)
