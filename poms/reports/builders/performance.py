@@ -212,7 +212,7 @@ class PerformanceReportBuilder(ReportBuilder):
         for period in self._periods.values():
             _l.debug('%s', period)
 
-            self.__original_transactions = period.trns
+            self._transactions = period.trns
 
             self._transaction_multipliers()
             self._clone_transactions_if_need()

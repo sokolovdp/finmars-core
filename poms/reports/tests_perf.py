@@ -357,7 +357,7 @@ class PerfReportTestCase(AbstractReportTestMixin, TestCase):
         )
         self._t_sell(
             instr=i1, position=-10,
-            stl_ccy=self.usd, principal=-15, carry=0, overheads=-1,
+            stl_ccy=self.usd, principal=15, carry=0, overheads=-1,
             p=self.p3, acc_pos=self.a3, acc_cash=self.a4,
             s1_pos=self.s1_1_1_1, s1_cash=self.s1_1_1_3,
             acc_date=date(2020, 3, 13), cash_date=date(2020, 2, 13)
@@ -365,7 +365,7 @@ class PerfReportTestCase(AbstractReportTestMixin, TestCase):
 
         self._t_instr_pl(
             instr=i1, position=0,
-            stl_ccy=self.usd, principal=-15, carry=0, overheads=-1,
+            stl_ccy=self.usd, principal=5, carry=0, overheads=0,
             p=self.p1, acc_pos=self.a1, acc_cash=self.a4,
             s1_pos=self.s1_1_1_1, s1_cash=self.s1_1_1_1,
             acc_date=date(2020, 4, 14), cash_date=date(2020, 4, 14)
@@ -380,14 +380,14 @@ class PerfReportTestCase(AbstractReportTestMixin, TestCase):
         )
         self._t_cash_in(
             trn_ccy=self.usd, position=1000,
-            stl_ccy=self.usd, principal=0, carry=0, overheads=0,
+            stl_ccy=self.usd, principal=1000, carry=0, overheads=0,
             p=self.p1, acc_pos=self.a1, acc_cash=self.a2,
             s1_pos=self.s1_1_1_1, s1_cash=self.s1_1_1_2,
             acc_date=date(2020, 6, 16), cash_date=date(2020, 6, 16)
         )
         self._t_cash_out(
             trn_ccy=self.usd, position=-500,
-            stl_ccy=self.usd, principal=0, carry=0, overheads=0,
+            stl_ccy=self.usd, principal=-500, carry=0, overheads=0,
             p=self.p2, acc_pos=self.a1, acc_cash=self.a2,
             s1_pos=self.s1_1_1_1, s1_cash=self.s1_1_1_2,
             acc_date=date(2020, 7, 17), cash_date=date(2020, 7, 17)
