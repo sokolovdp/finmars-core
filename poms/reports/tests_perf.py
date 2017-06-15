@@ -7,8 +7,6 @@ from dateutil.relativedelta import relativedelta
 from django.test import TestCase
 
 from poms.instruments.models import Instrument
-from poms.reports.builders.balance_virt_trn import VirtualTransaction
-from poms.reports.builders.base_item import BaseReportItem
 from poms.reports.builders.performance import PerformanceReportBuilder
 from poms.reports.builders.performance_item import PerformanceReport, PerformanceReportItem
 from poms.reports.builders.performance_virt_trn import PerformanceVirtualTransaction
@@ -20,15 +18,15 @@ _l = logging.getLogger('poms.reports')
 
 class PerfReportTestCase(AbstractReportTestMixin, TestCase):
     VERIFY_TRN_COLS = [
-        'pk',
+        # 'pk',
         # 'lid',
-        'is_cloned',
-        'is_hidden',
+        # 'is_cloned',
+        # 'is_hidden',
         'trn_code',
         'trn_cls',
         'instr',
         'trn_ccy',
-        'notes',
+        # 'notes',
         'pos_size',
         'stl_ccy',
         'cash',
@@ -36,7 +34,7 @@ class PerfReportTestCase(AbstractReportTestMixin, TestCase):
         'carry',
         'overheads',
         'ref_fx',
-        'trn_date',
+        # 'trn_date',
         'acc_date',
         'cash_date',
         'prtfl',
@@ -52,8 +50,6 @@ class PerfReportTestCase(AbstractReportTestMixin, TestCase):
         'link_instr',
         'alloc_bl',
         'alloc_pl',
-        'trade_price',
-        'notes',
     ]
 
     VERIFY_ITEM_COLS = [
@@ -92,8 +88,8 @@ class PerfReportTestCase(AbstractReportTestMixin, TestCase):
             if show_trns:
                 trn_cols = trn_cols or self.VERIFY_TRN_COLS
                 s += '\nVirtual transactions: \n%s\n' % (
-                    VirtualTransaction.sdumps(builder.instance.transactions, columns=trn_cols, filter=trn_filter,
-                                              transpose=transpose, showindex=showindex)
+                    PerformanceVirtualTransaction.sdumps(builder.instance.transactions, columns=trn_cols,
+                                                         filter=trn_filter, transpose=transpose, showindex=showindex)
                 )
 
             if show_items:
@@ -186,11 +182,11 @@ class PerfReportTestCase(AbstractReportTestMixin, TestCase):
 
             # worksheet.write(row, 0, 'Report date:', header_fmt)
             worksheet.merge_range(row, 0, row, 2, 'Begin date:', header_fmt)
-            worksheet.write_datetime(row, 3, _val(r.begin_date), date_fmt)
+            worksheet.write_datetime(row, 3, r.begin_date, date_fmt)
             row += 1
 
             worksheet.merge_range(row, 0, row, 2, 'End date:', header_fmt)
-            worksheet.write_datetime(row, 3, _val(r.end_date), date_fmt)
+            worksheet.write_datetime(row, 3, r.end_date, date_fmt)
             row += 1
 
             # worksheet.write(row, 0, 'Report currency:', header_fmt)
@@ -251,7 +247,9 @@ class PerfReportTestCase(AbstractReportTestMixin, TestCase):
             for item in r.items:
                 for col, val in enumerate(PerformanceReportItem.dump_values(item, item_cols)):
                     val = _val(val)
-                    if isinstance(val, (int, float)):
+                    if item_cols[col] in ['period_begin', 'period_end']:
+                        worksheet.write_datetime(row, col, val, date_fmt)
+                    elif isinstance(val, (int, float)):
                         if math.isnan(val):
                             val = 0.0
                         worksheet.write_number(row, col, val, num_fmt)
