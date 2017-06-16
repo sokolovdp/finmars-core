@@ -1,9 +1,13 @@
 import logging
 from collections import defaultdict
+from uuid import uuid4
 
-from django.contrib.auth.models import Permission
+import pytz
+from django.conf import settings
+from django.contrib.auth.models import Permission, User
 from django.contrib.contenttypes.models import ContentType
 from django.db import transaction
+from django.utils import timezone
 
 from poms.accounts.models import AccountType, Account
 from poms.chats.models import ThreadGroup
@@ -24,16 +28,19 @@ from poms.strategies.models import Strategy1Group, Strategy1Subgroup, Strategy1,
 from poms.tags.models import Tag
 from poms.transactions.models import TransactionClass, ActionClass, EventClass, NotificationClass, TransactionTypeGroup, \
     TransactionType, TransactionTypeInput, TransactionTypeActionInstrument, TransactionTypeActionTransaction
-from poms.ui.models import TemplateListLayout, TemplateEditLayout
-from poms.users.models import Group
+from poms.ui.models import TemplateListLayout, TemplateEditLayout, ListLayout, EditLayout
+from poms.users.models import Group, Member
 
 _l = logging.getLogger('poms.users.cloner')
 
 
 class FullDataCloner(object):
     def __init__(self, source_master_user):
+        self._now = None
         self._source_master_user = source_master_user
+        self._source_owner = None
         self._target_master_user = None
+        self._target_owner = None
 
         self._pk_map = defaultdict(dict)
         self._source_objects = defaultdict(dict)
@@ -41,8 +48,26 @@ class FullDataCloner(object):
 
     @transaction.atomic()
     def clone(self):
-        _l.debug('clone: master_user=%s', self._source_master_user.pk)
+        _l.debug('clone: master_user=%s, timezone=%s', self._source_master_user.pk, self._source_master_user.timezone)
+
+        if self._source_master_user.timezone:
+            try:
+                src_tz = pytz.timezone(self._source_master_user.timezone)
+            except:
+                src_tz = settings.TIME_ZONE
+        else:
+            src_tz = settings.TIME_ZONE
+
+        with timezone.override(src_tz):
+            self._now = timezone.localtime(timezone.now())
+            self._clone()
+
+    def _clone(self):
         self._target_master_user = self._simple_clone(None, self._source_master_user, 'name', 'language', 'timezone')
+        self._target_master_user.name = '{} ({:%H:%M %d.%m.%Y})'.format(
+            self._target_master_user,
+            self._now
+        )
 
         self._load_consts()
 
@@ -68,32 +93,12 @@ class FullDataCloner(object):
         self._integrations_2()
 
         self._simple_clone(self._target_master_user, self._source_master_user,
-                           'currency',
-                           'system_currency',
-                           'account_type',
-                           'account',
-                           'counterparty_group',
-                           'counterparty',
-                           'responsible_group',
-                           'responsible',
-                           'instrument_type',
-                           'instrument',
-                           'portfolio',
-                           'strategy1_group',
-                           'strategy1_subgroup',
-                           'strategy1',
-                           'strategy2_group',
-                           'strategy2_subgroup',
-                           'strategy2',
-                           'strategy3_group',
-                           'strategy3_subgroup',
-                           'strategy3',
-                           'thread_group',
-                           'transaction_type_group',
-                           'mismatch_portfolio',
-                           'mismatch_account',
-                           'notification_business_days'
-                           )
+                           'system_currency', 'currency', 'account_type', 'account', 'counterparty_group',
+                           'counterparty', 'responsible_group', 'responsible', 'portfolio', 'instrument_type',
+                           'instrument', 'strategy1_group', 'strategy1_subgroup', 'strategy1', 'strategy2_group',
+                           'strategy2_subgroup', 'strategy2', 'strategy3_group', 'strategy3_subgroup', 'strategy3',
+                           'thread_group', 'transaction_type_group', 'mismatch_portfolio', 'mismatch_account',
+                           'notification_business_days')
 
         self._tags()
         self._ui()
@@ -147,6 +152,15 @@ class FullDataCloner(object):
             self._add_pk_map(source, source)
 
     def _users_1(self):
+        self._source_owner = self._source_master_user.members.filter(is_owner=True).order_by('join_date').first()
+
+        username = '%s@fake.finmars.com' % str(uuid4().hex)
+        user = User.objects.create_user(username, email=username)
+        self._target_owner = Member.objects.create(master_user=self._target_master_user, user=user, is_owner=True,
+                                                   is_admin=True)
+        if self._source_owner:
+            self._add_pk_map(self._target_owner, self._source_owner)
+
         self._simple_list_clone(Group, None, 'master_user', 'name')
 
     def _accounts(self):
@@ -377,10 +391,18 @@ class FullDataCloner(object):
                                 'notes', 'content_types')
 
     def _ui(self):
-        self._simple_list_clone(TemplateListLayout, None, 'content_type', 'json_data', 'name', 'is_default',
+        self._simple_list_clone(TemplateListLayout, None, 'master_user', 'content_type', 'json_data', 'name',
+                                'is_default',
                                 pk_map=False)
+        self._simple_list_clone(TemplateEditLayout, None, 'master_user', 'content_type', 'json_data', pk_map=False)
 
-        self._simple_list_clone(TemplateEditLayout, None, 'content_type', 'json_data', pk_map=False)
+        if self._source_owner:
+            self._simple_list_clone(ListLayout, 'member__master_user', 'member', 'content_type', 'json_data', 'name',
+                                    'is_default', pk_map=False)
+            self._simple_list_clone(EditLayout, 'member__master_user', 'member', 'content_type', 'json_data',
+                                    pk_map=False)
+
+        pass
 
     def _attribute_types(self, type_model, classifier_model, value_model):
         _l.debug('clone %s', type_model)
