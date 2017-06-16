@@ -99,7 +99,7 @@ class MasterUserAdmin(AbstractModelAdmin):
         super(MasterUserAdmin, self).save_model(request, obj, form, change)
 
         if not change:
-            obj.fill_defaults()
+            obj.create_defaults()
 
     def clone_data(self, request, queryset):
         from poms.users.cloner import FullDataCloner
