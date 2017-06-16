@@ -204,13 +204,11 @@ class FullDataCloner(object):
 
         self._simple_list_clone(Instrument, None, 'master_user', 'user_code', 'name', 'short_name',
                                 'public_name', 'notes', 'is_deleted', 'instrument_type', 'is_active',
-                                'pricing_currency', 'price_multiplier',
-                                'accrued_currency', 'accrued_multiplier',
-                                'payment_size_detail',
-                                'default_price', 'default_accrued',
+                                'pricing_currency', 'price_multiplier', 'accrued_currency', 'accrued_multiplier',
+                                'payment_size_detail', 'default_price', 'default_accrued',
                                 'user_text_1', 'user_text_2', 'user_text_3',
                                 'reference_for_pricing', 'daily_pricing_model', 'price_download_scheme',
-                                'maturity_date')
+                                'maturity_date', 'maturity_price')
 
         self._simple_list_clone(ManualPricingFormula, 'instrument__master_user', 'instrument', 'pricing_policy', 'expr',
                                 'notes')
