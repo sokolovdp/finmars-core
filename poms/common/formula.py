@@ -94,6 +94,8 @@ def _float(a):
 
 
 def _round(a, ndigits=None):
+    if ndigits is not None:
+        ndigits = int(ndigits)
     return round(float(a), ndigits)
 
 
