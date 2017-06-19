@@ -390,15 +390,14 @@ class FullDataCloner(object):
 
     def _ui(self):
         self._simple_list_clone(TemplateListLayout, None, 'master_user', 'content_type', 'json_data', 'name',
-                                'is_default',
-                                pk_map=False)
+                                'is_default', pk_map=False)
         self._simple_list_clone(TemplateEditLayout, None, 'master_user', 'content_type', 'json_data', pk_map=False)
 
         if self._source_owner:
             self._simple_list_clone(ListLayout, 'member__master_user', 'member', 'content_type', 'json_data', 'name',
-                                    'is_default', pk_map=False)
+                                    'is_default', pk_map=False, filter={'member': self._source_owner})
             self._simple_list_clone(EditLayout, 'member__master_user', 'member', 'content_type', 'json_data',
-                                    pk_map=False)
+                                    pk_map=False, filter={'member': self._source_owner})
 
         pass
 
@@ -426,7 +425,7 @@ class FullDataCloner(object):
             self._simple_clone(None, source, 'content_object', 'group', 'permission', 'value_string', 'value_float',
                                'value_date')
 
-    def _simple_list_clone(self, model, master_user_path, *fields, pk_map=True, store=False):
+    def _simple_list_clone(self, model, master_user_path, *fields, pk_map=True, store=False, filter=None):
         # _l.debug('clone %s', model)
 
         fields_select_related = []
@@ -444,7 +443,10 @@ class FullDataCloner(object):
         if not master_user_path:
             master_user_path = 'master_user'
 
-        qs = model.objects.filter(**{master_user_path: self._source_master_user})
+        filter = filter or {}
+        filter[master_user_path] = self._source_master_user
+        qs = model.objects.filter(**filter)
+        # qs = model.objects.filter(**{master_user_path: self._source_master_user})
 
         if fields_select_related:
             qs = qs.select_related(*fields_select_related)

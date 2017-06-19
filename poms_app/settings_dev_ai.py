@@ -15,6 +15,8 @@ if 'crispy_forms' not in INSTALLED_APPS:
     INSTALLED_APPS += ['crispy_forms', ]
 if 'redisboard' not in INSTALLED_APPS:
     INSTALLED_APPS += ['redisboard', ]
+if 'django_extensions' not in INSTALLED_APPS:
+    INSTALLED_APPS += ['django_extensions', ]
 # if 'debug_toolbar' not in INSTALLED_APPS:
 #     INSTALLED_APPS += ['debug_toolbar', ]
 #     MIDDLEWARE_CLASSES = MIDDLEWARE_CLASSES + ['debug_toolbar.middleware.DebugToolbarMiddleware', ]
