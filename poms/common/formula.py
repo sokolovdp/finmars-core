@@ -93,8 +93,8 @@ def _float(a):
     return float(a)
 
 
-def _round(a):
-    return round(float(a))
+def _round(a, ndigits=None):
+    return round(float(a), ndigits)
 
 
 def _trunc(a):
@@ -1487,7 +1487,7 @@ if __name__ == "__main__":
 
 
     def test_eval(expr, names=None):
-        _l.info('-' * 79)
+        # _l.info('-' * 79)
         try:
             se = SimpleEval2(names=names, add_print=True)
             ret = se.eval(expr)
@@ -1623,8 +1623,10 @@ if __name__ == "__main__":
 
         _l.info('')
         _l.info("functions: ")
-        test_eval("round(1.5)", names)
-        test_eval("trunc(1.5)", names)
+        test_eval("round(1.73456)", names)
+        test_eval("round(1.73456, 3)", names)
+        test_eval("round(1.73456, 4)", names)
+        test_eval("trunc(1.73456)", names)
         test_eval("int(1.5)", names)
         test_eval("now()", names)
         test_eval("add_days(now(), 10)", names)
@@ -1648,7 +1650,7 @@ if __name__ == "__main__":
         # _l.info(add_workdays(datetime.date(2016, 6, 15), 4))
 
 
-    # demo()
+    demo()
     pass
 
 
@@ -1910,7 +1912,7 @@ accrual_NL_365_NO_EOM(date(2000, 1, 1), date(2000, 1, 25))
         # _l.info('5: %s', safe_eval('get_instrument_factor("petrolios", "2017-11-01")', context=context))
 
 
-    accrued_test()
+    # accrued_test()
     pass
 
 
