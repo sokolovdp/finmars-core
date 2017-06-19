@@ -1,37 +1,55 @@
 echo "all"
-./manage.py graph_models -X NamedModel,TimeStampedModel,TagModelBase,ClassModelBase,ObjectPermissionBase,AttributeTypeOptionBase,AttributeBase,AttributeTypeOptionBase -a -o ~/tmp/all.png
-
-echo "chats"
-./manage.py graph_models -X NamedModel,TimeStampedModel,TagModelBase,ClassModelBase,ObjectPermissionBase,AttributeTypeOptionBase,AttributeBase,AttributeTypeOptionBase chats  -o ~/tmp/chats.png
-
-echo "users"
-./manage.py graph_models -X NamedModel,TimeStampedModel,TagModelBase,ClassModelBase,ObjectPermissionBase,AttributeTypeOptionBase,AttributeBase,AttributeTypeOptionBase users  -o ~/tmp/users.png
+./manage_ai.py graph_models -X NamedModel,TimeStampedModel -a -o ~/tmp/all.png
 
 echo "accounts"
-./manage.py graph_models -X NamedModel,TimeStampedModel,TagModelBase,ClassModelBase,ObjectPermissionBase,AttributeTypeOptionBase,AttributeBase,AttributeTypeOptionBase accounts  -o ~/tmp/accounts.png
+./manage_ai.py graph_models -X NamedModel,TimeStampedModel accounts -o ~/tmp/accounts.png
+
+echo "audit"
+./manage_ai.py graph_models -X NamedModel,TimeStampedModel audit -o ~/tmp/audit.png
+
+echo "chats"
+./manage_ai.py graph_models -X NamedModel,TimeStampedModel chats -o ~/tmp/chats.png
 
 echo "counterparties"
-./manage.py graph_models -X NamedModel,TimeStampedModel,TagModelBase,ClassModelBase,ObjectPermissionBase,AttributeTypeOptionBase,AttributeBase,AttributeTypeOptionBase counterparties  -o ~/tmp/counterparties.png
+./manage_ai.py graph_models -X NamedModel,TimeStampedModel counterparties -o ~/tmp/counterparties.png
 
 echo "currencies"
-./manage.py graph_models -X NamedModel,TimeStampedModel,TagModelBase,ClassModelBase,ObjectPermissionBase,AttributeTypeOptionBase,AttributeBase,AttributeTypeOptionBase currencies  -o ~/tmp/currencies.png
+./manage_ai.py graph_models -X NamedModel,TimeStampedModel currencies -o ~/tmp/currencies.png
+
+echo "http_sessions"
+./manage_ai.py graph_models -X NamedModel,TimeStampedModel http_sessions -o ~/tmp/http_sessions.png
 
 echo "instruments"
-./manage.py graph_models -X NamedModel,TimeStampedModel,TagModelBase,ClassModelBase,ObjectPermissionBase,AttributeTypeOptionBase,AttributeBase,AttributeTypeOptionBase instruments  -o ~/tmp/instruments.png
+./manage_ai.py graph_models -X NamedModel,TimeStampedModel instruments -o ~/tmp/instruments.png
 
 echo "integrations"
-./manage.py graph_models -X NamedModel,TimeStampedModel,TagModelBase,ClassModelBase,ObjectPermissionBase,AttributeTypeOptionBase,AttributeBase,AttributeTypeOptionBase instruments  -o ~/tmp/integrations.png
+./manage_ai.py graph_models -X NamedModel,TimeStampedModel integrations -o ~/tmp/integrations.png
+
+echo "notifications"
+./manage_ai.py graph_models -X NamedModel,TimeStampedModel notifications -o ~/tmp/notifications.png
+
+echo "obj_attrs"
+./manage_ai.py graph_models -X NamedModel,TimeStampedModel obj_attrs -o ~/tmp/obj_attrs.png
+
+echo "obj_perms"
+./manage_ai.py graph_models -X NamedModel,TimeStampedModel obj_perms -o ~/tmp/obj_perms.png
 
 echo "portfolios"
-./manage.py graph_models -X NamedModel,TimeStampedModel,TagModelBase,ClassModelBase,ObjectPermissionBase,AttributeTypeOptionBase,AttributeBase,AttributeTypeOptionBase portfolios  -o ~/tmp/portfolios.png
+./manage_ai.py graph_models -X NamedModel,TimeStampedModel portfolios -o ~/tmp/portfolios.png
 
-echo "transactions"
-./manage.py graph_models -X NamedModel,TimeStampedModel,TagModelBase,ClassModelBase,ObjectPermissionBase,AttributeTypeOptionBase,AttributeBase,AttributeTypeOptionBase transactions  -o ~/tmp/transactions.png
+echo "strategies"
+./manage_ai.py graph_models -X NamedModel,TimeStampedModel strategies -o ~/tmp/strategies.png
 
 echo "tags"
-./manage.py graph_models -X NamedModel,TimeStampedModel,TagModelBase,ClassModelBase,ObjectPermissionBase,AttributeTypeOptionBase,AttributeBase,AttributeTypeOptionBase tags  -o ~/tmp/tags.png
+./manage_ai.py graph_models -X NamedModel,TimeStampedModel tags -o ~/tmp/tags.png
+
+echo "transactions"
+./manage_ai.py graph_models -X NamedModel,TimeStampedModel transactions -o ~/tmp/transactions.png
 
 echo "ui"
-./manage.py graph_models -X NamedModel,TimeStampedModel,TagModelBase,ClassModelBase,ObjectPermissionBase,AttributeTypeOptionBase,AttributeBase,AttributeTypeOptionBase ui  -o ~/tmp/ui.png
+./manage_ai.py graph_models -X NamedModel,TimeStampedModel ui -o ~/tmp/ui.png
+
+echo "users"
+./manage_ai.py graph_models -X NamedModel,TimeStampedModel users -o ~/tmp/users.png
 
 echo "done"
