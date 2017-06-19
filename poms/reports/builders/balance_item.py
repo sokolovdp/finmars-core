@@ -90,6 +90,7 @@ class ReportItem(YTMMixin, BaseReportItem):
     type = TYPE_UNKNOWN
     subtype = SUBTYPE_DEFAULT
     trn = None
+    src_trns_id = None
 
     instr = None
     ccy = None
@@ -850,6 +851,11 @@ class ReportItem(YTMMixin, BaseReportItem):
             self.pricing_ccy_cur_fx = self.pricing_ccy_cur.fx_rate * report_ccy_cur_fx
 
     def add(self, o):
+        if self.src_trns_id is None:
+            self.src_trns_id = set()
+        if o.trn:
+            self.src_trns_id.add(o.trn.pk)
+
         # ------------------
         # P&L in report ccy
         # ------------------

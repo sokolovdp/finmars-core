@@ -61,6 +61,7 @@ class ReportItemSerializer(serializers.Serializer):
     strategy2 = serializers.PrimaryKeyRelatedField(source='str2', read_only=True)
     strategy3 = serializers.PrimaryKeyRelatedField(source='str3', read_only=True)
     notes = serializers.CharField(read_only=True)
+    source_transactions = serializers.ListField(source='src_trns_id', child=serializers.IntegerField(), read_only=True)
 
     custom_fields = ReportItemCustomFieldSerializer(many=True, read_only=True)
     is_empty = serializers.BooleanField(read_only=True)

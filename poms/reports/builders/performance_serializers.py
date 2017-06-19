@@ -37,6 +37,7 @@ class PerformanceReportItemSerializer(serializers.Serializer):
     strategy1 = serializers.PrimaryKeyRelatedField(read_only=True)
     strategy2 = serializers.PrimaryKeyRelatedField(read_only=True)
     strategy3 = serializers.PrimaryKeyRelatedField(read_only=True)
+    source_transactions = serializers.ListField(source='src_trns_id', child=serializers.IntegerField(), read_only=True)
 
     return_pl = serializers.FloatField(read_only=True)
     return_nav = serializers.FloatField(read_only=True)
