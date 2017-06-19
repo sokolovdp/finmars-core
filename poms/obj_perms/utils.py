@@ -294,7 +294,7 @@ def get_delete_perms(model):
 
 
 def get_manage_perms(model):
-    return get_perms_codename(model, ['manage', 'manage'])
+    return get_perms_codename(model, ['manage'])
 
 
 def get_all_perms(model):
