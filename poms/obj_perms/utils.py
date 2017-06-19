@@ -282,23 +282,23 @@ def get_perms_codename(model, actions):
 
 
 def get_view_perms(model):
-    return get_perms_codename(model, ['change'])
+    return get_perms_codename(model, ['view', 'change', 'manage'])
 
 
 def get_change_perms(model):
-    return get_perms_codename(model, ['change'])
+    return get_perms_codename(model, ['change', 'manage'])
 
 
 def get_delete_perms(model):
-    return get_perms_codename(model, ['change'])
+    return get_perms_codename(model, ['change', 'manage'])
 
 
 def get_manage_perms(model):
-    return get_perms_codename(model, ['manage'])
+    return get_perms_codename(model, ['manage', 'manage'])
 
 
 def get_all_perms(model):
-    return get_perms_codename(model, ['change', 'manage'])
+    return get_perms_codename(model, ['view', 'change', 'manage'])
 
 
 def has_perms(member, obj, perms):
