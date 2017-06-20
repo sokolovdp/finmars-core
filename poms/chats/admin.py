@@ -13,7 +13,7 @@ class ThreadGroupAdmin(AbstractModelAdmin):
     master_user_path = 'master_user'
     list_display = ['id', 'master_user', 'name', 'is_deleted', ]
     list_select_related = ['master_user', ]
-    ordering = ['master_user', 'name']
+    ordering = ['id']
     search_fields = ['id', 'name']
     list_filter = ['is_deleted', ]
     raw_id_fields = ['master_user', ]
@@ -33,9 +33,9 @@ class ThreadAdmin(AbstractModelAdmin):
     master_user_path = 'master_user'
     list_display = ['id', 'master_user', 'thread_group', 'subject', 'created', 'closed', 'is_deleted', ]
     list_select_related = ['master_user', 'thread_group', ]
-    ordering = ['master_user', 'thread_group', 'subject']
-    search_fields = ['id', 'subject']
     list_filter = ['created', 'closed', 'is_deleted', ]
+    ordering = ['id']
+    search_fields = ['id', 'subject']
     date_hierarchy = 'created'
     raw_id_fields = ['master_user', 'thread_group', ]
     inlines = [

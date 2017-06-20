@@ -15,7 +15,7 @@ class AccountTypeAdmin(AbstractModelAdmin):
     list_display = ['id', 'master_user', 'user_code', 'name', 'is_deleted', ]
     list_select_related = ['master_user']
     list_filter = ['is_deleted', ]
-    ordering = ['master_user', 'user_code']
+    ordering = ['id']
     search_fields = ['id', 'user_code', 'name']
     raw_id_fields = ['master_user']
     inlines = [
@@ -35,7 +35,7 @@ class AccountAdmin(AbstractModelAdmin):
     list_display = ['id', 'master_user', 'type', 'user_code', 'name', 'is_deleted', ]
     list_select_related = ['master_user', 'type']
     list_filter = ['is_deleted', ]
-    ordering = ['master_user', 'type', 'user_code']
+    ordering = ['id']
     search_fields = ['id', 'user_code', 'name']
     raw_id_fields = ['master_user', 'type']
     inlines = [

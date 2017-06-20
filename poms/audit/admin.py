@@ -32,11 +32,11 @@ class ObjectHistory4EntryAdmin(AbstractModelAdmin):
                     'action_flag',
                     'content_type', 'object_repr',
                     'field_name', 'value', 'old_value']
+    list_select_related = ['master_user', 'member', 'actor_content_type', 'content_type', 'value_content_type',
+                           'old_value_content_type']
     list_filter = ['created', 'action_flag', 'actor_content_type']
     ordering = ['-created']
     date_hierarchy = 'created'
-    list_select_related = ['master_user', 'member', 'actor_content_type', 'content_type', 'value_content_type',
-                           'old_value_content_type']
     raw_id_fields = ['master_user', 'member']
     search_fields = ['group_id', 'actor_object_repr', 'object_repr', 'field_name', 'value', 'old_value']
 

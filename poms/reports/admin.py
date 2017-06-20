@@ -9,6 +9,7 @@ class CustomFieldAdmin(AbstractModelAdmin):
     master_user_path = 'master_user'
     list_display = ['id', 'master_user', 'name', ]
     list_select_related = ['master_user']
+    ordering = ['id']
     search_fields = ['id', 'name']
     raw_id_fields = ['master_user']
 

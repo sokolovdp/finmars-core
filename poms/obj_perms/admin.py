@@ -90,6 +90,7 @@ class GenericObjectPermissionAdmin(AbstractModelAdmin):
     master_user_path = ('group__master_user', 'member__master_user')
     list_display = ['id', 'master_user', 'group', 'member', 'content_type', 'object_id', 'content_object', 'permission']
     # list_select_related = []
+    ordering = ['id']
     raw_id_fields = ['group', 'member', 'content_type', 'permission']
     list_filter = ['content_type']
     search_fields = ['object_id']

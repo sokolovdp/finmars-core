@@ -25,6 +25,7 @@ class TagLinkAdmin(AbstractModelAdmin):
     master_user_path = 'tag__master_user'
     list_display = ['id', 'master_user', 'content_type', 'object_id', 'content_object', 'tag']
     list_select_related = ['tag', 'tag__master_user', 'content_type']
+    ordering = ['id']
     raw_id_fields = ['tag']
 
     def get_queryset(self, request):
@@ -45,8 +46,8 @@ class TagAdmin(AbstractModelAdmin):
     master_user_path = 'master_user'
     list_display = ['id', 'master_user', 'user_code', 'name', ]
     list_select_related = ['master_user']
-    ordering = ['master_user', 'user_code']
     list_filter = ['content_types']
+    ordering = ['id']
     search_fields = ['id', 'user_code', 'name']
     filter_horizontal = ['content_types', ]
     raw_id_fields = [
