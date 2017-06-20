@@ -1,4 +1,5 @@
 from django.contrib import admin
+from django.contrib.admin.views.main import ChangeList
 from django.db.models import Q
 from modeltranslation.admin import TranslationAdmin
 from mptt.admin import MPTTModelAdmin
@@ -28,8 +29,16 @@ class ClassModelAdmin(TranslationAdmin):
     search_fields = ['id', 'system_code', 'name']
 
 
+class PomsChangeList(ChangeList):
+    def _get_default_ordering(self):
+        return []
+
+
 class AbstractModelAdmin(admin.ModelAdmin):
     master_user_path = None
+
+    def get_changelist(self, request, **kwargs):
+        return PomsChangeList
 
     def get_queryset(self, request):
         qs = super(AbstractModelAdmin, self).get_queryset(request)

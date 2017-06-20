@@ -12,7 +12,6 @@ if settings.DEBUG:
         list_display_links = ['id']
         list_select_related = ['user']
         list_filter = ['expire_date']
-        ordering = ['-expire_date']
         search_fields = ['user__username']
         date_hierarchy = 'expire_date'
         fields = ['id', 'user', 'user_ip', 'user_agent', 'expire_date']

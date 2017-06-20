@@ -15,7 +15,6 @@ class Strategy1GroupAdmin(AbstractModelAdmin):
     list_display = ['id', 'master_user', 'user_code', 'name', 'is_deleted', ]
     list_select_related = ['master_user']
     list_filter = ['is_deleted', ]
-    ordering = ['id']
     search_fields = ['id', 'user_code', 'name']
     raw_id_fields = ['master_user']
     inlines = [
@@ -35,7 +34,6 @@ class Strategy1SubgroupAdmin(AbstractModelAdmin):
     list_display = ['id', 'master_user', 'group', 'user_code', 'name', 'is_deleted', ]
     list_select_related = ['group', 'group__master_user']
     list_filter = ['is_deleted', ]
-    ordering = ['id']
     search_fields = ['id', 'user_code', 'name']
     raw_id_fields = ['master_user', 'group']
     inlines = [
@@ -55,7 +53,6 @@ class Strategy1Admin(AbstractModelAdmin):
     list_display = ['id', 'master_user', 'group', 'subgroup', 'user_code', 'name', 'is_deleted', ]
     list_select_related = ['subgroup', 'subgroup__group', 'subgroup__group__master_user']
     list_filter = ['is_deleted', ]
-    ordering = ['id']
     search_fields = ['id', 'user_code', 'name']
     raw_id_fields = ['master_user', 'subgroup']
     inlines = [

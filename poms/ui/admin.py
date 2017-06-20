@@ -18,7 +18,6 @@ class TemplateListLayoutAdmin(BaseLayoutAdmin):
     master_user_path = 'master_user'
     list_display = ['id', 'master_user', 'content_type', 'name']
     list_select_related = ['master_user', 'content_type']
-    ordering = ['id']
     search_fields = ['id', 'name']
     raw_id_fields = ['master_user']
 
@@ -31,7 +30,6 @@ class TemplateEditLayoutAdmin(BaseLayoutAdmin):
     master_user_path = 'master_user'
     list_display = ['id', 'master_user', 'content_type']
     list_select_related = ['master_user', 'content_type']
-    ordering = ['id']
     search_fields = ['id']
     raw_id_fields = ['master_user']
 
@@ -44,7 +42,6 @@ class ListLayoutAdmin(BaseLayoutAdmin):
     master_user_path = 'member__master_user'
     list_display = ['id', 'master_user', 'member', 'content_type', 'name']
     list_select_related = ['member__master_user', 'member', 'content_type']
-    ordering = ['id']
     search_fields = ['id', 'name']
     raw_id_fields = ['member']
 
@@ -62,7 +59,6 @@ class EditLayoutAdmin(BaseLayoutAdmin):
     master_user_path = 'member__master_user'
     list_display = ['id', 'master_user', 'member', 'content_type']
     list_select_related = ['member', 'content_type']
-    ordering = ['id']
     search_fields = ['id']
     raw_id_fields = ['member']
 
@@ -80,7 +76,6 @@ class BookmarkAdmin(AbstractModelAdmin):
     master_user_path = 'member__master_user'
     list_display = ['id', 'master_user', 'member', 'tree_id', 'level', 'parent', 'name', ]
     list_select_related = ['member', 'member__master_user', 'parent']
-    ordering = ['id']
     # ordering = ['member', 'tree_id', 'level', ]
     raw_id_fields = ['member', 'parent', 'list_layout']
     save_as = True

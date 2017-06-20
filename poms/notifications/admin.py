@@ -12,7 +12,6 @@ class NotificationAdmin(AbstractModelAdmin):
     list_display = ['id', 'master_user', 'recipient', 'recipient_member', 'create_date', '__str__',
                     'actor', 'verb', 'action_object', 'target']
     list_select_related = ['recipient', 'recipient_member', ]
-    ordering = ['-create_date']
     raw_id_fields = ['recipient', 'recipient_member']
     date_hierarchy = 'create_date'
 

@@ -74,7 +74,6 @@ class GenericAttributeTypeAdmin(AbstractModelAdmin):
     list_display = ['id', 'master_user', 'content_type', 'value_type', 'user_code']
     list_select_related = ['content_type', 'content_type']
     list_filter = ['value_type', 'content_type']
-    ordering = ['id']
     search_fields = ['id', 'user_code']
     raw_id_fields = ['master_user', 'content_type']
     inlines = [
@@ -93,7 +92,6 @@ class GenericClassifierAdmin(AbstractModelAdmin):
     list_display = ['id', 'master_user', 'attribute_type', 'content_type', 'tree_id', 'level', 'parent',
                     'name', ]
     list_select_related = ['attribute_type', 'attribute_type__master_user', 'attribute_type__content_type', 'parent']
-    ordering = ['id']
     search_fields = ['attribute_type__id', 'attribute_type__user_code', ]
     raw_id_fields = ['attribute_type', 'parent']
     save_as = True
@@ -120,7 +118,6 @@ class GenericAttributeAdmin(AbstractModelAdmin):
     list_select_related = ['content_type', 'attribute_type', 'attribute_type__master_user',
                            'attribute_type__content_type', 'classifier']
     list_filter = ['content_type']
-    ordering = ['id']
     search_fields = ['attribute_type__id', 'attribute_type__user_code', ]
     raw_id_fields = ['attribute_type', 'content_type', 'classifier']
     save_as = True
