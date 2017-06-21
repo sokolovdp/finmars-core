@@ -40,8 +40,8 @@ class InstrumentTypeAdmin(AbstractModelAdmin):
     master_user_path = 'master_user'
     list_display = ['id', 'master_user', 'user_code', 'name', 'instrument_class', 'is_deleted', ]
     list_select_related = ['master_user', 'instrument_class']
-    search_fields = ['id', 'user_code', 'name']
     list_filter = ['instrument_class', 'is_deleted', ]
+    search_fields = ['id', 'user_code', 'name']
     raw_id_fields = ['master_user', 'one_off_event', 'regular_event', 'factor_same', 'factor_up', 'factor_down']
     inlines = [
         GenericTagLinkInline,
@@ -85,9 +85,8 @@ class InstrumentAdmin(AbstractModelAdmin):
     master_user_path = 'master_user'
     list_display = ['id', 'master_user', 'instrument_type', 'user_code', 'name', 'is_deleted']
     list_select_related = ['master_user', 'instrument_type', 'pricing_currency', 'accrued_currency']
-    ordering = ['master_user', 'instrument_type', 'user_code']
-    search_fields = ['id', 'user_code', 'name']
     list_filter = ['instrument_type__instrument_class', 'is_deleted', ]
+    search_fields = ['id', 'user_code', 'name']
     raw_id_fields = ['master_user', 'instrument_type', 'pricing_currency', 'accrued_currency', 'price_download_scheme']
     inlines = [
         # InstrumentAttributeInline,
@@ -132,9 +131,8 @@ class ManualPricingFormulaAdmin(AbstractModelAdmin):
     model = AccrualCalculationSchedule
     master_user_path = 'instrument__master_user'
     list_display = ['id', 'master_user', 'instrument', 'pricing_policy']
-    ordering = ['instrument', 'pricing_policy']
-    search_fields = ['instrument__id', 'instrument__user_code', 'instrument__name']
     list_select_related = ['instrument', 'instrument__master_user', 'pricing_policy']
+    search_fields = ['instrument__id', 'instrument__user_code', 'instrument__name']
     raw_id_fields = ['instrument', 'pricing_policy']
 
     def master_user(self, obj):
@@ -151,10 +149,9 @@ class AccrualCalculationScheduleAdmin(AbstractModelAdmin):
     master_user_path = 'instrument__master_user'
     list_display = ['id', 'master_user', 'instrument', 'accrual_start_date', 'first_payment_date',
                     'accrual_calculation_model', 'periodicity']
-    ordering = ['instrument', 'accrual_start_date']
-    search_fields = ['instrument__id', 'instrument__user_code', 'instrument__name']
     list_select_related = ['instrument', 'instrument__master_user', 'accrual_calculation_model', 'periodicity']
     list_filter = ['accrual_calculation_model', 'periodicity']
+    search_fields = ['instrument__id', 'instrument__user_code', 'instrument__name']
     raw_id_fields = ['instrument']
 
     def master_user(self, obj):
@@ -171,9 +168,8 @@ class InstrumentFactorScheduleAdmin(AbstractModelAdmin):
     master_user_path = 'instrument__master_user'
     list_display = ['id', 'master_user', 'instrument', 'effective_date', 'factor_value']
     list_select_related = ['instrument', 'instrument__master_user']
-    ordering = ['instrument', 'effective_date']
-    search_fields = ['instrument__id', 'instrument__user_code', 'instrument__name']
     list_filter = ['effective_date']
+    search_fields = ['instrument__id', 'instrument__user_code', 'instrument__name']
     raw_id_fields = ['instrument']
 
     def master_user(self, obj):
@@ -200,7 +196,6 @@ class EventScheduleAdmin(AbstractModelAdmin):
     list_select_related = ['instrument', 'instrument__master_user', 'event_class', 'notification_class', 'periodicity',
                            'accrual_calculation_schedule', 'factor_schedule']
     list_filter = ['effective_date', 'event_class', 'notification_class', 'periodicity']
-    ordering = ['instrument', 'effective_date']
     date_hierarchy = 'effective_date'
     search_fields = ['instrument__id', 'instrument__user_code', 'instrument__name']
     raw_id_fields = ['instrument', 'accrual_calculation_schedule']
@@ -238,7 +233,6 @@ class EventScheduleActionAdmin(AbstractModelAdmin):
                     'is_sent_to_pending', 'is_book_automatic', 'button_position']
     list_select_related = ['event_schedule', 'event_schedule__instrument', 'event_schedule__instrument__master_user',
                            'transaction_type']
-    ordering = ['event_schedule__instrument__master_user', 'event_schedule__instrument', 'event_schedule']
     search_fields = ['event_schedule__instrument__id', 'event_schedule__instrument__user_code',
                      'event_schedule__instrument__name']
     raw_id_fields = ['event_schedule', 'transaction_type']
@@ -262,7 +256,6 @@ class PriceHistoryAdmin(AbstractModelAdmin):
     master_user_path = 'instrument__master_user'
     list_display = ['id', 'master_user', 'instrument', 'pricing_policy', 'date', 'principal_price', 'accrued_price']
     list_select_related = ['instrument', 'instrument__master_user', 'pricing_policy']
-    ordering = ['instrument', 'pricing_policy', 'date']
     search_fields = ['instrument__id', 'instrument__user_code', 'instrument__name']
     list_filter = ['date']
     date_hierarchy = 'date'
@@ -311,7 +304,6 @@ class GeneratedEventAdmin(AbstractModelAdmin):
                            'strategy2', 'strategy3', 'action', 'transaction_type', 'member',)
     list_filter = ['status', 'notification_date', 'effective_date']
     date_hierarchy = 'effective_date'
-    ordering = ['master_user', 'effective_date']
     raw_id_fields = ('master_user', 'event_schedule', 'instrument', 'portfolio', 'account', 'strategy1',
                      'strategy2', 'strategy3', 'action', 'transaction_type', 'complex_transaction', 'member',)
 
@@ -324,7 +316,6 @@ class EventScheduleConfigAdmin(AbstractModelAdmin):
     master_user_path = 'master_user'
     list_display = ('id', 'master_user')
     list_select_related = ('master_user', 'notification_class',)
-    ordering = ['master_user']
     raw_id_fields = ('master_user',)
 
     # def master_user(self, obj):

@@ -14,9 +14,8 @@ class Strategy1GroupAdmin(AbstractModelAdmin):
     master_user_path = 'master_user'
     list_display = ['id', 'master_user', 'user_code', 'name', 'is_deleted', ]
     list_select_related = ['master_user']
-    ordering = ['master_user', 'user_code']
-    search_fields = ['id', 'user_code', 'name']
     list_filter = ['is_deleted', ]
+    search_fields = ['id', 'user_code', 'name']
     raw_id_fields = ['master_user']
     inlines = [
         GenericTagLinkInline,
@@ -34,9 +33,8 @@ class Strategy1SubgroupAdmin(AbstractModelAdmin):
     master_user_path = 'master_user'
     list_display = ['id', 'master_user', 'group', 'user_code', 'name', 'is_deleted', ]
     list_select_related = ['group', 'group__master_user']
-    ordering = ['master_user', 'group', 'user_code']
-    search_fields = ['id', 'user_code', 'name']
     list_filter = ['is_deleted', ]
+    search_fields = ['id', 'user_code', 'name']
     raw_id_fields = ['master_user', 'group']
     inlines = [
         GenericTagLinkInline,
@@ -54,9 +52,8 @@ class Strategy1Admin(AbstractModelAdmin):
     master_user_path = 'master_user'
     list_display = ['id', 'master_user', 'group', 'subgroup', 'user_code', 'name', 'is_deleted', ]
     list_select_related = ['subgroup', 'subgroup__group', 'subgroup__group__master_user']
-    ordering = ['master_user', 'subgroup__group', 'subgroup', 'user_code']
-    search_fields = ['id', 'user_code', 'name']
     list_filter = ['is_deleted', ]
+    search_fields = ['id', 'user_code', 'name']
     raw_id_fields = ['master_user', 'subgroup']
     inlines = [
         GenericTagLinkInline,

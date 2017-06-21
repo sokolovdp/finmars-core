@@ -12,7 +12,6 @@ from poms.obj_perms.models import GenericObjectPermission
 from poms.users.models import MasterUser, Member
 
 
-# @python_2_unicode_compatible
 # class AbstractAttributeType(NamedModel):
 #     STRING = 10
 #     NUMBER = 20
@@ -57,7 +56,6 @@ from poms.users.models import MasterUser, Member
 #         return self.name
 #
 #
-# @python_2_unicode_compatible
 # class AbstractClassifier(MPTTModel):
 #     # attribute_type
 #     # parent
@@ -74,7 +72,6 @@ from poms.users.models import MasterUser, Member
 #         return self.name
 #
 #
-# @python_2_unicode_compatible
 # class AbstractAttributeTypeOption(models.Model):
 #     # attribute_type -> actual attribute model
 #     is_hidden = models.BooleanField(default=False, verbose_name=ugettext_lazy('is hidden'))
@@ -90,7 +87,6 @@ from poms.users.models import MasterUser, Member
 #         return '%s' % (self.attribute_type,)
 #
 #
-# @python_2_unicode_compatible
 # class AbstractAttribute(models.Model):
 #     # attribute_type -> actual attribute model
 #     # content_object -> actual object

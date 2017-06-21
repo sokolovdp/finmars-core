@@ -1,11 +1,8 @@
 from __future__ import unicode_literals
 
-from django.contrib.contenttypes.models import ContentType
 from django.db import models
-from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy
 
-from poms.common.models import NamedModel, AbstractClassModel
 from poms.users.models import MasterUser
 
 
@@ -101,7 +98,6 @@ class TransactionReport(models.Model):
 #         return getattr(self.transaction, item)
 #
 #
-# @python_2_unicode_compatible
 # class BaseReportItem(object):
 #     def __init__(self, pk=None, portfolio=None, account=None, strategy1=None, strategy2=None, strategy3=None,
 #                  instrument=None, currency=None, position=0.0, transaction=None, custom_fields=None):
@@ -131,7 +127,6 @@ class TransactionReport(models.Model):
 #         return "summary"
 #
 #
-# @python_2_unicode_compatible
 # class BaseReport(object):
 #     def __init__(self, id=None, master_user=None, task_id=None, task_status=None,
 #                  report_date=None, report_currency=None, pricing_policy=None, cost_method=None,
@@ -176,7 +171,6 @@ class TransactionReport(models.Model):
 # # ----------------------------------------------------------------------------------------------------------------------
 #
 #
-# @python_2_unicode_compatible
 # class BalanceReportItem(BaseReportItem):
 #     def __init__(self, position=0.0, market_value_system_ccy=0.0, market_value_report_ccy=0.0, transaction=None, *args,
 #                  **kwargs):
@@ -221,7 +215,6 @@ class TransactionReport(models.Model):
 #             return "%s - %s" % (self.currency, self.position)
 #
 #
-# @python_2_unicode_compatible
 # class BalanceReportSummary(object):
 #     def __init__(self,
 #                  invested_value_system_ccy=0.0, current_value_system_ccy=0.0, p_l_system_ccy=0.0,
@@ -239,7 +232,6 @@ class TransactionReport(models.Model):
 #                (self.invested_value_system_ccy, self.current_value_system_ccy, self.p_l_system_ccy)
 #
 #
-# # @python_2_unicode_compatible
 # class BalanceReport(BaseReport):
 #     def __init__(self, show_transaction_details=True, summary=None, *args, **kwargs):
 #         super(BalanceReport, self).__init__(*args, **kwargs)
@@ -251,7 +243,6 @@ class TransactionReport(models.Model):
 # # ----------------------------------------------------------------------------------------------------------------------
 #
 #
-# @python_2_unicode_compatible
 # class PLReportItem(BaseReportItem):
 #     def __init__(self, principal_with_sign_system_ccy=0.0, carry_with_sign_system_ccy=0.0,
 #                  overheads_with_sign_system_ccy=0.0, total_system_ccy=0.0,
@@ -290,7 +281,6 @@ class TransactionReport(models.Model):
 #         self.total_report_ccy = total_report_ccy
 #
 #
-# # @python_2_unicode_compatible
 # class PLReport(BaseReport):
 #     def __init__(self, summary=None, *args, **kwargs):
 #         super(PLReport, self).__init__(*args, **kwargs)
@@ -311,7 +301,6 @@ class TransactionReport(models.Model):
 #         self.cost_system_ccy = cost_system_ccy
 #
 #
-# # @python_2_unicode_compatible
 # class CostReport(BaseReport):
 #     def __init__(self, *args, **kwargs):
 #         super(CostReport, self).__init__(*args, **kwargs)
@@ -328,7 +317,6 @@ class TransactionReport(models.Model):
 #         self.time_invested = time_invested
 #
 #
-# # @python_2_unicode_compatible
 # class YTMReport(BaseReport):
 #     def __init__(self, *args, **kwargs):
 #         super(YTMReport, self).__init__(*args, **kwargs)

@@ -14,10 +14,9 @@ class CurrencyAdmin(AbstractModelAdmin):
     master_user_path = 'master_user'
     list_display = ['id', 'master_user', 'user_code', 'name', 'is_deleted', ]
     list_select_related = ['master_user']
-    search_fields = ['id', 'user_code', 'name']
     list_filter = ['is_deleted', ]
+    search_fields = ['id', 'user_code', 'name']
     raw_id_fields = ['master_user', 'price_download_scheme']
-    ordering = ['master_user', 'user_code']
     inlines = [
         GenericAttributeInline,
         GenericTagLinkInline,
@@ -38,9 +37,8 @@ class CurrencyHistoryAdmin(AbstractModelAdmin):
     master_user_path = 'currency__master_user'
     list_display = ['id', 'master_user', 'currency', 'pricing_policy', 'date', 'fx_rate']
     list_select_related = ['currency', 'currency__master_user']
-    ordering = ['currency', 'pricing_policy', 'date']
-    search_fields = ['currency__id', 'currency__user_code', 'currency__name']
     list_filter = ['date', ]
+    search_fields = ['currency__id', 'currency__user_code', 'currency__name']
     date_hierarchy = 'date'
     raw_id_fields = ['currency', 'pricing_policy']
 

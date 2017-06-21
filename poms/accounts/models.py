@@ -2,7 +2,6 @@ from __future__ import unicode_literals, print_function
 
 from django.contrib.contenttypes.fields import GenericRelation
 from django.db import models
-from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy
 from mptt.models import MPTTModel
 
@@ -14,7 +13,6 @@ from poms.tags.models import TagLink
 from poms.users.models import MasterUser, Member
 
 
-@python_2_unicode_compatible
 class AccountType(NamedModel, FakeDeletableModel):
     master_user = models.ForeignKey(MasterUser, related_name='account_types', verbose_name=ugettext_lazy('master user'))
     show_transaction_details = models.BooleanField(default=False,
@@ -56,7 +54,6 @@ class AccountType(NamedModel, FakeDeletableModel):
 #         verbose_name_plural = ugettext_lazy('account types - group permissions')
 
 
-@python_2_unicode_compatible
 class Account(NamedModel, FakeDeletableModel):
     master_user = models.ForeignKey(MasterUser, related_name='accounts', verbose_name=ugettext_lazy('master user'))
     type = models.ForeignKey(AccountType, on_delete=models.PROTECT, null=True, blank=True,

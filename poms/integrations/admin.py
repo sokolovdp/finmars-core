@@ -57,7 +57,6 @@ class InstrumentDownloadSchemeAdmin(AbstractModelAdmin):
     master_user_path = 'master_user'
     list_display = ['id', 'master_user', 'provider', 'scheme_name', 'fields0']
     list_select_related = ['master_user', 'provider', ]
-    ordering = ['master_user', 'provider', 'scheme_name']
     list_filter = ['provider']
     search_fields = ['id', 'scheme_name', ]
     raw_id_fields = ['master_user', 'price_download_scheme']
@@ -86,7 +85,6 @@ class PriceDownloadSchemeAdmin(AbstractModelAdmin):
                     'instrument_history_fields0', 'currency_history_fields0']
     list_select_related = ['master_user', 'provider']
     list_filter = ['provider']
-    ordering = ['master_user', 'provider', 'scheme_name']
     search_fields = ['id', 'scheme_name']
     raw_id_fields = ['master_user']
 
@@ -126,7 +124,6 @@ class AbstractMappingAdmin(AbstractModelAdmin):
     list_display = ['id', 'master_user', 'provider', 'value', 'content_object', ]
     list_select_related = ['master_user', 'provider', 'content_object', ]
     raw_id_fields = ['master_user', 'content_object', ]
-    ordering = ['master_user', 'content_object', 'value', ]
     search_fields = ['value', ]
 
 
@@ -230,7 +227,6 @@ class TaskAdmin(AbstractModelAdmin):
     list_display = ['id', 'parent', 'created', 'status', 'master_user', 'member', 'provider', 'action',
                     'response_id']
     list_select_related = ['parent', 'master_user', 'member', 'provider']
-    ordering = ['-created']
     raw_id_fields = ['master_user', 'member', 'parent']
     search_fields = ['response_id', ]
     list_filter = ['provider', 'created', 'action', 'status', ]
@@ -259,7 +255,6 @@ class PricingAutomatedScheduleAdmin(AbstractModelAdmin):
     list_display = ['id', 'master_user', 'is_enabled', 'cron_expr', 'last_run_at', 'next_run_at', 'last_run_task_url']
     list_select_related = ['master_user', ]
     list_filter = ['is_enabled', 'last_run_at', 'next_run_at']
-    ordering = ['master_user']
     date_hierarchy = 'next_run_at'
     raw_id_fields = ['master_user', ]
 

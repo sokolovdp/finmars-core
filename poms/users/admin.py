@@ -68,7 +68,6 @@ class MasterUserAdmin(AbstractModelAdmin):
     ]
     list_display = ['id', 'name', 'set_activate_link']
     list_filter = (MasterUserIsActiveFilter,)
-    ordering = ['name']
     search_fields = ['id', 'name']
     raw_id_fields = [
         'system_currency', 'currency', 'account_type', 'account', 'counterparty_group', 'counterparty',
@@ -197,7 +196,6 @@ class MemberAdmin(AbstractModelAdmin):
     master_user_path = 'master_user'
     list_display = ['id', 'master_user', 'user', 'is_deleted', 'is_owner', 'is_admin']
     list_select_related = ['master_user', 'user']
-    ordering = ['master_user', 'user', ]
     list_filter = ['is_deleted', 'is_owner', 'is_admin']
     raw_id_fields = ['master_user', 'user', 'groups']
 
@@ -292,8 +290,6 @@ class GroupAdmin(AbstractModelAdmin):
     master_user_path = 'master_user'
     list_display = ['id', 'master_user', 'name', ]
     list_select_related = ['master_user']
-    ordering = ['master_user', 'name']
-    # filter_horizontal = ['permissions']
     raw_id_fields = ['master_user']
 
     # def formfield_for_manytomany(self, db_field, request=None, **kwargs):
@@ -311,7 +307,6 @@ class FakeSequenceAdmin(AbstractModelAdmin):
     master_user_path = 'master_user'
     list_display = ['id', 'master_user', 'name', 'value']
     list_select_related = ['master_user']
-    ordering = ['master_user', 'name']
     raw_id_fields = ['master_user']
     readonly_fields = ['master_user', 'name', 'value']
 

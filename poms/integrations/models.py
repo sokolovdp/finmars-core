@@ -12,7 +12,6 @@ from django.core.exceptions import ValidationError
 from django.core.serializers.json import DjangoJSONEncoder
 from django.db import models
 from django.utils import timezone
-from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext, ugettext_lazy
 
 from poms.common.models import TimeStampedModel, AbstractClassModel, EXPRESSION_FIELD_LENGTH
@@ -125,7 +124,6 @@ class ImportConfig(models.Model):
         return (self.has_p12cert and self.has_password) or (self.has_cert and self.has_key)
 
 
-@python_2_unicode_compatible
 class InstrumentDownloadScheme(models.Model):
     BASIC_FIELDS = [
         'reference_for_pricing', 'user_code', 'name', 'short_name', 'public_name', 'notes', 'instrument_type',
@@ -227,7 +225,6 @@ class InstrumentDownloadSchemeInput(models.Model):
             force_insert=force_insert, force_update=force_update, using=using, update_fields=update_fields)
 
 
-@python_2_unicode_compatible
 class InstrumentDownloadSchemeAttribute(models.Model):
     scheme = models.ForeignKey(InstrumentDownloadScheme, related_name='attributes',
                                verbose_name=ugettext_lazy('scheme'))
@@ -576,7 +573,6 @@ class PriceDownloadSchemeMapping(AbstractMapping):
 # -------
 
 
-@python_2_unicode_compatible
 class Task(TimeStampedModel):
     ACTION_INSTRUMENT = 'instrument'
     ACTION_PRICING = 'pricing'

@@ -13,8 +13,8 @@ class PortfolioAdmin(AbstractModelAdmin):
     master_user_path = 'master_user'
     list_display = ['id', 'master_user', 'user_code', 'name', 'is_deleted', ]
     list_select_related = ['master_user']
-    search_fields = ['id', 'user_code', 'name']
     list_filter = ['is_deleted', ]
+    search_fields = ['id', 'user_code', 'name']
     raw_id_fields = ['master_user', 'accounts', 'responsibles', 'counterparties', 'transaction_types']
     inlines = [
         # AbstractAttributeInline,

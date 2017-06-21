@@ -30,8 +30,8 @@ class TransactionTypeGroupAdmin(AbstractModelAdmin):
     master_user_path = 'master_user'
     list_display = ['id', 'master_user', 'user_code', 'name', 'is_deleted', ]
     list_select_related = ['master_user']
-    search_fields = ['id', 'user_code', 'name']
     list_filter = ['is_deleted', ]
+    search_fields = ['id', 'user_code', 'name']
     raw_id_fields = ['master_user']
     inlines = [
         GenericObjectPermissionInline,
@@ -48,7 +48,6 @@ class TransactionTypeInputAdmin(AbstractModelAdmin):
     master_user_path = 'transaction_type__master_user'
     list_display = ['id', 'master_user', 'transaction_type', 'order', 'name', 'value_type', 'content_type']
     list_select_related = ['transaction_type', 'transaction_type__master_user']
-    ordering = ['transaction_type__master_user', 'transaction_type', 'name']
     search_fields = ['id', 'name']
     raw_id_fields = ['transaction_type']
 
@@ -65,8 +64,8 @@ class TransactionTypeActionInstrumentAdmin(AbstractModelAdmin):
     model = TransactionTypeActionInstrument
     master_user_path = 'transaction_type__master_user'
     list_display = ['id', 'master_user', 'transaction_type', 'order', 'action_notes']
-    search_fields = ['id']
     list_select_related = ['transaction_type', 'transaction_type__master_user']
+    search_fields = ['id']
     raw_id_fields = ['transaction_type']
 
     def master_user(self, obj):
@@ -82,8 +81,8 @@ class TransactionTypeActionTransactionAdmin(AbstractModelAdmin):
     model = TransactionTypeActionTransaction
     master_user_path = 'transaction_type__master_user'
     list_display = ['id', 'master_user', 'transaction_type', 'order', 'action_notes']
-    search_fields = ['id']
     list_select_related = ['transaction_type', 'transaction_type__master_user']
+    search_fields = ['id']
     raw_id_fields = ['transaction_type']
 
     def master_user(self, obj):
@@ -259,9 +258,8 @@ class TransactionTypeAdmin(AbstractModelAdmin):
     master_user_path = 'master_user'
     list_display = ['id', 'master_user', 'user_code', 'name', 'is_deleted', ]
     list_select_related = ['master_user']
-    ordering = ['master_user', 'group', 'user_code']
-    search_fields = ['id', 'user_code', 'name']
     list_filter = ['is_deleted', ]
+    search_fields = ['id', 'user_code', 'name']
     raw_id_fields = ['master_user', 'group', 'instrument_types']
     inlines = [
         TransactionTypeInputInline,
@@ -325,10 +323,9 @@ class ComplexTransactionAdmin(AbstractModelAdmin):
     master_user_path = 'transaction_type__master_user'
     list_display = ['id', 'master_user', 'date', 'transaction_type', 'code', 'status', 'is_deleted', ]
     list_select_related = ['transaction_type', 'transaction_type__master_user']
-    ordering = ['transaction_type', 'code']
+    list_filter = ['is_deleted', 'date', ]
     search_fields = ['id']
     raw_id_fields = ['transaction_type']
-    list_filter = ['is_deleted', 'date', ]
     inlines = [GenericAttributeInline, TransactionInline, ComplexTransactionInputInline, ]
     save_as = True
 
@@ -400,8 +397,8 @@ class TransactionAdmin(AbstractModelAdmin):
         'linked_instrument',
         'allocation_balance', 'allocation_pl',
     ]
-    search_fields = ['id']
     list_filter = ['is_deleted', 'transaction_date', ]
+    search_fields = ['id']
     date_hierarchy = 'transaction_date'
     raw_id_fields = [
         'master_user', 'complex_transaction', 'instrument', 'transaction_currency', 'settlement_currency',
@@ -475,7 +472,6 @@ class ExternalCashFlowAdmin(AbstractModelAdmin):
     master_user_path = 'master_user'
     list_display = ['id', 'master_user', 'portfolio', 'account', 'currency', 'date', 'amount']
     list_select_related = ['master_user', 'portfolio', 'account', 'currency', ]
-    ordering = ['master_user', 'portfolio', 'account', 'currency', 'date']
     date_hierarchy = 'date'
     inlines = [ExternalCashFlowStrategyInline]
     raw_id_fields = ['master_user', 'portfolio', 'account', 'currency']

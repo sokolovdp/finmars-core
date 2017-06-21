@@ -110,7 +110,7 @@ class PerformancePeriod:
             item = self.get_by_trn_pos(trn)
             if trn.period_key == self.period_key:
                 item.mkt_val_res += trn.instr_mkt_val_res
-                item.src_trns_id.add(trn.pk)
+                item.add_src_trn(trn)
 
     def nav_add(self, trn):
         # is_nav_period_start = trn.period_key < self.period_key
@@ -164,7 +164,7 @@ class PerformancePeriod:
             # if is_nav_period_start:
             #     item.nav_period_start += trn.instr_mkt_val_res
             item.nav_period_end += trn.instr_mkt_val_res
-            item.src_trns_id.add(trn.pk)
+            item.add_src_trn(trn)
 
     def pl_add(self, trn):
         pos_item = self.get_by_trn_pos(trn)
@@ -172,12 +172,12 @@ class PerformancePeriod:
             # = [Cash Consideration] * Current FX ratre of the Sttlm Ccy  / Current FX rate of the Reporting Ccy -
             # [Cash Consideration]  * [Reference FX rate] * Hist FX  rate of the Transact Ccy / Hist FX rate of the Reportin Ccy
             pos_item.accumulated_pl += trn.cash_res - trn.cash * trn.ref_fx * trn.trn_ccy_cur_fx
-            pos_item.src_trns_id.add(trn.pk)
+            pos_item.add_src_trn(trn)
 
         else:
             # =( Principal + Carry + Overheads) * Current FX ratre of the Sttlm Ccy / Current FX  rate of the Reporting ccy
             pos_item.accumulated_pl += trn.total_res
-            pos_item.src_trns_id.add(trn.pk)
+            pos_item.add_src_trn(trn)
 
     def cash_in_out_add(self, trn):
         # cash_flow = trn.total_res
@@ -210,14 +210,14 @@ class PerformancePeriod:
         cash_item.cash_outflows += cash_cash_out
         cash_item.time_weighted_cash_inflows += cash_cash_in * trn.period_time_weight
         cash_item.time_weighted_cash_outflows += cash_cash_out * trn.period_time_weight
-        cash_item.src_trns_id.add(trn.pk)
+        cash_item.add_src_trn(trn)
 
         pos_item = self.get_by_trn_pos(trn)
         pos_item.cash_inflows += pos_cash_in
         pos_item.cash_outflows += pos_cash_out
         pos_item.time_weighted_cash_inflows += pos_cash_in * trn.period_time_weight
         pos_item.time_weighted_cash_outflows += pos_cash_out * trn.period_time_weight
-        pos_item.src_trns_id.add(trn.pk)
+        pos_item.add_src_trn(trn)
 
     def close(self, prev_periods):
         prev_period = prev_periods[-1] if prev_periods else None
@@ -458,6 +458,10 @@ class PerformanceReportItem(BaseReportItem):
     #
     #     # self.cumulative_return_nav = 0
     #     pass
+
+    def add_src_trn(self, trn):
+        if trn.trn:
+            self.src_trns_id.add(trn.trn.pk)
 
     def eval_custom_fields(self):
         # use optimization inside serialization

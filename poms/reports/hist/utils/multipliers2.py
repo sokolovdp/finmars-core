@@ -4,7 +4,6 @@ from __future__ import unicode_literals, division, print_function
 DEBUG = False
 
 
-# @python_2_unicode_compatible
 class Transaction0(object):
     def __init__(self, instrument="", position_size_with_sign=0., principal_with_sign=0.):
         self.instrument = instrument

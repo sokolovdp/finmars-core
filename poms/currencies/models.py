@@ -6,7 +6,6 @@ import os
 from django.conf import settings
 from django.contrib.contenttypes.fields import GenericRelation
 from django.db import models
-from django.utils.encoding import python_2_unicode_compatible
 from django.utils.functional import SimpleLazyObject
 from django.utils.translation import ugettext_lazy
 
@@ -30,7 +29,6 @@ def _load_currencies_data():
 currencies_data = SimpleLazyObject(_load_currencies_data)
 
 
-@python_2_unicode_compatible
 class Currency(NamedModel, FakeDeletableModel):
     master_user = models.ForeignKey(MasterUser, related_name='currencies', verbose_name=ugettext_lazy('master user'))
     reference_for_pricing = models.CharField(max_length=100, blank=True, default='',
@@ -81,7 +79,6 @@ class Currency(NamedModel, FakeDeletableModel):
 # EUR -> USD
 # RUB -> USD
 # ...
-@python_2_unicode_compatible
 class CurrencyHistory(models.Model):
     currency = models.ForeignKey(Currency, related_name='histories', verbose_name=ugettext_lazy('currency'))
     pricing_policy = models.ForeignKey('instruments.PricingPolicy', on_delete=models.PROTECT, null=True, blank=True,

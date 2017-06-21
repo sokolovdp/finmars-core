@@ -850,11 +850,14 @@ class ReportItem(YTMMixin, BaseReportItem):
             self.pricing_ccy_cur = self.fx_rate_provider[self.pricing_ccy]
             self.pricing_ccy_cur_fx = self.pricing_ccy_cur.fx_rate * report_ccy_cur_fx
 
-    def add(self, o):
+    def add_src_trn(self, trn):
         if self.src_trns_id is None:
             self.src_trns_id = set()
-        if o.trn:
-            self.src_trns_id.add(o.trn.pk)
+        if trn.trn:
+            self.src_trns_id.add(trn.trn.pk)
+
+    def add(self, o):
+        self.add_src_trn(o.trn)
 
         # ------------------
         # P&L in report ccy

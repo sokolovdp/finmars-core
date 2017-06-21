@@ -39,7 +39,8 @@ def object_history_content_type_choices():
     queryset = ContentType.objects.all().order_by('app_label', 'model').filter(
         pk__in=get_history_model_content_type_list())
     for c in queryset:
-        yield '%s.%s' % (c.app_label, c.model), c.model_class()._meta.verbose_name
+        if c.model_class():
+            yield '%s.%s' % (c.app_label, c.model), c.model_class()._meta.verbose_name
 
 
 class ObjectHistory4ContentTypeMultipleChoiceFilter(django_filters.MultipleChoiceFilter):

@@ -2,7 +2,6 @@ from __future__ import unicode_literals
 
 from django.contrib.contenttypes.fields import GenericRelation
 from django.db import models
-from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy
 from mptt.models import MPTTModel
 
@@ -13,7 +12,6 @@ from poms.tags.models import TagLink
 from poms.users.models import MasterUser, Member
 
 
-@python_2_unicode_compatible
 class CounterpartyGroup(NamedModel, FakeDeletableModel):
     master_user = models.ForeignKey(MasterUser, related_name='counterparty_groups',
                                     verbose_name=ugettext_lazy('master user'))
@@ -52,7 +50,6 @@ class CounterpartyGroup(NamedModel, FakeDeletableModel):
 #         verbose_name_plural = ugettext_lazy('counterparty groups - group permissions')
 
 
-@python_2_unicode_compatible
 class Counterparty(NamedModel, FakeDeletableModel):
     master_user = models.ForeignKey(MasterUser, related_name='counterparties',
                                     verbose_name=ugettext_lazy('master user'))
@@ -165,7 +162,6 @@ class Counterparty(NamedModel, FakeDeletableModel):
 # -----
 
 
-@python_2_unicode_compatible
 class ResponsibleGroup(NamedModel, FakeDeletableModel):
     master_user = models.ForeignKey(MasterUser, related_name='responsible_groups',
                                     verbose_name=ugettext_lazy('master user'))
@@ -204,7 +200,6 @@ class ResponsibleGroup(NamedModel, FakeDeletableModel):
 #         verbose_name_plural = ugettext_lazy('responsible groups - group permissions')
 
 
-@python_2_unicode_compatible
 class Responsible(NamedModel, FakeDeletableModel):
     master_user = models.ForeignKey(MasterUser, related_name='responsibles', verbose_name=ugettext_lazy('master user'))
     group = models.ForeignKey(ResponsibleGroup, related_name='responsibles', null=True, blank=True,

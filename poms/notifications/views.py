@@ -1,6 +1,7 @@
 from __future__ import unicode_literals
 
 import django_filters
+from django.contrib.contenttypes.models import ContentType
 from django.utils import timezone
 from django_filters.widgets import BooleanWidget
 from rest_framework import serializers
@@ -11,7 +12,7 @@ from rest_framework.response import Response
 
 from poms.common.filters import CharFilter, NoOpFilter
 from poms.common.views import AbstractReadOnlyModelViewSet
-from poms.notifications.filters import NotificationFilter
+from poms.notifications.filters import NotificationFilter, NotificationContentTypeMultipleChoiceFilter
 from poms.notifications.models import Notification
 from poms.notifications.serializers import NotificationSerializer
 
@@ -19,9 +20,15 @@ from poms.notifications.serializers import NotificationSerializer
 class NotificationFilterSet(FilterSet):
     id = NoOpFilter()
     all = NoOpFilter(widget=BooleanWidget())
-    verb = CharFilter()
     create_date = django_filters.DateFromToRangeFilter()
     read_date = django_filters.DateFromToRangeFilter()
+    actor_content_type = NotificationContentTypeMultipleChoiceFilter()
+    actor_object_id = django_filters.CharFilter()
+    verb = CharFilter()
+    action_object_content_type = NotificationContentTypeMultipleChoiceFilter()
+    action_object_object_id = django_filters.CharFilter()
+    target_content_type = NotificationContentTypeMultipleChoiceFilter()
+    target_object_id = django_filters.CharFilter()
 
     class Meta:
         model = Notification

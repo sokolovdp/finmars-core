@@ -9,14 +9,12 @@ from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
 from django.utils import timezone
-from django.utils.encoding import python_2_unicode_compatible
 from django.utils.text import Truncator
 from django.utils.translation import get_language, ugettext_lazy, ugettext
 
 from poms.notifications import LEVELS
 
 
-@python_2_unicode_compatible
 class NotificationSetting(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='notification_settings')
     member = models.ForeignKey('users.Member', related_name='notification_settings', null=True)
@@ -39,7 +37,6 @@ class NotificationSetting(models.Model):
 # Verb          :  The verb phrase that identifies the action of the activity.
 # Action Object :  The object linked to the action itself.
 # Target        :  The object to which the activity was performed.
-@python_2_unicode_compatible
 class Notification(models.Model):
     recipient = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='notifications', blank=False,
                                   verbose_name=ugettext_lazy('recipient'))
@@ -127,7 +124,6 @@ class Notification(models.Model):
 
 # v4 ---
 
-@python_2_unicode_compatible
 class Notification4Class(models.Model):
     code = models.CharField(max_length=30, unique=True)
     name = models.CharField(max_length=255)
@@ -139,7 +135,6 @@ class Notification4Class(models.Model):
         return self.name
 
 
-@python_2_unicode_compatible
 class Notification4Setting(models.Model):
     member = models.ForeignKey('users.Member', related_name='notification4_settings')
     notification_class = models.ForeignKey(Notification4Class)
@@ -165,7 +160,6 @@ class Notification4Setting(models.Model):
             return obj.is_email_enabled
 
 
-@python_2_unicode_compatible
 class Notification4(models.Model):
     recipient = models.ForeignKey('users.Member', related_name='notifications4')
     notification_class = models.ForeignKey(Notification4Class, related_name='notifications4', on_delete=models.PROTECT)
