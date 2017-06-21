@@ -348,9 +348,10 @@ class FullDataCloner(object):
 
         self._simple_list_clone(TransactionTypeInput, 'transaction_type__master_user',
                                 'transaction_type', 'name', 'verbose_name', 'value_type', 'content_type',
-                                'order', 'is_fill_from_context', 'value', 'account', 'instrument_type', 'instrument',
-                                'currency', 'counterparty', 'responsible', 'portfolio', 'strategy1', 'strategy2',
-                                'strategy3', 'daily_pricing_model', 'payment_size_detail', 'price_download_scheme')
+                                'order', 'value_expr', 'is_fill_from_context', 'value', 'account', 'instrument_type',
+                                'instrument', 'currency', 'counterparty', 'responsible', 'portfolio', 'strategy1',
+                                'strategy2', 'strategy3', 'daily_pricing_model', 'payment_size_detail',
+                                'price_download_scheme')
 
         self._simple_list_clone(TransactionTypeActionInstrument, 'transaction_type__master_user',
                                 'transaction_type', 'order', 'action_notes',
