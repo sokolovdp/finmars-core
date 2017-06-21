@@ -124,16 +124,16 @@ def deactivate():
                     check_perms = _is_has_object_permissions(original_instance)
                     if is_send:
                         if e.action_flag == ObjectHistory4Entry.ADDITION:
-                            send_instance_created(master_user=user.master_user, member=user.member,
-                                                  instance=original_instance, check_perms=check_perms)
+                            send_instance_created(user.master_user, user.member, original_instance,
+                                                  check_perms=check_perms)
                         elif e.action_flag == ObjectHistory4Entry.CHANGE:
                             if original_instance.id not in changed_notif_already_sent:
-                                send_instance_changed(master_user=user.master_user, member=user.member,
-                                                      instance=original_instance, check_perms=check_perms)
+                                send_instance_changed(user.master_user, user.member, original_instance,
+                                                      check_perms=check_perms)
                                 changed_notif_already_sent.add(original_instance.id)
                         elif e.action_flag == ObjectHistory4Entry.DELETION:
-                            send_instance_deleted(master_user=user.master_user, member=user.member,
-                                                  instance=original_instance, check_perms=check_perms)
+                            send_instance_deleted(user.master_user, user.member, original_instance,
+                                                  check_perms=check_perms)
         else:
             _l.debug('actor_content_object is not defined (maybe registration)')
 
