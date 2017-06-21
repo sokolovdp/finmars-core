@@ -853,8 +853,8 @@ class ReportItem(YTMMixin, BaseReportItem):
     def add_src_trn(self, trn):
         if self.src_trns_id is None:
             self.src_trns_id = set()
-        if trn and not trn.is_cloned:
-            self.src_trns_id.add(trn.pk)
+        if trn.trn:
+            self.src_trns_id.add(trn.trn.pk)
 
     def add(self, o):
         self.add_src_trn(o.trn)

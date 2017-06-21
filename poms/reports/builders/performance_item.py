@@ -460,8 +460,8 @@ class PerformanceReportItem(BaseReportItem):
     #     pass
 
     def add_src_trn(self, trn):
-        if trn and not trn.is_cloned:
-            self.src_trns_id.add(trn.pk)
+        if trn.trn:
+            self.src_trns_id.add(trn.trn.pk)
 
     def eval_custom_fields(self):
         # use optimization inside serialization

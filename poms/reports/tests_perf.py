@@ -62,6 +62,7 @@ class PerfReportTestCase(AbstractReportTestMixin, TestCase):
         'strategy1',
         'strategy2',
         'strategy3',
+        'src_trns_id',
         'return_pl',
         'return_nav',
         'accumulated_pl',

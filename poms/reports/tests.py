@@ -593,6 +593,7 @@ class ReportTestCase(TestCase):
         'str1',
         'str2',
         'str3',
+        'src_trns_id',
         # 'custom_fields',
         # 'is_empty',
         'pricing_ccy',
@@ -735,6 +736,7 @@ class ReportTestCase(TestCase):
         # 'str1',
         # 'str2',
         # 'str3',
+        'src_trns_id',
         # 'custom_fields',
         # 'is_empty',
         # 'pricing_ccy',
@@ -2644,7 +2646,7 @@ class ReportTestCase(TestCase):
         b.build_balance()
         self._dump(b, 'test_approach_alloc_1')
 
-    def _test_approach_str1_0(self):
+    def test_approach_str1_0(self):
         self.bond0.user_code = 'I1'
         self.bond0.price_multiplier = 5.0
         self.bond0.accrued_multiplier = 0.0
@@ -2816,7 +2818,7 @@ class ReportTestCase(TestCase):
         b.build_balance()
         self._dump(b, 'test_pl_date_interval_1: pl_first_date abd report_date', show_trns=show_trns)
 
-    def _test_perfomance(self):
+    def _test_performance(self):
         # from django.conf import settings
         # settings.DEBUG = True
 
@@ -2941,7 +2943,7 @@ class ReportTestCase(TestCase):
         # as_json(r)
         pass
 
-    def test_ytm(self):
+    def _test_ytm(self):
         instr = self._instr('instr_ytm', pricing_ccy=self.gbp, price_mult=0.01, accrued_ccy=self.eur,
                             accrued_mult=0.005, maturity_date=date(2017, 12, 31), maturity_price=50)
 
