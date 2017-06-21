@@ -315,6 +315,13 @@ def has_perm(member, obj, perm):
     return perm in obj_perms
 
 
+def has_any_perms(member, obj):
+    if member.is_superuser:
+        return True
+    perms = get_all_perms(obj)
+    return has_perms(member, obj, perms)
+
+
 def has_view_perms(member, obj):
     if member.is_superuser:
         return True
