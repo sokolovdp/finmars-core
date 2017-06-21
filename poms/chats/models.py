@@ -6,7 +6,6 @@ from django.conf import settings
 from django.contrib.contenttypes.fields import GenericRelation
 from django.db import models
 from django.utils import timezone
-from django.utils.encoding import python_2_unicode_compatible
 from django.utils.text import Truncator
 from django.utils.translation import get_language, ugettext_lazy
 
@@ -16,7 +15,6 @@ from poms.tags.models import TagLink
 from poms.users.models import MasterUser, Member
 
 
-@python_2_unicode_compatible
 class ThreadGroup(FakeDeletableModel, models.Model):
     master_user = models.ForeignKey(MasterUser, related_name='chat_thread_groups',
                                     verbose_name=ugettext_lazy('master user'))
@@ -56,7 +54,6 @@ class ThreadGroup(FakeDeletableModel, models.Model):
 #         verbose_name_plural = ugettext_lazy('thread groups - group permissions')
 
 
-@python_2_unicode_compatible
 class Thread(TimeStampedModel, FakeDeletableModel):
     master_user = models.ForeignKey(MasterUser, related_name='chat_threads', verbose_name=ugettext_lazy('master user'))
     thread_group = models.ForeignKey(ThreadGroup, related_name='groups', null=True, blank=True,
@@ -99,7 +96,6 @@ class Thread(TimeStampedModel, FakeDeletableModel):
 #         verbose_name_plural = ugettext_lazy('threads - group permissions')
 
 
-@python_2_unicode_compatible
 class Message(TimeStampedModel):
     thread = models.ForeignKey(Thread, related_name='messages', verbose_name=ugettext_lazy('thread'))
     sender = models.ForeignKey(Member, related_name='chat_sent_messages', verbose_name=ugettext_lazy('sender'))
@@ -126,7 +122,6 @@ class Message(TimeStampedModel):
         return format_timedelta(self.created - timezone.now(), add_direction=True, locale=locale)
 
 
-@python_2_unicode_compatible
 class DirectMessage(TimeStampedModel):
     # recipient = models.ForeignKey(
     #     settings.AUTH_USER_MODEL,

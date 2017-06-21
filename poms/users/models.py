@@ -6,7 +6,6 @@ from django.contrib.auth.models import User, Permission
 from django.db import models
 from django.db.models.signals import post_save
 from django.dispatch import receiver
-from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy
 
 from poms.common.models import NamedModel, FakeDeletableModel
@@ -28,7 +27,6 @@ class MasterUserManager(models.Manager):
         return obj
 
 
-@python_2_unicode_compatible
 class MasterUser(models.Model):
     name = models.CharField(max_length=255, null=True, blank=True,
                             verbose_name=ugettext_lazy('name'))
@@ -300,7 +298,6 @@ class MasterUser(models.Model):
                     CurrencyMapping.objects.create(master_user=self, provider=bloomberg, value=dc_bloomberg, currency=c)
 
 
-@python_2_unicode_compatible
 class Member(FakeDeletableModel):
     master_user = models.ForeignKey(MasterUser, related_name='members', verbose_name=ugettext_lazy('master user'))
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
@@ -350,7 +347,6 @@ class Member(FakeDeletableModel):
             return self.username
 
 
-@python_2_unicode_compatible
 class UserProfile(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, related_name='profile',
                                 verbose_name=ugettext_lazy('user'))
@@ -367,7 +363,6 @@ class UserProfile(models.Model):
         return self.user.username
 
 
-@python_2_unicode_compatible
 class Group(models.Model):
     master_user = models.ForeignKey(MasterUser, related_name='groups', verbose_name=ugettext_lazy('master user'), )
     name = models.CharField(max_length=80, verbose_name=ugettext_lazy('name'))
@@ -390,7 +385,6 @@ class Group(models.Model):
         return self.name
 
 
-@python_2_unicode_compatible
 class FakeSequence(models.Model):
     master_user = models.ForeignKey(MasterUser, related_name='fake_sequences',
                                     verbose_name=ugettext_lazy('master user'), )

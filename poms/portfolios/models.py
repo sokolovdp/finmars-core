@@ -2,7 +2,6 @@ from __future__ import unicode_literals
 
 from django.contrib.contenttypes.fields import GenericRelation
 from django.db import models
-from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy
 
 from poms.common.models import NamedModel, FakeDeletableModel
@@ -12,7 +11,6 @@ from poms.tags.models import TagLink
 from poms.users.models import MasterUser, Member
 
 
-@python_2_unicode_compatible
 class Portfolio(NamedModel, FakeDeletableModel):
     master_user = models.ForeignKey(MasterUser, related_name='portfolios', verbose_name=ugettext_lazy('master user'))
     accounts = models.ManyToManyField('accounts.Account', related_name='portfolios', blank=True,

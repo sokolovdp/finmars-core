@@ -7,7 +7,6 @@ from django.contrib.contenttypes.fields import GenericRelation
 from django.contrib.contenttypes.models import ContentType
 from django.core.serializers.json import DjangoJSONEncoder
 from django.db import models
-from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy
 from mptt.models import MPTTModel
 
@@ -424,7 +423,6 @@ class TransactionType(NamedModel, FakeDeletableModel):
 # pos - number
 # price - number
 # acc - content_type:account
-@python_2_unicode_compatible
 class TransactionTypeInput(models.Model):
     STRING = 10
     NUMBER = 20
@@ -538,7 +536,6 @@ class TransactionTypeInput(models.Model):
                                                              TransactionTypeInput.NUMBER]
 
 
-@python_2_unicode_compatible
 class TransactionTypeAction(models.Model):
     transaction_type = models.ForeignKey(TransactionType, related_name='actions', on_delete=models.PROTECT,
                                          verbose_name=ugettext_lazy('transaction type'))
@@ -809,7 +806,6 @@ class EventToHandle(NamedModel):
         verbose_name_plural = ugettext_lazy('events to handle')
 
 
-@python_2_unicode_compatible
 class ComplexTransaction(FakeDeletableModel):
     PRODUCTION = 1
     PENDING = 2
@@ -892,7 +888,6 @@ class ComplexTransactionInput(models.Model):
         ]
 
 
-@python_2_unicode_compatible
 class Transaction(FakeDeletableModel):
     master_user = models.ForeignKey(MasterUser, related_name='transactions', verbose_name=ugettext_lazy('master user'))
     complex_transaction = models.ForeignKey(ComplexTransaction, on_delete=models.SET_NULL, null=True, blank=True,
@@ -1162,7 +1157,6 @@ class Transaction(FakeDeletableModel):
 #         verbose_name_plural = ugettext_lazy('transaction attributes')
 
 
-@python_2_unicode_compatible
 class ExternalCashFlow(models.Model):
     master_user = models.ForeignKey(MasterUser, related_name='external_cash_flows',
                                     verbose_name=ugettext_lazy('master user'))
@@ -1187,7 +1181,6 @@ class ExternalCashFlow(models.Model):
                                                self.currency, self.amount)
 
 
-@python_2_unicode_compatible
 class ExternalCashFlowStrategy(models.Model):
     external_cash_flow = models.ForeignKey(ExternalCashFlow, related_name='strategies',
                                            verbose_name=ugettext_lazy("external cash flow"))

@@ -1,7 +1,6 @@
 from __future__ import unicode_literals
 
 from django.db import models
-from django.utils.encoding import python_2_unicode_compatible
 from django.utils.text import Truncator
 from django.utils.translation import ugettext_lazy
 
@@ -9,7 +8,6 @@ from django.utils.translation import ugettext_lazy
 EXPRESSION_FIELD_LENGTH = 1024
 
 
-@python_2_unicode_compatible
 class NamedModel(models.Model):
     user_code = models.CharField(max_length=25, null=True, blank=True, verbose_name=ugettext_lazy('user code'))
     name = models.CharField(max_length=255, verbose_name=ugettext_lazy('name'))
@@ -48,7 +46,6 @@ class TimeStampedModel(models.Model):
         ordering = ['created', ]
 
 
-@python_2_unicode_compatible
 class AbstractClassModel(models.Model):
     id = models.PositiveSmallIntegerField(primary_key=True, verbose_name=ugettext_lazy('ID'))
     system_code = models.CharField(max_length=255, unique=True, verbose_name=ugettext_lazy('system code'))

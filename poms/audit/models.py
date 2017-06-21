@@ -5,11 +5,9 @@ from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import FieldDoesNotExist
 from django.db import models
-from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy
 
 
-@python_2_unicode_compatible
 class AuthLogEntry(models.Model):
     date = models.DateTimeField(auto_now_add=True, db_index=True, verbose_name=ugettext_lazy('date'))
     user = models.ForeignKey(settings.AUTH_USER_MODEL, verbose_name=ugettext_lazy('user'))
@@ -41,7 +39,6 @@ class AuthLogEntry(models.Model):
             return None
 
 
-@python_2_unicode_compatible
 class ObjectHistory4Entry(models.Model):
     ADDITION = 1
     DELETION = 2

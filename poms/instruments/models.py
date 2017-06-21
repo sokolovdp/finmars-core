@@ -10,7 +10,6 @@ from django.core import serializers
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
 from django.utils import timezone
-from django.utils.encoding import python_2_unicode_compatible
 from django.utils.functional import cached_property
 from django.utils.translation import ugettext, ugettext_lazy
 from mptt.models import MPTTModel
@@ -289,7 +288,6 @@ class PricingPolicy(NamedModel):
         verbose_name_plural = ugettext_lazy('pricing policies')
 
 
-@python_2_unicode_compatible
 class InstrumentType(NamedModel, FakeDeletableModel):
     master_user = models.ForeignKey(MasterUser, related_name='instrument_types',
                                     verbose_name=ugettext_lazy('master user'))
@@ -327,7 +325,6 @@ class InstrumentType(NamedModel, FakeDeletableModel):
         return self.master_user.instrument_type_id == self.id if self.master_user_id else False
 
 
-@python_2_unicode_compatible
 class Instrument(NamedModel, FakeDeletableModel):
     master_user = models.ForeignKey(MasterUser, related_name='instruments', verbose_name=ugettext_lazy('master user'))
 
@@ -777,7 +774,6 @@ class Instrument(NamedModel, FakeDeletableModel):
         return 1.0
 
 
-@python_2_unicode_compatible
 class ManualPricingFormula(models.Model):
     instrument = models.ForeignKey(Instrument, related_name='manual_pricing_formulas',
                                    verbose_name=ugettext_lazy('instrument'))
@@ -798,7 +794,6 @@ class ManualPricingFormula(models.Model):
         return self.expr
 
 
-@python_2_unicode_compatible
 class PriceHistory(models.Model):
     instrument = models.ForeignKey(Instrument, related_name='prices', verbose_name=ugettext_lazy('instrument'))
     pricing_policy = models.ForeignKey(PricingPolicy, on_delete=models.PROTECT, null=True, blank=True,
@@ -821,7 +816,6 @@ class PriceHistory(models.Model):
         return '%s;%s @%s' % (self.principal_price, self.accrued_price, self.date)
 
 
-@python_2_unicode_compatible
 class AccrualCalculationSchedule(models.Model):
     instrument = models.ForeignKey(Instrument, related_name='accrual_calculation_schedules',
                                    verbose_name=ugettext_lazy('instrument'))
@@ -846,7 +840,6 @@ class AccrualCalculationSchedule(models.Model):
         return '%s' % self.accrual_start_date
 
 
-@python_2_unicode_compatible
 class InstrumentFactorSchedule(models.Model):
     instrument = models.ForeignKey(Instrument, related_name='factor_schedules',
                                    verbose_name=ugettext_lazy('instrument'))

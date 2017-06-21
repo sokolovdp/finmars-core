@@ -17,7 +17,6 @@ from poms.users.models import Member, Group
 #         abstract = True
 #
 #
-# @python_2_unicode_compatible
 # class AbstractUserObjectPermission(AbstractObjectPermission):
 #     # in child object: content_object -> actual object
 #     member = models.ForeignKey(Member, verbose_name=ugettext_lazy('member'))
@@ -34,7 +33,6 @@ from poms.users.models import Member, Group
 #         return 'Member "%s" %s "%s"' % (self.member, self.permission.name.lower(), self.content_object)
 #
 #
-# @python_2_unicode_compatible
 # class AbstractGroupObjectPermission(AbstractObjectPermission):
 #     # in child object: content_object -> actual object
 #     group = models.ForeignKey(Group, verbose_name=ugettext_lazy('group'))
