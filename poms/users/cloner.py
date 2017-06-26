@@ -378,8 +378,8 @@ class FullDataCloner(object):
                                 'allocation_balance', 'allocation_balance_input', 'allocation_balance_phantom',
                                 'allocation_pl', 'allocation_pl_input', 'allocation_pl_phantom',
                                 'responsible', 'responsible_input', 'counterparty', 'counterparty_input',
-                                'reference_fx_rate', 'factor', 'trade_price', 'principal_amount', 'carry_amount',
-                                'overheads', 'notes', )
+                                'reference_fx_rate', 'factor', 'trade_price', 'position_amount', 'principal_amount',
+                                'carry_amount', 'overheads', 'notes', )
 
     def _tags(self):
         # self._simple_list_clone(Tag, None, 'master_user', 'user_code', 'name', 'short_name', 'public_name', 'notes',
