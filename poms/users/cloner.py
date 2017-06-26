@@ -254,12 +254,11 @@ class FullDataCloner(object):
 
     def _integrations_2(self):
         self._simple_list_clone(InstrumentDownloadScheme, None, 'master_user', 'scheme_name', 'provider',
-                                'reference_for_pricing',
-                                'user_code', 'name', 'short_name', 'public_name', 'notes', 'instrument_type',
-                                'pricing_currency', 'price_multiplier', 'accrued_currency', 'accrued_multiplier',
-                                'maturity_date', 'user_text_1', 'user_text_2', 'user_text_3', 'payment_size_detail',
-                                'daily_pricing_model', 'price_download_scheme', 'default_price', 'default_accrued',
-                                'factor_schedule_method', 'accrual_calculation_schedule_method')
+                                'reference_for_pricing', 'user_code', 'name', 'short_name', 'public_name', 'notes',
+                                'instrument_type', 'pricing_currency', 'price_multiplier', 'accrued_currency',
+                                'accrued_multiplier', 'maturity_date', 'user_text_1', 'user_text_2', 'user_text_3',
+                                'payment_size_detail', 'daily_pricing_model', 'price_download_scheme', 'default_price',
+                                'default_accrued', 'factor_schedule_method', 'accrual_calculation_schedule_method')
 
         self._simple_list_clone(InstrumentDownloadSchemeInput, 'scheme__master_user', 'scheme', 'name', 'field')
 
@@ -342,8 +341,8 @@ class FullDataCloner(object):
                                 'public_name', 'notes', 'is_deleted')
 
         self._simple_list_clone(TransactionType, None, 'master_user', 'user_code', 'name', 'short_name',
-                                'public_name', 'notes', 'is_deleted', 'group', 'display_expr', 'instrument_types',
-                                'is_valid_for_all_portfolios', 'is_valid_for_all_instruments',
+                                'public_name', 'notes', 'is_deleted', 'group', 'date_expr', 'display_expr',
+                                'instrument_types', 'is_valid_for_all_portfolios', 'is_valid_for_all_instruments',
                                 'book_transaction_layout_json')
 
         self._simple_list_clone(TransactionTypeInput, 'transaction_type__master_user',
@@ -361,7 +360,7 @@ class FullDataCloner(object):
                                 'payment_size_detail', 'payment_size_detail_input', 'default_price', 'default_accrued',
                                 'user_text_1', 'user_text_2', 'user_text_3', 'reference_for_pricing',
                                 'daily_pricing_model', 'daily_pricing_model_input', 'price_download_scheme',
-                                'price_download_scheme_input', 'maturity_date')
+                                'price_download_scheme_input', 'maturity_date', 'maturity_price')
 
         self._simple_list_clone(TransactionTypeActionTransaction, 'transaction_type__master_user',
                                 'transaction_type', 'order', 'action_notes',
@@ -375,8 +374,12 @@ class FullDataCloner(object):
                                 'strategy1_cash_input', 'strategy2_position', 'strategy2_position_input',
                                 'strategy2_cash', 'strategy2_cash_input', 'strategy3_position',
                                 'strategy3_position_input', 'strategy3_cash', 'strategy3_cash_input',
-                                'reference_fx_rate', 'factor', 'trade_price', 'principal_amount', 'carry_amount',
-                                'overheads', 'responsible', 'responsible_input', 'counterparty', 'counterparty_input', )
+                                'linked_instrument', 'linked_instrument_input', 'linked_instrument_phantom',
+                                'allocation_balance', 'allocation_balance_input', 'allocation_balance_phantom',
+                                'allocation_pl', 'allocation_pl_input', 'allocation_pl_phantom',
+                                'responsible', 'responsible_input', 'counterparty', 'counterparty_input',
+                                'reference_fx_rate', 'factor', 'trade_price', 'position_amount', 'principal_amount',
+                                'carry_amount', 'overheads', 'notes', )
 
     def _tags(self):
         # self._simple_list_clone(Tag, None, 'master_user', 'user_code', 'name', 'short_name', 'public_name', 'notes',
