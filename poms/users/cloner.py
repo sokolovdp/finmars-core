@@ -18,10 +18,11 @@ from poms.instruments.models import PricingPolicy, DailyPricingModel, Instrument
     AccrualCalculationSchedule, InstrumentFactorSchedule, EventScheduleConfig, EventSchedule, EventScheduleAction
 from poms.integrations.models import PriceDownloadScheme, ProviderClass, AccrualScheduleDownloadMethod, \
     FactorScheduleDownloadMethod, InstrumentDownloadScheme, InstrumentDownloadSchemeInput, \
-    CurrencyMapping, InstrumentTypeMapping, AccrualCalculationModelMapping, \
-    PeriodicityMapping, AccountMapping, InstrumentMapping, CounterpartyMapping, ResponsibleMapping, PortfolioMapping, \
-    Strategy1Mapping, Strategy2Mapping, Strategy3Mapping, DailyPricingModelMapping, PaymentSizeDetailMapping, \
-    PriceDownloadSchemeMapping
+    CurrencyMapping, InstrumentTypeMapping, AccrualCalculationModelMapping, PeriodicityMapping, AccountMapping, \
+    InstrumentMapping, CounterpartyMapping, ResponsibleMapping, PortfolioMapping, Strategy1Mapping, Strategy2Mapping, \
+    Strategy3Mapping, DailyPricingModelMapping, PaymentSizeDetailMapping, PriceDownloadSchemeMapping, \
+    PricingAutomatedSchedule, ComplexTransactionImportScheme, ComplexTransactionImportSchemeInput, \
+    ComplexTransactionImportSchemeRule, ComplexTransactionImportSchemeField
 from poms.portfolios.models import Portfolio
 from poms.strategies.models import Strategy1Group, Strategy1Subgroup, Strategy1, Strategy2Group, Strategy2Subgroup, \
     Strategy2, Strategy3Group, Strategy3Subgroup, Strategy3
@@ -252,6 +253,9 @@ class FullDataCloner(object):
                                 'last_history', 'last_history_multiplier',
                                 'currency_fxrate', 'currency_fxrate_multiplier')
 
+        self._simple_list_clone(PricingAutomatedSchedule, None, 'master_user', 'is_enabled', 'cron_expr', 'balance_day',
+                                'load_days', 'fill_days', 'override_existed')
+
     def _integrations_2(self):
         self._simple_list_clone(InstrumentDownloadScheme, None, 'master_user', 'scheme_name', 'provider',
                                 'reference_for_pricing', 'user_code', 'name', 'short_name', 'public_name', 'notes',
@@ -299,6 +303,16 @@ class FullDataCloner(object):
         self._simple_list_clone(PaymentSizeDetailMapping, None, 'master_user', 'provider', 'value', 'content_object')
 
         self._simple_list_clone(PriceDownloadSchemeMapping, None, 'master_user', 'provider', 'value', 'content_object')
+
+        self._simple_list_clone(ComplexTransactionImportScheme, None, 'master_user', 'scheme_name', 'rule_expr')
+
+        self._simple_list_clone(ComplexTransactionImportSchemeInput, 'scheme__master_user', 'scheme', 'name', 'column')
+
+        self._simple_list_clone(ComplexTransactionImportSchemeRule, 'scheme__master_user', 'scheme', 'value',
+                                'transaction_type')
+
+        self._simple_list_clone(ComplexTransactionImportSchemeField, 'rule__scheme__master_user', 'rule',
+                                'transaction_type_input', 'value_expr')
 
     def _portfolios_1(self):
         self._simple_list_clone(Portfolio, None, 'master_user', 'user_code', 'name', 'short_name',
