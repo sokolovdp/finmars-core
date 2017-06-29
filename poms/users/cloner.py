@@ -22,7 +22,7 @@ from poms.integrations.models import PriceDownloadScheme, ProviderClass, Accrual
     InstrumentMapping, CounterpartyMapping, ResponsibleMapping, PortfolioMapping, Strategy1Mapping, Strategy2Mapping, \
     Strategy3Mapping, DailyPricingModelMapping, PaymentSizeDetailMapping, PriceDownloadSchemeMapping, \
     PricingAutomatedSchedule, ComplexTransactionImportScheme, ComplexTransactionImportSchemeInput, \
-    ComplexTransactionImportSchemeRule, ComplexTransactionImportSchemeField
+    ComplexTransactionImportSchemeRule, ComplexTransactionImportSchemeField, ImportConfig
 from poms.portfolios.models import Portfolio
 from poms.strategies.models import Strategy1Group, Strategy1Subgroup, Strategy1, Strategy2Group, Strategy2Subgroup, \
     Strategy2, Strategy3Group, Strategy3Subgroup, Strategy3
@@ -243,6 +243,11 @@ class FullDataCloner(object):
                                 'is_book_automatic', 'button_position')
 
     def _integrations_1(self):
+        ImportConfig.objects.create(
+            master_user=self._target_master_user,
+            provider=ProviderClass.objects.get(pk=ProviderClass.BLOOMBERG)
+        )
+
         self._simple_list_clone(PriceDownloadScheme, None, 'master_user', 'scheme_name', 'provider',
                                 'bid0', 'bid1', 'bid2', 'bid_multiplier',
                                 'ask0', 'ask1', 'ask2', 'ask_multiplier', 'last',
