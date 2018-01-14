@@ -1,0 +1,19 @@
+branch-defaults:
+  develop:
+    environment: dev-env
+  master:
+    environment: null
+    group_suffix: null
+global:
+  application_name: Lagoon WebAPI
+  branch: master
+  default_ec2_keyname: poms
+  default_platform: 64bit Amazon Linux 2015.03 v1.3.0 running Python 3.4
+  default_region: eu-west-1
+  instance_profile: null
+  platform_name: null
+  platform_version: null
+  profile: eb-cli
+  repository: backend
+  sc: git
+  workspace_type: Application
