@@ -83,6 +83,8 @@ INSTALLED_APPS = [
     # 'two_factor',
     'django_celery_results',
     'django_celery_beat',
+    'poms.data_import'
+    # 'silk'
 ]
 
 MIDDLEWARE_CLASSES = [
@@ -116,7 +118,7 @@ ROOT_URLCONF = 'poms_app.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [os.path.join(BASE_DIR, 'templates')],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -210,13 +212,13 @@ USE_I18N = True
 USE_L10N = True
 USE_TZ = True
 USE_ETAGS = True
-
-SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-SECURE_SSL_REDIRECT = True
-SESSION_COOKIE_SECURE = True
-CSRF_COOKIE_SECURE = True
-CSRF_COOKIE_DOMAIN = 'finmars.com'
-CSRF_TRUSTED_ORIGINS = ['finmars.com', 'api.finmars.com', 'dev.finmars.com', 'api.dev.finmars.com']
+if not DEBUG:
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    SECURE_SSL_REDIRECT = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    CSRF_COOKIE_DOMAIN = 'finmars.com'
+    CSRF_TRUSTED_ORIGINS = ['finmars.com', 'api.finmars.com', 'dev.finmars.com', 'api.dev.finmars.com']
 
 CORS_ORIGIN_WHITELIST = ('dev.finmars.com', 'finmars.com', )
 CORS_URLS_REGEX = r'^/api/.*$'
@@ -586,3 +588,8 @@ BLOOMBERG_SANDBOX_WAIT_FAIL = False
 # ----
 
 INSTRUMENT_EVENTS_REGULAR_MAX_INTERVALS = 1000
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+try:
+    from .settings_local import *
+except ImportError:
+    pass

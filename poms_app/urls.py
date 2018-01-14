@@ -4,13 +4,15 @@ from django.conf import settings
 from django.conf.urls import url, include
 from django.contrib import admin
 from django.views import static
-
 from poms.api.views import index
+from poms.data_import.views import ImportCreate, ImportUpdate
 
 urlpatterns = []
 
 urlpatterns += [
     url(r'^$', index, name='index'),
+    url(r'^import/add/', ImportCreate.as_view(), name='import_add'),
+    url(r'^import/(?P<pk>\d+)/change/$', ImportUpdate.as_view(), name='import_change'),
     url(r'^api/', include('poms.api.urls')),
 ]
 
@@ -29,13 +31,12 @@ if 'django.contrib.admin' in settings.INSTALLED_APPS:
             url(r'^411C74D6C4E24D2B98D6B085A580FF61/admin/', admin.site.urls),
         ]
 
-if settings.DEBUG:
-    if 'debug_toolbar' in settings.INSTALLED_APPS:
-        import debug_toolbar
-
-        urlpatterns += [
-            url(r'^__debug__/', debug_toolbar.urls),
-        ]
+# if settings.DEBUG:
+#     if 'silk' in settings.INSTALLED_APPS:
+#
+#         urlpatterns += [
+#             url(r'^silk/', include('silk.urls', namespace='silk'))
+#         ]
 
 if getattr(settings, 'MEDIA_SERVE', False):
     urlpatterns += [

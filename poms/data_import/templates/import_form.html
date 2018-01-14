@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% load staticfiles %}
+{% block content %}
+<div class="container">
+  {{ form.errors }}
+  {% if messages %}
+  <ul class="messages">
+      {% for message in messages %}
+      <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
+      {% endfor %}
+  </ul>
+  {% endif %}
+  {% if form.instance.id %}
+  <form method="post" action="{% url 'import_change' form.instance.id %}" enctype="multipart/form-data">
+  {% else %}
+  <form method="post" action="{% url 'import_add' %}" enctype="multipart/form-data">
+  {% endif %}
+  {% csrf_token %}
+  {{ form }}
+  {{ schema_form.management_form }}
+  <table>
+    {% for form in schema_form %}
+      {{ form }}
+    {% endfor %}
+  </table>
+  <input type="submit" class="form-control btn-success" value="Submit" />
+  </form>
+</div>
+{% endblock %}
