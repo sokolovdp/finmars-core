@@ -3,7 +3,7 @@ from __future__ import unicode_literals
 from django.contrib.contenttypes.fields import GenericRelation
 from django.db import models
 from django.utils.translation import ugettext_lazy
-
+from django.contrib.postgres.fields import JSONField
 from poms.common.models import NamedModel, FakeDeletableModel
 from poms.obj_attrs.models import GenericAttribute
 from poms.obj_perms.models import GenericObjectPermission
@@ -25,6 +25,7 @@ class Portfolio(NamedModel, FakeDeletableModel):
     attributes = GenericRelation(GenericAttribute, verbose_name=ugettext_lazy('attributes'))
     object_permissions = GenericRelation(GenericObjectPermission, verbose_name=ugettext_lazy('object permissions'))
     tags = GenericRelation(TagLink, verbose_name=ugettext_lazy('tags'))
+    attrs = JSONField(blank=True, null=True)
 
     class Meta(NamedModel.Meta, FakeDeletableModel.Meta):
         verbose_name = ugettext_lazy('portfolio')
