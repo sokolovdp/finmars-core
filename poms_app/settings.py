@@ -65,6 +65,7 @@ INSTALLED_APPS = [
     'poms.integrations',
     'poms.reports',
     'poms.api',
+    'poms.data_import',
 
     'django.contrib.admin',
     'django.contrib.admindocs',
@@ -116,7 +117,7 @@ ROOT_URLCONF = 'poms_app.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [os.path.join(BASE_DIR, 'templates')],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
