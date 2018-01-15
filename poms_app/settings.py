@@ -27,7 +27,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SECRET_KEY = 'jrixf-%65l5&#@hbmq()sa-pzy@e)=zpdr6g0cg8a!i_&w-c!)'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True
 DEV = DEBUG or bool(os.environ.get('POMS_DEV', None))
 ADMIN = True
 
@@ -210,19 +210,19 @@ USE_I18N = True
 USE_L10N = True
 USE_TZ = True
 USE_ETAGS = True
+if not DEBUG:
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    SECURE_SSL_REDIRECT = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    CSRF_COOKIE_DOMAIN = 'finmars.com'
+    CSRF_TRUSTED_ORIGINS = ['finmars.com', 'api.finmars.com', 'dev.finmars.com', 'api.dev.finmars.com']
 
-SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-SECURE_SSL_REDIRECT = True
-SESSION_COOKIE_SECURE = True
-CSRF_COOKIE_SECURE = True
-CSRF_COOKIE_DOMAIN = 'finmars.com'
-CSRF_TRUSTED_ORIGINS = ['finmars.com', 'api.finmars.com', 'dev.finmars.com', 'api.dev.finmars.com']
-
-CORS_ORIGIN_WHITELIST = ('dev.finmars.com', 'finmars.com', )
-CORS_URLS_REGEX = r'^/api/.*$'
-CORS_REPLACE_HTTPS_REFERER = True
-CORS_ALLOW_CREDENTIALS = True
-CORS_PREFLIGHT_MAX_AGE = 300
+    CORS_ORIGIN_WHITELIST = ('dev.finmars.com', 'finmars.com', )
+    CORS_URLS_REGEX = r'^/api/.*$'
+    CORS_REPLACE_HTTPS_REFERER = True
+    CORS_ALLOW_CREDENTIALS = True
+    CORS_PREFLIGHT_MAX_AGE = 300
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/1.9/howto/static-files/
@@ -586,3 +586,7 @@ BLOOMBERG_SANDBOX_WAIT_FAIL = False
 # ----
 
 INSTRUMENT_EVENTS_REGULAR_MAX_INTERVALS = 1000
+try:
+    from poms_app.settings_local import *
+except ImportError:
+    pass
