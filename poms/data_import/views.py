@@ -8,6 +8,7 @@ from .models import DataImport, DataImportSchema
 from .forms import DataImportForm, DataImportSchemaForm
 from .utils import return_csv_file, split_csv_str
 from django.views.generic import CreateView, UpdateView, FormView
+from poms.users.models import MasterUser
 
 
 class ImportMixin(FormView):
@@ -43,9 +44,9 @@ class ImportCreate(ImportMixin, CreateView):
 
     def post(self, request, *args, **kwargs):
         form = self.get_form(self.form_class)
-        self.object = form.save()
-        schema_form = self.form_set(self.request.POST, instance=self.object)
         if form.is_valid():
+            self.object = form.save()
+            schema_form = self.form_set(self.request.POST, instance=self.object)
             return self.form_valid_formset(schema_form)
         else:
             return self.form_invalid(form)
@@ -55,7 +56,7 @@ class ImportCreate(ImportMixin, CreateView):
 
     def get_initial(self):
         return {
-            'master_user': self.request.user
+            'master_user': MasterUser.objects.get(name=self.request.user.username).id  # TODO поставить норм мастер юзера
         }
 
 

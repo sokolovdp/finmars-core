@@ -1,29 +1,38 @@
 {% extends "base.html" %}
 {% load staticfiles %}
 {% block content %}
-<div class="container">
-  {{ form.errors }}
-  {% if messages %}
-  <ul class="messages">
-      {% for message in messages %}
-      <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
-      {% endfor %}
-  </ul>
-  {% endif %}
-  {% if form.instance.id %}
-  <form method="post" action="{% url 'import_change' form.instance.id %}" enctype="multipart/form-data">
-  {% else %}
-  <form method="post" action="{% url 'import_add' %}" enctype="multipart/form-data">
-  {% endif %}
-  {% csrf_token %}
-  {{ form }}
-  {{ schema_form.management_form }}
-  <table>
-    {% for form in schema_form %}
+  <nav class="navbar navbar-expand-md navbar-dark bg-dark fixed-top">
+    <a class="navbar-brand" href="https://dev.finmars.com">Home</a>
+    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarsExampleDefault" aria-controls="navbarsExampleDefault" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarsExampleDefault"></div>
+  </nav>
+  <div class="content" style="margin-top: 5em;">
+    <div class="container">
+      {{ form.errors }}
+      {% if messages %}
+      <ul class="messages">
+          {% for message in messages %}
+          <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
+          {% endfor %}
+      </ul>
+      {% endif %}
+      {% if form.instance.id %}
+      <form method="post" action="{% url 'import_change' form.instance.id %}" enctype="multipart/form-data">
+      {% else %}
+      <form method="post" action="{% url 'import_add' %}" enctype="multipart/form-data">
+      {% endif %}
+      {% csrf_token %}
       {{ form }}
-    {% endfor %}
-  </table>
-  <input type="submit" class="form-control btn-success" value="Submit" />
-  </form>
-</div>
+      {{ schema_form.management_form }}
+      <table>
+        {% for form in schema_form %}
+          {{ form }}
+        {% endfor %}
+      </table>
+      <input type="submit" class="form-control btn-success" value="Submit" />
+      </form>
+    </div>
+  </div>
 {% endblock %}

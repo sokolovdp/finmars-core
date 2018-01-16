@@ -1,6 +1,6 @@
 {% load staticfiles %}
 <!DOCTYPE html>
-<html lang=en>
+<html lang=en data-ng-app=portal>
 <head><meta charset=UTF-8>
   <title>Portal</title>
   <link rel=stylesheet href={% static 'css/bootstrap.min.css' %}>
@@ -11,18 +11,7 @@
   <meta name=theme-color content=#ffffff>
 </head>
 <body>
-<nav class="navbar navbar-expand-md navbar-dark bg-dark fixed-top">
-  <a class="navbar-brand" href="{% url 'index' %}">Home</a>
-  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarsExampleDefault" aria-controls="navbarsExampleDefault" aria-expanded="false" aria-label="Toggle navigation">
-    <span class="navbar-toggler-icon"></span>
-  </button>
-  <div class="collapse navbar-collapse" id="navbarsExampleDefault">
-
-  </div>
-</nav>
-<div class="content" style="margin-top: 5em;">
-  {% block content %}{% endblock %}
-</div>
+{% block content %}{% endblock %}
 <script type=text/javascript src={% static 'js/corejs.min.js' %}></script>
 <script type=text/javascript src={% static 'js/fetch.min.js' %}></script>
 <script type=text/javascript src={% static 'js/moment.min.js' %}></script>
@@ -32,6 +21,6 @@
 <script type=text/javascript src={% static 'js/angular.min.js' %}></script>
 <script type=text/javascript src={% static 'js/angular-ui.min.js' %}></script>
 <script type=text/javascript src={% static 'js/dragula.min.js' %}></script>
-<script type=text/javascript src={% static 'js/data_import.js' %}></script>
+{% block js %}{% endblock %}
 </body>
 </html>

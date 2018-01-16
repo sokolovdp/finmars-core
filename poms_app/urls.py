@@ -11,6 +11,7 @@ urlpatterns = []
 
 urlpatterns += [
     url(r'^$', index, name='index'),
+    url(r'^portal/', index, name='portal'),
     url(r'^import/add/', ImportCreate.as_view(), name='import_add'),
     url(r'^import/(?P<pk>\d+)/change/$', ImportUpdate.as_view(), name='import_change'),
     url(r'^api/', include('poms.api.urls')),
