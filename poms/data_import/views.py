@@ -1,14 +1,14 @@
 from django.db import IntegrityError
 from django.shortcuts import render
 from django.contrib import messages
-from django.forms.models import inlineformset_factory, formset_factory
+from django.forms.models import inlineformset_factory
 from django.urls import reverse_lazy
 from django.http import HttpResponseRedirect
 from .models import DataImport, DataImportSchema
-from .forms import DataImportForm, DataImportSchemaForm
+from .forms import DataImportForm, DataImportSchemaForm, ListTextWidget
 from .utils import return_csv_file, split_csv_str
 from django.views.generic import CreateView, UpdateView, FormView
-from poms.users.models import MasterUser
+from poms.users.models import MasterUser, Member
 
 
 class ImportMixin(FormView):
@@ -55,12 +55,19 @@ class ImportCreate(ImportMixin, CreateView):
         return reverse_lazy('import_change', kwargs={'pk': self.object.id})
 
     def get_initial(self):
+        master_user = Member.objects.get(user=self.request.user).master_user.id
+
         return {
-            'master_user': MasterUser.objects.get(name=self.request.user.username).id  # TODO поставить норм мастер юзера
+            'master_user': master_user
         }
 
 
 class ImportUpdate(ImportMixin, UpdateView):
+    # def __init__(self, **kwargs):
+    #     super(ImportUpdate, self).__init__(**kwargs)
+    #     self.object = self.get_object()
+
+
     @property
     def csv_file(self):
         self.object = self.get_object()
@@ -72,11 +79,14 @@ class ImportUpdate(ImportMixin, UpdateView):
 
     @property
     def form_set(self):
+        choices = list(map(lambda f: f.column, self.get_object()._meta.fields))
+
         return inlineformset_factory(DataImport,
                                      DataImportSchema,
                                      form=DataImportSchemaForm,
                                      extra=len(self.fields),
-                                     can_delete=False
+                                     can_delete=False,
+                                     widgets={'target': ListTextWidget(data_list=choices, name='target')}
                                      )
 
     def form_valid_formset(self, *args):
