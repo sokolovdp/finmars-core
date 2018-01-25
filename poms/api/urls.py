@@ -21,6 +21,7 @@ import poms.tags.views as tags
 import poms.transactions.views as transactions
 import poms.ui.views as ui
 import poms.users.views as users
+import poms.data_import.views as data_import
 
 router = routers.DefaultRouter()
 router.register(r'users/login', users.LoginViewSet, 'login')
@@ -188,6 +189,9 @@ router.register(r'import/complex-transaction-csv-file-import', integrations.Comp
                 'complextransactioncsvfileimport')
 
 router.register(r'utils/expression', api.ExpressionViewSet, 'expression')
+router.register(r'import/data', data_import.DataImportViewSet, 'data_import')
+router.register(r'import/data_schema', data_import.DataImportSchemaViewSet, 'data_import_schema')
+router.register(r'import/schema_fields', data_import.DataImportSchemaFieldsViewSet, 'data_import_schema_fields')
 
 urlpatterns = [
     url(r'^v1/', include(router.urls, namespace='v1')),

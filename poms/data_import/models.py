@@ -7,6 +7,11 @@ from .tasks import run_import
 from poms.users.models import MasterUser
 
 
+class DataImportSchema(models.Model):
+    model = models.ForeignKey(ContentType)
+    name = models.CharField(max_length=100, unique=True)
+
+
 class DataImport(models.Model):
     STATUS = (
         (0, 'READY'),
@@ -14,21 +19,21 @@ class DataImport(models.Model):
         (2, 'DONE'),
         (3, 'FAIL'),
     )
-    model = models.ForeignKey(ContentType)
     master_user = models.ForeignKey(MasterUser, blank=True, null=True)
+    schema = models.ForeignKey(DataImportSchema)
     file = models.FileField(upload_to='import/')
     status = models.IntegerField(choices=STATUS, default=0)
     created_at = models.DateTimeField(auto_now_add=True)
     modified_at = models.DateTimeField(auto_now=True)
 
-    def __str__(self):
-        return self.model.model + '/' + datetime.strftime(self.modified_at, '%Y-%m-%d')
+    # def __str__(self):
+    #     return self.model.model + '/' + datetime.strftime(self.modified_at, '%Y-%m-%d')
 
 
-class DataImportSchema(models.Model):
+class DataImportSchemaFields(models.Model):
+    schema = models.ForeignKey(DataImportSchema)
     source = models.CharField(max_length=100)
     target = models.CharField(max_length=100)
-    data_import = models.ForeignKey(DataImport)
 
 
 @receiver(post_save, sender=DataImport)
