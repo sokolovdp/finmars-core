@@ -36,7 +36,7 @@
                   <md-option ng-repeat="schema in schema_list" value="{{ schema.id }}">
                     {{ schema.name }}
                   </md-option>
-                  <button class="md-button" type="button" data-ng-click="openModal($event, 'add_schema')">add new +</button>
+                  <!-- <button class="md-button" type="button" data-ng-click="openModal($event, 'add_schema')">add new +</button> -->
                 </md-select>
               </md-input-container>
               <button class="instrument-mapping-btn md-fab md-button" ng-disabled="!import.schema" type="button" data-ng-click="openModal($event, 'update_schema', import)" aria-label="Edit mapping"><ng-md-icon icon="functions" size="24" style="fill:rgb(63,81,181)" class="ng-scope"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24"><path d="M18 4H6v2l6.5 6L6 18v2h12v-3h-7l5-5-5-5h7z"></path></svg></ng-md-icon></button>
@@ -44,6 +44,7 @@
             </div>
           </form>
         </div>
+        {{ selected_schema }}
       </md-content>
     </div>
     {% endverbatim %}

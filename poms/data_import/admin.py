@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import DataImport, DataImportSchema
+from .models import DataImport, DataImportSchema, DataImportSchemaFields
 
 
 class DataImportAdmin(admin.ModelAdmin):
@@ -8,3 +8,4 @@ class DataImportAdmin(admin.ModelAdmin):
 
 admin.site.register(DataImport, DataImportAdmin)
 admin.site.register(DataImportSchema)
+admin.site.register(DataImportSchemaFields)

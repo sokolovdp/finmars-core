@@ -14,6 +14,21 @@ angular.module('portal', [
   'lfNgMdFileInput'
 ])
   .factory('api', function($http, $q) {
+    function getCookie(name) {
+      var cookieValue = null;
+      if (document.cookie && document.cookie !== '') {
+          var cookies = document.cookie.split(';');
+          for (var i = 0; i < cookies.length; i++) {
+              var cookie = jQuery.trim(cookies[i]);
+              // Does this cookie string begin with the name we want?
+              if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                  cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                  break;
+              }
+          }
+      }
+      return cookieValue;
+    }
     function get(model, filter){
       var defer = $q.defer();
       if (filter) {
@@ -37,7 +52,7 @@ angular.module('portal', [
     }
     function post(model, data){
       var defer = $q.defer();
-      $http.post('/api/v1/import/' + model + '/', data).
+      $http.post('/api/v1/import/' + model + '/', data, {headers: {'X-CSRFToken': getCookie('csrftoken')}}).
         success(function (data, status){
           defer.resolve({data: data, status: status});
         }).
@@ -63,41 +78,57 @@ angular.module('portal', [
       put: put
     }
   })
-  .controller('SchemaList', function($scope, api, $mdDialog){
+  .controller('SchemaList', function($scope, api, $mdDialog, $filter){
     // $scope.object_list = {'name': 'default', 'id': 1};
     api.get('data_schema').then(function(resp){
       $scope.schema_list = resp.data.results;
     });
-    $scope.$watch('files02.length',function(newVal,oldVal){
-        console.log($scope.files02);
-    });
-    $scope.onFileClick = function(obj,idx){
-        console.log(obj);
-    };
-    $scope.onFileRemove = function(obj,idx){
-        console.log(obj);
+
+    $scope.update = function () {
+      $scope.selectedItem = $filter('filter')($scope.schema_list, {id: parseInt($scope.import.schema)}, true)[0];
     };
     $scope.openModal = function(ev, action, model) {
       if (model = 'update_schema'){
-        api.get('schema_fields', {schema_id: $scope.import.schema}).then(function (resp) {
+        api.get('schema_fields', {schema_id: $scope.selectedItem.id}).then(function (resp) {
           $scope.field_list = resp.data.results;
-        })
+          $mdDialog.show({
+            controller: DialogController,
+            templateUrl: '/static/js/' + action + '.html',
+            parent: angular.element(document.body),
+            targetEvent: ev,
+            clickOutsideToClose:true,
+            fullscreen: $scope.customFullscreen,
+            locals : {
+                schema: $scope.selectedItem,
+                field_list: $scope.field_list
+            }
+          })
+          .then(function(answer) {
+            $scope.status = 'You said the information was "' + answer + '".';
+          }, function() {
+            $scope.status = 'You cancelled the dialog.';
+          });
+        });
       }
-      $mdDialog.show({
-        controller: DialogController,
-        templateUrl: '/static/js/' + action + '.html',
-        parent: angular.element(document.body),
-        targetEvent: ev,
-        clickOutsideToClose:true,
-        fullscreen: $scope.customFullscreen // Only for -xs, -sm breakpoints.
-      })
-      .then(function(answer) {
-        $scope.status = 'You said the information was "' + answer + '".';
-      }, function() {
-        $scope.status = 'You cancelled the dialog.';
-      });
     };
-    function DialogController($scope, $mdDialog) {
+    function DialogController($scope, $mdDialog, api, schema, field_list) {
+      $scope.schema = schema;
+      $scope.field_list = field_list;
+      api.get('schema_models').then(function (resp) {
+        $scope.models = resp.data.results;
+      });
+      $scope.copyField = function(){
+        $scope.field_list.push({num: 0, source: 'source', target: 'target', schema: schema.id});
+      };
+      $scope.removeField = function(item, index){
+        $scope.field_list.splice(index, 1);
+      };
+      $scope.saveSchema = function(){
+        api.put('schema_fields', $scope.field_list).then(function(resp){
+          console.log(resp);
+          $scope.hide()
+        });
+      };
       $scope.hide = function() {
         $mdDialog.hide();
       };
@@ -113,9 +144,6 @@ angular.module('portal', [
 
   })
   .config(function($mdThemingProvider) {
-
-    // Configure a dark theme with primary foreground yellow
-
     $mdThemingProvider.theme('docs-dark', 'default')
       .primaryPalette('yellow')
       .dark();

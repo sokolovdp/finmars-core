@@ -34,6 +34,7 @@ class DataImportSchemaFields(models.Model):
     schema = models.ForeignKey(DataImportSchema)
     source = models.CharField(max_length=100)
     target = models.CharField(max_length=100)
+    num = models.SmallIntegerField(default=0)
 
 
 @receiver(post_save, sender=DataImport)

@@ -192,6 +192,7 @@ router.register(r'utils/expression', api.ExpressionViewSet, 'expression')
 router.register(r'import/data', data_import.DataImportViewSet, 'data_import')
 router.register(r'import/data_schema', data_import.DataImportSchemaViewSet, 'data_import_schema')
 router.register(r'import/schema_fields', data_import.DataImportSchemaFieldsViewSet, 'data_import_schema_fields')
+router.register(r'import/schema_models', data_import.DataImportSchemaModelsViewSet, 'data_import_schema_models')
 
 urlpatterns = [
     url(r'^v1/', include(router.urls, namespace='v1')),

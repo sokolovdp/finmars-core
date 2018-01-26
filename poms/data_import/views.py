@@ -125,8 +125,12 @@
 #             return self.form_valid_formset(request, form, schema_form)
 #         else:
 #             return self.form_invalid(form)
+from django.contrib.contenttypes.models import ContentType
 from rest_framework import viewsets
-from .serializers import DataImportSerializer, DataImportSchemaSerializer, DataImportSchemaFieldsSerializer
+from rest_framework.response import Response
+from rest_framework.status import HTTP_201_CREATED
+from .serializers import DataImportSerializer, DataImportSchemaSerializer, DataImportSchemaFieldsSerializer, \
+    DataImportSchemaModelsSerializer
 from .models import DataImport, DataImportSchema, DataImportSchemaFields
 
 
@@ -143,3 +147,15 @@ class DataImportSchemaViewSet(viewsets.ModelViewSet):
 class DataImportSchemaFieldsViewSet(viewsets.ModelViewSet):
     queryset = DataImportSchemaFields.objects.all()
     serializer_class = DataImportSchemaFieldsSerializer
+
+    def create(self, request, *args, **kwargs):
+        for i in request.data:
+            serializer = self.get_serializer(data=i)
+            serializer.is_valid(raise_exception=True)
+            self.perform_create(serializer)
+        return Response(status=HTTP_201_CREATED)
+
+
+class DataImportSchemaModelsViewSet(viewsets.ModelViewSet):
+    queryset = ContentType.objects.filter(model='portfolio')
+    serializer_class = DataImportSchemaModelsSerializer
