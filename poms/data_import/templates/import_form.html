@@ -20,7 +20,7 @@
           <form name="userForm">
             <div layout-gt-sm="row">
               <md-input-container class="md-block" flex-gt-sm="">
-                <lf-ng-md-file-input lf-files="files02" lf-api="api02"></lf-ng-md-file-input>
+                <lf-ng-md-file-input lf-files="import.files"></lf-ng-md-file-input>
               </md-input-container>
               <md-input-container class="sm-block" flex-gt-sm="">
                 <label>Error handling</label>
@@ -40,7 +40,7 @@
                 </md-select>
               </md-input-container>
               <button class="instrument-mapping-btn md-fab md-button" ng-disabled="!import.schema" type="button" data-ng-click="openModal($event, 'update_schema', import)" aria-label="Edit mapping"><ng-md-icon icon="functions" size="24" style="fill:rgb(63,81,181)" class="ng-scope"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24"><path d="M18 4H6v2l6.5 6L6 18v2h12v-3h-7l5-5-5-5h7z"></path></svg></ng-md-icon></button>
-              <button class="md-raised colored-btn instrument-load-btn disabled-btn md-button" type="button" data-ng-click="vm.load($event)" aria-label="Load"><span class="ng-scope">Load</span></button>
+              <button class="md-raised colored-btn instrument-load-btn md-button" type="button" data-ng-click="loadData($event)" aria-label="Load"><span class="ng-scope">Load</span></button>
             </div>
           </form>
         </div>

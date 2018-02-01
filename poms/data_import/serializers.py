@@ -1,6 +1,6 @@
 from django.contrib.contenttypes.models import ContentType
 from rest_framework import serializers
-from .models import DataImport, DataImportSchema, DataImportSchemaFields
+from .models import DataImport, DataImportSchema, DataImportSchemaFields, DataImportSchemaMatching
 
 
 class DataImportSerializer(serializers.ModelSerializer):
@@ -25,4 +25,12 @@ class DataImportSchemaModelsSerializer(serializers.ModelSerializer):
     class Meta:
         model = ContentType
         fields = '__all__'
+
+
+class DataImportSchemaMatchingSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DataImportSchemaMatching
+        fields = '__all__'
+
+
 

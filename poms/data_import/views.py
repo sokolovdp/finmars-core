@@ -1,4 +1,4 @@
-# from django.db import IntegrityError
+from django.db import IntegrityError
 # from django.shortcuts import render
 # from django.contrib import messages
 # from django.forms.models import inlineformset_factory
@@ -8,7 +8,7 @@
 # from .forms import DataImportForm, DataImportSchemaForm, ListTextWidget
 # from .utils import return_csv_file, split_csv_str
 # from django.views.generic import CreateView, UpdateView, FormView
-# from poms.users.models import MasterUser, Member
+
 #
 #
 # class ImportMixin(FormView):
@@ -127,16 +127,50 @@
 #             return self.form_invalid(form)
 from django.contrib.contenttypes.models import ContentType
 from rest_framework import viewsets
+from rest_framework.decorators import detail_route
 from rest_framework.response import Response
+from rest_framework.parsers import MultiPartParser
 from rest_framework.status import HTTP_201_CREATED
 from .serializers import DataImportSerializer, DataImportSchemaSerializer, DataImportSchemaFieldsSerializer, \
-    DataImportSchemaModelsSerializer
-from .models import DataImport, DataImportSchema, DataImportSchemaFields
+    DataImportSchemaModelsSerializer, DataImportSchemaMatchingSerializer
+from .models import DataImport, DataImportSchema, DataImportSchemaFields, DataImportSchemaMatching
+from .options import PUBLIC_FIELDS
+from poms.obj_attrs.models import GenericAttributeType
+from poms.users.models import MasterUser, Member
+from rest_framework.status import HTTP_201_CREATED
+from .utils import return_csv_file, split_csv_str
+import io
+import csv
 
 
 class DataImportViewSet(viewsets.ModelViewSet):
+    parser_classes = (MultiPartParser,)
     queryset = DataImport.objects.all()
     serializer_class = DataImportSerializer
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        f = csv.DictReader(io.TextIOWrapper(request.data['files'].file))
+        schema = DataImportSchema.objects.get(pk=request.data['schema'])
+        fields = schema.dataimportschemafields_set.all()
+        data = {}
+        for row in f:
+            values = split_csv_str(row.values())
+            if values:
+                for field in fields:
+                    matchings_field = field.dataimportschemamatching_set.all()
+                    data = {matching_field.model_field: values[field.num] for matching_field in matchings_field}
+                if data:
+                    data['master_user_id'] = Member.objects.get(user=self.request.user).master_user.id
+                    try:
+                        o = schema.model.model_class()(**data)
+                        o.save()
+                    except IntegrityError:
+                        continue
+        headers = self.get_success_headers(serializer.data)
+        return Response(serializer.data, status=HTTP_201_CREATED, headers=headers)
 
 
 class DataImportSchemaViewSet(viewsets.ModelViewSet):
@@ -149,8 +183,15 @@ class DataImportSchemaFieldsViewSet(viewsets.ModelViewSet):
     serializer_class = DataImportSchemaFieldsSerializer
 
     def create(self, request, *args, **kwargs):
-        for i in request.data:
+        for i in request.data['field_list']:
             serializer = self.get_serializer(data=i)
+            if i.get('id', None):
+                serializer.instance = self.queryset.get(id=i['id'])
+                for m in request.data['matching_list']:
+                    if m.get('expression'):
+                        DataImportSchemaMatching(field=serializer.instance,
+                                                 model_field=m['model_field'],
+                                                 expression=m['expression']).save()
             serializer.is_valid(raise_exception=True)
             self.perform_create(serializer)
         return Response(status=HTTP_201_CREATED)
@@ -159,3 +200,20 @@ class DataImportSchemaFieldsViewSet(viewsets.ModelViewSet):
 class DataImportSchemaModelsViewSet(viewsets.ModelViewSet):
     queryset = ContentType.objects.filter(model='portfolio')
     serializer_class = DataImportSchemaModelsSerializer
+
+    @detail_route(methods=['get'])
+    def fields(self, request, pk=None):
+        obj = self.get_object()
+        base_fields = list(map(lambda f: {'model_field': f, 'expression': ''}, PUBLIC_FIELDS[obj.model]))
+        master_user = Member.objects.get(user=self.request.user).master_user
+        all_attr_fields = GenericAttributeType.objects.filter(master_user=master_user, content_type=obj)
+        additional_fields = []
+        for attr_fields in all_attr_fields:
+            additional_fields.append({'field': attr_fields.name, 'expression': ''})
+        return Response({'results': base_fields + additional_fields})
+
+
+class DataImportSchemaMatchingViewSet(viewsets.ModelViewSet):
+    queryset = DataImportSchemaMatching.objects.all()
+    serializer_class = DataImportSchemaMatchingSerializer
+

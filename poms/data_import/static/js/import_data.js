@@ -72,18 +72,56 @@ angular.module('portal', [
         });
       return defer.promise
     }
+    function del(model, id) {
+      var defer = $q.defer();
+      $http.delete('/api/v1/import/' + model + '/' + id + '/', {headers: {'X-CSRFToken': getCookie('csrftoken')}}).
+        success(function (data, status){
+          defer.resolve({data: data, status: status});
+        }).
+        error(function (msg, status) {
+          defer.resolve({msg: msg, status: status});
+        });
+      return defer.promise
+    }
     return {
       get: get,
       post: post,
-      put: put
+      put: put,
+      delete: del,
+      getCookie: getCookie
     }
   })
-  .controller('SchemaList', function($scope, api, $mdDialog, $filter){
+  .controller('SchemaList', function($scope, api, $mdDialog, $filter, $http){
     // $scope.object_list = {'name': 'default', 'id': 1};
     api.get('data_schema').then(function(resp){
       $scope.schema_list = resp.data.results;
     });
-
+    $scope.loadData = function () {
+      var formData = new FormData();
+      formData.append('schema', $scope.import.schema);
+      angular.forEach($scope.import.files, function(obj){
+        if(!obj.isRemote){
+          formData.append('files', obj.lfFile);
+        }
+      });
+      $http({
+        url: '/api/v1/import/data/',
+        method: 'POST',
+        data: formData,
+        headers: { 'Content-Type': undefined, 'X-CSRFToken': api.getCookie('csrftoken')},
+        transformRequest: angular.identity
+      }).success(function (){
+        $mdDialog.show(
+          $mdDialog.alert()
+            .parent(angular.element(document.querySelector('.inputdemoBasicUsage')))
+            .clickOutsideToClose(true)
+            .title('Import complete!')
+            .textContent('You can close this window.')
+            .ariaLabel('Alert Dialog Demo')
+            .ok('Got it!')
+        );
+      })
+    };
     $scope.update = function () {
       $scope.selectedItem = $filter('filter')($scope.schema_list, {id: parseInt($scope.import.schema)}, true)[0];
     };
@@ -117,15 +155,26 @@ angular.module('portal', [
       api.get('schema_models').then(function (resp) {
         $scope.models = resp.data.results;
       });
+      $scope.$watch('schema.model', function(newVal, oldVal){
+        api.get('schema_models/' + $scope.schema.model + '/fields').then(function (resp) {
+          $scope.matching_list = resp.data.results;
+        });
+      });
       $scope.copyField = function(){
-        $scope.field_list.push({num: 0, source: 'source', target: 'target', schema: schema.id});
+        var last_num = 0;
+        if ($scope.field_list.length > 0) {
+          last_num = $scope.field_list[$scope.field_list.length - 1].num + 1;
+        }
+        $scope.field_list.push({num: last_num, source: 'source', target: 'target', schema: schema.id});
       };
       $scope.removeField = function(item, index){
         $scope.field_list.splice(index, 1);
+        api.delete('schema_fields', item.id).then(function(resp){
+
+        })
       };
       $scope.saveSchema = function(){
-        api.put('schema_fields', $scope.field_list).then(function(resp){
-          console.log(resp);
+        api.post('schema_fields', {'field_list': $scope.field_list, 'matching_list': $scope.matching_list} ).then(function(resp){
           $scope.hide()
         });
       };
