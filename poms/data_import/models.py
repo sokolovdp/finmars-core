@@ -14,6 +14,9 @@ class DataImportSchema(models.Model):
     model = models.ForeignKey(ContentType)
     name = models.CharField(max_length=100, unique=True)
 
+    def __str__(self):
+        return self.name
+
 
 class DataImport(models.Model):
 
@@ -45,6 +48,9 @@ class DataImportSchemaFields(models.Model):
     source = models.CharField(max_length=100)
     num = models.SmallIntegerField(default=0)
 
+    def __str__(self):
+        return self.source
+
 
 class DataImportSchemaMatching(models.Model):
     '''
@@ -54,6 +60,8 @@ class DataImportSchemaMatching(models.Model):
     model_field = models.CharField(max_length=100)
     expression = models.CharField(max_length=100)
 
+    def __str__(self):
+        return self.model_field
 
 # @receiver(post_save, sender=DataImport)
 # def update_state(sender, instance, *args, **kwargs):

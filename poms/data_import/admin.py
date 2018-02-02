@@ -10,7 +10,11 @@ class DataImportSchemaFieldsAdmin(admin.ModelAdmin):
     list_display = ('num', 'source', 'schema')
 
 
+class DataImportSchemaMatchingAdmin(admin.ModelAdmin):
+    list_display = ('field', 'model_field', 'expression')
+
+
 admin.site.register(DataImport, DataImportAdmin)
 admin.site.register(DataImportSchema)
 admin.site.register(DataImportSchemaFields, DataImportSchemaFieldsAdmin)
-admin.site.register(DataImportSchemaMatching)
+admin.site.register(DataImportSchemaMatching, DataImportSchemaMatchingAdmin)
