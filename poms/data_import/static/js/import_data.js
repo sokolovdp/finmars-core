@@ -156,8 +156,8 @@ angular.module('portal', [
         $scope.models = resp.data.results;
       });
       $scope.$watch('schema.model', function(newVal, oldVal){
-        api.get('schema_models/' + $scope.schema.model + '/fields').then(function (resp) {
-          $scope.matching_list = resp.data.results;
+        api.get('schema_matching', {schema_id: $scope.schema.id}).then(function (resp) {
+          $scope.matching_list = resp.data;
         });
       });
       $scope.copyField = function(){

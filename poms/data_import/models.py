@@ -48,7 +48,7 @@ class DataImportSchemaFields(models.Model):
 
 class DataImportSchemaMatching(models.Model):
     '''
-    модель для иатчинга полей импорта и сущности
+    модель для матчинга полей импорта и сущности
     '''
     field = models.ForeignKey(DataImportSchemaFields)
     model_field = models.CharField(max_length=100)
