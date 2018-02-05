@@ -195,6 +195,7 @@ router.register(r'import/data_schema', data_import.DataImportSchemaViewSet, 'dat
 router.register(r'import/schema_fields', data_import.DataImportSchemaFieldsViewSet, 'data_import_schema_fields')
 router.register(r'import/schema_models', data_import.DataImportSchemaModelsViewSet, 'data_import_schema_models')
 router.register(r'import/schema_matching', data_import.DataImportSchemaMatchingViewSet, 'data_import_schema_matching')
+router.register(r'import/content_type', data_import.ContentTypeViewSet, 'data_import_content_types')
 
 urlpatterns = [
     url(r'^v1/', include(router.urls, namespace='v1')),

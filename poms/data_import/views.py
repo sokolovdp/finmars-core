@@ -1,20 +1,21 @@
+import io
+import csv
+from dateutil.parser import parse
 from django.db import IntegrityError
 from django.contrib.contenttypes.models import ContentType
+from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import viewsets
 from rest_framework.decorators import detail_route, list_route
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser
-from rest_framework.status import HTTP_201_CREATED
+from rest_framework.status import HTTP_201_CREATED, HTTP_500_INTERNAL_SERVER_ERROR
+from poms.obj_attrs.models import GenericAttributeType, GenericAttribute
+from poms.users.models import Member
 from .serializers import DataImportSerializer, DataImportSchemaSerializer, DataImportSchemaFieldsSerializer, \
-    DataImportSchemaModelsSerializer, DataImportSchemaMatchingSerializer
+    DataImportSchemaModelsSerializer, DataImportSchemaMatchingSerializer, DataImportContentTypeSerializer
 from .models import DataImport, DataImportSchema, DataImportSchemaFields, DataImportSchemaMatching
 from .options import PUBLIC_FIELDS
-from poms.obj_attrs.models import GenericAttributeType, GenericAttribute
-from poms.users.models import MasterUser, Member
-from rest_framework.status import HTTP_201_CREATED
-from .utils import return_csv_file, split_csv_str
-import io
-import csv
+from .utils import split_csv_str
 
 
 class DataImportViewSet(viewsets.ModelViewSet):
@@ -29,21 +30,48 @@ class DataImportViewSet(viewsets.ModelViewSet):
         f = csv.DictReader(io.TextIOWrapper(request.data['files'].file))
         schema = DataImportSchema.objects.get(pk=request.data['schema'])
         fields = schema.dataimportschemafields_set.all()
+        matchings_fields = DataImportSchemaMatching.objects.filter(schema=schema)
         data = {}
+        raw_data = {}
         for row in f:
             values = split_csv_str(row.values())
             if values:
                 for field in fields:
-                    matchings_field = field.dataimportschemamatching_set.all()
-                    data = {matching_field.model_field: values[field.num] for matching_field in matchings_field}
+                    try:
+                        raw_data[field.source] = values[field.num]
+                    except IndexError:
+                        pass
+                for matching_field in matchings_fields:
+                    try:
+                        data[matching_field.model_field] = raw_data.get(matching_field.expression)
+                    except IndexError:
+                        pass
                 if data:
-                    data['master_user_id'] = Member.objects.get(user=self.request.user).master_user.id
                     try:
                         accepted_data = {key: data.get(key) for key in PUBLIC_FIELDS[schema.model.model]}
+                        additional_keys = [item for item in data.keys() if item not in accepted_data.keys()]
+                        additional_data = {k: data[k] for k in additional_keys}
+                        accepted_data['master_user_id'] = Member.objects.get(user=self.request.user).master_user.id
+                        accepted_data['attrs'] = additional_data
                         o = schema.model.model_class()(**accepted_data)
                         o.save()
+                        for additional_key in additional_keys:
+                            attr_type = GenericAttributeType.objects.filter(user_code=additional_key).first()
+                            attribute = GenericAttribute(content_object=o, attribute_type=attr_type)
+                            if attr_type.value_type == 40:
+                                attribute.value_date = parse(additional_data[additional_key])
+                            elif attr_type.value_type == 10:
+                                attribute.value_string = additional_data[additional_key]
+                            elif attr_type.value_type == 20:
+                                attribute.value_float = additional_data[additional_key]
+                            else:
+                                pass
+                            attribute.save()
                     except IntegrityError:
-                        continue
+                        if int(request.data.get('error_handling')[0]):
+                            continue
+                        else:
+                            return Response('error import', status=HTTP_500_INTERNAL_SERVER_ERROR)
         headers = self.get_success_headers(serializer.data)
         return Response(serializer.data, status=HTTP_201_CREATED, headers=headers)
 
@@ -73,7 +101,19 @@ class DataImportSchemaFieldsViewSet(viewsets.ModelViewSet):
 
 
 class DataImportSchemaModelsViewSet(viewsets.ModelViewSet):
-    queryset = ContentType.objects.filter(model='portfolio')
+    queryset = ContentType.objects.filter(model__in=[
+        'accounttype',
+        'counterparty',
+        'currency',
+        'instrument',
+        'portfolio',
+        'pricingpolicy',
+        'responsible',
+        'strategy1',
+        'strategy2',
+        'strategy3',
+
+    ])
     serializer_class = DataImportSchemaModelsSerializer
 
     @detail_route(methods=['get'])
@@ -111,7 +151,15 @@ class DataImportSchemaMatchingViewSet(viewsets.ModelViewSet):
         return Response(all_fields)
 
 
-    @list_route(methods=['get'])
+class ContentTypeViewSet(viewsets.ModelViewSet):
+    queryset = ContentType.objects.filter(app_label__in=[
+        'accounts', 'counterparties', 'currencies', 'instruments', 'portfolios', 'strategies'
+    ])
+    serializer_class = DataImportContentTypeSerializer
+    filter_backends = (DjangoFilterBackend,)
+    filter_fields = ('id',)
+
+    @detail_route(methods=['get'])
     def fields(self, request, pk=None):
         obj = self.get_object()
         base_fields = list(map(lambda f: {'model_field': f, 'expression': ''}, PUBLIC_FIELDS[obj.model]))
@@ -119,5 +167,5 @@ class DataImportSchemaMatchingViewSet(viewsets.ModelViewSet):
         all_attr_fields = GenericAttributeType.objects.filter(master_user=master_user, content_type=obj)
         additional_fields = []
         for attr_fields in all_attr_fields:
-            additional_fields.append({'field': attr_fields.name, 'expression': ''})
+            additional_fields.append({'model_field': attr_fields.name, 'expression': ''})
         return Response({'results': base_fields + additional_fields})

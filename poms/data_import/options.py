@@ -1,3 +1,12 @@
 PUBLIC_FIELDS = {
-    'portfolio': ['user_code', 'name', 'short_name', 'public_name', 'notes']
+    'accounttype': ['user_code', 'name', 'short_name', 'public_name', 'notes'],
+    'responsible': [],
+    'counterparty': [],
+    'currency': ['user_code', 'name', 'short_name', 'public_name'],
+    'instrument': ['user_code', 'name', 'short_name', 'public_name'],
+    'pricingpolicy': ['user_code', 'name', 'short_name', 'public_name', 'expr'],
+    'portfolio': ['user_code', 'name', 'short_name', 'public_name', 'notes'],
+    'strategy1': ['user_code', 'name', 'short_name', 'public_name'],
+    'strategy2': ['user_code', 'name', 'short_name', 'public_name'],
+    'strategy3': ['user_code', 'name', 'short_name', 'public_name'],
 }

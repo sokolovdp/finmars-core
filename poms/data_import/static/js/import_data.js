@@ -99,6 +99,7 @@ angular.module('portal', [
     $scope.loadData = function () {
       var formData = new FormData();
       formData.append('schema', $scope.import.schema);
+      formData.append('error_handling', $scope.import.error_handling);
       angular.forEach($scope.import.files, function(obj){
         if(!obj.isRemote){
           formData.append('files', obj.lfFile);
@@ -120,18 +121,24 @@ angular.module('portal', [
             .ariaLabel('Alert Dialog Demo')
             .ok('Got it!')
         );
+      }).error(function (msg) {
+        $mdDialog.show(
+          $mdDialog.alert()
+            .parent(angular.element(document.querySelector('.inputdemoBasicUsage'))).clickOutsideToClose(true)
+            .title(msg).textContent('You can close this window.').ariaLabel('Alert Dialog Demo').ok('Ok!')
+        );
       })
     };
     $scope.update = function () {
       $scope.selectedItem = $filter('filter')($scope.schema_list, {id: parseInt($scope.import.schema)}, true)[0];
     };
-    $scope.openModal = function(ev, action, model) {
-      if (model = 'update_schema'){
+    $scope.openModal = function(ev, model) {
+      if (model){
         api.get('schema_fields', {schema_id: $scope.selectedItem.id}).then(function (resp) {
           $scope.field_list = resp.data.results;
           $mdDialog.show({
             controller: DialogController,
-            templateUrl: '/static/js/' + action + '.html',
+            templateUrl: '/static/js/update_schema.html',
             parent: angular.element(document.body),
             targetEvent: ev,
             clickOutsideToClose:true,
@@ -147,6 +154,24 @@ angular.module('portal', [
             $scope.status = 'You cancelled the dialog.';
           });
         });
+      } else {
+        $mdDialog.show({
+          controller: DialogController,
+          templateUrl: '/static/js/update_schema.html',
+          parent: angular.element(document.body),
+          targetEvent: ev,
+          clickOutsideToClose:true,
+          fullscreen: $scope.customFullscreen,
+          locals : {
+            schema: null,
+            field_list: null
+          }
+        })
+        .then(function(answer) {
+          $scope.status = 'You said the information was "' + answer + '".';
+        }, function() {
+          $scope.status = 'You cancelled the dialog.';
+        });
       }
     };
     function DialogController($scope, $mdDialog, api, schema, field_list) {
@@ -156,8 +181,8 @@ angular.module('portal', [
         $scope.models = resp.data.results;
       });
       $scope.$watch('schema.model', function(newVal, oldVal){
-        api.get('schema_matching', {schema_id: $scope.schema.id}).then(function (resp) {
-          $scope.matching_list = resp.data;
+        api.get('content_type/' + newVal + '/fields').then(function (resp) {
+          $scope.matching_list = resp.data.results;
         });
       });
       $scope.copyField = function(){

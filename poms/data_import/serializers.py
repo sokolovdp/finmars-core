@@ -33,4 +33,10 @@ class DataImportSchemaMatchingSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
+class DataImportContentTypeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ContentType
+        fields = ['id', 'model']
+
+
 

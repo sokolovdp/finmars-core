@@ -1,9 +1,5 @@
 from django.contrib.contenttypes.models import ContentType
-from django.db.models.signals import post_save
 from django.db import models
-from django.dispatch import receiver
-from datetime import datetime
-from .tasks import run_import
 from poms.users.models import MasterUser
 
 
@@ -56,18 +52,9 @@ class DataImportSchemaMatching(models.Model):
     '''
     модель для матчинга полей импорта и сущности
     '''
-    field = models.ForeignKey(DataImportSchemaFields)
+    schema = models.ForeignKey(DataImportSchema)
     model_field = models.CharField(max_length=100)
     expression = models.CharField(max_length=100)
 
     def __str__(self):
         return self.model_field
-
-# @receiver(post_save, sender=DataImport)
-# def update_state(sender, instance, *args, **kwargs):
-#     if instance.status == 1:
-#         run_import(instance)
-#     if DataImportSchema.objects.filter(data_import=instance):
-#         instance.status = 1
-#         instance.save()
-#     #     run_import.delay(instance)
