@@ -2,6 +2,7 @@ import io
 import csv
 from dateutil.parser import parse
 from django.db import IntegrityError
+from django.db.models.base import ModelBase
 from django.contrib.contenttypes.models import ContentType
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import viewsets
@@ -48,10 +49,18 @@ class DataImportViewSet(viewsets.ModelViewSet):
                         pass
                 if data:
                     try:
+                        master_user_id = Member.objects.get(user=self.request.user).master_user.id
                         accepted_data = {key: data.get(key) for key in PUBLIC_FIELDS[schema.model.model]}
+                        for k, v in accepted_data.items():
+                            if isinstance(k, ModelBase):
+                                del accepted_data[k]
+                                rel_obj = k(**{'user_code': data[k._meta.model_name], 'master_user_id': master_user_id})
+                                rel_obj.save()
+                            else:
+                                accepted_data[k] = v
                         additional_keys = [item for item in data.keys() if item not in accepted_data.keys()]
                         additional_data = {k: data[k] for k in additional_keys}
-                        accepted_data['master_user_id'] = Member.objects.get(user=self.request.user).master_user.id
+                        accepted_data['master_user_id'] = master_user_id
                         accepted_data['attrs'] = additional_data
                         o = schema.model.model_class()(**accepted_data)
                         o.save()
@@ -92,7 +101,7 @@ class DataImportSchemaFieldsViewSet(viewsets.ModelViewSet):
                 serializer.instance = self.queryset.get(id=i['id'])
                 for m in request.data['matching_list']:
                     if m.get('expression'):
-                        DataImportSchemaMatching(field=serializer.instance,
+                        DataImportSchemaMatching(schema=serializer.instance.schema,
                                                  model_field=m['model_field'],
                                                  expression=m['expression']).save()
             serializer.is_valid(raise_exception=True)
@@ -136,7 +145,7 @@ class DataImportSchemaMatchingViewSet(viewsets.ModelViewSet):
         queryset = self.filter_queryset(self.get_queryset())
         serializer = self.get_serializer(queryset, many=True)
         schema = DataImportSchema.objects.get(pk=self.request.query_params.get('schema_id'))
-        base_fields = list(map(lambda f: {'model_field': f, 'expression': ''}, PUBLIC_FIELDS[schema.model.name]))
+        base_fields = list(map(lambda f: {'model_field': f, 'expression': ''} if isinstance(f, str) else {'model_field': '%s:user_code' % f._meta.model_name, 'expression': '', 'related': True}, PUBLIC_FIELDS[schema.model.name]))
         master_user = Member.objects.get(user=self.request.user).master_user
         all_attr_fields = GenericAttributeType.objects.filter(master_user=master_user, content_type=schema.model)
         additional_fields = []
@@ -162,7 +171,9 @@ class ContentTypeViewSet(viewsets.ModelViewSet):
     @detail_route(methods=['get'])
     def fields(self, request, pk=None):
         obj = self.get_object()
-        base_fields = list(map(lambda f: {'model_field': f, 'expression': ''}, PUBLIC_FIELDS[obj.model]))
+        base_fields = list(map(lambda f: {'model_field': f, 'expression': ''} if isinstance(f, str) else {
+            'model_field': '%s (Related)' % f._meta.model_name, 'expression': '', 'related': True},
+                               PUBLIC_FIELDS[obj.model]))
         master_user = Member.objects.get(user=self.request.user).master_user
         all_attr_fields = GenericAttributeType.objects.filter(master_user=master_user, content_type=obj)
         additional_fields = []

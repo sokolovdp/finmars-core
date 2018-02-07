@@ -1,3 +1,4 @@
+from poms.counterparties.models import Counterparty
 PUBLIC_FIELDS = {
     'accounttype': ['user_code', 'name', 'short_name', 'public_name', 'notes'],
     'responsible': [],
@@ -5,7 +6,7 @@ PUBLIC_FIELDS = {
     'currency': ['user_code', 'name', 'short_name', 'public_name'],
     'instrument': ['user_code', 'name', 'short_name', 'public_name'],
     'pricingpolicy': ['user_code', 'name', 'short_name', 'public_name', 'expr'],
-    'portfolio': ['user_code', 'name', 'short_name', 'public_name', 'notes'],
+    'portfolio': ['user_code', 'name', 'short_name', 'public_name', 'notes', Counterparty],
     'strategy1': ['user_code', 'name', 'short_name', 'public_name'],
     'strategy2': ['user_code', 'name', 'short_name', 'public_name'],
     'strategy3': ['user_code', 'name', 'short_name', 'public_name'],

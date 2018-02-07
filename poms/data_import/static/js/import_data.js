@@ -181,9 +181,12 @@ angular.module('portal', [
         $scope.models = resp.data.results;
       });
       $scope.$watch('schema.model', function(newVal, oldVal){
-        api.get('content_type/' + newVal + '/fields').then(function (resp) {
-          $scope.matching_list = resp.data.results;
-        });
+        // api.get('content_type/' + newVal + '/fields').then(function (resp) {
+        //   $scope.matching_list = resp.data.results;
+        // });
+        api.get('schema_matching', {schema_id: $scope.schema.id}).then(function (resp) {
+          $scope.matching_list = resp.data;
+        })
       });
       $scope.copyField = function(){
         var last_num = 0;
