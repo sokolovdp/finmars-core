@@ -59,6 +59,15 @@
                   <input type="text" aria-label="expression" data-ng-model="match.expression" class="ng-pristine ng-untouched ng-valid md-input ng-not-empty" aria-invalid="false">
                   <div class="md-errors-spacer"></div>
                 </md-input-container>
+                <div flex="50" layout="row" class="layout-row flex-50">
+                  <button class="md-raised md-primary expr-btn md-button md-ink-ripple" type="button" data-ng-click="openExpressionDialog($event, match)" aria-label="...">
+                    <span class="ng-scope">...</span>
+                    <div class="md-ripple-container" style=""></div>
+                  </button>
+                  <button class="md-raised md-primary complex-expr-btn md-button md-ink-ripple" ng-if="match.related" type="button" data-ng-click="openMapping($event, match)" aria-label="Edit mapping">
+                    <span class="ng-scope">Edit mapping</span><div class="md-ripple-container" style=""></div>
+                  </button>
+                </div>
               </div>
             </div>
           </div>
