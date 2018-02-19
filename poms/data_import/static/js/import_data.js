@@ -104,6 +104,97 @@ angular.module('portal', [
       getCookie: getCookie
     }
   })
+  .factory('api_app', function($http, $q) {
+    function getCookie(name) {
+      var cookieValue = null;
+      if (document.cookie && document.cookie !== '') {
+          var cookies = document.cookie.split(';');
+          for (var i = 0; i < cookies.length; i++) {
+              var cookie = jQuery.trim(cookies[i]);
+              // Does this cookie string begin with the name we want?
+              if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                  cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                  break;
+              }
+          }
+      }
+      return cookieValue;
+    }
+    function get(model, filter){
+      var defer = $q.defer();
+      if (filter) {
+        $http.get('/api/v1/' + model + '/?' + jQuery.param(filter)).
+          success(function (data, status){
+            defer.resolve({data: data, status: status});
+          }).
+          error(function (msg, status) {
+            defer.resolve({msg: msg, status: status});
+          });
+      } else {
+        $http.get('/api/v1/' + model + '/').
+          success(function (data, status){
+            defer.resolve({data: data, status: status});
+          }).
+          error(function (msg, status) {
+            defer.resolve({msg: msg, status: status});
+          });
+      }
+      return defer.promise
+    }
+    function post(model, data){
+      var defer = $q.defer();
+      $http.post('/api/v1/' + model + '/', data, {headers: {'X-CSRFToken': getCookie('csrftoken')}}).
+        success(function (data, status){
+          defer.resolve({data: data, status: status});
+        }).
+        error(function (msg, status) {
+          defer.resolve({msg: msg, status: status});
+        });
+      return defer.promise
+    }
+    function put(model, id, data) {
+      var defer = $q.defer();
+      $http.put('/api/v1/' + model + '/' + id + '/', data, {headers: {'X-CSRFToken': getCookie('csrftoken')}}).
+        success(function (data, status){
+          defer.resolve({data: data, status: status});
+        }).
+        error(function (msg, status) {
+          defer.resolve({msg: msg, status: status});
+        });
+      return defer.promise
+    }
+    function patch(model, id, data) {
+      var defer = $q.defer();
+      $http.patch('/api/v1/' + model + '/' + id + '/', data, {headers: {'X-CSRFToken': getCookie('csrftoken')}}).
+        success(function (data, status){
+          defer.resolve({data: data, status: status});
+        }).
+        error(function (msg, status) {
+          defer.resolve({msg: msg, status: status});
+        });
+      return defer.promise
+    }
+
+    function del(model, id) {
+      var defer = $q.defer();
+      $http.delete('/api/v1/' + model + '/' + id + '/', {headers: {'X-CSRFToken': getCookie('csrftoken')}}).
+        success(function (data, status){
+          defer.resolve({data: data, status: status});
+        }).
+        error(function (msg, status) {
+          defer.resolve({msg: msg, status: status});
+        });
+      return defer.promise
+    }
+    return {
+      get: get,
+      post: post,
+      put: put,
+      patch: patch,
+      delete: del,
+      getCookie: getCookie
+    }
+  })
   .controller('SchemaList', function($scope, api, $mdDialog, $filter, $http){
     // $scope.object_list = {'name': 'default', 'id': 1};
     api.get('data_schema').then(function(resp){
@@ -193,12 +284,13 @@ angular.module('portal', [
         });
       }
     };
-    function DialogController($scope, $mdDialog, api, schema, field_list, item, data, vm) {
+    function DialogController($scope, $mdDialog, api, schema, field_list, item, data, vm, api_app) {
       $scope.data = data;
       $scope.vm = vm;
       $scope.schema = schema;
       $scope.mapping = {'value': null, 'name': null};
       $scope.field_list = field_list;
+      $scope.models = [{'id': 55, 'model': 'portfolio'}];
       if (schema) {
         $scope.$watch('schema.model', function(newVal, oldVal){
           api.get('schema_matching', {schema_id: $scope.schema.id}).then(function (resp) {
@@ -434,29 +526,233 @@ angular.module('portal', [
           });
       };
       $scope.openMapping = function (ev, item) {
-        api.get('content_type').then(function(resp){
-          $scope.models = resp.data.results;
-          $mdDialog.show({
-            controller: DialogController,
-            templateUrl: '/static/js/entity-type-mapping-dialog-view.html',
-            parent: angular.element(document.body),
-            targetEvent: ev,
-            clickOutsideToClose:true,
-            fullscreen: $scope.customFullscreen,
-            locals : {
-              data: {models: $scope.models},
-              item: item,
-              schema: null,
-              vm: null,
-              field_list: null
+        var vm = $scope;
+        console.log(item);
+        // 1 https://api.finmars.com/api/v1/currencies/currency/
+        // https://api.finmars.com/api/v1/import/currency-mapping/
+        vm.readyStatus = {
+            content: false
+        };
+        vm.entityItems = [];
+        // vm.mapItem = mapItem;
+        // vm.mapEntityType = mapItem.complexExpressionEntity;
+        vm.mapItem = {};
+        vm.mapEntityType = '';
+        vm.toggleQuery = function() {
+            vm.queryStatus = !vm.queryStatus;
+            vm.query = {};
+        };
+        vm.bindEntityName = function(item) {
+            if (item.hasOwnProperty('scheme_name')) {
+                return item.scheme_name;
             }
-          })
-          .then(function(answer) {
-            $scope.status = 'You said the information was "' + answer + '".';
-          }, function() {
-            $scope.status = 'You cancelled the dialog.';
+            return item.name;
+        };
+        vm.setSort = function(propertyName) {
+            vm.direction = (vm.sort === propertyName) ? !vm.direction : false;
+            vm.sort = propertyName;
+        };
+        vm.addMapping = function(item, index) {
+            item.mapping.splice(index, 0, {
+                value: ''
+            });
+        };
+
+        vm.removeMapping = function(item, mappingItem, index) {
+          if (mappingItem.hasOwnProperty('id')) {
+            mappingItem.isDeleted = true;
+          } else {
+            item.mapping.splice(index, 1);
+          }
+
+        };
+        vm.fancyEntity = function() {
+            return vm.mapEntityType.replace('_', ' ');
+        };
+        function addChilds(classifier, item) {
+          vm.entityItems.push({
+              value_type: classifier.value_type,
+              classifier: classifier.id,
+              name: item.name,
+              id: item.id,
+              level: item.level
+          });
+
+          if (item.children && item.children.length > 0) {
+              item.children.forEach(function(childItem) {
+                  addChilds(classifier, childItem);
+              })
+          }
+        }
+
+        // if (vm.mapEntityType == 'classifier') {
+        //     instrumentAttributeTypeService.getByKey(vm.mapItem.attribute_type).then(function(data) {
+        //
+        //         console.log('classifier data', data);
+        //
+        //         [data].forEach(function(classifier) {
+        //
+        //             console.log('classifier', classifier);
+        //
+        //             classifier.classifiers.forEach(function(item) {
+        //
+        //                 addChilds(classifier, item);
+        //
+        //             })
+        //         });
+        //
+        //         api.getList(vm.mapEntityType).then(function(data) {
+        //             if (data.hasOwnProperty('results')) {
+        //                 vm.items = data.results;
+        //             } else {
+        //                 vm.items = data
+        //             }
+        //
+        //             console.log('vm.items', vm.items);
+        //
+        //             var i, e;
+        //             for (e = 0; e < vm.entityItems.length; e = e + 1) {
+        //                 for (i = 0; i < vm.items.length; i = i + 1) {
+        //                     if (vm.items[i].classifier == vm.entityItems[e].id) {
+        //
+        //                         if (!vm.entityItems[e].hasOwnProperty('mapping')) {
+        //                             vm.entityItems[e].mapping = [];
+        //                         }
+        //
+        //                         vm.entityItems[e].mapping.push(vm.items[i])
+        //
+        //                         //vm.entityItems[e].mapping = vm.items[i]
+        //                     }
+        //                 }
+        //             }
+        //
+        //             vm.entityItems.forEach(function(entityItem) {
+        //                 if (!entityItem.hasOwnProperty('mapping')) {
+        //                     entityItem.mapping = [{
+        //                         value: ''
+        //                     }];
+        //                 }
+        //             });
+        //             vm.readyStatus.content = true;
+        //             $scope.$apply();
+        //         });
+        //     })
+        // } else {
+        //     // vm.entityMapDashed = vm.mapEntityType.split('_').join('-');
+        // }
+        api_app.get('counterparties/counterparty').then(function (resp) {
+          vm.entityItems = resp.data.results;
+          api.get(item.model_field + '-mapping').then(function(resp) {
+            vm.items = resp.data.results;
+            var i, e;
+            for (e = 0; e < vm.entityItems.length; e = e + 1) {
+              for (i = 0; i < vm.items.length; i = i + 1) {
+                if (vm.items[i].content_object == vm.entityItems[e].id) {
+                  console.log('ok');
+                  if (!vm.entityItems[e].hasOwnProperty('mapping')) {
+                      vm.entityItems[e].mapping = [];
+                  }
+                  vm.entityItems[e].mapping.push(vm.items[i])
+                }
+              }
+            }
+            vm.entityItems.forEach(function(entityItem) {
+                if (!entityItem.hasOwnProperty('mapping')) {
+                    entityItem.mapping = [{
+                        value: ''
+                    }];
+                }
+            });
+            vm.readyStatus.content = true;
+            $mdDialog.show({
+              controller: DialogController,
+              templateUrl: '/static/js/entity-type-mapping-dialog-view.html',
+              parent: angular.element(document.body),
+              targetEvent: ev,
+              clickOutsideToClose:true,
+              fullscreen: $scope.customFullscreen,
+              locals : {
+                data: {models: $scope.models},
+                item: item,
+                schema: null,
+                vm: vm,
+                field_list: null
+              }
+            })
+            .then(function(answer) {
+              $scope.status = 'You said the information was "' + answer + '".';
+            }, function() {
+              $scope.status = 'You cancelled the dialog.';
+            });
           });
         });
+        vm.cancel = function() {
+            $mdDialog.cancel();
+        };
+        vm.agree = function() {
+
+            var i = 0;
+
+            function updateRow() {
+                if (i < vm.entityItems.length) {
+                    if (!vm.entityItems[i].hasOwnProperty('mapping')) {
+                        i = i + 1;
+                        updateRow();
+                        return false;
+                    }
+
+                    if (vm.entityItems[i].mapping.length) {
+
+                        vm.entityItems[i].mapping.forEach(function(mapItem) {
+
+                            if (!mapItem.hasOwnProperty('id')) {
+                                mapItem.provider = 1; //TODO FIND PROVIDER ID?
+                                if (vm.mapEntityType == 'classifier') {
+
+                                    mapItem['attribute_type'] = vm.entityItems[i].classifier;
+
+                                    if (vm.entityItems[i].value_type == 30) {
+                                        mapItem.classifier = vm.entityItems[i].id
+                                    }
+                                    mapItem.content_object = mapItem.attribute_type;
+
+                                } else {
+                                    //vm.entityItems[i].mapping[vm.mapEntityType] = vm.entityItems[i].id;
+                                    mapItem.content_object = vm.entityItems[i].id;
+                                }
+
+                                console.log('mapItem', mapItem);
+                                console.log('vm.entityItems[i]', vm.entityItems[i]);
+
+                                return api.post(vm.mapEntityType, mapItem).then(function() {
+                                    i = i + 1;
+                                    updateRow();
+                                    return false;
+                                })
+                            }
+                            if (mapItem.isDeleted == true) {
+                                return api.delete(vm.mapEntityType, mapItem.id).then(function() {
+                                    i = i + 1;
+                                    updateRow();
+                                    return false;
+                                })
+                            }
+                            return api.patch(vm.mapEntityType, mapItem.id, mapItem).then(function() {
+                                i = i + 1;
+                                updateRow();
+                                return false;
+                            })
+                        })
+                    }
+                }
+            }
+
+            updateRow();
+
+            $mdDialog.hide({
+                status: 'agree'
+            });
+        };
       };
       $scope.saveMapping = function (mapping) {
         var model = mapping.model.split(',')[1];

@@ -3,7 +3,6 @@
     <md-toolbar>
       <div class="md-toolbar-tools">
         <h2>Update schema manager</h2>
-        <md-button class="md-icon-button" ng-click="cancel()">x</md-button>
       </div>
     </md-toolbar>
     <md-dialog-content>
@@ -12,10 +11,8 @@
           <input type="text" aria-label="name" data-ng-model="schema.name" class="ng-pristine ng-untouched ng-valid md-input ng-not-empty" aria-invalid="false">
         </div>
         <div class="layout-row">
-          <md-select ng-model="schema.model">
-            <md-option ng-repeat="model in models" value="{{ model.id }}">
-              {{ model.model }}
-            </md-option>
+          <md-select ng-model="model">
+            <md-option ng-repeat="model in models" value="{{ model.id }}" ng-selected="$index == 0">{{ model.model }}</md-option>
             <!-- <button class="md-button" type="button" data-ng-click="openModal($event, 'add_schema')">add new +</button> -->
           </md-select>
         </div>
@@ -75,6 +72,7 @@
       </div>
     </md-dialog-content>
     <md-dialog-actions layout="row">
+      <md-button ng-click="cancel()">Cancel</md-button>
       <md-button ng-click="saveSchema()">Update</md-button>
     </md-dialog-actions>
   </form>
