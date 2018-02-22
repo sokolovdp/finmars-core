@@ -290,7 +290,12 @@ angular.module('portal', [
       $scope.schema = schema;
       $scope.mapping = {'value': null, 'name': null};
       $scope.field_list = field_list;
-      $scope.models = [{'id': 55, 'model': 'portfolio'}];
+      $scope.models = [
+        {'id': 55, 'model': 'portfolio'},
+        {'id': 35, 'model': 'account'},
+        {'id': 36, 'model': 'counterparty'},
+        {'id': 39, 'model': 'responsibles'}
+        ];
       if (schema) {
         $scope.$watch('schema.model', function(newVal, oldVal){
           api.get('schema_matching', {schema_id: $scope.schema.id}).then(function (resp) {
@@ -299,6 +304,9 @@ angular.module('portal', [
         });
       }
       $scope.copyField = function(){
+        if ($scope.field_list == null) {
+          $scope.field_list = {};
+        }
         var last_num = 0;
         if ($scope.field_list.length > 0) {
           last_num = $scope.field_list[$scope.field_list.length - 1].num + 1;
@@ -318,8 +326,8 @@ angular.module('portal', [
         }
       });
       $scope.saveSchema = function(){
-        api.post('schema_fields', {'field_list': $scope.field_list, 'matching_list': $scope.matching_list} ).then(function(resp){
-          $scope.hide()
+        api.post('schema_fields', {'field_list': $scope.field_list, 'matching_list': $scope.matching_list, 'schema_name': $scope.schema.name, 'schema_model': $scope.model}).then(function(resp){
+          // $scope.hide()
         });
       };
       $scope.hide = function() {
@@ -527,9 +535,6 @@ angular.module('portal', [
       };
       $scope.openMapping = function (ev, item) {
         var vm = $scope;
-        console.log(item);
-        // 1 https://api.finmars.com/api/v1/currencies/currency/
-        // https://api.finmars.com/api/v1/import/currency-mapping/
         vm.readyStatus = {
             content: false
         };
@@ -640,7 +645,7 @@ angular.module('portal', [
         // } else {
         //     // vm.entityMapDashed = vm.mapEntityType.split('_').join('-');
         // }
-        api_app.get('counterparties/counterparty').then(function (resp) {
+        api_app.get('counterparties/' + item.model_field).then(function (resp) {
           vm.entityItems = resp.data.results;
           api.get(item.model_field + '-mapping').then(function(resp) {
             vm.items = resp.data.results;

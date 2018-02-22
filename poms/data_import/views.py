@@ -65,6 +65,7 @@ class DataImportViewSet(viewsets.ModelViewSet):
                         accepted_data = {}
                         additional_data = {}
                         relation_data = {}
+                        mapping_attr = None
                         accepted_data['master_user_id'] = master_user_id
                         for key in PUBLIC_FIELDS[schema.model.model]:
                             accepted_data[key] = data.get(key)
@@ -72,7 +73,18 @@ class DataImportViewSet(viewsets.ModelViewSet):
                             if isinstance(k, ModelBase):
                                 del accepted_data[k]
                                 try:
-                                    relation_data[k._meta.model_name] = CounterpartyMapping.objects.filter(value=data[k._meta.model_name])[0].content_object
+                                    if k._meta.model_name == 'counterparty':
+                                        mapping_model = CounterpartyMapping
+                                        mapping_attr = 'counterparties'
+                                    elif k._meta.model_name == 'responsible':
+                                        mapping_model = ResponsibleMapping
+                                        mapping_attr = 'responsibles'
+                                    elif k._meta.model_name == 'account':
+                                        mapping_model = AccountMapping
+                                        mapping_attr = 'accounts'
+                                    else:
+                                        raise KeyError
+                                    relation_data[k._meta.model_name] = mapping_model.objects.filter(value=raw_data[k._meta.model_name.capitalize()])[0].content_object
                                 except KeyError:
                                     continue
                             else:
@@ -86,7 +98,8 @@ class DataImportViewSet(viewsets.ModelViewSet):
 
                         o, _ = schema.model.model_class().objects.get_or_create(**accepted_data)
                         for r in relation_data.keys():
-                            o.counterparty_set(relation_data[r])
+                            if mapping_attr:
+                                getattr(o, mapping_attr).add(relation_data[r])
                         for additional_key in additional_keys:
                             attr_type = GenericAttributeType.objects.filter(user_code=additional_key).first()
                             attribute = GenericAttribute(content_object=o, attribute_type=attr_type)
@@ -99,7 +112,7 @@ class DataImportViewSet(viewsets.ModelViewSet):
                                     attribute.value_float = additional_data[additional_key]
                                 else:
                                     pass
-                                attribute.save()
+                            attribute.save()
                     except IntegrityError as e:
                         if int(request.data.get('error_handling')[0]):
                             continue
@@ -119,17 +132,21 @@ class DataImportSchemaFieldsViewSet(viewsets.ModelViewSet):
     serializer_class = DataImportSchemaFieldsSerializer
 
     def create(self, request, *args, **kwargs):
-        for i in request.data['field_list']:
-            serializer = self.get_serializer(data=i)
-            if i.get('id', None):
-                serializer.instance = self.queryset.get(id=i['id'])
-                for m in request.data['matching_list']:
-                    if m.get('expression'):
-                        o, _ = DataImportSchemaMatching.objects.update_or_create(schema=serializer.instance.schema,
-                                                                          model_field=m['model_field'],
-                                                                          expression=m['expression'])
-            serializer.is_valid(raise_exception=True)
-            self.perform_create(serializer)
+        schema, created = DataImportSchema.objects.get_or_create(name=request.data.get('schema_name'),
+                                                        model_id=int(request.data.get('schema_model')))
+        field_list = request.data.get('field_list')
+        if field_list:
+            for i in field_list:
+                serializer = self.get_serializer(data=i)
+                if i.get('id', None):
+                    serializer.instance = self.queryset.get(id=i['id'])
+                    for m in request.data['matching_list']:
+                        if m.get('expression'):
+                            o, _ = DataImportSchemaMatching.objects.update_or_create(schema=serializer.instance.schema,
+                                                                              model_field=m['model_field'],
+                                                                              expression=m['expression'])
+                serializer.is_valid(raise_exception=True)
+                self.perform_create(serializer)
         return Response(status=HTTP_201_CREATED)
 
 
