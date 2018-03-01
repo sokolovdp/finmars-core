@@ -196,7 +196,6 @@ angular.module('portal', [
     }
   })
   .controller('SchemaList', function($scope, api, $mdDialog, $filter, $http){
-    // $scope.object_list = {'name': 'default', 'id': 1};
     api.get('data_schema').then(function(resp){
       $scope.schema_list = resp.data.results;
     });
@@ -290,12 +289,10 @@ angular.module('portal', [
       $scope.schema = schema;
       $scope.mapping = {'value': null, 'name': null};
       $scope.field_list = field_list;
-      $scope.models = [
-        {'id': 55, 'model': 'portfolio'},
-        {'id': 35, 'model': 'account'},
-        {'id': 36, 'model': 'counterparty'},
-        {'id': 39, 'model': 'responsibles'}
-        ];
+      api.get('content_type').then(function (resp){
+        $scope.models = resp.data.results;
+      });
+
       if (schema) {
         $scope.$watch('schema.model', function(newVal, oldVal){
           api.get('schema_matching', {schema_id: $scope.schema.id}).then(function (resp) {
@@ -645,7 +642,13 @@ angular.module('portal', [
         // } else {
         //     // vm.entityMapDashed = vm.mapEntityType.split('_').join('-');
         // }
-        api_app.get('counterparties/' + item.model_field).then(function (resp) {
+        var app;
+        if (item.model_field = 'account') {
+          app = 'accounts/'
+        } else {
+          app = 'counterparties/'
+        }
+        api_app.get(app + item.model_field).then(function (resp) {
           vm.entityItems = resp.data.results;
           api.get(item.model_field + '-mapping').then(function(resp) {
             vm.items = resp.data.results;
@@ -653,7 +656,6 @@ angular.module('portal', [
             for (e = 0; e < vm.entityItems.length; e = e + 1) {
               for (i = 0; i < vm.items.length; i = i + 1) {
                 if (vm.items[i].content_object == vm.entityItems[e].id) {
-                  console.log('ok');
                   if (!vm.entityItems[e].hasOwnProperty('mapping')) {
                       vm.entityItems[e].mapping = [];
                   }
@@ -670,12 +672,13 @@ angular.module('portal', [
             });
             vm.readyStatus.content = true;
             $mdDialog.show({
-              controller: DialogController,
+              controller: MappingController,
               templateUrl: '/static/js/entity-type-mapping-dialog-view.html',
-              parent: angular.element(document.body),
+              // parent: angular.element(document.body),
               targetEvent: ev,
               clickOutsideToClose:true,
               fullscreen: $scope.customFullscreen,
+              autoWrap: false,
               locals : {
                 data: {models: $scope.models},
                 item: item,
@@ -683,11 +686,6 @@ angular.module('portal', [
                 vm: vm,
                 field_list: null
               }
-            })
-            .then(function(answer) {
-              $scope.status = 'You said the information was "' + answer + '".';
-            }, function() {
-              $scope.status = 'You cancelled the dialog.';
             });
           });
         });
@@ -759,14 +757,79 @@ angular.module('portal', [
             });
         };
       };
+    }
+    function MappingController($scope, $mdDialog, data, item, schema, vm, field_list) {
       $scope.saveMapping = function (mapping) {
         var model = mapping.model.split(',')[1];
         api.patch('schema_matching', item.id, {model_field: model + ':' + mapping.field});
         $mdDialog.hide();
       };
-      
-    }
+      vm.cancel = function() {
+        $mdDialog.hide();
+      };
+      vm.agree = function() {
+        var i = 0;
+        function updateRow() {
+            if (i < vm.entityItems.length) {
+                if (!vm.entityItems[i].hasOwnProperty('mapping')) {
+                    i = i + 1;
+                    updateRow();
+                    return false;
+                }
 
+                if (vm.entityItems[i].mapping.length) {
+
+                    vm.entityItems[i].mapping.forEach(function(mapItem) {
+
+                        if (!mapItem.hasOwnProperty('id')) {
+                            mapItem.provider = 1; //TODO FIND PROVIDER ID?
+                            if (vm.mapEntityType == 'classifier') {
+
+                                mapItem['attribute_type'] = vm.entityItems[i].classifier;
+
+                                if (vm.entityItems[i].value_type == 30) {
+                                    mapItem.classifier = vm.entityItems[i].id
+                                }
+                                mapItem.content_object = mapItem.attribute_type;
+
+                            } else {
+                                //vm.entityItems[i].mapping[vm.mapEntityType] = vm.entityItems[i].id;
+                                mapItem.content_object = vm.entityItems[i].id;
+                            }
+
+                            console.log('mapItem', mapItem);
+                            console.log('vm.entityItems[i]', vm.entityItems[i]);
+
+                            return api.post(vm.mapEntityType, mapItem).then(function() {
+                                i = i + 1;
+                                updateRow();
+                                return false;
+                            })
+                        }
+                        if (mapItem.isDeleted == true) {
+                            return api.delete(vm.mapEntityType, mapItem.id).then(function() {
+                                i = i + 1;
+                                updateRow();
+                                return false;
+                            })
+                        }
+                        return api.patch(vm.mapEntityType, mapItem.id, mapItem).then(function() {
+                            i = i + 1;
+                            updateRow();
+                            return false;
+                        })
+                    })
+                }
+            }
+        }
+
+        updateRow();
+
+        $mdDialog.hide({
+            status: 'agree'
+        });
+    };
+    }
   })
   .config(function($mdThemingProvider) {
     $mdThemingProvider.theme('docs-dark', 'default').primaryPalette('yellow').dark();

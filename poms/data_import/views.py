@@ -132,8 +132,8 @@ class DataImportSchemaFieldsViewSet(viewsets.ModelViewSet):
     serializer_class = DataImportSchemaFieldsSerializer
 
     def create(self, request, *args, **kwargs):
-        schema, created = DataImportSchema.objects.get_or_create(name=request.data.get('schema_name'),
-                                                        model_id=int(request.data.get('schema_model')))
+        schema, created = DataImportSchema.objects.update_or_create(name=request.data.get('schema_name'),
+                                                        defaults={'model_id': int(request.data.get('schema_model'))})
         field_list = request.data.get('field_list')
         if field_list:
             for i in field_list:
