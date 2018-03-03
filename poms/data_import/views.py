@@ -10,7 +10,7 @@ from rest_framework.decorators import detail_route
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser
 from rest_framework.status import HTTP_201_CREATED, HTTP_500_INTERNAL_SERVER_ERROR
-from poms.common.formula import safe_eval, InvalidExpression
+from poms.common.formula import safe_eval, ExpressionSyntaxError
 from poms.obj_attrs.models import GenericAttributeType, GenericAttribute
 from poms.users.models import Member
 from poms.integrations.models import CounterpartyMapping, AccountMapping, ResponsibleMapping
@@ -39,28 +39,21 @@ class DataImportViewSet(viewsets.ModelViewSet):
         for row in f:
             values = split_csv_str(row.values())
             if values:
-                for field in fields:
-                    try:
+                try:
+                    dict_row = {}
+                    for field in fields:
                         raw_data[field.source] = values[field.num]
-                    except IndexError:
-                        pass
-                for matching_field in matchings_fields:
-                    try:
-                        if raw_data.get(matching_field.expression):
+                        if isinstance(values[field.num], str):
+                            dict_row[field.source] = '"' + values[field.num] + '"'
+                        else:
+                            dict_row[field.source] = values[field.num]
+                    for matching_field in matchings_fields:
+                        if dict_row.get(matching_field.expression):
                             data[matching_field.model_field] = raw_data.get(matching_field.expression)
                         else:
-                            dict_row = {}
-                            for field in fields:
-                                if isinstance(values[field.num], str):
-                                    dict_row[field.source] = '"' + values[field.num] + '"'
-                                else:
-                                    dict_row[field.source] = values[field.num]
                             expr = matching_field.expression.format(**dict_row)
                             data[matching_field.model_field] = safe_eval(expr)
-                    except (IndexError, InvalidExpression):
-                        pass
-                if data:
-                    try:
+                    if data:
                         master_user_id = Member.objects.get(user=self.request.user).master_user.id
                         accepted_data = {}
                         additional_data = {}
@@ -93,34 +86,29 @@ class DataImportViewSet(viewsets.ModelViewSet):
                         for item in data.keys():
                             if item not in accepted_data.keys() and len(item.split(':')) == 1:
                                 additional_keys.append(item)
-                        # for k in additional_keys:
-                        #     accepted_data[k] = data[k]
 
                         o, _ = schema.model.model_class().objects.get_or_create(**accepted_data)
                         for r in relation_data.keys():
                             if mapping_attr:
                                 getattr(o, mapping_attr).add(relation_data[r])
                         for additional_key in additional_keys:
-                            try:
-                                attr_type = GenericAttributeType.objects.filter(user_code=additional_key).first()
-                                attribute = GenericAttribute(content_object=o, attribute_type=attr_type)
-                                if attr_type:
-                                    if attr_type.value_type == 40:
-                                        attribute.value_date = parse(additional_data[additional_key])
-                                    elif attr_type.value_type == 10:
-                                        attribute.value_string = additional_data[additional_key]
-                                    elif attr_type.value_type == 20:
-                                        attribute.value_float = additional_data[additional_key]
-                                    else:
-                                        pass
-                                attribute.save()
-                            except KeyError:
-                                continue
-                    except IntegrityError as e:
-                        if int(request.data.get('error_handling')[0]):
-                            continue
-                        else:
-                            return Response(e, status=HTTP_500_INTERNAL_SERVER_ERROR)
+                            attr_type = GenericAttributeType.objects.filter(user_code=additional_key).first()
+                            attribute = GenericAttribute(content_object=o, attribute_type=attr_type)
+                            if attr_type:
+                                if attr_type.value_type == 40:
+                                    attribute.value_date = parse(additional_data[additional_key])
+                                elif attr_type.value_type == 10:
+                                    attribute.value_string = additional_data[additional_key]
+                                elif attr_type.value_type == 20:
+                                    attribute.value_float = additional_data[additional_key]
+                                else:
+                                    pass
+                            attribute.save()
+                except (IntegrityError, ExpressionSyntaxError, KeyError, IndexError) as e:
+                    if int(request.data.get('error_handling')[0]):
+                        continue
+                    else:
+                        return Response(e, status=HTTP_500_INTERNAL_SERVER_ERROR)
         headers = self.get_success_headers(serializer.data)
         return Response(serializer.data, status=HTTP_201_CREATED, headers=headers)
 
