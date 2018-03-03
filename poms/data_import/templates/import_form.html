@@ -26,13 +26,13 @@
                 <label>Error handling</label>
                 <md-select ng-model="import.error_handling">
                   <md-option value="0">Break</md-option>
-                  <md-option value="1">Continue</md-option>
+                  <md-option selected value="1">Continue</md-option>
                 </md-select>
               </md-input-container>
               <md-input-container class="md-block" flex-gt-sm="">
                 <label>Import scheme</label>
                 <md-select ng-model="import.schema" ng-change="update()">
-                  <md-option ng-repeat="schema in schema_list" value="{{ schema.id }}">
+                  <md-option ng-repeat="schema in schema_list" value="{{ schema.id }}" ng-selected="$index == 0">
                     {{ schema.name }}
                   </md-option>
                   <button class="md-button" type="button" data-ng-click="openModal($event, 0)">add new +</button>

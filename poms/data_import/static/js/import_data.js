@@ -289,6 +289,9 @@ angular.module('portal', [
       $scope.schema = schema;
       $scope.mapping = {'value': null, 'name': null};
       $scope.field_list = field_list;
+      $scope.selectedModel = function (model, model_id) {
+        return (model.id === model_id)
+      };
       api.get('content_type').then(function (resp){
         $scope.models = resp.data.results;
       });
@@ -324,7 +327,7 @@ angular.module('portal', [
       });
       $scope.saveSchema = function(){
         api.post('schema_fields', {'field_list': $scope.field_list, 'matching_list': $scope.matching_list, 'schema_name': $scope.schema.name, 'schema_model': $scope.model}).then(function(resp){
-          // $scope.hide()
+          $scope.hide()
         });
       };
       $scope.hide = function() {

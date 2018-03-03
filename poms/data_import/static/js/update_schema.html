@@ -12,8 +12,7 @@
         </div>
         <div class="layout-row">
           <md-select ng-model="model">
-            <md-option ng-repeat="model in models" value="{{ model.id }}" ng-selected="$index == 0">{{ model.model }}</md-option>
-            <!-- <button class="md-button" type="button" data-ng-click="openModal($event, 'add_schema')">add new +</button> -->
+            <md-option ng-repeat="model in models" value="{{ model.id }}" ng-selected="selectedModel(model, schema.model)">{{ model.model }}</md-option>
           </md-select>
         </div>
         <div class="layout-row">

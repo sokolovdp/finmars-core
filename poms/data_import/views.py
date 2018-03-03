@@ -85,7 +85,7 @@ class DataImportViewSet(viewsets.ModelViewSet):
                                     else:
                                         raise KeyError
                                     relation_data[k._meta.model_name] = mapping_model.objects.filter(value=raw_data[k._meta.model_name.capitalize()])[0].content_object
-                                except KeyError:
+                                except (KeyError, IndexError):
                                     continue
                             else:
                                 accepted_data[k] = v
@@ -93,26 +93,29 @@ class DataImportViewSet(viewsets.ModelViewSet):
                         for item in data.keys():
                             if item not in accepted_data.keys() and len(item.split(':')) == 1:
                                 additional_keys.append(item)
-                        for k in additional_keys:
-                            accepted_data[k] = data[k]
+                        # for k in additional_keys:
+                        #     accepted_data[k] = data[k]
 
                         o, _ = schema.model.model_class().objects.get_or_create(**accepted_data)
                         for r in relation_data.keys():
                             if mapping_attr:
                                 getattr(o, mapping_attr).add(relation_data[r])
                         for additional_key in additional_keys:
-                            attr_type = GenericAttributeType.objects.filter(user_code=additional_key).first()
-                            attribute = GenericAttribute(content_object=o, attribute_type=attr_type)
-                            if attr_type:
-                                if attr_type.value_type == 40:
-                                    attribute.value_date = parse(additional_data[additional_key])
-                                elif attr_type.value_type == 10:
-                                    attribute.value_string = additional_data[additional_key]
-                                elif attr_type.value_type == 20:
-                                    attribute.value_float = additional_data[additional_key]
-                                else:
-                                    pass
-                            attribute.save()
+                            try:
+                                attr_type = GenericAttributeType.objects.filter(user_code=additional_key).first()
+                                attribute = GenericAttribute(content_object=o, attribute_type=attr_type)
+                                if attr_type:
+                                    if attr_type.value_type == 40:
+                                        attribute.value_date = parse(additional_data[additional_key])
+                                    elif attr_type.value_type == 10:
+                                        attribute.value_string = additional_data[additional_key]
+                                    elif attr_type.value_type == 20:
+                                        attribute.value_float = additional_data[additional_key]
+                                    else:
+                                        pass
+                                attribute.save()
+                            except KeyError:
+                                continue
                     except IntegrityError as e:
                         if int(request.data.get('error_handling')[0]):
                             continue
@@ -143,8 +146,11 @@ class DataImportSchemaFieldsViewSet(viewsets.ModelViewSet):
                     for m in request.data['matching_list']:
                         if m.get('expression'):
                             o, _ = DataImportSchemaMatching.objects.update_or_create(schema=serializer.instance.schema,
-                                                                              model_field=m['model_field'],
-                                                                              expression=m['expression'])
+                                                                                     model_field=m['model_field'],
+                                                                                     defaults={
+                                                                                         'expression': m['expression']
+                                                                                     })
+
                 serializer.is_valid(raise_exception=True)
                 self.perform_create(serializer)
         return Response(status=HTTP_201_CREATED)

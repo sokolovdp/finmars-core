@@ -12,6 +12,7 @@ class DataImportSchemaFieldsAdmin(admin.ModelAdmin):
 
 class DataImportSchemaMatchingAdmin(admin.ModelAdmin):
     list_display = ('schema', 'model_field', 'expression')
+    list_filter = ('schema',)
 
 
 admin.site.register(DataImport, DataImportAdmin)
