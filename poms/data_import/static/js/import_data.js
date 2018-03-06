@@ -238,7 +238,7 @@ angular.module('portal', [
     $scope.openModal = function(ev, model) {
       if (model){
         api.get('schema_fields', {schema_id: $scope.selectedItem.id}).then(function (resp) {
-          $scope.field_list = resp.data.results;
+          $scope.field_list = resp.data;
           $mdDialog.show({
             controller: DialogController,
             templateUrl: '/static/js/update_schema.html',

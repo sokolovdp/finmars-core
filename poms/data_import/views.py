@@ -121,6 +121,13 @@ class DataImportSchemaViewSet(viewsets.ModelViewSet):
 class DataImportSchemaFieldsViewSet(viewsets.ModelViewSet):
     queryset = DataImportSchemaFields.objects.all()
     serializer_class = DataImportSchemaFieldsSerializer
+    filter_backends = (DjangoFilterBackend,)
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.filter_queryset(self.get_queryset()).filter(
+            schema_id=self.request.query_params.get('schema_id'))
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
 
     def create(self, request, *args, **kwargs):
         schema, created = DataImportSchema.objects.update_or_create(name=request.data.get('schema_name'),
@@ -131,13 +138,14 @@ class DataImportSchemaFieldsViewSet(viewsets.ModelViewSet):
                 serializer = self.get_serializer(data=i)
                 if i.get('id', None):
                     serializer.instance = self.queryset.get(id=i['id'])
-                    for m in request.data['matching_list']:
-                        if m.get('expression'):
-                            o, _ = DataImportSchemaMatching.objects.update_or_create(schema=serializer.instance.schema,
-                                                                                     model_field=m['model_field'],
-                                                                                     defaults={
-                                                                                         'expression': m['expression']
-                                                                                     })
+                    if request.data.get('matching_list'):
+                        for m in request.data['matching_list']:
+                            if m.get('expression'):
+                                o, _ = DataImportSchemaMatching.objects.update_or_create(schema=serializer.instance.schema,
+                                                                                         model_field=m['model_field'],
+                                                                                         defaults={
+                                                                                             'expression': m['expression']
+                                                                                         })
 
                 serializer.is_valid(raise_exception=True)
                 self.perform_create(serializer)
@@ -175,9 +183,10 @@ class DataImportSchemaModelsViewSet(viewsets.ModelViewSet):
 class DataImportSchemaMatchingViewSet(viewsets.ModelViewSet):
     queryset = DataImportSchemaMatching.objects.all()
     serializer_class = DataImportSchemaMatchingSerializer
+    filter_backends = (DjangoFilterBackend,)
 
     def list(self, request, *args, **kwargs):
-        queryset = self.filter_queryset(self.get_queryset())
+        queryset = self.filter_queryset(self.get_queryset()).filter(schema_id=self.request.query_params.get('schema_id'))
         serializer = self.get_serializer(queryset, many=True)
         schema = DataImportSchema.objects.get(pk=self.request.query_params.get('schema_id'))
         base_fields = list(map(lambda f: {'model_field': f if isinstance(f, str) else f._meta.model_name, 'expression': '', 'related': False if isinstance(f, str) else True}, PUBLIC_FIELDS[schema.model.name]))

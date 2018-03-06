@@ -1,7 +1,7 @@
 from poms.counterparties.models import Counterparty, Responsible
 from poms.accounts.models import Account
 PUBLIC_FIELDS = {
-    'accounttype': ['user_code', 'name', 'short_name', 'public_name', 'notes'],
+    'account': ['user_code', 'name', 'short_name', 'public_name', 'notes'],
     'responsible': [],
     'counterparty': [],
     'currency': ['user_code', 'name', 'short_name', 'public_name'],
