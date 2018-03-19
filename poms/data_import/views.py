@@ -116,6 +116,8 @@ class DataImportViewSet(viewsets.ModelViewSet):
 class DataImportSchemaViewSet(viewsets.ModelViewSet):
     queryset = DataImportSchema.objects.all()
     serializer_class = DataImportSchemaSerializer
+    filter_backends = (DjangoFilterBackend,)
+    filter_fields = ('id', 'model',)
 
 
 class DataImportSchemaFieldsViewSet(viewsets.ModelViewSet):
@@ -211,7 +213,8 @@ class ContentTypeViewSet(viewsets.ModelViewSet):
     ])
     serializer_class = DataImportContentTypeSerializer
     filter_backends = (DjangoFilterBackend,)
-    filter_fields = ('id',)
+    filter_fields = ('id', 'model',)
+
 
     @detail_route(methods=['get'])
     def fields(self, request, pk=None):
