@@ -96,19 +96,20 @@ class DataImportViewSet(viewsets.ModelViewSet):
                             attribute = GenericAttribute(content_object=o, attribute_type=attr_type)
                             if attr_type:
                                 if attr_type.value_type == 40:
-                                    attribute.value_date = parse(additional_data[additional_key])
+                                    attribute.value_date = str(data[additional_key])
                                 elif attr_type.value_type == 10:
-                                    attribute.value_string = additional_data[additional_key]
+                                    attribute.value_string = data[additional_key]
                                 elif attr_type.value_type == 20:
-                                    attribute.value_float = additional_data[additional_key]
+                                    attribute.value_float = data[additional_key]
                                 else:
                                     pass
-                            attribute.save()
+                                attribute.save()
                 except (IntegrityError, ExpressionSyntaxError, KeyError, IndexError) as e:
                     if int(request.data.get('error_handling')[0]):
                         continue
                     else:
-                        return Response(e, status=HTTP_500_INTERNAL_SERVER_ERROR)
+                        # raise e
+                        return Response('import error', status=HTTP_500_INTERNAL_SERVER_ERROR)
         headers = self.get_success_headers(serializer.data)
         return Response(serializer.data, status=HTTP_201_CREATED, headers=headers)
 
