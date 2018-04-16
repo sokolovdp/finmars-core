@@ -1,5 +1,6 @@
 import io
 import csv
+import json
 from dateutil.parser import parse
 from django.db import IntegrityError
 from django.db.models.base import ModelBase
@@ -29,6 +30,8 @@ class DataImportViewSet(viewsets.ModelViewSet):
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
+        status = HTTP_201_CREATED
+        response_data = []
         self.perform_create(serializer)
         f = csv.DictReader(io.TextIOWrapper(request.data['files'].file))
         schema = DataImportSchema.objects.get(pk=request.data['schema'])
@@ -56,7 +59,6 @@ class DataImportViewSet(viewsets.ModelViewSet):
                     if data:
                         master_user_id = Member.objects.get(user=self.request.user).master_user.id
                         accepted_data = {}
-                        additional_data = {}
                         relation_data = {}
                         mapping_attr = None
                         accepted_data['master_user_id'] = master_user_id
@@ -100,18 +102,18 @@ class DataImportViewSet(viewsets.ModelViewSet):
                                 elif attr_type.value_type == 10:
                                     attribute.value_string = data[additional_key]
                                 elif attr_type.value_type == 20:
-                                    attribute.value_float = data[additional_key]
+                                    attribute.value_float = float(data[additional_key])
                                 else:
                                     pass
                                 attribute.save()
-                except (IntegrityError, ExpressionSyntaxError, KeyError, IndexError) as e:
+                except Exception as e:
+                    response_data.append({'error': e.__str__(), 'row': json.dumps(raw_data)})
                     if int(request.data.get('error_handling')[0]):
                         continue
                     else:
-                        # raise e
-                        return Response('import error', status=HTTP_500_INTERNAL_SERVER_ERROR)
+                        return Response(response_data, status=HTTP_500_INTERNAL_SERVER_ERROR)
         headers = self.get_success_headers(serializer.data)
-        return Response(serializer.data, status=HTTP_201_CREATED, headers=headers)
+        return Response(response_data, status=status, headers=headers)
 
 
 class DataImportSchemaViewSet(viewsets.ModelViewSet):
@@ -139,19 +141,17 @@ class DataImportSchemaFieldsViewSet(viewsets.ModelViewSet):
         if field_list:
             for i in field_list:
                 serializer = self.get_serializer(data=i)
-                if i.get('id', None):
-                    serializer.instance = self.queryset.get(id=i['id'])
-                    if request.data.get('matching_list'):
-                        for m in request.data['matching_list']:
-                            if m.get('expression'):
-                                o, _ = DataImportSchemaMatching.objects.update_or_create(schema=serializer.instance.schema,
-                                                                                         model_field=m['model_field'],
-                                                                                         defaults={
-                                                                                             'expression': m['expression']
-                                                                                         })
-
+                # serializer.instance = self.queryset.get(id=i['id'])
                 serializer.is_valid(raise_exception=True)
                 self.perform_create(serializer)
+        if request.data.get('matching_list'):
+            for m in request.data['matching_list']:
+                if m.get('expression'):
+                    o, _ = DataImportSchemaMatching.objects.update_or_create(schema=schema,
+                                                                             model_field=m['model_field'],
+                                                                             defaults={
+                                                                                 'expression': m['expression']
+                                                                             })
         return Response(status=HTTP_201_CREATED)
 
 
