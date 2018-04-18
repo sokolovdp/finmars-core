@@ -60,7 +60,6 @@ class DataImportViewSet(viewsets.ModelViewSet):
                         master_user_id = Member.objects.get(user=self.request.user).master_user.id
                         accepted_data = {}
                         relation_data = {}
-                        mapping_attr = None
                         accepted_data['master_user_id'] = master_user_id
                         for key in PUBLIC_FIELDS[schema.model.model]:
                             accepted_data[key] = data.get(key)
@@ -70,16 +69,13 @@ class DataImportViewSet(viewsets.ModelViewSet):
                                 try:
                                     if k._meta.model_name == 'counterparty':
                                         mapping_model = CounterpartyMapping
-                                        mapping_attr = 'counterparties'
                                     elif k._meta.model_name == 'responsible':
                                         mapping_model = ResponsibleMapping
-                                        mapping_attr = 'responsibles'
                                     elif k._meta.model_name == 'account':
                                         mapping_model = AccountMapping
-                                        mapping_attr = 'accounts'
                                     else:
                                         raise KeyError
-                                    relation_data[k._meta.model_name] = mapping_model.objects.filter(value=raw_data[k._meta.model_name.capitalize()])[0].content_object
+                                    relation_data[k._meta.verbose_name_plural] = mapping_model.objects.filter(value=raw_data[k._meta.model_name.capitalize()])[0].content_object
                                 except (KeyError, IndexError):
                                     continue
                             else:
@@ -91,8 +87,7 @@ class DataImportViewSet(viewsets.ModelViewSet):
 
                         o, _ = schema.model.model_class().objects.get_or_create(**accepted_data)
                         for r in relation_data.keys():
-                            if mapping_attr:
-                                getattr(o, mapping_attr).add(relation_data[r])
+                            getattr(o, str(r)).add(relation_data[r])
                         for additional_key in additional_keys:
                             attr_type = GenericAttributeType.objects.filter(user_code=additional_key).first()
                             attribute = GenericAttribute(content_object=o, attribute_type=attr_type)
