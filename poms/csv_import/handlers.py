@@ -1666,6 +1666,9 @@ class SimpleImportProcess:
                 except Exception as e:
                     item.status = "error"
 
+                    if not item.error_message:
+                        item.error_message = ""
+
                     item.error_message = (
                         f"{item.error_message} ==== Overwrite Exception {e}"
                     )
@@ -1675,10 +1678,6 @@ class SimpleImportProcess:
                         f"{traceback.format_exc()}"
                     )
             else:
-                # _l.info("e %s" % e)
-                # _l.info("e %s" % e)
-                # _l.info("e %s" % e.__dict__)
-
                 if "make a unique set" in str(e.__dict__):
                     item.status = "skip"
                     item.error_message = None

@@ -191,6 +191,7 @@ class PortfolioSerializer(
     client = serializers.PrimaryKeyRelatedField(
         queryset=Client.objects.all(),
         required=False,
+        allow_null=True
     )
     client_object = serializers.PrimaryKeyRelatedField(
         source="client",
