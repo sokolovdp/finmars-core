@@ -1,5 +1,5 @@
 services:
-  web:
+  web: &base
     build: .
     env_file:
       - .env
@@ -14,24 +14,14 @@ services:
       - "8000:8080"
 
   worker:
-    build: .
-    env_file:
-      - .env
+    <<: *base
     environment:
       - DJANGO_SETTINGS_MODULE=poms_app.settings # remove after change manage.py location
-    depends_on:
-      - db
-      - rabbitmq
-      - redis
-    command: ["celery", "--app", "poms_app", "worker", "--concurrency=1",
-     "--loglevel=INFO", "-n", "worker01",
-     "-Q", "backend-general-queue,backend-background-queue",
-     "--max-tasks-per-child=1"]
+    command: >
+      sh -c "celery --app poms_app worker --concurrency=1 --loglevel=INFO -n $CORE_WORKER_NAME -Q $CORE_QUEUES --max-tasks-per-child=1"
 
   migration:
-    build: .
-    env_file:
-      - .env
+    <<: *base
     environment:
       - DJANGO_SETTINGS_MODULE=poms_app.settings # remove after change manage.py location
     depends_on:
