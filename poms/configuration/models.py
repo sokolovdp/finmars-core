@@ -111,7 +111,7 @@ class Configuration(TimeStampedModel):
         default=False,
         verbose_name=gettext_lazy("is package"),
     )
-    manifest_data = models.TextField(
+    manifest_data = models.JSONField(
         null=True,
         blank=True,
         verbose_name=gettext_lazy("manifest_data"),
@@ -138,16 +138,17 @@ class Configuration(TimeStampedModel):
 
     @property
     def manifest(self):
-        return None if self.manifest_data is None else json.loads(self.manifest_data)
+        return None if self.manifest_data is None else self.manifest_data
 
     @manifest.setter
     def manifest(self, value):
         if value is None:
             self.manifest_data = None
         else:
-            self.manifest_data = json.dumps(
-                value, cls=DjangoJSONEncoder, sort_keys=True, indent=1
-            )
+            # if you still want to indent/sort, you can dump then load
+            text = json.dumps(value, cls=DjangoJSONEncoder, sort_keys=True, indent=1)
+            self.manifest_data = json.loads(text)
+
 
     def __str__(self):
         return f"{self.configuration_code} ({self.version})"
