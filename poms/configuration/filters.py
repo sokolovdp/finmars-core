@@ -30,3 +30,36 @@ class ConfigurationQueryFilter(BaseFilterBackend):
             return queryset.filter(options)
 
         return queryset
+
+
+class ManifestQueryFilter(BaseFilterBackend):
+    """
+    Read any query params that start with "manifest."
+    and turn them into manifest_data__… lookups.
+    """
+
+    def filter_queryset(self, request, queryset, view):
+        for param, raw_value in request.query_params.items():
+            if not param.startswith('manifest.'):
+                continue
+
+            # param = "manifest.settings.ui.is_shown_in_sidenav"
+            # split into ['manifest', 'settings', 'ui', 'is_shown_in_sidenav']
+            parts = param.split('.')
+
+            # build the Django lookup: manifest_data__settings__ui__is_shown_in_sidenav
+            lookup = "manifest_data"
+            for key in parts[1:]:
+                lookup += "__" + key
+
+            # parse boolean strings into real bools
+            val_lower = raw_value.lower()
+            if val_lower in ("true", "false"):
+                value = val_lower == "true"
+            else:
+                value = raw_value
+
+            # apply the filter
+            queryset = queryset.filter(**{lookup: value})
+
+        return queryset
