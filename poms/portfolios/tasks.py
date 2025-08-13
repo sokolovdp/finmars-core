@@ -248,7 +248,6 @@ def calculate_portfolio_register_record(self, task_id, *args, **kwargs):
             PortfolioRegisterRecord.objects.filter(
                 master_user=master_user,
                 portfolio_id__in=portfolio_ids,
-                transaction_date__gte=date_from,
                 transaction_date__lte=date_to,
                 transaction_class_id__in=[
                     TransactionClass.CASH_INFLOW,
