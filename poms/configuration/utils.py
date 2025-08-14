@@ -459,7 +459,7 @@ def run_workflow(user_code, payload, master_task):
         "platform_task_id": master_task.id,
     }
 
-    response = requests.post(url, headers=headers, json=data)
+    response = requests.post(url, headers=headers, json=data, verify=settings.VERIFY_SSL)
 
     return response.json()
 
@@ -485,7 +485,7 @@ def get_workflow(workflow_id: int, master_task):
     space_code = master_task.master_user.space_code
     url = f"https://{settings.DOMAIN_NAME}/{realm_code}/{space_code}/workflow/api/workflow/{workflow_id}/"
 
-    response = requests.get(url, headers=headers)
+    response = requests.get(url, headers=headers, verify=settings.VERIFY_SSL)
 
     return response.json()
 
