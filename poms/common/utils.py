@@ -828,15 +828,21 @@ def split_date_range(
     return date_pairs
 
 
-def shift_to_week_boundary(date, sdate, edate, start: bool, freq: str):
+def shift_to_week_boundary(
+    input_date: datetime.date,
+    sdate: datetime.date,
+    edate: datetime.date,
+    start: bool,
+    freq: str,
+) -> datetime.date:
     """
     Changes the day to the beginning/end of the week,
     taking into account the boundaries of the range
     """
-    if (start and date > sdate) or (not start and date < edate):
-        date = calc_shift_date_map[freq](date)
+    if (start and input_date > sdate) or (not start and input_date < edate):
+        input_date = calc_shift_date_map[freq](input_date)
 
-    return date
+    return input_date
 
 
 def pick_dates_from_range(
@@ -879,21 +885,21 @@ def pick_dates_from_range(
         dates.append(end_date)
 
     pick_dates: list[str] = []
-    for date in dates:
+    for day in dates:
         if "W" in frequency:
-            date = shift_to_week_boundary(date, start_date, end_date, start, frequency)
+            day = shift_to_week_boundary(day, start_date, end_date, start, frequency)
 
         if is_only_bday:
-            if "D" in frequency and not is_business_day(date):
+            if "D" in frequency and not is_business_day(day):
                 continue
 
-            if not is_business_day(date):
+            if not is_business_day(day):
                 if start:
-                    date = shift_to_bday(date, 1)
+                    day = shift_to_bday(day, 1)
                 else:
-                    date = shift_to_bday(date, -1)
+                    day = shift_to_bday(day, -1)
 
-        date_str = date.strftime(settings.API_DATE_FORMAT)
+        date_str = day.strftime(settings.API_DATE_FORMAT)
         if date_str not in pick_dates:
             pick_dates.append(date_str)
 
