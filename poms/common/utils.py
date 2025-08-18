@@ -901,7 +901,7 @@ def pick_dates_from_range(
 
 
 def calculate_period_date(
-    date: str | datetime.date,
+    input_date: str | datetime.date,
     frequency: str,
     shift: int,
     is_only_bday=False,
@@ -911,7 +911,7 @@ def calculate_period_date(
     Calculates the start or end date of a certain time period,
     with the possibility of shifting forward or backward by several periods.
 
-    :param date: A string in YYYY-MM-DD ISO format representing the current date.
+    :param input_date: A string in YYYY-MM-DD ISO format representing the current date.
     :param frequency: "D" - (dayly) / "W" - (weekly) / "M" - (monthly) /
     "Q" - (quarterly) / "Y" - (yearly) / "C" - (custom - without changes).
     :param shift: Indicating how many periods to shift (-N for backward, +N for forward).
@@ -919,23 +919,26 @@ def calculate_period_date(
     :param start: The beginning of frequency, if False end of frequency.
     :return: The calculated date in YYYY-MM-DD format.
     """
+    input_date: datetime.date = get_validated_date(input_date)
+
     if frequency == "C":
-        return date
+        return input_date.strftime(settings.API_DATE_FORMAT)
 
     frequency = frequency if start else f"E{frequency}"
-    date = get_validated_date(date)
+
+
     if "W" in frequency:
-        date = calc_shift_date_map[frequency](date)
+        input_date = calc_shift_date_map[frequency](input_date)
 
-    date = date + frequency_map[frequency](shift)
+    input_date = input_date + frequency_map[frequency](shift)
 
-    if is_only_bday and not is_business_day(date):
+    if is_only_bday and not is_business_day(input_date):
         if start:
-            date = shift_to_bday(date, 1)
+            input_date = shift_to_bday(input_date, 1)
         else:
-            date = shift_to_bday(date, -1)
+            input_date = shift_to_bday(input_date, -1)
 
-    return str(date.strftime(settings.API_DATE_FORMAT))
+    return input_date.strftime(settings.API_DATE_FORMAT)
 
 
 # endregion Dates
