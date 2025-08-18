@@ -775,11 +775,11 @@ def shift_to_bday(date, shift):
     return date
 
 
-def get_validated_date(date) -> datetime.date:
-    if not isinstance(date, datetime.date):
-        return datetime.datetime.strptime(date, settings.API_DATE_FORMAT).date()
+def get_validated_date(day: datetime.date | str) -> datetime.date:
+    if not isinstance(day, datetime.date):
+        return datetime.datetime.strptime(day, settings.API_DATE_FORMAT).date()
 
-    return date
+    return day
 
 
 def split_date_range(
