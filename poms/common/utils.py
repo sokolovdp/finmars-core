@@ -851,8 +851,8 @@ def pick_dates_from_range(
     :param frequency: "D" - (dayly) / "W" - (weekly) / "M" - (monthly) /
     "Q" - (quarterly) / "Y" - (yearly) / "C" - (custom - without changes).
     :param is_only_bday: Whether to adjust the dates to business days.
-    :param start: The beginning of frequency, if False end of frequency.
-    :return: A list, containing the start or end of a each frequency.
+    :param start: The beginning of frequency, if False, then end of frequency.
+    :return: A list, containing the start or end of each frequency.
     """
     if frequency == "C":
         return [start_date, end_date]
@@ -892,7 +892,7 @@ def pick_dates_from_range(
                 else:
                     date = shift_to_bday(date, -1)
 
-        date_str = str(date.strftime(settings.API_DATE_FORMAT))
+        date_str = date.strftime(settings.API_DATE_FORMAT)
         if date_str not in pick_dates:
             pick_dates.append(date_str)
 
