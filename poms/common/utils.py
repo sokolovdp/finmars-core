@@ -916,7 +916,7 @@ def calculate_period_date(
     "Q" - (quarterly) / "Y" - (yearly) / "C" - (custom - without changes).
     :param shift: Indicating how many periods to shift (-N for backward, +N for forward).
     :param is_only_bday: Whether to adjust the dates to business days.
-    :param start: The beginning of frequency, if False end of frequency.
+    :param start: The beginning of frequency, if False, then end of frequency.
     :return: The calculated date in YYYY-MM-DD format.
     """
     input_date: datetime.date = get_validated_date(input_date)
