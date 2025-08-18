@@ -530,8 +530,8 @@ def is_newer_version(version1, version2):
 
 
 # region Dates
-def is_business_day(date):
-    return bool(len(pd.bdate_range(date, date)))
+def is_business_day(day: datetime.date) -> bool:
+    return bool(len(pd.bdate_range(day, day)))
 
 
 def get_last_business_day(date, to_string=False):
