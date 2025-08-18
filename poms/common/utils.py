@@ -106,6 +106,7 @@ except AttributeError:
     except ImportError:
         numpy = None
 
+
         def isclose(a, b, rel_tol=1e-09, abs_tol=0.0):
             # TODO: maybe incorrect!
             return abs(a - b) <= max(rel_tol * max(abs(a), abs(b)), abs_tol)
@@ -221,7 +222,7 @@ class MemorySavingQuerysetIterator(object):
             # the object, we ensure that there are only `max_obj_num` objects in
             # memory at any given time
             smaller_queryset = copy.deepcopy(self._base_queryset)[
-                i : i + self.max_obj_num
+                i: i + self.max_obj_num
             ]
             # logger.debug('Grabbing next %s objects from DB' % self.max_obj_num)
             yield from smaller_queryset.iterator()
@@ -534,25 +535,25 @@ def is_business_day(day: datetime.date) -> bool:
     return bool(len(pd.bdate_range(day, day)))
 
 
-def get_last_business_day(date, to_string=False):
+def get_last_business_day(day: datetime.date | str, to_string=False) -> str | datetime.date:
     """
     Returns the previous business day of the given date.
-    :param date:
+    :param day:
     :param to_string:
     :return:
     """
 
-    if not isinstance(date, datetime.date):
-        date = datetime.datetime.strptime(date, settings.API_DATE_FORMAT).date()
+    if not isinstance(day, datetime.date):
+        day = datetime.datetime.strptime(day, settings.API_DATE_FORMAT).date()
 
-    weekday = datetime.date.weekday(date)
+    weekday = datetime.date.weekday(day)
     if weekday > 4:  # if it's Saturday or Sunday
-        date = date - datetime.timedelta(days=weekday - 4)
+        day = day - datetime.timedelta(days=weekday - 4)
 
-    return date.strftime(settings.API_DATE_FORMAT) if to_string else date
+    return day.strftime(settings.API_DATE_FORMAT) if to_string else day
 
 
-def last_day_of_month(any_day):
+def last_day_of_month(any_day: datetime.date) -> datetime.date:
     # Day 28 exists in every month. 4 days later, it's always next month
     next_month = any_day.replace(day=28) + datetime.timedelta(days=4)
     # subtracting the number of the current day brings us back one month
