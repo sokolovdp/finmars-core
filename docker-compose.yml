@@ -15,6 +15,7 @@ services:
 
   worker:
     <<: *base
+    ports: []
     environment:
       - DJANGO_SETTINGS_MODULE=poms_app.settings # remove after change manage.py location
     command: >
