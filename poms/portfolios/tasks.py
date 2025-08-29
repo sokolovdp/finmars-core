@@ -59,13 +59,14 @@ def calculate_simple_balance_report(
         )
 
     try:
-        report = Report(master_user=portfolio_register.master_user)
-        report.master_user = portfolio_register.master_user
-        report.member = member
-        report.report_date = report_date
-        report.pricing_policy = portfolio_register.valuation_pricing_policy
-        report.portfolios = [portfolio_register.portfolio]
-        report.report_currency = portfolio_register.linked_instrument.pricing_currency
+        report = Report(
+            master_user=portfolio_register.master_user,
+            member=member,
+            report_date=report_date,
+            pricing_policy=portfolio_register.valuation_pricing_policy,
+            portfolios=[portfolio_register.portfolio],
+            report_currency=portfolio_register.linked_instrument.pricing_currency,
+        )
 
         builder = BalanceReportBuilderSql(report)
         report = builder.build_balance_sync()

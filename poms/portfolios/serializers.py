@@ -279,8 +279,8 @@ class PortfolioSerializer(
             )
 
         except Exception:
-            ecosystem_default = EcosystemDefault.cache.get_cache(
-                master_user_pk=master_user.pk
+            ecosystem_default = EcosystemDefault.objects.get(
+                master_user=master_user
             )
 
             # TODO maybe create new instr instead of existing?
