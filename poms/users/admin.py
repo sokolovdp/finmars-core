@@ -1,15 +1,9 @@
-from functools import update_wrapper
-
 from django import forms
 from django.conf import settings
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 from django.contrib.auth.models import Permission, User
 from django.contrib.contenttypes.models import ContentType
-from django.db.models import F
-from django.http import HttpResponseRedirect
-from django.urls import re_path, reverse
-from django.utils.translation import gettext_lazy
 
 from poms.common.admin import AbstractModelAdmin
 from poms.instruments.models import EventScheduleConfig
@@ -116,9 +110,7 @@ admin.site.register(Member, MemberAdmin)
 
 
 class UserProfileForm(forms.ModelForm):
-    language = forms.ChoiceField(
-        choices=settings.LANGUAGES, initial=settings.LANGUAGE_CODE
-    )
+    language = forms.ChoiceField(choices=settings.LANGUAGES, initial=settings.LANGUAGE_CODE)
     timezone = forms.ChoiceField(choices=TIMEZONE_CHOICES)
 
     class Meta:
@@ -143,9 +135,7 @@ class UserWithProfileAdmin(UserAdmin):
 
     def get_inline_instances(self, request, obj=None):
         if obj:
-            return super(UserWithProfileAdmin, self).get_inline_instances(
-                request, obj=obj
-            )
+            return super().get_inline_instances(request, obj=obj)
         else:
             return []
 

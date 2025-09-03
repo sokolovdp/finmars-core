@@ -19,17 +19,13 @@ class OwnerByPermissionedInstrumentFilter(BaseFilterBackend):
 
 class OwnerByInstrumentTypeFilter(BaseFilterBackend):
     def filter_queryset(self, request, queryset, view):
-        instrument_types = InstrumentType.objects.filter(
-            master_user=request.user.master_user
-        )
+        instrument_types = InstrumentType.objects.filter(master_user=request.user.master_user)
         return queryset.filter(instrument_type__in=instrument_types)
 
 
 class OwnerByInstrumentAttributeTypeFilter(BaseFilterBackend):
     def filter_queryset(self, request, queryset, view):
-        instrument_attribute_types = GenericAttributeType.objects.filter(
-            master_user=request.user.master_user
-        )
+        instrument_attribute_types = GenericAttributeType.objects.filter(master_user=request.user.master_user)
         return queryset.filter(attribute_type__in=instrument_attribute_types)
 
 
@@ -68,14 +64,10 @@ class InstrumentSelectSpecialQueryFilter(BaseFilterBackend):
             short_name_q.add(Q(short_name__icontains=piece), Q.AND)
 
         for piece in pieces:
-            reference_for_pricing_q.add(
-                Q(reference_for_pricing__icontains=piece), Q.AND
-            )
+            reference_for_pricing_q.add(Q(reference_for_pricing__icontains=piece), Q.AND)
 
         for piece in pieces:
-            instrument_type_user_code.add(
-                Q(instrument_type__user_code__icontains=piece), Q.AND
-            )
+            instrument_type_user_code.add(Q(instrument_type__user_code__icontains=piece), Q.AND)
 
         options.add(Q(name__icontains=query), Q.OR)
         options.add(Q(user_code__icontains=query), Q.OR)

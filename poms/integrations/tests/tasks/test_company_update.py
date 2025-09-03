@@ -25,14 +25,10 @@ class DatabaseClientTest(BaseTestCase):
         }
 
     def create_company(self):
-        serializer = CounterpartySerializer(
-            data=self.company_data, context=self.context
-        )
+        serializer = CounterpartySerializer(data=self.company_data, context=self.context)
         serializer.is_valid(raise_exception=True)
         serializer.save()
-        return Counterparty.objects.get(
-            master_user=self.master_user, user_code=self.user_code
-        )
+        return Counterparty.objects.get(master_user=self.master_user, user_code=self.user_code)
 
     def test__create(self):
         company = self.create_company()

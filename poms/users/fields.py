@@ -1,9 +1,8 @@
+import base64
+
 from django.contrib.auth.models import User
 from rest_framework import serializers
 from rest_framework.fields import CurrentUserDefault
-import base64
-
-from poms_app import settings
 
 from poms.common.fields import (
     PrimaryKeyRelatedFilteredField,
@@ -12,6 +11,7 @@ from poms.common.fields import (
 from poms.iam.models import AccessPolicy, Group, Role
 from poms.users.filters import OwnerByMasterUserFilter
 from poms.users.models import MasterUser, Member
+from poms_app import settings
 
 
 class CurrentMasterUserDefault:
@@ -52,7 +52,7 @@ class CurrentUserField(serializers.HiddenField):
         super().__init__(**kwargs)
 
 
-class CurrentMemberDefault(object):
+class CurrentMemberDefault:
     requires_context = True
 
     def set_context(self, serializer_field):
@@ -69,7 +69,7 @@ class CurrentMemberDefault(object):
 class HiddenMemberField(serializers.HiddenField):
     def __init__(self, **kwargs):
         kwargs["default"] = CurrentMemberDefault()
-        super(HiddenMemberField, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
 
 class HiddenUserField(serializers.PrimaryKeyRelatedField):
@@ -107,7 +107,7 @@ class Base64BinaryField(serializers.Field):
     def to_representation(self, value):
         if value is None:
             return None
-        return base64.b64encode(value).decode('utf-8')
+        return base64.b64encode(value).decode("utf-8")
 
     def to_internal_value(self, data):
         if data is None:
@@ -115,4 +115,4 @@ class Base64BinaryField(serializers.Field):
         try:
             return base64.b64decode(data)
         except Exception as e:
-            raise serializers.ValidationError('Invalid Base64-encoded data.')
+            raise serializers.ValidationError("Invalid Base64-encoded data.") from e

@@ -8,4 +8,4 @@ class NotificationsConfig(AppConfig):
 
     def ready(self):
         # noinspection PyUnresolvedReferences
-        import poms.notifications.handlers
+        pass

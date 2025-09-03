@@ -63,9 +63,7 @@ class PortfolioReconcileHistoryViewTest(BaseTestCase):
             },
         )
 
-    def create_reconcile_history(
-        self, group: PortfolioReconcileGroup
-    ) -> PortfolioReconcileHistory:
+    def create_reconcile_history(self, group: PortfolioReconcileGroup) -> PortfolioReconcileHistory:
         return PortfolioReconcileHistory.objects.create(
             master_user=self.master_user,
             owner=self.member,
@@ -176,9 +174,7 @@ class PortfolioReconcileHistoryViewTest(BaseTestCase):
         response_json = response.json()
         self.assertEqual(len(response_json), 1)
 
-        self.assertEqual(
-            response_json[user_code]["final_status"], ReconcileStatus.OK.value
-        )
+        self.assertEqual(response_json[user_code]["final_status"], ReconcileStatus.OK.value)
 
     def test__status_ok_double(self):
         self.group.portfolios.add(self.portfolio_big)
@@ -193,7 +189,7 @@ class PortfolioReconcileHistoryViewTest(BaseTestCase):
         response_json = response.json()
         self.assertEqual(len(response_json), 2)
 
-        for user_code, result in response_json.items():
+        for user_code, result in response_json.items():  # noqa: B007
             self.assertEqual(result["final_status"], ReconcileStatus.OK.value)
 
     @BaseTestCase.cases(
@@ -216,9 +212,7 @@ class PortfolioReconcileHistoryViewTest(BaseTestCase):
         response_json = response.json()
         self.assertEqual(len(response_json), 1)
 
-        self.assertEqual(
-            response_json[user_code]["final_status"], ReconcileStatus.ERROR.value
-        )
+        self.assertEqual(response_json[user_code]["final_status"], ReconcileStatus.ERROR.value)
 
     def test__status_error_double(self):
         self.group.portfolios.add(self.portfolio_big)
@@ -235,5 +229,5 @@ class PortfolioReconcileHistoryViewTest(BaseTestCase):
         response_json = response.json()
         self.assertEqual(len(response_json), 2)
 
-        for user_code, result in response_json.items():
+        for user_code, result in response_json.items():  # noqa: B007
             self.assertEqual(result["final_status"], ReconcileStatus.ERROR.value)

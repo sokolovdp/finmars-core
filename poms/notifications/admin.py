@@ -27,7 +27,7 @@ class NotificationAdmin(AbstractModelAdmin):
     date_hierarchy = "create_date"
 
     def get_queryset(self, request):
-        queryset = super(NotificationAdmin, self).get_queryset(request)
+        queryset = super().get_queryset(request)
         queryset.prefetch_related("actor", "action_object", "target")
         return queryset
 

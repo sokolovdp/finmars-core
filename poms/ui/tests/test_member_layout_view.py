@@ -1,5 +1,3 @@
-from django.conf import settings
-
 from poms.common.common_base_test import BaseTestCase
 from poms.ui.models import MemberLayout
 

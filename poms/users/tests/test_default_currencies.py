@@ -1,9 +1,8 @@
 from unittest import mock
-from poms.instruments.models import Country
-from poms.common.common_base_test import BaseTestCase
-from poms.users.models import MasterUser, Member
-from poms.currencies.models import Currency
 
+from poms.common.common_base_test import BaseTestCase
+from poms.currencies.models import Currency
+from poms.instruments.models import Country
 
 correct_mock_currencies_data = [
     {"user_code": "CHF", "name": "Swiss Franc (CHF)", "country_alpha_3": "CHE"},

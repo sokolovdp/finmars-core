@@ -10,7 +10,6 @@ from rest_framework.response import Response
 from poms.celery_tasks.models import CeleryTask
 from poms.common.authentication import get_access_token
 from poms.common.filters import CharFilter
-
 from poms.common.storage import get_storage
 from poms.common.views import AbstractModelViewSet
 from poms.configuration.filters import ConfigurationQueryFilter, ManifestQueryFilter
@@ -91,7 +90,7 @@ class ConfigurationViewSet(AbstractModelViewSet):
 
     @action(detail=True, methods=["get"], url_path="configure")
     def configure(self, request, pk=None, realm_code=None, space_code=None):
-        configuration = self.get_object()
+        configuration = self.get_object()  # noqa: F841
 
         # RESPONSE WITH HUGE JSON OF CONFIG, AND USER CAN SELECT WHAT TO DO WITH IT
 
@@ -134,16 +133,12 @@ class ConfigurationViewSet(AbstractModelViewSet):
             }
         )
 
-        _l.info(
-            f"ConfigurationViewSet.import_configuration celery_task {celery_task.id}"
-        )
+        _l.info(f"ConfigurationViewSet.import_configuration celery_task {celery_task.id}")
 
         return Response({"task_id": celery_task.id}, status=status.HTTP_200_OK)
 
     @action(detail=True, methods=["PUT"], url_path="push-configuration-to-marketplace")
-    def push_configuration_to_marketplace(
-        self, request, pk=None, realm_code=None, space_code=None
-    ):
+    def push_configuration_to_marketplace(self, request, pk=None, realm_code=None, space_code=None):
         configuration = self.get_object()
 
         options_object = {
@@ -177,9 +172,7 @@ class ConfigurationViewSet(AbstractModelViewSet):
         methods=["POST"],
         url_path="install-configuration-from-marketplace",
     )
-    def install_configuration_from_marketplace(
-        self, request, pk=None, realm_code=None, space_code=None
-    ):
+    def install_configuration_from_marketplace(self, request, pk=None, realm_code=None, space_code=None):
         celery_task = CeleryTask.objects.create(
             master_user=request.user.master_user,
             member=request.user.member,
@@ -221,10 +214,7 @@ class ConfigurationViewSet(AbstractModelViewSet):
                 }
             )
 
-        _l.info(
-            f"ConfigurationViewSet.import_configuration_from_marketplace "
-            f"celery_task {celery_task.id}"
-        )
+        _l.info(f"ConfigurationViewSet.import_configuration_from_marketplace celery_task {celery_task.id}")
 
         return Response({"task_id": celery_task.id}, status=status.HTTP_200_OK)
 

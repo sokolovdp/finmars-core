@@ -2,10 +2,10 @@ from datetime import date
 from unittest.mock import patch
 
 from poms.common.common_base_test import BaseTestCase
-from poms.common.factories import AccrualEventFactory, AccrualCalculationScheduleFactory
+from poms.common.factories import AccrualCalculationScheduleFactory, AccrualEventFactory
 from poms.instruments.models import (
-    AccrualEvent,
     AccrualCalculationSchedule,
+    AccrualEvent,
     Instrument,
 )
 
@@ -22,9 +22,7 @@ class GetAccruedPriceMethodTest(BaseTestCase):
 
     def test_init(self):
         self.accrual_event = AccrualEventFactory(instrument=self.instrument)
-        self.accrual_schedule = AccrualCalculationScheduleFactory(
-            instrument=self.instrument
-        )
+        self.accrual_schedule = AccrualCalculationScheduleFactory(instrument=self.instrument)
         self.assertEqual(AccrualEvent.objects.count(), 1)
         self.assertEqual(AccrualCalculationSchedule.objects.count(), 1)
 

@@ -4,7 +4,6 @@ from logging import getLogger
 
 from celery import current_app
 from celery.result import AsyncResult
-
 from django.conf import settings
 from django_filters.rest_framework import FilterSet
 from rest_framework import status
@@ -221,9 +220,7 @@ class CeleryTaskViewSet(AbstractApiView, ModelViewSet):
         return Response({"status": "ok"})
 
     @action(detail=True, methods=["PUT"], url_path="abort-transaction-import")
-    def abort_transaction_import(
-        self, request, pk=None, realm_code=None, space_code=None
-    ):
+    def abort_transaction_import(self, request, pk=None, realm_code=None, space_code=None):
         from poms.transactions.models import ComplexTransaction
         from poms_app import celery_app
 
@@ -231,14 +228,10 @@ class CeleryTaskViewSet(AbstractApiView, ModelViewSet):
 
         count = ComplexTransaction.objects.filter(linked_import_task=pk).count()
 
-        codes = ComplexTransaction.objects.filter(linked_import_task=pk).values_list(
-            "code", flat=True
-        )
+        codes = ComplexTransaction.objects.filter(linked_import_task=pk).values_list("code", flat=True)
 
         complex_transactions_ids = list(
-            ComplexTransaction.objects.filter(linked_import_task=pk).values_list(
-                "id", flat=True
-            )
+            ComplexTransaction.objects.filter(linked_import_task=pk).values_list("id", flat=True)
         )
 
         options_object = {
@@ -268,9 +261,7 @@ class CeleryTaskViewSet(AbstractApiView, ModelViewSet):
 
         _l.info(f"{count} complex transactions were deleted")
 
-        task.notes = f"{count} Transactions were aborted \n" + (
-            ", ".join(str(x) for x in codes)
-        )
+        task.notes = f"{count} Transactions were aborted \n" + (", ".join(str(x) for x in codes))
         task.status = CeleryTask.STATUS_TRANSACTIONS_ABORTED
         task.save()
 
@@ -290,15 +281,13 @@ class CeleryTaskViewSet(AbstractApiView, ModelViewSet):
         if not options:
             options = completed_task.options_object
 
-        for registered_task_name in current_app.tasks.keys():
+        for registered_task_name in current_app.tasks:
             if completed_task.type in registered_task_name:
                 full_task_name = registered_task_name
                 _l.info(f"relaunch - full task name is {full_task_name}")
                 break
         else:
-            err_message = (
-                f"Сan't match task {completed_task.type} with any full names of tasks."
-            )
+            err_message = f"Сan't match task {completed_task.type} with any full names of tasks."
             _l.error(err_message)
             return Response(
                 {

@@ -3,10 +3,8 @@ import logging
 from django.db import models
 from django.utils.translation import gettext_lazy
 
-from poms.common.models import NamedModel, TimeStampedModel
+from poms.common.models import TimeStampedModel
 from poms.common.utils import date_now
-from poms.configuration.models import ConfigurationModel
-from poms.procedures.models import PricingProcedureInstance
 
 _l = logging.getLogger("poms.pricing")
 

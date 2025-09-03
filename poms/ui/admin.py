@@ -3,21 +3,21 @@ from django.contrib import admin
 from poms.common.admin import AbstractModelAdmin
 from poms.ui.filters import LayoutContentTypeFilter
 from poms.ui.models import (
-    ListLayout,
-    EditLayout,
     Bookmark,
-    ComplexTransactionUserField,
-    PortalInterfaceAccessModel,
-    DashboardLayout,
-    ContextMenuLayout,
-    TemplateLayout,
-    EntityTooltip,
     ColorPalette,
     ColorPaletteColor,
+    ComplexTransactionUserField,
+    ContextMenuLayout,
     CrossEntityAttributeExtension,
-    TransactionUserField,
+    DashboardLayout,
+    EditLayout,
+    EntityTooltip,
     InstrumentUserField,
+    ListLayout,
     MemberLayout,
+    PortalInterfaceAccessModel,
+    TemplateLayout,
+    TransactionUserField,
 )
 
 
@@ -34,12 +34,8 @@ class BaseLayoutAdmin(AbstractModelAdmin):
     def formfield_for_foreignkey(self, db_field, request=None, **kwargs):
         if db_field.name == "content_type":
             qs = kwargs.get("queryset", db_field.remote_field.model.objects)
-            kwargs["queryset"] = LayoutContentTypeFilter().filter_queryset(
-                request, qs, None
-            )
-        return super(BaseLayoutAdmin, self).formfield_for_foreignkey(
-            db_field, request=request, **kwargs
-        )
+            kwargs["queryset"] = LayoutContentTypeFilter().filter_queryset(request, qs, None)
+        return super().formfield_for_foreignkey(db_field, request=request, **kwargs)
 
 
 class ColorPaletteColorAdmin(BaseLayoutAdmin):

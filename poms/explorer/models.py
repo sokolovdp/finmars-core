@@ -2,14 +2,11 @@ from pathlib import Path
 
 from django.conf import settings
 from django.db import models
-
 from mptt.models import MPTTModel, TreeForeignKey
 
 from poms.common.fields import ResourceGroupsField
 from poms.common.models import TimeStampedModel
 from poms.configuration.utils import get_default_configuration_code
-from poms.iam.models import AccessPolicy, Group
-from poms.users.models import Member
 
 MAX_PATH_LENGTH = 2048
 MAX_NAME_LENGTH = 255
@@ -76,10 +73,7 @@ class StorageObject(MPTTModel, TimeStampedModel):
 
     def policy_user_code(self, access: str = AccessLevel.READ) -> str:
         AccessLevel.validate_level(access)
-        return (
-            f"{get_default_configuration_code()}:{settings.SERVICE_NAME}"
-            f":explorer:{self.path}-{access}"
-        )
+        return f"{get_default_configuration_code()}:{settings.SERVICE_NAME}:explorer:{self.path}-{access}"
 
     @property
     def name(self) -> str:

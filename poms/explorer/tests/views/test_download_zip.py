@@ -12,9 +12,7 @@ class ExplorerViewFileViewSetTest(CreateUserMemberMixin, BaseTestCase):
         self.init_test_case()
         self.realm_code = "realm00000"
         self.space_code = "space00000"
-        self.url = (
-            f"/{self.realm_code}/{self.space_code}/api/v1/explorer/download-as-zip/"
-        )
+        self.url = f"/{self.realm_code}/{self.space_code}/api/v1/explorer/download-as-zip/"
 
         self.storage_patch = mock.patch(
             "poms.explorer.views.storage",
@@ -29,9 +27,7 @@ class ExplorerViewFileViewSetTest(CreateUserMemberMixin, BaseTestCase):
 
     def test__paths_invalid(self):
         path = self.random_string()
-        self.storage_mock.download_paths_as_zip.side_effect = FileNotFoundError(
-            "No such file"
-        )
+        self.storage_mock.download_paths_as_zip.side_effect = FileNotFoundError("No such file")
         response = self.client.post(self.url, {"paths": [path, path]})
         self.assertEqual(response.status_code, 400)
 

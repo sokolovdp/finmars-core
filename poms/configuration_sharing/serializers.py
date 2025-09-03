@@ -1,10 +1,10 @@
 from rest_framework import serializers
 
 from poms.configuration_sharing.models import (
-    SharedConfigurationFile,
     InviteToSharedConfigurationFile,
+    SharedConfigurationFile,
 )
-from poms.users.fields import MasterUserField, HiddenMemberField, CurrentUserField
+from poms.users.fields import CurrentUserField, HiddenMemberField, MasterUserField
 from poms.users.serializers import MemberViewSerializer
 
 
@@ -42,17 +42,11 @@ class InviteToSharedConfigurationFileSerializer(serializers.ModelSerializer):
 
 class MyInviteToSharedConfigurationFileSerializer(serializers.ModelSerializer):
     def __init__(self, *args, **kwargs):
-        super(MyInviteToSharedConfigurationFileSerializer, self).__init__(
-            *args, **kwargs
-        )
+        super().__init__(*args, **kwargs)
 
-        self.fields["member_from_object"] = MemberViewSerializer(
-            source="member_from", read_only=True
-        )
-        self.fields["shared_configuration_file_object"] = (
-            SharedConfigurationFileSerializer(
-                source="shared_configuration_file", read_only=True
-            )
+        self.fields["member_from_object"] = MemberViewSerializer(source="member_from", read_only=True)
+        self.fields["shared_configuration_file_object"] = SharedConfigurationFileSerializer(
+            source="shared_configuration_file", read_only=True
         )
 
     class Meta:

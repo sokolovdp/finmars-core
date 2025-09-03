@@ -3,13 +3,12 @@ import logging
 import os
 import zipfile
 from pathlib import Path
-from typing import Optional
 
 from django.core.files.base import ContentFile
 from django.http import HttpResponse
 
 from poms.celery_tasks.models import CeleryTask
-from poms.common.storage import FinmarsS3Storage, FinmarsLocalFileSystemStorage
+from poms.common.storage import FinmarsLocalFileSystemStorage, FinmarsS3Storage
 from poms.explorer.models import StorageObject
 
 _l = logging.getLogger("poms.explorer")
@@ -45,11 +44,11 @@ def is_system_path(path: str) -> bool:
     return path.startswith(".")
 
 
-def define_content_type(file_name: str) -> Optional[str]:
+def define_content_type(file_name: str) -> str | None:
     return CONTENT_TYPES.get(os.path.splitext(file_name)[-1])
 
 
-def join_path(space_code: str, path: Optional[str]) -> str:
+def join_path(space_code: str, path: str | None) -> str:
     if path:
         return f"{space_code.rstrip('/')}/{path.lstrip('/')}"
     else:
@@ -72,9 +71,7 @@ def response_with_file(storage: FinmarsS3Storage, path: str) -> HttpResponse:
             result = file.read()
             file_content_type = define_content_type(file.name)
             response = (
-                HttpResponse(result, content_type=file_content_type)
-                if file_content_type
-                else HttpResponse(result)
+                HttpResponse(result, content_type=file_content_type) if file_content_type else HttpResponse(result)
             )
     except Exception as e:
         _l.error(f"get file resulted in {repr(e)}")
@@ -144,16 +141,10 @@ def move_file(
         None
     """
     file_name = os.path.basename(source_file_path)
-    _l.info(
-        f"move_file: move file {file_name} from {source_file_path} "
-        f"to {destin_file_path}"
-    )
+    _l.info(f"move_file: move file {file_name} from {source_file_path} to {destin_file_path}")
 
     content = storage.open(source_file_path).read()
-    _l.info(
-        f"move_file: with content len={len(content)} "
-        f"from {source_file_path} to {destin_file_path}"
-    )
+    _l.info(f"move_file: with content len={len(content)} from {source_file_path} to {destin_file_path}")
 
     storage.save(destin_file_path, ContentFile(content, name=file_name))
     _l.info(f"move_file: content saved to {destin_file_path}")
@@ -276,13 +267,10 @@ def unzip_file(
                 content = zipped_file.read()
                 storage.save(dest_file_path, ContentFile(content, name=file_name))
                 _l.info(
-                    f"unzip_file: save {file_name} of size {len(content)} "
-                    f"type {type(content)} to {dest_file_path}"
+                    f"unzip_file: save {file_name} of size {len(content)} type {type(content)} to {dest_file_path}"
                 )
 
-        progress_dict.update(
-            {"description": "unzip_file_in_storage finished", "percent": 100}
-        )
+        progress_dict.update({"description": "unzip_file_in_storage finished", "percent": 100})
         celery_task.update_progress(progress_dict)
 
 
@@ -304,10 +292,7 @@ def sync_storage_objects(storage: FinmarsS3Storage, start_directory) -> int:
 
         dir_names, file_names = storage.listdir(directory_path)
 
-        _l.info(
-            f"sync_files: directory_path {directory.path} "
-            f"try to sync {len(file_names)} files"
-        )
+        _l.info(f"sync_files: directory_path {directory.path} try to sync {len(file_names)} files")
 
         count = len(file_names)
         for file in file_names:
@@ -429,9 +414,7 @@ def paginate(items: list, page_size: int, page_number: int, base_url: str) -> di
     previous_page_number = page_number - 1
 
     previous_page_url = (
-        f"{base_url}{delimiter}page={previous_page_number}&page_size={page_size}"
-        if previous_page_number > 0
-        else None
+        f"{base_url}{delimiter}page={previous_page_number}&page_size={page_size}" if previous_page_number > 0 else None
     )
 
     next_page_number = page_number + 1
@@ -449,9 +432,7 @@ def paginate(items: list, page_size: int, page_number: int, base_url: str) -> di
     }
 
 
-def gen_path_copy(
-    storage: FinmarsS3Storage | FinmarsLocalFileSystemStorage, path: str
-) -> str:
+def gen_path_copy(storage: FinmarsS3Storage | FinmarsLocalFileSystemStorage, path: str) -> str:
     """
     Generate new path startswith _copy(number) for file (or directory).
     Args:
@@ -510,16 +491,10 @@ def copy_file(
         )
 
     file_name = os.path.basename(destin_file_path)
-    _l.info(
-        f"copy_file: copy file {file_name} from {source_file_path} "
-        f"to {destin_file_path}"
-    )
+    _l.info(f"copy_file: copy file {file_name} from {source_file_path} to {destin_file_path}")
 
     content = storage.open(source_file_path).read()
-    _l.info(
-        f"copy_file: with content len={len(content)} "
-        f"from {source_file_path} to {destin_file_path}"
-    )
+    _l.info(f"copy_file: with content len={len(content)} from {source_file_path} to {destin_file_path}")
 
     storage.save(destin_file_path, ContentFile(content, name=file_name))
     _l.info(f"copy_file: content saved to {destin_file_path}")
@@ -548,8 +523,7 @@ def copy_dir(
     if storage.exists(destin_dir):
         destin_dir = gen_path_copy(storage=storage, path=destin_dir)
         _l.info(
-            f"copy_dir: directory from {source_dir} "
-            f"already exists in target path, path has updated to {destin_dir}"
+            f"copy_dir: directory from {source_dir} already exists in target path, path has updated to {destin_dir}"
         )
 
     for dir_name in dirs:
@@ -586,10 +560,7 @@ def rename_file(
     _l.info(f"rename_file: rename {source_file_path} to {destin_file_path}")
 
     content = storage.open(source_file_path).read()
-    _l.info(
-        f"rename_file: with content len={len(content)} "
-        f"from {source_file_path} to {destin_file_path}"
-    )
+    _l.info(f"rename_file: with content len={len(content)} from {source_file_path} to {destin_file_path}")
 
     storage.save(destin_file_path, ContentFile(content, name=file_name))
     _l.info(f"rename_file: content saved to {destin_file_path}")

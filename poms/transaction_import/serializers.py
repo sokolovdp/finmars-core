@@ -6,8 +6,8 @@ from poms.celery_tasks.models import CeleryTask
 from poms.file_reports.serializers import FileReportSerializer
 from poms.integrations.models import ComplexTransactionImportScheme
 from poms.transaction_import.models import (
-    TransactionImportResult,
     TransactionImportProcessItem,
+    TransactionImportResult,
 )
 
 _l = logging.getLogger("poms.transaction_import")
@@ -57,9 +57,7 @@ class TransactionImportProcessItemSerializer(serializers.Serializer):
         ]
 
     def to_representation(self, instance):
-        data = super(TransactionImportProcessItemSerializer, self).to_representation(
-            instance
-        )
+        data = super().to_representation(instance)
 
         for key, value in data["inputs"].items():
             data["inputs"][key] = str(value)

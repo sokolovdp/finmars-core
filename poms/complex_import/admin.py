@@ -3,9 +3,9 @@
 from django.contrib import admin
 
 from poms.complex_import.models import (
+    ComplexImport,
     ComplexImportScheme,
     ComplexImportSchemeAction,
-    ComplexImport,
 )
 
 

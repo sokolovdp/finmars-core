@@ -22,19 +22,15 @@ def get_total_from_report_items(key, report_instance_items):
                 if item[key] or item[key] == 0:
                     result = result + item[key]
     except Exception as e:
-        _l.error("Could not collect total for %s e %s" % (key, e))
+        _l.error("Could not collect total for %s e %s", key, e)
         _l.error(traceback.format_exc())
 
     return result
 
 
 # DEPRECATED, should be move to workflow/olap
-def collect_asset_type_category(
-    report_type, master_user, instance_serialized, history, key="market_value"
-):
-    instrument_content_type = ContentType.objects.get(
-        app_label="instruments", model="instrument"
-    )
+def collect_asset_type_category(report_type, master_user, instance_serialized, history, key="market_value"):  # noqa: PLR0912, PLR0915
+    instrument_content_type = ContentType.objects.get(app_label="instruments", model="instrument")
 
     try:
         asset_types_attribute_type = GenericAttributeType.objects.get(
@@ -42,16 +38,16 @@ def collect_asset_type_category(
             content_type=instrument_content_type,
             user_code="asset_types",
         )
-    except Exception as e:
+    except Exception:
         asset_types_attribute_type = GenericAttributeType.objects.get(
             master_user=master_user,
             content_type=instrument_content_type,
             user_code="com.finmars.marscapital-attribute:instruments.instrument:asset_type",
         )
 
-    asset_types = GenericClassifier.objects.filter(
-        attribute_type=asset_types_attribute_type
-    ).values_list("name", flat=True)
+    asset_types = GenericClassifier.objects.filter(attribute_type=asset_types_attribute_type).values_list(
+        "name", flat=True
+    )
 
     # _l.info('collect_asset_type_category.asset_types %s' % asset_types)
     for asset_type in asset_types:
@@ -134,9 +130,7 @@ def collect_asset_type_category(
 
 
 def get_unique_sectors(instance_serialized, master_user):
-    instrument_content_type = ContentType.objects.get(
-        app_label="instruments", model="instrument"
-    )
+    instrument_content_type = ContentType.objects.get(app_label="instruments", model="instrument")
 
     sector_attribute_type = GenericAttributeType.objects.get(
         master_user=master_user,
@@ -157,12 +151,8 @@ def get_unique_sectors(instance_serialized, master_user):
     return sectors
 
 
-def collect_sector_category(
-    report_type, master_user, instance_serialized, history, key="market_value"
-):
-    instrument_content_type = ContentType.objects.get(
-        app_label="instruments", model="instrument"
-    )
+def collect_sector_category(report_type, master_user, instance_serialized, history, key="market_value"):  # noqa: PLR0912, PLR0915
+    instrument_content_type = ContentType.objects.get(app_label="instruments", model="instrument")
 
     try:
         sector_attribute_type = GenericAttributeType.objects.get(
@@ -170,7 +160,7 @@ def collect_sector_category(
             content_type=instrument_content_type,
             user_code="sector",
         )
-    except Exception as e:
+    except Exception:
         sector_attribute_type = GenericAttributeType.objects.get(
             master_user=master_user,
             content_type=instrument_content_type,
@@ -265,20 +255,13 @@ def get_unique_countries(instance_serialized):
     for _item in instance_serialized["items"]:
         if _item.get("instrument_object"):
             if _item["instrument_object"].get("country_object"):
-                if (
-                    _item["instrument_object"]["country_object"]["name"]
-                    not in countries
-                ):
-                    countries.append(
-                        _item["instrument_object"]["country_object"]["name"]
-                    )
+                if _item["instrument_object"]["country_object"]["name"] not in countries:
+                    countries.append(_item["instrument_object"]["country_object"]["name"])
 
     return countries
 
 
-def collect_country_category(
-    report_type, master_user, instance_serialized, history, key="market_value"
-):
+def collect_country_category(report_type, master_user, instance_serialized, history, key="market_value"):  # noqa: PLR0912
     countries = get_unique_countries(instance_serialized)
 
     for country in countries:
@@ -361,20 +344,13 @@ def get_unique_regions(instance_serialized):
     for _item in instance_serialized["items"]:
         if _item.get("instrument_object"):
             if _item["instrument_object"].get("country_object"):
-                if (
-                    _item["instrument_object"]["country_object"]["region"]
-                    not in regions
-                ):
-                    regions.append(
-                        _item["instrument_object"]["country_object"]["region"]
-                    )
+                if _item["instrument_object"]["country_object"]["region"] not in regions:
+                    regions.append(_item["instrument_object"]["country_object"]["region"])
 
     return regions
 
 
-def collect_region_category(
-    report_type, master_user, instance_serialized, history, key="market_value"
-):
+def collect_region_category(report_type, master_user, instance_serialized, history, key="market_value"):  # noqa: PLR0912
     # Get values for instrument categorized by region
 
     regions = get_unique_regions(instance_serialized)
@@ -453,9 +429,7 @@ def collect_region_category(
     item.save()
 
 
-def collect_currency_category(
-    report_type, master_user, instance_serialized, history, key="market_value"
-):
+def collect_currency_category(report_type, master_user, instance_serialized, history, key="market_value"):
     currencies_ids = []
     currencies = []
 
@@ -560,9 +534,8 @@ def collect_balance_history(
     pricing_policy_id,
     sync=False,
 ):
-    from poms.widgets.tasks import collect_balance_report_history
-
     from poms.portfolios.models import Portfolio
+    from poms.widgets.tasks import collect_balance_report_history
 
     portfolio = Portfolio.objects.get(id=portfolio_id)
 
@@ -570,7 +543,7 @@ def collect_balance_history(
         master_user=master_user,
         member=member,
         type="collect_history",
-        verbose_name="Collect Nav History for %s portfolio" % (portfolio.name),
+        verbose_name=f"Collect Nav History for {portfolio.name} portfolio",
     )
 
     options_object = {
@@ -598,8 +571,10 @@ def collect_balance_history(
             section="schedules",
             type="info",
             title="Balance History is start collecting",
-            description="Balance History from %s to %s will be soon available"
-            % (options_object["date_from"], options_object["date_to"]),
+            description=(
+                f"Balance History from {options_object['date_from']} to {options_object['date_to']}"
+                "will be soon available"
+            ),
         )
 
         collect_balance_report_history.apply(
@@ -631,8 +606,10 @@ def collect_balance_history(
             section="schedules",
             type="info",
             title="Balance History is start collecting",
-            description="Balance History from %s to %s will be soon available"
-            % (options_object["date_from"], options_object["date_to"]),
+            description=(
+                f"Balance History from {options_object['date_from']} to {options_object['date_to']} "
+                "will be soon available"
+            ),
         )
 
     return task
@@ -651,9 +628,8 @@ def collect_pl_history(
     pricing_policy_id,
     sync=False,
 ):
-    from poms.widgets.tasks import collect_pl_report_history
-
     from poms.portfolios.models import Portfolio
+    from poms.widgets.tasks import collect_pl_report_history
 
     portfolio = Portfolio.objects.get(id=portfolio_id)
 
@@ -662,7 +638,7 @@ def collect_pl_history(
     task = CeleryTask.objects.create(
         master_user=master_user,
         member=member,
-        verbose_name="Collect Pl History for %s portfolio" % (portfolio.name),
+        verbose_name=f"Collect Pl History for {portfolio.name} portfolio",
         type="collect_history",
     )
 
@@ -692,8 +668,9 @@ def collect_pl_history(
             section="schedules",
             type="info",
             title="PL History is start collecting",
-            description="PL History from %s to %s will be soon available"
-            % (options_object["date_from"], options_object["date_to"]),
+            description=(
+                f"PL History from {options_object['date_from']} to {options_object['date_to']} will be soon available"
+            ),
         )
         collect_pl_report_history.apply(
             kwargs={
@@ -724,8 +701,9 @@ def collect_pl_history(
             section="schedules",
             type="info",
             title="PL History is start collecting",
-            description="PL History from %s to %s will be soon available"
-            % (options_object["date_from"], options_object["date_to"]),
+            description=(
+                f"PL History from {options_object['date_from']} to {options_object['date_to']} will be soon available",
+            ),
         )
     return task
 
@@ -741,16 +719,15 @@ def collect_widget_stats(
     benchmark,
     sync=False,
 ):
-    from poms.widgets.tasks import collect_stats
-
     from poms.portfolios.models import Portfolio
+    from poms.widgets.tasks import collect_stats
 
     portfolio = Portfolio.objects.get(id=portfolio_id)
 
     task = CeleryTask.objects.create(
         master_user=master_user,
         member=member,
-        verbose_name="Collect Widget Stats for %s portfolio" % (portfolio.name),
+        verbose_name=f"Collect Widget Stats for {portfolio.name} portfolio",
     )
 
     options_object = {

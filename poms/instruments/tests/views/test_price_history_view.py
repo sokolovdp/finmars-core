@@ -152,9 +152,7 @@ class PriceHistoryViewSetTest(BaseTestCase):
         self.init_test_case()
         self.realm_code = "realm00000"
         self.space_code = "space00000"
-        self.url = (
-            f"/{self.realm_code}/{self.space_code}/api/v1/instruments/price-history/"
-        )
+        self.url = f"/{self.realm_code}/{self.space_code}/api/v1/instruments/price-history/"
         self.pricing_policy = None
         self.pricing_history = None
         self.instrument = Instrument.objects.first()
@@ -205,13 +203,9 @@ class PriceHistoryViewSetTest(BaseTestCase):
         self.assertEqual(response_json.keys(), EXPECTED_PRICE_HISTORY.keys())
 
         # check values
-        self.assertEqual(
-            response_json["principal_price"], pricing_history.principal_price
-        )
+        self.assertEqual(response_json["principal_price"], pricing_history.principal_price)
         self.assertEqual(response_json["accrued_price"], pricing_history.accrued_price)
-        self.assertIn(
-            "object has no attribute 'dayCounter'", response_json["error_message"]
-        )
+        self.assertIn("object has no attribute 'dayCounter'", response_json["error_message"])
 
     def test__list_attributes(self):
         response = self.client.get(path=f"{self.url}attributes/")
@@ -222,9 +216,7 @@ class PriceHistoryViewSetTest(BaseTestCase):
 
     def test__get_filters(self):  # sourcery skip: extract-duplicate-method
         pricing_history = self.create_pricing_history()
-        response = self.client.get(
-            path=f"{self.url}?instrument={pricing_history.instrument.id}"
-        )
+        response = self.client.get(path=f"{self.url}?instrument={pricing_history.instrument.id}")
         self.assertEqual(response.status_code, 200, response.content)
         response_json = response.json()
         self.assertEqual(response_json["count"], 1)
@@ -233,9 +225,7 @@ class PriceHistoryViewSetTest(BaseTestCase):
             pricing_history.instrument.id,
         )
 
-        response = self.client.get(
-            path=f"{self.url}?principal_price={pricing_history.principal_price}"
-        )
+        response = self.client.get(path=f"{self.url}?principal_price={pricing_history.principal_price}")
         self.assertEqual(response.status_code, 200, response.content)
         response_json = response.json()
         self.assertEqual(response_json["count"], 1)
@@ -266,9 +256,7 @@ class PriceHistoryViewSetTest(BaseTestCase):
         )
         self.assertEqual(response.status_code, 201, response.content)
 
-        price_history = PriceHistory.objects.filter(
-            instrument=create_data["instrument"]
-        )
+        price_history = PriceHistory.objects.filter(instrument=create_data["instrument"])
         self.assertIsNotNone(price_history)
 
     def test__update_put(self):
@@ -282,9 +270,7 @@ class PriceHistoryViewSetTest(BaseTestCase):
         new_principal = self.random_int()
         update_data = deepcopy(create_data)
         update_data["principal_price"] = new_principal
-        response = self.client.put(
-            path=f"{self.url}{price_history_id}/", format="json", data=update_data
-        )
+        response = self.client.put(path=f"{self.url}{price_history_id}/", format="json", data=update_data)
         self.assertEqual(response.status_code, 200, response.content)
 
         response = self.client.get(path=f"{self.url}{price_history_id}/")
@@ -302,9 +288,7 @@ class PriceHistoryViewSetTest(BaseTestCase):
         price_history_id = response_json["id"]
         new_principal = self.random_int()
         update_data = {"principal_price": new_principal}
-        response = self.client.patch(
-            path=f"{self.url}{price_history_id}/", format="json", data=update_data
-        )
+        response = self.client.patch(path=f"{self.url}{price_history_id}/", format="json", data=update_data)
         self.assertEqual(response.status_code, 200, response.content)
 
         response = self.client.get(path=f"{self.url}{price_history_id}/")
@@ -367,9 +351,7 @@ class PriceHistoryViewSetTest(BaseTestCase):
 
         # check update
         create_data["accrued_price"] = None
-        response = self.client.patch(
-            path=f"{self.url}{response_json['id']}/", format="json", data=create_data
-        )
+        response = self.client.patch(path=f"{self.url}{response_json['id']}/", format="json", data=create_data)
         self.assertEqual(response.status_code, 200, response.content)
 
         response_json = response.json()

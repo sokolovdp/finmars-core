@@ -1,10 +1,9 @@
 from tempfile import NamedTemporaryFile
-from typing import Type
 
 from django.db.models import Model
 
 
-def vacuum_table(table: Type[Model]):
+def vacuum_table(table: type[Model]):
     table.objects.raw(f"VACUUM ANALYZE {table._meta.db_table}")
 
 

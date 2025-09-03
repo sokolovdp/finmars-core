@@ -1,19 +1,17 @@
-from __future__ import unicode_literals
-
 from poms.common.fields import (
     PrimaryKeyRelatedFilteredField,
     UserCodeOrPrimaryKeyRelatedField,
 )
 from poms.strategies.models import (
+    Strategy1,
     Strategy1Group,
     Strategy1Subgroup,
-    Strategy1,
+    Strategy2,
     Strategy2Group,
     Strategy2Subgroup,
-    Strategy2,
+    Strategy3,
     Strategy3Group,
     Strategy3Subgroup,
-    Strategy3,
 )
 from poms.users.filters import OwnerByMasterUserFilter
 
@@ -40,13 +38,12 @@ class Strategy1Field(UserCodeOrPrimaryKeyRelatedField):
     # ]
 
 
-class Strategy1GroupDefault(object):
+class Strategy1GroupDefault:
     requires_context = True
 
     def set_context(self, serializer_field):
-        request = serializer_field.context["request"]
+        request = serializer_field.context["request"]  # noqa: F841
         from poms.users.models import MasterUser
-        from poms_app import settings
 
         self._master_user = MasterUser.objects.all().first()
 
@@ -54,21 +51,18 @@ class Strategy1GroupDefault(object):
         self.set_context(serializer_field)
         from poms.users.models import EcosystemDefault
 
-        self.ecosystem_defaults = EcosystemDefault.cache.get_cache(
-            master_user_pk=self._master_user.pk
-        )
+        self.ecosystem_defaults = EcosystemDefault.cache.get_cache(master_user_pk=self._master_user.pk)
 
         return self.ecosystem_defaults.strategy1_group
 
 
-class Strategy1SubgroupDefault(object):
+class Strategy1SubgroupDefault:
     requires_context = True
 
     def set_context(self, serializer_field):
-        request = serializer_field.context["request"]
+        request = serializer_field.context["request"]  # noqa: F841
 
         from poms.users.models import MasterUser
-        from poms_app import settings
 
         self._master_user = MasterUser.objects.all().first()
 
@@ -77,20 +71,17 @@ class Strategy1SubgroupDefault(object):
 
         from poms.users.models import EcosystemDefault
 
-        self.ecosystem_defaults = EcosystemDefault.cache.get_cache(
-            master_user_pk=self._master_user.pk
-        )
+        self.ecosystem_defaults = EcosystemDefault.cache.get_cache(master_user_pk=self._master_user.pk)
 
         return self.ecosystem_defaults.strategy1_subgroup
 
 
-class Strategy1Default(object):
+class Strategy1Default:
     requires_context = True
 
     def set_context(self, serializer_field):
-        request = serializer_field.context["request"]
+        request = serializer_field.context["request"]  # noqa: F841
         from poms.users.models import MasterUser
-        from poms_app import settings
 
         self._master_user = MasterUser.objects.all().first()
 
@@ -98,9 +89,7 @@ class Strategy1Default(object):
         self.set_context(serializer_field)
         from poms.users.models import EcosystemDefault
 
-        self.ecosystem_defaults = EcosystemDefault.cache.get_cache(
-            master_user_pk=self._master_user.pk
-        )
+        self.ecosystem_defaults = EcosystemDefault.cache.get_cache(master_user_pk=self._master_user.pk)
 
         return self.ecosystem_defaults.strategy1
 
@@ -126,9 +115,7 @@ class Strategy2GroupDefault(Strategy1GroupDefault):
 
         from poms.users.models import EcosystemDefault
 
-        self.ecosystem_defaults = EcosystemDefault.cache.get_cache(
-            master_user_pk=self._master_user.pk
-        )
+        self.ecosystem_defaults = EcosystemDefault.cache.get_cache(master_user_pk=self._master_user.pk)
 
         return self.ecosystem_defaults.strategy2_group
 
@@ -139,9 +126,7 @@ class Strategy2SubgroupDefault(Strategy1SubgroupDefault):
 
         from poms.users.models import EcosystemDefault
 
-        self.ecosystem_defaults = EcosystemDefault.cache.get_cache(
-            master_user_pk=self._master_user.pk
-        )
+        self.ecosystem_defaults = EcosystemDefault.cache.get_cache(master_user_pk=self._master_user.pk)
 
         return self.ecosystem_defaults.strategy2_subgroup
 
@@ -152,9 +137,7 @@ class Strategy2Default(Strategy1Default):
 
         from poms.users.models import EcosystemDefault
 
-        self.ecosystem_defaults = EcosystemDefault.cache.get_cache(
-            master_user_pk=self._master_user.pk
-        )
+        self.ecosystem_defaults = EcosystemDefault.cache.get_cache(master_user_pk=self._master_user.pk)
 
         return self.ecosystem_defaults.strategy2
 
@@ -180,9 +163,7 @@ class Strategy3GroupDefault(Strategy1GroupDefault):
 
         from poms.users.models import EcosystemDefault
 
-        self.ecosystem_defaults = EcosystemDefault.cache.get_cache(
-            master_user_pk=self._master_user.pk
-        )
+        self.ecosystem_defaults = EcosystemDefault.cache.get_cache(master_user_pk=self._master_user.pk)
 
         return self.ecosystem_defaults.strategy3_group
 
@@ -193,9 +174,7 @@ class Strategy3SubgroupDefault(Strategy1SubgroupDefault):
 
         from poms.users.models import EcosystemDefault
 
-        self.ecosystem_defaults = EcosystemDefault.cache.get_cache(
-            master_user_pk=self._master_user.pk
-        )
+        self.ecosystem_defaults = EcosystemDefault.cache.get_cache(master_user_pk=self._master_user.pk)
 
         return self.ecosystem_defaults.strategy3_subgroup
 
@@ -206,8 +185,6 @@ class Strategy3Default(Strategy1Default):
 
         from poms.users.models import EcosystemDefault
 
-        self.ecosystem_defaults = EcosystemDefault.cache.get_cache(
-            master_user_pk=self._master_user.pk
-        )
+        self.ecosystem_defaults = EcosystemDefault.cache.get_cache(master_user_pk=self._master_user.pk)
 
         return self.ecosystem_defaults.strategy3

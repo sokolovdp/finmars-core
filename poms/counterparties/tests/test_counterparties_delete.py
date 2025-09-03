@@ -1,7 +1,6 @@
-from django.conf import settings
-from poms.currencies.constants import DASH
 from poms.common.common_base_test import BaseTestCase
 from poms.counterparties.models import Counterparty
+from poms.currencies.constants import DASH
 
 
 class CounterpartyDeleteViewSetTest(BaseTestCase):
@@ -11,9 +10,7 @@ class CounterpartyDeleteViewSetTest(BaseTestCase):
         self.realm_code = "realm00000"
         self.space_code = "space00000"
 
-        self.url = (
-            f"/{self.realm_code}/{self.space_code}/api/v1/counterparties/counterparty"
-        )
+        self.url = f"/{self.realm_code}/{self.space_code}/api/v1/counterparties/counterparty"
 
     def test_detail_delete_main_counterparties(self):
         for counterparty in Counterparty.objects.filter(user_code__in=DASH):

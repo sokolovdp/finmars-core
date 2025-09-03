@@ -1,6 +1,7 @@
 from unittest import mock
 
 from django.db.models import ProtectedError
+
 from poms.celery_tasks.models import CeleryTask
 from poms.celery_tasks.tasks import bulk_delete
 from poms.common.common_base_test import BIG, BaseTestCase
@@ -14,9 +15,7 @@ class BulkDeleteTestCase(BaseTestCase):
         super().setUp()
         self.init_test_case()
         self.portfolio = self.db_data.portfolios[BIG]
-        self.complex_transaction, self.transaction = self.db_data.cash_in_transaction(
-            self.portfolio
-        )
+        self.complex_transaction, self.transaction = self.db_data.cash_in_transaction(self.portfolio)
         options_object = {
             "content_type": "transactions.complextransaction",
             "ids": [self.complex_transaction.id],

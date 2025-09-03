@@ -52,8 +52,7 @@ def move_directory_in_storage(self, *args, **kwargs):
     destination_directory = validated_data["target_directory_path"]
 
     _l.info(
-        f"move_directory_in_storage: move {len(directories)} dirs, {len(files_paths)} "
-        f"files, total {total_items} items"
+        f"move_directory_in_storage: move {len(directories)} dirs, {len(files_paths)} files, total {total_items} items"
     )
     celery_task.update_progress(
         {
@@ -68,9 +67,7 @@ def move_directory_in_storage(self, *args, **kwargs):
         for directory in directories:
             last_dir = last_dir_name(directory)
             new_destination_directory = os.path.join(destination_directory, last_dir)
-            for _ in move_dir(
-                storage, directory, new_destination_directory, celery_task
-            ):
+            for _ in move_dir(storage, directory, new_destination_directory, celery_task):
                 pass
 
         for file_path in files_paths:
@@ -109,10 +106,7 @@ def unzip_file_in_storage(self, *args, **kwargs):
     zipped_file_path = validated_data["file_path"]
     destination_path = validated_data["target_directory_path"]
 
-    _l.info(
-        f"unzip_file_in_storage: file_path={zipped_file_path} "
-        f"destination_path={destination_path}"
-    )
+    _l.info(f"unzip_file_in_storage: file_path={zipped_file_path} destination_path={destination_path}")
     celery_task.update_progress(
         {
             "current": 0,
@@ -167,10 +161,7 @@ def sync_storage_with_database(self, *args, **kwargs):
         parent=None,
     )
 
-    _l.info(
-        f"sync_files_with_database: storage_root {storage_root} "
-        f"has {dirs} dirs, {len(files)}/{total_files} files"
-    )
+    _l.info(f"sync_files_with_database: storage_root {storage_root} has {dirs} dirs, {len(files)}/{total_files} files")
 
     try:
         for directory in dirs:
@@ -243,9 +234,7 @@ def rename_directory_in_storage(self, *args, **kwargs):
         destination_file_path = os.path.join(os.path.dirname(path), new_name)
         rename_file(storage, path, str(destination_file_path))
     else:
-        destination_dir_path = os.path.join(
-            os.path.dirname(os.path.normpath(path)), new_name
-        )
+        destination_dir_path = os.path.join(os.path.dirname(os.path.normpath(path)), new_name)
         for _ in rename_dir(storage, path, str(destination_dir_path), celery_task):
             pass
 
@@ -285,8 +274,7 @@ def copy_directory_in_storage(self, *args, **kwargs):
     destination_directory = validated_data["target_directory_path"]
 
     _l.info(
-        f"copy_directory_in_storage: copy {len(directories)} dirs, {len(files_paths)} "
-        f"files, total {total_items} items"
+        f"copy_directory_in_storage: copy {len(directories)} dirs, {len(files_paths)} files, total {total_items} items"
     )
     celery_task.update_progress(
         {

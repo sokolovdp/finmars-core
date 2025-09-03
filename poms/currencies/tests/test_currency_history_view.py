@@ -17,9 +17,7 @@ class CurrencyHistoryViewSetTest(BaseTestCase):
         self.init_test_case()
         self.realm_code = "realm00000"
         self.space_code = "space00000"
-        self.url = (
-            f"/{self.realm_code}/{self.space_code}/api/v1/currencies/currency-history/"
-        )
+        self.url = f"/{self.realm_code}/{self.space_code}/api/v1/currencies/currency-history/"
         self.currency = Currency.objects.last()
         self.currency_history = None
 
@@ -79,9 +77,7 @@ class CurrencyHistoryViewSetTest(BaseTestCase):
 
     def test__get_filters(self):  # sourcery skip: extract-duplicate-method
         currency_history = self.create_currency_history()
-        response = self.client.get(
-            path=f"{self.url}?currency={currency_history.currency.id}"
-        )
+        response = self.client.get(path=f"{self.url}?currency={currency_history.currency.id}")
         self.assertEqual(response.status_code, 200, response.content)
         response_json = response.json()
         self.assertEqual(response_json["count"], 1)
@@ -90,9 +86,7 @@ class CurrencyHistoryViewSetTest(BaseTestCase):
             currency_history.currency.id,
         )
 
-        response = self.client.get(
-            path=f"{self.url}?fx_rate={currency_history.fx_rate}"
-        )
+        response = self.client.get(path=f"{self.url}?fx_rate={currency_history.fx_rate}")
         self.assertEqual(response.status_code, 200, response.content)
         response_json = response.json()
         self.assertEqual(response_json["count"], 1)
@@ -123,9 +117,7 @@ class CurrencyHistoryViewSetTest(BaseTestCase):
         )
         self.assertEqual(response.status_code, 201, response.content)
 
-        currency_history = CurrencyHistory.objects.filter(
-            fx_rate=create_data["fx_rate"]
-        )
+        currency_history = CurrencyHistory.objects.filter(fx_rate=create_data["fx_rate"])
         self.assertIsNotNone(currency_history)
 
     def test__update_put(self):
@@ -139,9 +131,7 @@ class CurrencyHistoryViewSetTest(BaseTestCase):
         new_fx_rate = self.random_int()
         update_data = deepcopy(create_data)
         update_data["fx_rate"] = new_fx_rate
-        response = self.client.put(
-            path=f"{self.url}{currency_history_id}/", format="json", data=update_data
-        )
+        response = self.client.put(path=f"{self.url}{currency_history_id}/", format="json", data=update_data)
         self.assertEqual(response.status_code, 200, response.content)
 
         response = self.client.get(path=f"{self.url}{currency_history_id}/")
@@ -160,9 +150,7 @@ class CurrencyHistoryViewSetTest(BaseTestCase):
         new_fx_rate = self.random_int()
         update_data = {"fx_rate": new_fx_rate}
 
-        response = self.client.patch(
-            path=f"{self.url}{currency_history_id}/", format="json", data=update_data
-        )
+        response = self.client.patch(path=f"{self.url}{currency_history_id}/", format="json", data=update_data)
         self.assertEqual(response.status_code, 200, response.content)
 
         response = self.client.get(path=f"{self.url}{currency_history_id}/")
@@ -194,9 +182,7 @@ class CurrencyHistoryViewSetTest(BaseTestCase):
         self.assertFalse(response_json["is_temporary_fx_rate"])
 
         update_data = {"is_temporary_fx_rate": True}
-        response = self.client.patch(
-            path=f"{self.url}{ch.id}/", format="json", data=update_data
-        )
+        response = self.client.patch(path=f"{self.url}{ch.id}/", format="json", data=update_data)
         response_json = response.json()
         self.assertEqual(response.status_code, 200, response.content)
         self.assertTrue(response_json["is_temporary_fx_rate"])

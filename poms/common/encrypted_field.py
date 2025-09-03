@@ -1,15 +1,14 @@
 import base64
 
+from cryptography.fernet import Fernet, MultiFernet
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 from django.conf import settings
 from django.core.exceptions import FieldError, ImproperlyConfigured
 from django.db import models
 from django.utils.encoding import force_bytes, force_str
 from django.utils.functional import cached_property
-
-from cryptography.fernet import Fernet, MultiFernet
-from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives import hashes
-from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 
 __all__ = [
     "EncryptedField",
@@ -34,18 +33,12 @@ class EncryptedField(models.Field):
 
     def __init__(self, *args, **kwargs):
         if kwargs.get("primary_key"):
-            raise ImproperlyConfigured(
-                f"{self.__class__.__name__} does not support primary_key=True."
-            )
+            raise ImproperlyConfigured(f"{self.__class__.__name__} does not support primary_key=True.")
         if kwargs.get("unique"):
-            raise ImproperlyConfigured(
-                f"{self.__class__.__name__} does not support unique=True."
-            )
+            raise ImproperlyConfigured(f"{self.__class__.__name__} does not support unique=True.")
         if kwargs.get("db_index"):
-            raise ImproperlyConfigured(
-                f"{self.__class__.__name__} does not support db_index=True."
-            )
-        super(EncryptedField, self).__init__(*args, **kwargs)
+            raise ImproperlyConfigured(f"{self.__class__.__name__} does not support db_index=True.")
+        super().__init__(*args, **kwargs)
 
     @cached_property
     def keys(self):
@@ -70,7 +63,7 @@ class EncryptedField(models.Field):
         return self._internal_type
 
     def get_db_prep_save(self, value, connection):
-        value = super(EncryptedField, self).get_db_prep_save(value, connection)
+        value = super().get_db_prep_save(value, connection)
         if value is not None:
             retval = self.fernet.encrypt(force_bytes(value))
             return connection.Database.Binary(retval)
@@ -85,11 +78,9 @@ class EncryptedField(models.Field):
         # Temporarily pretend to be whatever type of field we're masquerading
         # as, for purposes of constructing validators (needed for
         # IntegerField and subclasses).
-        self.__dict__["_internal_type"] = super(
-            EncryptedField, self
-        ).get_internal_type()
+        self.__dict__["_internal_type"] = super().get_internal_type()
         try:
-            return super(EncryptedField, self).validators
+            return super().validators
         finally:
             del self.__dict__["_internal_type"]
 
@@ -108,10 +99,7 @@ def derive_fernet_key(input_key):
 
 def get_prep_lookup(self):
     """Raise errors for unsupported lookups"""
-    raise FieldError(
-        f"{self.lhs.field.__class__.__name__} '{self.lookup_name}' "
-        f"does not support lookups"
-    )
+    raise FieldError(f"{self.lhs.field.__class__.__name__} '{self.lookup_name}' does not support lookups")
 
 
 # Register all field lookups (except 'isnull') to our handler

@@ -19,14 +19,9 @@ _l = logging.getLogger("poms.schedules")
 
 
 @finmars_task(name="schedules.process_procedure_async", bind=True)
-def process_procedure_async(
-    self, procedure_id, master_user_id, schedule_instance_id, *args, **kwargs
-):
+def process_procedure_async(self, procedure_id, master_user_id, schedule_instance_id, *args, **kwargs):
     try:
-        _l.info(
-            f"Schedule: Subprocess process. Master User: {master_user_id}."
-            f" Procedure: {procedure_id}"
-        )
+        _l.info(f"Schedule: Subprocess process. Master User: {master_user_id}. Procedure: {procedure_id}")
 
         procedure = ScheduleProcedure.objects.get(id=procedure_id)
 
@@ -48,9 +43,7 @@ def process_procedure_async(
 
         if procedure.type == "pricing_procedure":
             try:
-                item = PricingProcedure.objects.get(
-                    master_user=master_user, user_code=procedure.user_code
-                )
+                item = PricingProcedure.objects.get(master_user=master_user, user_code=procedure.user_code)
 
                 date_from = None
                 date_to = None
@@ -64,9 +57,9 @@ def process_procedure_async(
                         date_from = schedule.data["report_date"]
                         date_to = schedule.data["report_date"]
                     elif "begin_date" in schedule.data:
-                        date_from = schedule.data["begin_date"]
+                        date_from = schedule.data["begin_date"]  # noqa: F841
                         if "end_date" in schedule.data:
-                            date_to = schedule.data["end_date"]
+                            date_to = schedule.data["end_date"]  # noqa: F841
 
                 # TODO pricingv2 do something? probably all deprecated
                 # TODO delete in 1.9.0?
@@ -91,15 +84,11 @@ def process_procedure_async(
                     description=str(e),
                 )
 
-                _l.info(
-                    f"Can't find Pricing Procedure error {e}  user_code {procedure.user_code}"
-                )
+                _l.info(f"Can't find Pricing Procedure error {e}  user_code {procedure.user_code}")
 
         if procedure.type == "data_procedure":
             try:
-                item = RequestDataFileProcedure.objects.get(
-                    master_user=master_user, user_code=procedure.user_code
-                )
+                item = RequestDataFileProcedure.objects.get(master_user=master_user, user_code=procedure.user_code)
 
                 instance = DataProcedureProcess(
                     procedure=item,
@@ -123,9 +112,7 @@ def process_procedure_async(
 
         if procedure.type == "expression_procedure":
             try:
-                item = ExpressionProcedure.objects.get(
-                    master_user=master_user, user_code=procedure.user_code
-                )
+                item = ExpressionProcedure.objects.get(master_user=master_user, user_code=procedure.user_code)
                 instance = ExpressionProcedureProcess(
                     procedure=item,
                     master_user=master_user,
@@ -191,7 +178,10 @@ def process(self, schedule_user_code, *args, **kwargs):
                             master_user=master_user,
                             performed_by="System",
                             section="schedules",
-                            description=f"Schedule {s.name}. Start processing step {schedule_instance.current_processing_procedure_number}/{total_procedures}",
+                            description=(
+                                f"Schedule {s.name}. Start processing step "
+                                f"{schedule_instance.current_processing_procedure_number}/{total_procedures}",
+                            ),
                         )
 
                         process_procedure_async.apply_async(

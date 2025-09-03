@@ -1,30 +1,30 @@
 import base64
 import logging
 import uuid
-from datetime import timedelta, datetime
+from datetime import datetime, timedelta
 from tempfile import NamedTemporaryFile
 from time import sleep
 
 import requests
-from OpenSSL import crypto
 from dateutil import parser
+from OpenSSL import crypto
 from suds.client import Client
 from suds.transport import Reply
 from suds.transport.http import HttpAuthenticated
 
-from poms.expressions_engine import formula
 from poms.currencies.models import CurrencyHistory
+from poms.expressions_engine import formula
 from poms.instruments.models import (
     AccrualCalculationSchedule,
     InstrumentFactorSchedule,
     PriceHistory,
 )
 from poms.integrations.models import (
-    FactorScheduleDownloadMethod,
     AccrualScheduleDownloadMethod,
-    ProviderClass,
+    FactorScheduleDownloadMethod,
     InstrumentDownloadScheme,
     PriceDownloadScheme,
+    ProviderClass,
 )
 from poms.integrations.providers.base import (
     AbstractProvider,
@@ -95,16 +95,14 @@ class RequestsTransport(HttpAuthenticated):
             raise BloombergTransportException("cert param could not be None")
         if not self.key:
             raise BloombergTransportException("key param could not be None")
-        super(RequestsTransport, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
     def get_soap_action(self, message):
         """
         Custom quirk to setup SOAPAction header
         """
         s = message.decode()
-        if "submitGetDataRequest" in s:
-            return '"submitGetDataRequest"'
-        elif "submitGetDataRequest" in s:
+        if "submitGetDataRequest" in s or "submitGetDataRequest" in s:
             return '"submitGetDataRequest"'
         elif "retrieveGetDataRequest" in s:
             return '"retrieveGetDataResponse"'
@@ -161,7 +159,7 @@ class BloombergDataProvider(AbstractProvider):
         @return: BloomberDataProvider object
         @rtype: BloombergDataProvider
         """
-        super(BloombergDataProvider, self).__init__()
+        super().__init__()
         self.empty_value = settings.BLOOMBERG_EMPTY_VALUE
 
         self._wsdl = wsdl or settings.BLOOMBERG_WSDL
@@ -175,9 +173,7 @@ class BloombergDataProvider(AbstractProvider):
             if not self._wsdl:
                 raise BloombergException("wsdl should be provided")
             if not self._cert:
-                raise BloombergException(
-                    "client certificate pem file should be provided"
-                )
+                raise BloombergException("client certificate pem file should be provided")
             if not self._key:
                 raise BloombergException("private key pem file should be provided")
 
@@ -188,15 +184,12 @@ class BloombergDataProvider(AbstractProvider):
         return self._soap_client
 
     def _response_is_valid(self, response, pending=False, raise_exception=True):
-        if response.statusCode.code == 0:
-            return True
-        elif pending and response.statusCode.code == 100:
+        if response.statusCode.code == 0 or pending and response.statusCode.code == 100:
             return True
         else:
             if raise_exception:
                 raise BloombergException(
-                    "Bloomberg failed with code %s and description '%s'"
-                    % (response.statusCode.code, response.description)
+                    f"Bloomberg failed with code {response.statusCode.code} and description '{response.description}'"
                 )
             return False
 
@@ -242,13 +235,7 @@ class BloombergDataProvider(AbstractProvider):
                 _l.debug("|<")
                 return result
         _l.debug("|< failed")
-        raise BloombergException(
-            "%s('%s') failed"
-            % (
-                name,
-                response_id,
-            )
-        )
+        raise BloombergException(f"{name}('{response_id}') failed")
 
     def get_max_retries(self):
         return settings.BLOOMBERG_MAX_RETRIES
@@ -261,9 +248,7 @@ class BloombergDataProvider(AbstractProvider):
             return ["FACTOR_SCHEDULE"]
         return []
 
-    def get_accrual_calculation_schedule_method_fields(
-        self, accrual_calculation_schedule_method=None
-    ):
+    def get_accrual_calculation_schedule_method_fields(self, accrual_calculation_schedule_method=None):
         if accrual_calculation_schedule_method == AccrualScheduleDownloadMethod.DEFAULT:
             return [
                 "START_ACC_DT",
@@ -278,9 +263,7 @@ class BloombergDataProvider(AbstractProvider):
     def parse_date(self, value):
         if value and value.lower() != "n.s.":
             try:
-                return datetime.strptime(
-                    value, settings.BLOOMBERG_DATE_INPUT_FORMAT
-                ).date()
+                return datetime.strptime(value, settings.BLOOMBERG_DATE_INPUT_FORMAT).date()
             except ValueError:
                 return None
         return None
@@ -310,34 +293,22 @@ class BloombergDataProvider(AbstractProvider):
             instrument_download_scheme_id = options["instrument_download_scheme_id"]
             instrument_code = options["instrument_code"]
 
-            instrument_download_scheme = InstrumentDownloadScheme.objects.get(
-                pk=instrument_download_scheme_id
-            )
+            instrument_download_scheme = InstrumentDownloadScheme.objects.get(pk=instrument_download_scheme_id)
 
             fields = instrument_download_scheme.fields
             factor_schedule_method_fields = self.get_factor_schedule_method_fields(
                 instrument_download_scheme.factor_schedule_method_id
             )
-            accrual_calculation_schedule_method_fields = (
-                self.get_accrual_calculation_schedule_method_fields(
-                    instrument_download_scheme.accrual_calculation_schedule_method_id
-                )
+            accrual_calculation_schedule_method_fields = self.get_accrual_calculation_schedule_method_fields(
+                instrument_download_scheme.accrual_calculation_schedule_method_id
             )
 
             options["fields"] = fields
             options["factor_schedule_method_fields"] = factor_schedule_method_fields
-            options["accrual_calculation_schedule_method_fields"] = (
-                accrual_calculation_schedule_method_fields
-            )
+            options["accrual_calculation_schedule_method_fields"] = accrual_calculation_schedule_method_fields
 
-            request_fields = (
-                fields
-                + factor_schedule_method_fields
-                + accrual_calculation_schedule_method_fields
-            )
-            response_id = self.get_instrument_send_request(
-                instrument_code, request_fields
-            )
+            request_fields = fields + factor_schedule_method_fields + accrual_calculation_schedule_method_fields
+            response_id = self.get_instrument_send_request(instrument_code, request_fields)
 
             if response_id is None:
                 raise BloombergException("Can't send request")
@@ -356,9 +327,7 @@ class BloombergDataProvider(AbstractProvider):
         response_id = options.get("response_id", None)
         if response_id is None:
             price_download_scheme_id = options["price_download_scheme_id"]
-            price_download_scheme = PriceDownloadScheme.objects.get(
-                pk=price_download_scheme_id
-            )
+            price_download_scheme = PriceDownloadScheme.objects.get(pk=price_download_scheme_id)
             instruments = list(set(options["instruments"]))
             if is_yesterday:
                 fields = price_download_scheme.instrument_yesterday_fields
@@ -367,9 +336,7 @@ class BloombergDataProvider(AbstractProvider):
                 fields = price_download_scheme.instrument_history_fields
                 date_from = parse_date_iso(options["date_from"])
                 date_to = parse_date_iso(options["date_to"])
-                response_id = self.get_pricing_history_send_request(
-                    instruments, fields, date_from, date_to
-                )
+                response_id = self.get_pricing_history_send_request(instruments, fields, date_from, date_to)
 
             if response_id is None:
                 raise BloombergException("Can't send request")
@@ -390,9 +357,7 @@ class BloombergDataProvider(AbstractProvider):
         response_id = options.get("response_id", None)
         if response_id is None:
             price_download_scheme_id = options["price_download_scheme_id"]
-            price_download_scheme = PriceDownloadScheme.objects.get(
-                pk=price_download_scheme_id
-            )
+            price_download_scheme = PriceDownloadScheme.objects.get(pk=price_download_scheme_id)
             currencies = list(set(options["currencies"]))
             if is_yesterday:
                 fields = price_download_scheme.currency_history_fields
@@ -401,9 +366,7 @@ class BloombergDataProvider(AbstractProvider):
                 fields = price_download_scheme.currency_history_fields
                 date_from = parse_date_iso(options["date_from"])
                 date_to = parse_date_iso(options["date_to"])
-                response_id = self.get_pricing_history_send_request(
-                    currencies, fields, date_from, date_to
-                )
+                response_id = self.get_pricing_history_send_request(currencies, fields, date_from, date_to)
 
             if response_id is None:
                 raise BloombergException("Can't send request")
@@ -483,9 +446,7 @@ class BloombergDataProvider(AbstractProvider):
             _l.debug("< result=%s", None)
             return None
 
-        response = self.soap_client.service.retrieveGetDataResponse(
-            responseId=response_id
-        )
+        response = self.soap_client.service.retrieveGetDataResponse(responseId=response_id)
         _l.debug("response=%s", response)
 
         self._response_is_valid(response, pending=True)
@@ -545,7 +506,7 @@ class BloombergDataProvider(AbstractProvider):
         """
         _l.info("> get_test_certificate_send_request:")
 
-        # fields = ['PX_YEST_BID', 'PX_YEST_ASK', 'PX_YEST_CLOSE', 'PX_CLOSE_1D', 'ACCRUED_FACTOR', 'CPN', 'SECURITY_TYP']
+        # fields = ['PX_YEST_BID', 'PX_YEST_ASK', 'PX_YEST_CLOSE', 'PX_CLOSE_1D', 'ACCRUED_FACTOR', 'CPN', 'SECURITY_TYP'] # noqa: E501
         fields = []
 
         fields_data = self.soap_client.factory.create("Fields")
@@ -562,9 +523,7 @@ class BloombergDataProvider(AbstractProvider):
             fields,
             headers,
         )
-        response = self.soap_client.service.submitGetDataRequest(
-            headers=headers, fields=fields_data
-        )
+        response = self.soap_client.service.submitGetDataRequest(headers=headers, fields=fields_data)
         _l.info("get_test_certificate_send_request.response=%s", response)
 
         is_authorized = False
@@ -606,7 +565,7 @@ class BloombergDataProvider(AbstractProvider):
             fields,
         )
 
-        # fields = ['PX_YEST_BID', 'PX_YEST_ASK', 'PX_YEST_CLOSE', 'PX_CLOSE_1D', 'ACCRUED_FACTOR', 'CPN', 'SECURITY_TYP']
+        # fields = ['PX_YEST_BID', 'PX_YEST_ASK', 'PX_YEST_CLOSE', 'PX_CLOSE_1D', 'ACCRUED_FACTOR', 'CPN', 'SECURITY_TYP'] # noqa: E501
 
         if not instruments or not fields:
             _l.debug("< response_id=%s", None)
@@ -654,9 +613,7 @@ class BloombergDataProvider(AbstractProvider):
             _l.debug("< result=%s", None)
             return None
 
-        response = self.soap_client.service.retrieveGetDataResponse(
-            responseId=response_id
-        )
+        response = self.soap_client.service.retrieveGetDataResponse(responseId=response_id)
         _l.debug(
             "> get_pricing_latest_get_response: response_id=%s, response=%s",
             response_id,
@@ -742,9 +699,7 @@ class BloombergDataProvider(AbstractProvider):
             _l.debug("< result=%s", None)
             return None
 
-        response = self.soap_client.service.retrieveGetHistoryResponse(
-            responseId=response_id
-        )
+        response = self.soap_client.service.retrieveGetHistoryResponse(responseId=response_id)
         _l.debug(
             "> get_pricing_history_get_response: response_id=%s, response=%s",
             response_id,
@@ -807,12 +762,8 @@ class BloombergDataProvider(AbstractProvider):
             response_func=self.get_pricing_history_get_response,
         )
 
-    def create_accrual_calculation_schedules(
-        self, instrument_download_scheme, instrument, values
-    ):
-        accrual_calculation_schedule_method = (
-            instrument_download_scheme.accrual_calculation_schedule_method_id
-        )
+    def create_accrual_calculation_schedules(self, instrument_download_scheme, instrument, values):
+        accrual_calculation_schedule_method = instrument_download_scheme.accrual_calculation_schedule_method_id
         if accrual_calculation_schedule_method != AccrualScheduleDownloadMethod.DEFAULT:
             return []
         start_acc_dt = values["START_ACC_DT"]
@@ -830,7 +781,7 @@ class BloombergDataProvider(AbstractProvider):
         is_multi_cpn_schedule = (
             multi_cpn_schedule
             and not isinstance(multi_cpn_schedule, str)
-            and isinstance(multi_cpn_schedule, (tuple, list))
+            and isinstance(multi_cpn_schedule, tuple | list)
         )
 
         accrual_start_date = self.parse_date(start_acc_dt)
@@ -840,9 +791,7 @@ class BloombergDataProvider(AbstractProvider):
         accrual_calculation_model = self.get_accrual_calculation_model(
             instrument.master_user, ProviderClass.BLOOMBERG, day_cnt
         )
-        periodicity = self.get_periodicity(
-            instrument.master_user, ProviderClass.BLOOMBERG, cpn_freq
-        )
+        periodicity = self.get_periodicity(instrument.master_user, ProviderClass.BLOOMBERG, cpn_freq)
         if periodicity is None:
             return []
 
@@ -898,7 +847,7 @@ class BloombergDataProvider(AbstractProvider):
         #     ['08/20/2019', '.973684211'],
         # ]
 
-        if factor_schedule and isinstance(factor_schedule, (list, tuple)):
+        if factor_schedule and isinstance(factor_schedule, list | tuple):
             factor_schedules = []
             for r in factor_schedule:
                 effective_date = self.parse_date(r[0])
@@ -915,13 +864,11 @@ class BloombergDataProvider(AbstractProvider):
 
         return None
 
-    def create_instrument_pricing(
-        self, price_download_scheme, options, values, instruments, pricing_policies
-    ):
-        date_from = parse_date_iso(options["date_from"])
+    def create_instrument_pricing(self, price_download_scheme, options, values, instruments, pricing_policies):  # noqa: PLR0912
+        date_from = parse_date_iso(options["date_from"])  # noqa: F841
         date_to = parse_date_iso(options["date_to"])
         is_yesterday = options["is_yesterday"]
-        fill_days = options["fill_days"]
+        fill_days = options["fill_days"]  # noqa: F841
         # price_download_scheme_id = options['price_download_scheme_id']
 
         errors = {}
@@ -935,15 +882,11 @@ class BloombergDataProvider(AbstractProvider):
                 if not instr_values:
                     continue
 
-                instr_day_value = self.get_instrument_yesterday_values(
-                    price_download_scheme, instr_values
-                )
+                instr_day_value = self.get_instrument_yesterday_values(price_download_scheme, instr_values)
                 for pp in pricing_policies:
                     if pp.expr:
                         try:
-                            principal_price = formula.safe_eval(
-                                pp.expr, names=instr_day_value
-                            )
+                            principal_price = formula.safe_eval(pp.expr, names=instr_day_value)
                         except formula.InvalidExpression:
                             self.fail_pricing_policy(errors, pp, instr_day_value)
                         else:
@@ -965,15 +908,11 @@ class BloombergDataProvider(AbstractProvider):
 
                 for instr_day_value in instr_values:
                     d = parse_date_iso(instr_day_value["DATE"])
-                    instr_day_value = self.get_instrument_history_values(
-                        price_download_scheme, instr_day_value
-                    )
+                    instr_day_value = self.get_instrument_history_values(price_download_scheme, instr_day_value)  # noqa: PLW2901
                     for pp in pricing_policies:
                         if pp.expr:
                             try:
-                                principal_price = formula.safe_eval(
-                                    pp.expr, names=instr_day_value
-                                )
+                                principal_price = formula.safe_eval(pp.expr, names=instr_day_value)
                             except formula.InvalidExpression:
                                 self.fail_pricing_policy(errors, pp, instr_day_value)
                             else:
@@ -988,13 +927,11 @@ class BloombergDataProvider(AbstractProvider):
 
         return prices, errors
 
-    def create_currency_pricing(
-        self, price_download_scheme, options, values, currencies, pricing_policies
-    ):
-        date_from = parse_date_iso(options["date_from"])
+    def create_currency_pricing(self, price_download_scheme, options, values, currencies, pricing_policies):  # noqa: PLR0912
+        date_from = parse_date_iso(options["date_from"])  # noqa: F841
         date_to = parse_date_iso(options["date_to"])
         is_yesterday = options["is_yesterday"]
-        fill_days = options["fill_days"]
+        fill_days = options["fill_days"]  # noqa: F841
         # price_download_scheme_id = options['price_download_scheme_id']
 
         errors = {}
@@ -1008,9 +945,7 @@ class BloombergDataProvider(AbstractProvider):
                 if not instr_values:
                     continue
 
-                instr_day_value = self.get_currency_history_values(
-                    price_download_scheme, instr_values
-                )
+                instr_day_value = self.get_currency_history_values(price_download_scheme, instr_values)
                 for pp in pricing_policies:
                     if pp.expr:
                         try:
@@ -1036,15 +971,11 @@ class BloombergDataProvider(AbstractProvider):
 
                 for instr_day_value in instr_values:
                     d = parse_date_iso(instr_day_value["DATE"])
-                    instr_day_value = self.get_currency_history_values(
-                        price_download_scheme, instr_day_value
-                    )
+                    instr_day_value = self.get_currency_history_values(price_download_scheme, instr_day_value)  # noqa: PLW2901
                     for pp in pricing_policies:
                         if pp.expr:
                             try:
-                                fx_rate = formula.safe_eval(
-                                    pp.expr, names=instr_day_value
-                                )
+                                fx_rate = formula.safe_eval(pp.expr, names=instr_day_value)
                             except formula.InvalidExpression:
                                 self.fail_pricing_policy(errors, pp, instr_day_value)
                             else:
@@ -1060,7 +991,7 @@ class BloombergDataProvider(AbstractProvider):
         return prices, errors
 
 
-# ----------------------------------------------------------------------------------------------------------------------
+# ---------------------------------------------------------------------------------------------------------------------
 
 
 class FakeBloombergDataProvider(BloombergDataProvider):
@@ -1069,7 +1000,7 @@ class FakeBloombergDataProvider(BloombergDataProvider):
     """
 
     def __init__(self, *args, **kwargs):
-        super(FakeBloombergDataProvider, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         from django.core.cache import caches
 
         self._cache = caches["default"]
@@ -1080,7 +1011,7 @@ class FakeBloombergDataProvider(BloombergDataProvider):
 
     @staticmethod
     def _make_key(key):
-        return "bloomberg.fake.%s" % key
+        return f"bloomberg.fake.{key}"
 
     def _bbg_instr(self, code):
         allparts = code.split()
@@ -1098,9 +1029,7 @@ class FakeBloombergDataProvider(BloombergDataProvider):
         if yellowkey:
             ret["yellowkey"] = yellowkey
         if overrides:
-            ret["overrides"] = [
-                {"field": "PRICING_SOURCE", "value": o} for o in overrides
-            ]
+            ret["overrides"] = [{"field": "PRICING_SOURCE", "value": o} for o in overrides]
         return ret
 
     def get_fields(self):
@@ -1254,7 +1183,7 @@ class FakeBloombergDataProvider(BloombergDataProvider):
 
         result = {}
         for field in req["fields"]:
-            result[field] = fake_data.get(field, None)
+            result[field] = fake_data.get(field)
         _l.debug("< result=%s", result)
         return result
 
@@ -1347,7 +1276,7 @@ class FakeBloombergDataProvider(BloombergDataProvider):
                 if price_empty and field:
                     instrument_fields[field] = "N.S."
                 else:
-                    instrument_fields[field] = fake_data.get(field, None)
+                    instrument_fields[field] = fake_data.get(field)
 
             result[instr_id] = instrument_fields
         _l.debug("< result=%s", result)
@@ -1384,8 +1313,8 @@ class FakeBloombergDataProvider(BloombergDataProvider):
                 "action": "pricing_history",
                 "instruments": instruments,
                 "fields": fields,
-                "date_from": "%s" % date_from,
-                "date_to": "%s" % date_to,
+                "date_from": f"{date_from}",
+                "date_to": f"{date_to}",
                 "response_id": response_id,
             },
             timeout=30,
@@ -1435,11 +1364,11 @@ class FakeBloombergDataProvider(BloombergDataProvider):
             d = date_from
             while d <= date_to:
                 price_fields = {"DATE": d}
-                for i, field in enumerate(fields):
+                for i, field in enumerate(fields):  # noqa: B007
                     if price_empty:
                         price_fields[field] = "N.S."
                     else:
-                        price_fields[field] = fake_data.get(field, None)
+                        price_fields[field] = fake_data.get(field)
 
                 if instr_id in result:
                     result[instr_id].append(price_fields)

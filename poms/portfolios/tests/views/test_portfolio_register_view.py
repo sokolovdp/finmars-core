@@ -98,9 +98,7 @@ class PortfolioRegisterCalculateRecordsActionTest(BaseTestCase):
         response_json = response.json()
 
         self.assertTrue(set(EXPECTED_RESPONSE_PRICES).issubset(set(response_json)))
-        self.assertEqual(
-            response_json["task_type"], EXPECTED_RESPONSE_RECORD["task_type"]
-        )
+        self.assertEqual(response_json["task_type"], EXPECTED_RESPONSE_RECORD["task_type"])
 
     def test__validate_portfolios(self):
         request_data = dict(portfolio_registers=["a1", "b2", "c3"])
@@ -110,7 +108,7 @@ class PortfolioRegisterCalculateRecordsActionTest(BaseTestCase):
 
         response_json = response.json()
 
-        self.assertEqual(response_json["task_options"]['portfolio_registers'], request_data['portfolio_registers'])
+        self.assertEqual(response_json["task_options"]["portfolio_registers"], request_data["portfolio_registers"])
 
 
 @override_settings(CELERY_TASK_ALWAYS_EAGER=True)
@@ -122,7 +120,9 @@ class PortfolioRegisterCalculatePriceHistoryActionTest(BaseTestCase):
         self.init_test_case()
         self.realm_code = "realm00000"
         self.space_code = "space00000"
-        self.url = f"/{self.realm_code}/{self.space_code}/api/v1/portfolios/portfolio-register/calculate-price-history/"
+        self.url = (
+            f"/{self.realm_code}/{self.space_code}/api/v1/portfolios/portfolio-register/calculate-price-history/"
+        )
 
     def test_check_url(self):
         response = self.client.post(path=self.url, data={})
@@ -131,9 +131,7 @@ class PortfolioRegisterCalculatePriceHistoryActionTest(BaseTestCase):
         response_json = response.json()
 
         self.assertTrue(set(EXPECTED_RESPONSE_PRICES).issubset(set(response_json)))
-        self.assertEqual(
-            response_json["task_type"], EXPECTED_RESPONSE_PRICES["task_type"]
-        )
+        self.assertEqual(response_json["task_type"], EXPECTED_RESPONSE_PRICES["task_type"])
 
     def test__validate_portfolios(self):
         request_data = dict(portfolio_registers=["x1", "y2", "z3"])
@@ -143,9 +141,7 @@ class PortfolioRegisterCalculatePriceHistoryActionTest(BaseTestCase):
 
         response_json = response.json()
 
-        self.assertEqual(
-            response_json["task_options"]["portfolio_registers"], request_data["portfolio_registers"]
-        )
+        self.assertEqual(response_json["task_options"]["portfolio_registers"], request_data["portfolio_registers"])
 
     @BaseTestCase.cases(
         ("1", "2023-08-01", "2023-09-06"),
@@ -155,11 +151,7 @@ class PortfolioRegisterCalculatePriceHistoryActionTest(BaseTestCase):
         ("5", "2022-11-14", "2022-11-14"),
     )
     def test__validate_dates(self, date_from, date_to):
-        request_data = (
-            dict(date_from=date_from, date_to=date_to)
-            if date_to
-            else dict(date_from=date_from)
-        )
+        request_data = dict(date_from=date_from, date_to=date_to) if date_to else dict(date_from=date_from)
 
         response = self.client.post(path=self.url, data=request_data)
         self.assertEqual(response.status_code, 200, response.content)

@@ -5,7 +5,6 @@ import os
 import uuid
 
 import pytz
-
 from django.conf import settings
 from django.contrib.postgres.fields import ArrayField
 from django.core.serializers.json import DjangoJSONEncoder
@@ -55,9 +54,7 @@ class ResetPasswordToken(models.Model):
         settings.AUTH_USER_MODEL,
         related_name="password_reset_tokens",
         on_delete=models.CASCADE,
-        verbose_name=gettext_lazy(
-            "The User which is associated to this password reset token"
-        ),
+        verbose_name=gettext_lazy("The User which is associated to this password reset token"),
     )
     created_at = models.DateTimeField(
         auto_now_add=True,
@@ -83,10 +80,10 @@ class ResetPasswordToken(models.Model):
     def save(self, *args, **kwargs):
         if not self.key:
             self.key = self.generate_key()
-        return super(ResetPasswordToken, self).save(*args, **kwargs)
+        return super().save(*args, **kwargs)
 
     def __str__(self):
-        return "Password reset token for user {user}".format(user=self.user)
+        return f"Password reset token for user {self.user}"
 
 
 class MasterUserManager(models.Manager):
@@ -449,9 +446,7 @@ class MasterUser(models.Model):
 
             for field in entity["fields"]:
                 try:
-                    item = EntityTooltip.objects.get(
-                        master_user=self, key=field["key"], content_type=content_type
-                    )
+                    item = EntityTooltip.objects.get(master_user=self, key=field["key"], content_type=content_type)
 
                     item.name = field["name"]
                     item.save()
@@ -560,7 +555,7 @@ class MasterUser(models.Model):
 
         return ccy_usd
 
-    def create_defaults(self, user=None):
+    def create_defaults(self, user=None):  # noqa: PLR0915
         from poms.accounts.models import Account, AccountType
         from poms.counterparties.models import (
             Counterparty,
@@ -599,7 +594,7 @@ class MasterUser(models.Model):
 
         try:
             finmars_bot = Member.objects.get(username="finmars_bot")
-        except Exception as e:
+        except Exception:
             # Its needed for tests context
 
             from django.contrib.auth.models import User
@@ -607,24 +602,16 @@ class MasterUser(models.Model):
             try:
                 user = User.objects.get(username="finmars_bot")
 
-            except Exception as e:
+            except Exception:
                 user = User.objects.create(username="finmars_bot")
 
-            finmars_bot = Member.objects.create(
-                user=user, username="finmars_bot", master_user=self, is_admin=True
-            )
+            finmars_bot = Member.objects.create(user=user, username="finmars_bot", master_user=self, is_admin=True)
 
-        ccy = Currency.objects.create(
-            master_user=self, name="-", user_code="-", owner=finmars_bot
-        )
+        ccy = Currency.objects.create(master_user=self, name="-", user_code="-", owner=finmars_bot)
         ccy_usd = self.create_defaults_currencies(finmars_bot)
 
-        account_type = AccountType.objects.create(
-            master_user=self, name="-", owner=finmars_bot
-        )
-        account = Account.objects.create(
-            master_user=self, type=account_type, name="-", owner=finmars_bot
-        )
+        account_type = AccountType.objects.create(master_user=self, name="-", owner=finmars_bot)
+        account = Account.objects.create(master_user=self, type=account_type, name="-", owner=finmars_bot)
 
         counterparty_group = CounterpartyGroup.objects.create(
             master_user=self,
@@ -653,9 +640,7 @@ class MasterUser(models.Model):
             name="-",
             owner=finmars_bot,
         )
-        instrument_general_class = InstrumentClass.objects.get(
-            pk=InstrumentClass.GENERAL
-        )
+        instrument_general_class = InstrumentClass.objects.get(pk=InstrumentClass.GENERAL)
         instrument_type = InstrumentType.objects.create(
             master_user=self,
             instrument_class=instrument_general_class,
@@ -803,21 +788,13 @@ class MasterUser(models.Model):
         ecosystem_defaults.pricing_policy = pricing_policy
         ecosystem_defaults.transaction_type = transaction_type
 
-        ecosystem_defaults.instrument_class = InstrumentClass.objects.get(
-            pk=InstrumentClass.DEFAULT
+        ecosystem_defaults.instrument_class = InstrumentClass.objects.get(pk=InstrumentClass.DEFAULT)
+        ecosystem_defaults.accrual_calculation_model = AccrualCalculationModel.objects.get(
+            pk=AccrualCalculationModel.DAY_COUNT_SIMPLE
         )
-        ecosystem_defaults.accrual_calculation_model = (
-            AccrualCalculationModel.objects.get(
-                pk=AccrualCalculationModel.DAY_COUNT_SIMPLE
-            )
-        )
-        ecosystem_defaults.payment_size_detail = PaymentSizeDetail.objects.get(
-            pk=PaymentSizeDetail.DEFAULT
-        )
+        ecosystem_defaults.payment_size_detail = PaymentSizeDetail.objects.get(pk=PaymentSizeDetail.DEFAULT)
         ecosystem_defaults.periodicity = Periodicity.objects.get(pk=Periodicity.DEFAULT)
-        ecosystem_defaults.pricing_condition = PricingCondition.objects.get(
-            pk=PricingCondition.NO_VALUATION
-        )
+        ecosystem_defaults.pricing_condition = PricingCondition.objects.get(pk=PricingCondition.NO_VALUATION)
 
         ecosystem_defaults.save()
 
@@ -830,16 +807,11 @@ class MasterUser(models.Model):
         FakeSequence.objects.get_or_create(master_user=self, name="complex_transaction")
         FakeSequence.objects.get_or_create(master_user=self, name="transaction")
 
-    def patch_currencies(
-        self, overwrite_name=False, overwrite_reference_for_pricing=False
-    ):
+    def patch_currencies(self, overwrite_name=False, overwrite_reference_for_pricing=False):
         from poms.currencies.models import Currency, currencies_data
         from poms.instruments.models import Country
 
-        ccys_existed = {
-            c.user_code: c
-            for c in Currency.objects.filter(master_user=self, is_deleted=False)
-        }
+        ccys_existed = {c.user_code: c for c in Currency.objects.filter(master_user=self, is_deleted=False)}
 
         ccys = {}
         for dc in currencies_data.values():
@@ -896,10 +868,7 @@ class MasterUser(models.Model):
         ccys = {c.user_code: c for c in Currency.objects.filter(master_user=self)}
 
         mapping_existed = {
-            m.currency_id: m
-            for m in CurrencyMapping.objects.filter(
-                master_user=self, provider=bloomberg
-            )
+            m.currency_id: m for m in CurrencyMapping.objects.filter(master_user=self, provider=bloomberg)
         }
 
         for dc in currencies_data.values():
@@ -1144,7 +1113,7 @@ class EcosystemDefault(CacheModel):
         default="",
         editable=False,
         verbose_name=gettext_lazy("License Key"),
-        help_text="License Key (For Marketplace Access and Finmars Activation)"
+        help_text="License Key (For Marketplace Access and Finmars Activation)",
     )
 
 
@@ -1317,16 +1286,8 @@ class Member(FakeDeletableModel):
 
 
 class MasterUserSymmetricKey(models.Model):
-    master_user = models.ForeignKey(
-        MasterUser,
-        on_delete=models.CASCADE,
-        related_name="symmetric_keys"
-    )
-    member = models.ForeignKey(
-        Member,
-        on_delete=models.CASCADE,
-        related_name="workspace_keys"
-    )
+    master_user = models.ForeignKey(MasterUser, on_delete=models.CASCADE, related_name="symmetric_keys")
+    member = models.ForeignKey(Member, on_delete=models.CASCADE, related_name="workspace_keys")
     encrypted_key = models.BinaryField(help_text="Store AES key encrypted by member public key")
 
 

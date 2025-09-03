@@ -1,5 +1,4 @@
 from poms.common.common_base_test import BaseTestCase
-
 from poms.explorer.models import DIR_SUFFIX, StorageObject, get_root_path
 
 
@@ -35,7 +34,7 @@ class FinmarsDirectoryTest(BaseTestCase):
         kwargs = dict(path=path)
         StorageObject.objects.create(**kwargs)
 
-        with self.assertRaises(Exception):
+        with self.assertRaises(Exception):  # noqa: B017
             StorageObject.objects.create(**kwargs)
 
     def test__directory_tree(self):
@@ -78,6 +77,4 @@ class FinmarsDirectoryTest(BaseTestCase):
         self.assertEqual(root.get_descendant_count(), 4)
         self.assertEqual(dir_1.get_descendants().count(), 1)
 
-        self.assertEqual(
-            dir_3.get_family().count(), 3
-        )  # ancestors, itself, descendants
+        self.assertEqual(dir_3.get_family().count(), 3)  # ancestors, itself, descendants

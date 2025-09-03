@@ -4,14 +4,14 @@ import math
 import os
 import shutil
 import tempfile
+from collections.abc import Iterable
 from io import BytesIO
-from typing import Any, Iterable
+from typing import Any
 from zipfile import ZipFile
 
+from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from django.core.files.base import ContentFile, File
 from django.core.files.storage import FileSystemStorage
-
-from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from storages.backends.azure_storage import AzureStorage
 from storages.backends.s3boto3 import S3Boto3Storage
 from storages.backends.sftpstorage import SFTPStorage
@@ -73,10 +73,7 @@ class EncryptedStorageMixin:
                 self.symmetric_key = self._get_symmetric_key_from_vault()
 
             except Exception as e:
-                raise RuntimeError(
-                    f"Could not connect to Vault, symmetric_key is not set. "
-                    f"Error {repr(e)}"
-                ) from e
+                raise RuntimeError(f"Could not connect to Vault, symmetric_key is not set. Error {repr(e)}") from e
 
     def _get_symmetric_key_from_vault(self):
         # Retrieve the symmetric key from Vault
@@ -182,13 +179,11 @@ class FinmarsStorageMixin(EncryptedStorageMixin):
 
         try:  # TODO maybe wrong implementation
             if not self.listdir:
-                raise NotImplemented("Listdir method not implemented")
+                raise NotImplementedError("Listdir method not implemented")
 
             # Check if the folder exists by listing its contents
             dirs, files = self.listdir(folder_path)
-            _l.info(
-                f"storage.save: folder_path {folder_path} files {files} dirs {dirs}"
-            )
+            _l.info(f"storage.save: folder_path {folder_path} files {files} dirs {dirs}")
 
             # Return True if there are any files in the folder
             return bool(files)
@@ -222,16 +217,14 @@ class FinmarsStorageMixin(EncryptedStorageMixin):
 
                 # If the path is a directory, add its contents to the root of the zip archive
                 elif os.path.isdir(path):
-                    for foldername, subfolders, filenames in os.walk(path):
+                    for foldername, subfolders, filenames in os.walk(path):  # noqa: B007
                         for filename in filenames:
                             full_path = os.path.join(foldername, filename)
 
                             # Adjusting the relative_path calculation to add the directory's contents
                             # directly to the root of the zip archive
                             base_dir = os.path.basename(path)
-                            relative_path = os.path.relpath(
-                                full_path, os.path.dirname(path)
-                            )
+                            relative_path = os.path.relpath(full_path, os.path.dirname(path))
                             if relative_path.startswith(base_dir):
                                 relative_path = relative_path[len(base_dir) + 1 :]
 
@@ -242,9 +235,7 @@ class FinmarsStorageMixin(EncryptedStorageMixin):
 
         unique_path_prefix = os.urandom(32).hex()
 
-        temp_dir_path = os.path.join(
-            f"{settings.BASE_DIR}/tmp/temp_download/{unique_path_prefix}"
-        )
+        temp_dir_path = os.path.join(f"{settings.BASE_DIR}/tmp/temp_download/{unique_path_prefix}")
         os.makedirs(temp_dir_path, exist_ok=True)
 
         local_filename = temp_dir_path
@@ -252,13 +243,9 @@ class FinmarsStorageMixin(EncryptedStorageMixin):
         master_user = MasterUser.objects.all().first()
         # TODO REFACTOR HERE
         # get space_code somewhere else
-        self.download_directory(
-            master_user.space_code + path_to_directory, local_filename
-        )
+        self.download_directory(master_user.space_code + path_to_directory, local_filename)
 
-        output_zip_filename = os.path.join(
-            f"{settings.BASE_DIR}/tmp/temp_download/{unique_path_prefix}_archive.zip"
-        )
+        output_zip_filename = os.path.join(f"{settings.BASE_DIR}/tmp/temp_download/{unique_path_prefix}_archive.zip")
 
         self.zip_directory([temp_dir_path], output_zip_filename)
         # shutil.rmtree(temp_dir_path)
@@ -270,9 +257,7 @@ class FinmarsStorageMixin(EncryptedStorageMixin):
 
         unique_path_prefix = os.urandom(32).hex()
 
-        temp_dir_path = os.path.join(
-            f"{settings.BASE_DIR}/tmp/temp_download/{unique_path_prefix}"
-        )
+        temp_dir_path = os.path.join(f"{settings.BASE_DIR}/tmp/temp_download/{unique_path_prefix}")
         os.makedirs(temp_dir_path, exist_ok=True)
 
         _l.info(f"temp_dir_path {temp_dir_path}  paths {paths}")
@@ -290,13 +275,9 @@ class FinmarsStorageMixin(EncryptedStorageMixin):
                 local_filename = f"{local_filename}/" + path.split("/")[-2]
 
                 if path[0] == "/":
-                    self.download_directory(
-                        master_user.space_code + path, local_filename
-                    )
+                    self.download_directory(master_user.space_code + path, local_filename)
                 else:
-                    self.download_directory(
-                        f"{master_user.space_code}/{path}", local_filename
-                    )
+                    self.download_directory(f"{master_user.space_code}/{path}", local_filename)
 
             else:
                 local_filename = f"{local_filename}/" + path.split("/")[-1]
@@ -306,17 +287,11 @@ class FinmarsStorageMixin(EncryptedStorageMixin):
                 _l.info(f"local_filename {local_filename} ")
 
                 if path[0] == "/":
-                    self.download_file_and_save_locally(
-                        master_user.space_code + path, local_filename
-                    )
+                    self.download_file_and_save_locally(master_user.space_code + path, local_filename)
                 else:
-                    self.download_file_and_save_locally(
-                        f"{master_user.space_code}/{path}", local_filename
-                    )
+                    self.download_file_and_save_locally(f"{master_user.space_code}/{path}", local_filename)
 
-        output_zip_filename = os.path.join(
-            f"{settings.BASE_DIR}/tmp/temp_download/{unique_path_prefix}_archive.zip"
-        )
+        output_zip_filename = os.path.join(f"{settings.BASE_DIR}/tmp/temp_download/{unique_path_prefix}_archive.zip")
 
         self.zip_directory([temp_dir_path], output_zip_filename)
         # shutil.rmtree(temp_dir_path)
@@ -360,9 +335,7 @@ class FinmarsSFTPStorage(FinmarsStorageFileObjMixin, SFTPStorage):
         for root, _, files in self.sftp_client.walk(directory_path):
             for file in files:
                 remote_path = os.path.join(root, file)
-                local_path = os.path.join(
-                    local_destination_path, os.path.relpath(remote_path, directory_path)
-                )
+                local_path = os.path.join(local_destination_path, os.path.relpath(remote_path, directory_path))
                 os.makedirs(os.path.dirname(local_path), exist_ok=True)
                 self.sftp_client.get(remote_path, local_path)
 
@@ -391,9 +364,7 @@ class FinmarsAzureStorage(FinmarsStorageFileObjMixin, AzureStorage):
         for blob in blob_list:
             # Check if the blob is inside the folder
             if blob.name.startswith(directory_path):
-                local_path = os.path.join(
-                    local_destination_path, os.path.relpath(blob.name, directory_path)
-                )
+                local_path = os.path.join(local_destination_path, os.path.relpath(blob.name, directory_path))
 
                 # Create the local directory structure
                 os.makedirs(os.path.dirname(local_path), exist_ok=True)
@@ -415,9 +386,7 @@ class FinmarsAzureStorage(FinmarsStorageFileObjMixin, AzureStorage):
         for blob in blob_list:
             # Check if the blob is inside the folder
             if blob.name.startswith(directory_path):
-                local_path = os.path.join(
-                    temp_dir, os.path.relpath(blob.name, directory_path)
-                )
+                local_path = os.path.join(temp_dir, os.path.relpath(blob.name, directory_path))
 
                 # Create the local directory structure
                 os.makedirs(os.path.dirname(local_path), exist_ok=True)
@@ -443,10 +412,7 @@ class FinmarsS3Storage(FinmarsStorageFileObjMixin, S3Boto3Storage):
         return self.get_modified_time(path)
 
     def delete_directory(self, directory_path):
-        objects_to_delete = [
-            {"Key": obj.key}
-            for obj in self.bucket.objects.filter(Prefix=directory_path)
-        ]
+        objects_to_delete = [{"Key": obj.key} for obj in self.bucket.objects.filter(Prefix=directory_path)]
 
         # Delete files in the folder by chunks
         if objects_to_delete:
@@ -463,9 +429,7 @@ class FinmarsS3Storage(FinmarsStorageFileObjMixin, S3Boto3Storage):
         # Iterate over all objects with the specified prefix
         for obj in self.bucket.objects.filter(Prefix=directory_path):
             # Construct the local file path
-            local_file_path = os.path.join(
-                local_destination_path, os.path.relpath(obj.key, directory_path)
-            )
+            local_file_path = os.path.join(local_destination_path, os.path.relpath(obj.key, directory_path))
             _l.info("Processing object: %s", obj.key)
 
             # Skip if the object is a directory (ends with '/')
@@ -479,15 +443,12 @@ class FinmarsS3Storage(FinmarsStorageFileObjMixin, S3Boto3Storage):
 
                 # Open the S3 object and write its content to the local file
                 try:
-                    with open(local_file_path, "wb") as local_file:
-                        with self.open(obj.key) as s3_file:
-                            # Read the S3 file in chunks
-                            for chunk in iter(lambda: s3_file.read(4096), b""):
-                                local_file.write(chunk)
+                    with open(local_file_path, "wb") as local_file, self.open(obj.key) as s3_file:
+                        # Read the S3 file in chunks
+                        for chunk in iter(lambda: s3_file.read(4096), b""):
+                            local_file.write(chunk)
                 except Exception as e:
-                    _l.error(
-                        "Failed to download %s to %s: %s", obj.key, local_file_path, e
-                    )
+                    _l.error("Failed to download %s to %s: %s", obj.key, local_file_path, e)
                     continue  # Skip this file and continue with the next one
 
         _l.info("Download completed successfully.")
@@ -505,9 +466,7 @@ class FinmarsS3Storage(FinmarsStorageFileObjMixin, S3Boto3Storage):
 
         for obj in self.bucket.objects.filter(Prefix=directory_path):
             if obj.key != directory_path:  # Exclude the directory itself
-                local_path = os.path.join(
-                    temp_dir, os.path.relpath(obj.key, directory_path)
-                )
+                local_path = os.path.join(temp_dir, os.path.relpath(obj.key, directory_path))
                 os.makedirs(os.path.dirname(local_path), exist_ok=True)
                 with (
                     open(local_path, "wb") as local_file,
@@ -589,17 +548,13 @@ class FinmarsLocalFileSystemStorage(FinmarsStorageFileObjMixin, FileSystemStorag
             # _l.info('download_directory file . file %s' % file)
             # _l.info('download_directory path . path %s' % path)
 
-            self.download_file_and_save_locally(
-                path, os.path.join(local_destination_path, file)
-            )
+            self.download_file_and_save_locally(path, os.path.join(local_destination_path, file))
 
             # _l.info('download_directory.path %s' % path)
 
         for directory in directories:
             path = src + directory if src.endswith("/") else f"{src}/{directory}"
-            self.download_directory(
-                path, os.path.join(local_destination_path, directory)
-            )
+            self.download_directory(path, os.path.join(local_destination_path, directory))
 
     def download_directory_as_zip(self, folder_path):
         path = os.path.join(settings.MEDIA_ROOT, folder_path)

@@ -97,25 +97,21 @@ class MoveSerializer(serializers.Serializer):
         target_directory_path = attrs["target_directory_path"].strip("/")
         new_target_directory_path = f"{space_code}/{target_directory_path}/"
         if not storage.dir_exists(new_target_directory_path):
-            raise serializers.ValidationError(
-                f"target directory '{new_target_directory_path}' does not exist"
-            )
+            raise serializers.ValidationError(f"target directory '{new_target_directory_path}' does not exist")
 
         updated_paths = []
         for path in attrs["paths"]:
-            path = path.strip("/")
+            path = path.strip("/")  # noqa: PLW2901
 
             directory_path = os.path.dirname(path)
             if target_directory_path == directory_path:
-                raise serializers.ValidationError(
-                    f"path {path} belongs to target directory path"
-                )
+                raise serializers.ValidationError(f"path {path} belongs to target directory path")
 
-            path = f"{space_code}/{path}"
+            path = f"{space_code}/{path}"  # noqa: PLW2901
             dir_path = f"{path}/"
             if storage.dir_exists(dir_path):
                 # this is a directory
-                path = f"{path}/"
+                path = f"{path}/"  # noqa: PLW2901
 
             updated_paths.append(path)
 
@@ -131,7 +127,7 @@ class ZipFilesSerializer(serializers.Serializer):
 
     def validate(self, attrs):
         for path in attrs["paths"]:
-            path = path.strip("/")
+            path = path.strip("/")  # noqa: PLW2901
 
         return attrs
 
@@ -172,9 +168,7 @@ class UnZipSerializer(serializers.Serializer):
         target_directory_path = value.strip("/")
         new_target_directory_path = f"{space_code}/{target_directory_path}/"
         if not storage.dir_exists(new_target_directory_path):
-            raise serializers.ValidationError(
-                f"target folder '{target_directory_path}' does not exist"
-            )
+            raise serializers.ValidationError(f"target folder '{target_directory_path}' does not exist")
         return new_target_directory_path
 
     def validate_file_path(self, value):
@@ -184,9 +178,7 @@ class UnZipSerializer(serializers.Serializer):
         value = value.strip("/")
 
         if not value.endswith(".zip"):
-            raise serializers.ValidationError(
-                f"file {value} should be a zip file, with '.zip' extension"
-            )
+            raise serializers.ValidationError(f"file {value} should be a zip file, with '.zip' extension")
 
         new_file_path = f"{space_code}/{value}"
         if not path_is_file(storage, new_file_path):
@@ -288,9 +280,7 @@ class RenameSerializer(serializers.Serializer):
         path = attrs["path"].strip("/")
 
         if path == "/":
-            raise serializers.ValidationError(
-                f"target directory '{path}' is system root"
-            )
+            raise serializers.ValidationError(f"target directory '{path}' is system root")
 
         path = f"{space_code}/{path}"
         dir_path = f"{path}/"
@@ -298,9 +288,7 @@ class RenameSerializer(serializers.Serializer):
             path = dir_path
 
         if not storage.exists(path):
-            raise serializers.ValidationError(
-                f"target directory '{path}' does not exist"
-            )
+            raise serializers.ValidationError(f"target directory '{path}' does not exist")
 
         attrs["path"] = path
         return attrs
@@ -320,19 +308,17 @@ class CopySerializer(serializers.Serializer):
         new_target_directory_path = f"{space_code}/{target_directory_path}/"
 
         if not storage.dir_exists(new_target_directory_path):
-            raise serializers.ValidationError(
-                f"target directory '{new_target_directory_path}' does not exist"
-            )
+            raise serializers.ValidationError(f"target directory '{new_target_directory_path}' does not exist")
 
         updated_paths = []
         for path in attrs["paths"]:
-            path = path.strip("/")
-            path = f"{space_code}/{path}"
+            path = path.strip("/")  # noqa: PLW2901
+            path = f"{space_code}/{path}"  # noqa: PLW2901
             dir_path = f"{path}/"
 
             if storage.dir_exists(dir_path):
                 # this is a directory
-                path = f"{path}/"
+                path = f"{path}/"  # noqa: PLW2901
 
             updated_paths.append(path)
 

@@ -16,9 +16,7 @@ class StorageObjectResourceGroupViewTest(BaseTestCase):
         self.dir_path = f"/config/next{DIR_SUFFIX}"
         self.filepath = "/config/next/test.pdf"
         self.directory = StorageObject.objects.create(path=self.dir_path)
-        self.file = StorageObject.objects.create(
-            path=self.filepath, size=111, is_file=True
-        )
+        self.file = StorageObject.objects.create(path=self.filepath, size=111, is_file=True)
 
     @staticmethod
     def create_group(name: str = "test") -> ResourceGroup:
@@ -51,9 +49,7 @@ class StorageObjectResourceGroupViewTest(BaseTestCase):
         rg_name = self.random_string()
         rg = self.create_group(name=rg_name)
         patch_data = {"resource_groups": [rg_name]}
-        response = self.client.patch(
-            f"{self.url}{self.file.id}/", data=patch_data, format="json"
-        )
+        response = self.client.patch(f"{self.url}{self.file.id}/", data=patch_data, format="json")
         self.assertEqual(response.status_code, 200, response.content)
 
         so_data = response.json()

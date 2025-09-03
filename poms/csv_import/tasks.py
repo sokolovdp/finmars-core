@@ -26,10 +26,7 @@ def simple_import(self, task_id, procedure_instance_id=None, *args, **kwargs):
         celery_task.status = CeleryTask.STATUS_PENDING
         celery_task.save()
     except Exception as e:
-        err_msg = (
-            f"simple_import celery_task {task_id} error {repr(e)} "
-            f"traceback {traceback.format_exc()}"
-        )
+        err_msg = f"simple_import celery_task {task_id} error {repr(e)} traceback {traceback.format_exc()}"
         _l.error(err_msg)
         raise RuntimeError(err_msg) from e
 
@@ -50,9 +47,7 @@ def simple_import(self, task_id, procedure_instance_id=None, *args, **kwargs):
         import_process.fill_with_file_items()
 
         if import_process.scheme.data_preprocess_expression:
-            _l.info(
-                f"Going to execute {import_process.scheme.data_preprocess_expression}"
-            )
+            _l.info(f"Going to execute {import_process.scheme.data_preprocess_expression}")
             try:
                 new_file_items = import_process.whole_file_preprocess()
                 import_process.file_items = new_file_items
@@ -109,9 +104,7 @@ def simple_import(self, task_id, procedure_instance_id=None, *args, **kwargs):
 
 
 @finmars_task(name="csv_import.data_csv_file_import_by_procedure_json", bind=True)
-def data_csv_file_import_by_procedure_json(
-    self, procedure_instance_id, celery_task_id, *args, **kwargs
-):
+def data_csv_file_import_by_procedure_json(self, procedure_instance_id, celery_task_id, *args, **kwargs):
     from poms.procedures.models import RequestDataFileProcedureInstance
 
     _l.info(
@@ -119,17 +112,14 @@ def data_csv_file_import_by_procedure_json(
         f"{procedure_instance_id} celery_task_id {celery_task_id}"
     )
 
-    procedure_instance = RequestDataFileProcedureInstance.objects.get(
-        id=procedure_instance_id
-    )
+    procedure_instance = RequestDataFileProcedureInstance.objects.get(id=procedure_instance_id)
     celery_task = CeleryTask.objects.get(id=celery_task_id)
     celery_task.status = CeleryTask.STATUS_PENDING
     celery_task.celery_task_id = self.request.id
     celery_task.save()
 
     _l.info(
-        f"data_csv_file_import_by_procedure_json looking for "
-        f"scheme {procedure_instance.procedure.scheme_user_code} "
+        f"data_csv_file_import_by_procedure_json looking for scheme {procedure_instance.procedure.scheme_user_code} "
     )
 
     try:
@@ -181,10 +171,7 @@ def data_csv_file_import_by_procedure_json(
             f"error {repr(e)}"
         )
 
-        text = (
-            f"Data File Procedure {procedure_instance.procedure.user_code}. "
-            f"Can't import json, Error {repr(e)}"
-        )
+        text = f"Data File Procedure {procedure_instance.procedure.user_code}. Can't import json, Error {repr(e)}"
         send_system_message(
             master_user=procedure_instance.master_user,
             performed_by="System",
@@ -195,12 +182,8 @@ def data_csv_file_import_by_procedure_json(
         procedure_instance.save()
 
 
-@finmars_task(
-    name="csv_import.simple_import_bulk_insert_final_updates_procedure", bind=True
-)
-def simple_import_bulk_insert_final_updates_procedure(
-    self, task_id, procedure_instance_id=None, *args, **kwargs
-):
+@finmars_task(name="csv_import.simple_import_bulk_insert_final_updates_procedure", bind=True)
+def simple_import_bulk_insert_final_updates_procedure(self, task_id, procedure_instance_id=None, *args, **kwargs):
     from poms.csv_import.handlers import SimpleImportFinalUpdatesProcess
 
     try:
@@ -228,7 +211,10 @@ def simple_import_bulk_insert_final_updates_procedure(
         return json.dumps(instance.task.result_object, default=str)
 
     except Exception as e:
-        err_msg = f"simple_import.data_csv_file_import_by_procedure_json celery_task error {repr(e)} trace {traceback.format_exc()}"
+        err_msg = (
+            "simple_import.data_csv_file_import_by_procedure_json celery_task error "
+            f"{repr(e)} trace {traceback.format_exc()}"
+        )
         _l.error(err_msg)
 
         celery_task.error_message = err_msg

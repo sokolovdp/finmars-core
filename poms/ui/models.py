@@ -5,7 +5,6 @@ from django.core.serializers.json import DjangoJSONEncoder
 from django.db import models
 from django.utils.text import Truncator
 from django.utils.translation import gettext_lazy
-
 from mptt.fields import TreeForeignKey
 from mptt.models import MPTTModel
 
@@ -389,9 +388,7 @@ class PortalInterfaceAccessModel(AbstractClassModel):
         ),
     )
 
-    value = models.PositiveSmallIntegerField(
-        default=1, verbose_name=gettext_lazy("value")
-    )
+    value = models.PositiveSmallIntegerField(default=1, verbose_name=gettext_lazy("value"))
 
     class Meta(AbstractClassModel.Meta):
         verbose_name = gettext_lazy("portal interface access")
@@ -524,13 +521,11 @@ class ColorPalette(NamedModel, ConfigurationModel):
 
     def save(self, *args, **kwargs):
         if self.is_default:
-            qs = ColorPalette.objects.filter(
-                master_user=self.master_user, is_default=True
-            )
+            qs = ColorPalette.objects.filter(master_user=self.master_user, is_default=True)
             if self.pk:
                 qs = qs.exclude(pk=self.pk)
             qs.update(is_default=False)
-        return super(ColorPalette, self).save(*args, **kwargs)
+        return super().save(*args, **kwargs)
 
 
 class ColorPaletteColor(models.Model):
@@ -785,13 +780,11 @@ class TemplateLayout(BaseUIModel):
             self.user_code = Truncator(self.name).chars(25, truncate="")
 
         if self.is_default:
-            qs = TemplateLayout.objects.filter(
-                master_user=self.member, type=self.type, is_default=True
-            )
+            qs = TemplateLayout.objects.filter(master_user=self.member, type=self.type, is_default=True)
             if self.pk:
                 qs = qs.exclude(pk=self.pk)
             qs.update(is_default=False)
-        return super(TemplateLayout, self).save(*args, **kwargs)
+        return super().save(*args, **kwargs)
 
 
 class ContextMenuLayout(BaseUIModel, TimeStampedModel):
@@ -832,13 +825,11 @@ class ContextMenuLayout(BaseUIModel, TimeStampedModel):
         if not self.user_code:
             self.user_code = Truncator(self.name).chars(25, truncate="")
 
-        super(ContextMenuLayout, self).save(*args, **kwargs)
+        super().save(*args, **kwargs)
 
 
 class BaseLayout(BaseUIModel):
-    content_type = models.ForeignKey(
-        ContentType, verbose_name=gettext_lazy("content type"), on_delete=models.CASCADE
-    )
+    content_type = models.ForeignKey(ContentType, verbose_name=gettext_lazy("content type"), on_delete=models.CASCADE)
 
     class Meta:
         abstract = True
@@ -888,19 +879,15 @@ class ListLayout(BaseLayout, TimeStampedModel):
         ordering = ["name"]
 
     def save(self, *args, **kwargs):
-        is_fixed = True
+        is_fixed = True  # noqa: F841
 
         if self.is_default:
-            qs = ListLayout.objects.filter(
-                member=self.member, content_type=self.content_type, is_default=True
-            )
+            qs = ListLayout.objects.filter(member=self.member, content_type=self.content_type, is_default=True)
             if self.pk:
                 qs = qs.exclude(pk=self.pk)
             qs.update(is_default=False)
 
-            qs = ListLayout.objects.filter(
-                member=self.member, content_type=self.content_type, is_active=True
-            )
+            qs = ListLayout.objects.filter(member=self.member, content_type=self.content_type, is_active=True)
             if self.pk:
                 qs = qs.exclude(pk=self.pk)
             qs.update(is_active=False)
@@ -912,7 +899,7 @@ class ListLayout(BaseLayout, TimeStampedModel):
             if count == 0:
                 self.is_default = True
 
-        return super(ListLayout, self).save(*args, **kwargs)
+        return super().save(*args, **kwargs)
 
     def __str__(self):
         return self.name
@@ -965,14 +952,12 @@ class DashboardLayout(BaseUIModel, TimeStampedModel):
                 qs = qs.exclude(pk=self.pk)
             qs.update(is_active=False)
         else:
-            count = DashboardLayout.objects.filter(
-                member=self.member, is_default=True
-            ).count()
+            count = DashboardLayout.objects.filter(member=self.member, is_default=True).count()
 
             if count == 0:
                 self.is_default = True
 
-        return super(DashboardLayout, self).save(*args, **kwargs)
+        return super().save(*args, **kwargs)
 
     def __str__(self):
         return self.name
@@ -1025,14 +1010,12 @@ class MobileLayout(BaseUIModel, TimeStampedModel):
                 qs = qs.exclude(pk=self.pk)
             qs.update(is_active=False)
         else:
-            count = MobileLayout.objects.filter(
-                member=self.member, is_default=True
-            ).count()
+            count = MobileLayout.objects.filter(member=self.member, is_default=True).count()
 
             if count == 0:
                 self.is_default = True
 
-        return super(MobileLayout, self).save(*args, **kwargs)
+        return super().save(*args, **kwargs)
 
     def __str__(self):
         return self.name
@@ -1074,7 +1057,7 @@ class MemberLayout(BaseUIModel, TimeStampedModel):
         ordering = ["name"]
 
     def save(self, *args, **kwargs):
-        instance = super(MemberLayout, self).save(*args, **kwargs)
+        instance = super().save(*args, **kwargs)  # noqa: F841
 
         if self.is_default:
             qs = MemberLayout.objects.filter(member=self.member, is_default=True)
@@ -1087,9 +1070,7 @@ class MemberLayout(BaseUIModel, TimeStampedModel):
                 qs = qs.exclude(pk=self.pk)
             qs.update(is_active=False)
         else:
-            count = MemberLayout.objects.filter(
-                member=self.member, is_default=True
-            ).count()
+            count = MemberLayout.objects.filter(member=self.member, is_default=True).count()
 
             if count == 0:
                 self.is_default = True
@@ -1125,13 +1106,11 @@ class ConfigurationExportLayout(BaseUIModel, TimeStampedModel):
 
     def save(self, *args, **kwargs):
         if self.is_default:
-            qs = ConfigurationExportLayout.objects.filter(
-                member=self.member, is_default=True
-            )
+            qs = ConfigurationExportLayout.objects.filter(member=self.member, is_default=True)
             if self.pk:
                 qs = qs.exclude(pk=self.pk)
             qs.update(is_default=False)
-        return super(ConfigurationExportLayout, self).save(*args, **kwargs)
+        return super().save(*args, **kwargs)
 
     def __str__(self):
         return self.name
@@ -1173,21 +1152,17 @@ class EditLayout(BaseLayout, TimeStampedModel):
             self.user_code = Truncator(self.name).chars(25, truncate="")
 
         if self.is_default:
-            qs = EditLayout.objects.filter(
-                member=self.member, content_type=self.content_type, is_default=True
-            )
+            qs = EditLayout.objects.filter(member=self.member, content_type=self.content_type, is_default=True)
             if self.pk:
                 qs = qs.exclude(pk=self.pk)
             qs.update(is_default=False)
 
-            qs = EditLayout.objects.filter(
-                member=self.member, content_type=self.content_type, is_active=True
-            )
+            qs = EditLayout.objects.filter(member=self.member, content_type=self.content_type, is_active=True)
             if self.pk:
                 qs = qs.exclude(pk=self.pk)
             qs.update(is_active=False)
 
-        return super(EditLayout, self).save(*args, **kwargs)
+        return super().save(*args, **kwargs)
 
     def __str__(self):
         return self.name
@@ -1304,7 +1279,7 @@ class Draft(TimeStampedModel):
             self.json_data = None
 
     def save(self, *args, **kwargs):
-        return super(Draft, self).save(*args, **kwargs)
+        return super().save(*args, **kwargs)
 
     def __str__(self):
         return self.name
@@ -1355,8 +1330,6 @@ class UserInterfaceAccessModel(BaseUIModel, TimeStampedModel):
     @allowed_items.setter
     def allowed_items(self, val):
         try:
-            self.json_data = (
-                json.dumps(val, cls=DjangoJSONEncoder, sort_keys=True) if val else "[]"
-            )
+            self.json_data = json.dumps(val, cls=DjangoJSONEncoder, sort_keys=True) if val else "[]"
         except (ValueError, TypeError):
             self.json_data = "[]"

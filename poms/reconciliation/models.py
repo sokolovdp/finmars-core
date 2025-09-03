@@ -18,12 +18,8 @@ class TransactionTypeReconField(models.Model):
         verbose_name=gettext_lazy("transaction type"),
         on_delete=models.CASCADE,
     )
-    reference_name = models.CharField(
-        max_length=255, verbose_name=gettext_lazy("reference name ")
-    )
-    description = models.TextField(
-        null=True, blank=True, verbose_name=gettext_lazy("description")
-    )
+    reference_name = models.CharField(max_length=255, verbose_name=gettext_lazy("reference name "))
+    description = models.TextField(null=True, blank=True, verbose_name=gettext_lazy("description"))
     value_string = models.CharField(
         max_length=EXPRESSION_FIELD_LENGTH,
         verbose_name=gettext_lazy("value string"),

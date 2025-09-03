@@ -4,14 +4,12 @@ import time
 from django.conf import settings
 from django.db import connection
 
-from poms.currencies.models import Currency
-from poms.instruments.models import Instrument
 from poms.reports.sql_builders.helpers import (
-    get_transaction_filter_sql_string,
-    get_position_consolidation_for_select,
     dictfetchall,
-    get_cash_consolidation_for_select,
     get_cash_as_position_consolidation_for_select,
+    get_cash_consolidation_for_select,
+    get_position_consolidation_for_select,
+    get_transaction_filter_sql_string,
 )
 from poms.users.models import EcosystemDefault
 
@@ -464,9 +462,7 @@ def execute_nav_sql(date, instance, cursor, ecosystem_defaults):
 
     consolidated_cash_columns = get_cash_consolidation_for_select(instance)
     consolidated_position_columns = get_position_consolidation_for_select(instance)
-    consolidated_cash_as_position_columns = (
-        get_cash_as_position_consolidation_for_select(instance)
-    )
+    consolidated_cash_as_position_columns = get_cash_as_position_consolidation_for_select(instance)
 
     transaction_filter_sql_string = get_transaction_filter_sql_string(instance)
 
@@ -653,9 +649,7 @@ def execute_transaction_prices_sql(date, instance, cursor, ecosystem_defaults):
 
     consolidated_cash_columns = get_cash_consolidation_for_select(instance)
     consolidated_position_columns = get_position_consolidation_for_select(instance)
-    consolidated_cash_as_position_columns = (
-        get_cash_as_position_consolidation_for_select(instance)
-    )
+    consolidated_cash_as_position_columns = get_cash_as_position_consolidation_for_select(instance)
 
     transaction_filter_sql_string = get_transaction_filter_sql_string(instance)
 
@@ -694,11 +688,9 @@ class PriceHistoryCheckerSql:
 
         self.instance = instance
 
-        self.ecosystem_defaults = EcosystemDefault.cache.get_cache(
-            master_user_pk=self.instance.master_user.pk
-        )
+        self.ecosystem_defaults = EcosystemDefault.cache.get_cache(master_user_pk=self.instance.master_user.pk)
 
-    def process(self):
+    def process(self):  # noqa: PLR0912
         st = time.perf_counter()
 
         with connection.cursor() as cursor:
@@ -716,9 +708,7 @@ class PriceHistoryCheckerSql:
 
                 for item in positions:
                     if item["user_code"] != "-" and item["name"] != "-":
-                        item["position_size"] = round(
-                            item["position_size"], settings.ROUND_NDIGITS
-                        )
+                        item["position_size"] = round(item["position_size"], settings.ROUND_NDIGITS)
 
                         if item["type"] == "missing_principal_pricing_history":
                             if item["position_size"]:
@@ -750,9 +740,7 @@ class PriceHistoryCheckerSql:
 
             for item in positions:
                 if item["user_code"] != "-" and item["name"] != "-":
-                    item["position_size"] = round(
-                        item["position_size"], settings.ROUND_NDIGITS
-                    )
+                    item["position_size"] = round(item["position_size"], settings.ROUND_NDIGITS)
 
                     if item["type"] == "missing_principal_pricing_history":
                         if item["position_size"]:
@@ -783,15 +771,11 @@ class PriceHistoryCheckerSql:
                     elif "name" in item:
                         unique_items_dict[item["type"] + "_" + item["name"]] = item
                     elif "transaction_currency_user_code" in item:
-                        unique_items_dict[
-                            item["type"] + "_" + item["transaction_currency_user_code"]
-                        ] = item
+                        unique_items_dict[item["type"] + "_" + item["transaction_currency_user_code"]] = item
                     elif "settlement_currency_user_code" in item:
-                        unique_items_dict[
-                            item["type"] + "_" + item["settlement_currency_user_code"]
-                        ] = item
+                        unique_items_dict[item["type"] + "_" + item["settlement_currency_user_code"]] = item
                 except Exception as e:
-                    _l.debug("error %s" % e)
+                    _l.debug("error %s", e)
                     _l.debug(item)
 
             for key, value in unique_items_dict.items():

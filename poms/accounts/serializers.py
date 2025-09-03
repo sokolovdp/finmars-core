@@ -4,12 +4,12 @@ from poms.common.fields import ExpressionField
 from poms.common.models import EXPRESSION_FIELD_LENGTH
 from poms.common.serializers import (
     ModelMetaSerializer,
+    ModelWithObjectStateSerializer,
     ModelWithTimeStampSerializer,
     ModelWithUserCodeSerializer,
-    ModelWithObjectStateSerializer,
 )
-from poms.obj_attrs.serializers import ModelWithAttributesSerializer
 from poms.iam.serializers import ModelWithResourceGroupSerializer
+from poms.obj_attrs.serializers import ModelWithAttributesSerializer
 from poms.portfolios.fields import PortfolioField
 from poms.users.fields import MasterUserField
 
@@ -89,16 +89,12 @@ class AccountSerializer(
         ]
 
     def __init__(self, *args, **kwargs):
-        super(AccountSerializer, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
         from poms.portfolios.serializers import PortfolioViewSerializer
 
-        self.fields["type_object"] = AccountTypeViewSerializer(
-            source="type", read_only=True
-        )
-        self.fields["portfolios_object"] = PortfolioViewSerializer(
-            source="portfolios", many=True, read_only=True
-        )
+        self.fields["type_object"] = AccountTypeViewSerializer(source="type", read_only=True)
+        self.fields["portfolios_object"] = PortfolioViewSerializer(source="portfolios", many=True, read_only=True)
 
 
 class AccountLightSerializer(ModelWithUserCodeSerializer):

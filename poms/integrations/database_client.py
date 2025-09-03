@@ -27,7 +27,7 @@ def get_backend_callback_urls() -> dict:
 
     master_user = MasterUser.objects.first()
     if not master_user:
-        RuntimeError("No MasterUser defined!")
+        raise RuntimeError("No MasterUser defined!")
 
     base_url = f"https://{settings.DOMAIN_NAME}"
     if master_user.realm_code:
@@ -85,14 +85,10 @@ class DatabaseService:
         if (service_name not in FINMARS_DATABASE_URLS) or not request_options:
             err_msg = "get_monad: invalid service name or request options"
             _l.error(err_msg)
-            raise FinmarsBaseException(
-                message=err_msg, error_key="finmars_database_error"
-            )
+            raise FinmarsBaseException(message=err_msg, error_key="finmars_database_error")
 
         try:
-            response_json = self.http_client.post(
-                url=FINMARS_DATABASE_URLS[service_name], json=request_options
-            )
+            response_json = self.http_client.post(url=FINMARS_DATABASE_URLS[service_name], json=request_options)
 
         except HttpClientError as e:
             return Monad(status=MonadStatus.ERROR, message=repr(e))
@@ -100,9 +96,7 @@ class DatabaseService:
         except Exception as e:
             err_msg = f"get_monad: unexpected error {repr(e)}"
             _l.error(f"{err_msg}  trace {traceback.format_exc()}")
-            raise FinmarsBaseException(
-                message=err_msg, error_key="finmars_database_error"
-            ) from e
+            raise FinmarsBaseException(message=err_msg, error_key="finmars_database_error") from e
 
         serializer = CallBackDataDictMonadSerializer(data=response_json)
         if serializer.is_valid():

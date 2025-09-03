@@ -16,10 +16,8 @@ class TenantSchemaGenerator(OpenAPISchemaGenerator):
 
         # Replace placeholder parameters with default values
         # (realm_code, space_code) in each path
-        for path in list(swagger.paths.keys()):
-            new_path = path.replace("{realm_code}", request.realm_code).replace(
-                "{space_code}", request.space_code
-            )
+        for path in list(swagger.paths.keys()):  # noqa: F402
+            new_path = path.replace("{realm_code}", request.realm_code).replace("{space_code}", request.space_code)
             swagger.paths[new_path] = swagger.paths[path]
             del swagger.paths[path]
 
@@ -28,7 +26,10 @@ class TenantSchemaGenerator(OpenAPISchemaGenerator):
                 "type": "apiKey",
                 "in": "header",
                 "name": "Authorization",
-                "description": "Enter token in format `Bearer <token>`. Token can be generated in /api/v1/auth-tokens/personal-access-token/create-token/",
+                "description": (
+                    "Enter token in format `Bearer <token>`. Token can be generated in "
+                    "/api/v1/auth-tokens/personal-access-token/create-token/"
+                ),
             },
             "SingleSignOn": {
                 "type": "apiKey",
@@ -47,7 +48,6 @@ class TenantSchemaGenerator(OpenAPISchemaGenerator):
         return swagger
 
     def get_tags(self, operation_keys=None):
-
         print(f"work? tags {operation_keys}")
 
         return []
@@ -281,6 +281,7 @@ def get_schedule_documentation(*args, **kwargs):
         ),
     ]
     return generate_schema(local_urlpatterns)
+
 
 def get_celery_tasks_documentation(*args, **kwargs):
     import poms.celery_tasks.urls as celery_router

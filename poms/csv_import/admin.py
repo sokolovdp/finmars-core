@@ -2,7 +2,7 @@
 
 from django.contrib import admin
 
-from .models import CsvImportScheme, EntityField, CsvField, CsvDataImport
+from .models import CsvDataImport, CsvField, CsvImportScheme, EntityField
 
 
 class EntityFieldInline(admin.TabularInline):

@@ -8,12 +8,10 @@ from poms.counterparties.models import (
 from poms.users.filters import OwnerByMasterUserFilter
 
 
-class CounterpartyGroupDefault(object):
+class CounterpartyGroupDefault:
     requires_context = True
 
     def set_context(self, serializer_field):
-        from poms_app import settings
-
         from poms.users.models import MasterUser
 
         self._master_user = MasterUser.objects.all().first()
@@ -22,9 +20,7 @@ class CounterpartyGroupDefault(object):
         from poms.users.models import EcosystemDefault
 
         self.set_context(serializer_field)
-        self.ecosystem_defaults = EcosystemDefault.cache.get_cache(
-            master_user_pk=self._master_user.pk
-        )
+        self.ecosystem_defaults = EcosystemDefault.cache.get_cache(master_user_pk=self._master_user.pk)
 
         return self.ecosystem_defaults.counterparty_group
 
@@ -36,12 +32,10 @@ class CounterpartyGroupField(UserCodeOrPrimaryKeyRelatedField):
     ]
 
 
-class CounterpartyDefault(object):
+class CounterpartyDefault:
     requires_context = True
 
     def set_context(self, serializer_field):
-        from poms_app import settings
-
         from poms.users.models import MasterUser
 
         # Only One Space per Scheme
@@ -51,9 +45,7 @@ class CounterpartyDefault(object):
         self.set_context(serializer_field)
         from poms.users.models import EcosystemDefault
 
-        self.ecosystem_defaults = EcosystemDefault.cache.get_cache(
-            master_user_pk=self._master_user.pk
-        )
+        self.ecosystem_defaults = EcosystemDefault.cache.get_cache(master_user_pk=self._master_user.pk)
 
         return self.ecosystem_defaults.counterparty
 
@@ -65,12 +57,10 @@ class CounterpartyField(UserCodeOrPrimaryKeyRelatedField):
     ]
 
 
-class ResponsibleGroupDefault(object):
+class ResponsibleGroupDefault:
     requires_context = True
 
     def set_context(self, serializer_field):
-        from poms_app import settings
-
         from poms.users.models import MasterUser
 
         self._master_user = MasterUser.objects.all().first()
@@ -79,9 +69,7 @@ class ResponsibleGroupDefault(object):
         self.set_context(serializer_field)
         from poms.users.models import EcosystemDefault
 
-        self.ecosystem_defaults = EcosystemDefault.cache.get_cache(
-            master_user_pk=self._master_user.pk
-        )
+        self.ecosystem_defaults = EcosystemDefault.cache.get_cache(master_user_pk=self._master_user.pk)
 
         return self.ecosystem_defaults.responsible_group
 
@@ -93,12 +81,10 @@ class ResponsibleGroupField(UserCodeOrPrimaryKeyRelatedField):
     ]
 
 
-class ResponsibleDefault(object):
+class ResponsibleDefault:
     requires_context = True
 
     def set_context(self, serializer_field):
-        from poms_app import settings
-
         from poms.users.models import MasterUser
 
         self._master_user = MasterUser.objects.all().first()
@@ -107,9 +93,7 @@ class ResponsibleDefault(object):
         from poms.users.models import EcosystemDefault
 
         self.set_context(serializer_field)
-        self.ecosystem_defaults = EcosystemDefault.cache.get_cache(
-            master_user_pk=self._master_user.pk
-        )
+        self.ecosystem_defaults = EcosystemDefault.cache.get_cache(master_user_pk=self._master_user.pk)
 
         return self.ecosystem_defaults.responsible
 

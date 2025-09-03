@@ -1,6 +1,6 @@
 from unittest import mock
 
-from poms.common.common_base_test import BIG, BaseTestCase, SMALL
+from poms.common.common_base_test import BIG, SMALL, BaseTestCase
 from poms.portfolios.models import PortfolioReconcileGroup
 
 
@@ -41,9 +41,7 @@ class BulkReconcileHistoryViewTest(BaseTestCase):
                 self.today().strftime("%Y-%m-%d"),
             ],
         }
-        response = self.client.post(
-            f"{self.url}bulk-calculate/", data=calculate_data, format="json"
-        )
+        response = self.client.post(f"{self.url}bulk-calculate/", data=calculate_data, format="json")
         self.assertEqual(response.status_code, 400, response.content)
 
     def test_no_groups(self):
@@ -53,9 +51,7 @@ class BulkReconcileHistoryViewTest(BaseTestCase):
                 self.today().strftime("%Y-%m-%d"),
             ],
         }
-        response = self.client.post(
-            f"{self.url}bulk-calculate/", data=calculate_data, format="json"
-        )
+        response = self.client.post(f"{self.url}bulk-calculate/", data=calculate_data, format="json")
         self.assertEqual(response.status_code, 400, response.content)
 
     def test_empty_groups(self):
@@ -66,9 +62,7 @@ class BulkReconcileHistoryViewTest(BaseTestCase):
                 self.today().strftime("%Y-%m-%d"),
             ],
         }
-        response = self.client.post(
-            f"{self.url}bulk-calculate/", data=calculate_data, format="json"
-        )
+        response = self.client.post(f"{self.url}bulk-calculate/", data=calculate_data, format="json")
         self.assertEqual(response.status_code, 400, response.content)
 
     def test_calculate_empty_dates(self):
@@ -76,18 +70,14 @@ class BulkReconcileHistoryViewTest(BaseTestCase):
             "reconcile_groups": [self.group.user_code],
             "dates": [],
         }
-        response = self.client.post(
-            f"{self.url}bulk-calculate/", data=calculate_data, format="json"
-        )
+        response = self.client.post(f"{self.url}bulk-calculate/", data=calculate_data, format="json")
         self.assertEqual(response.status_code, 400, response.content)
 
     def test_calculate_no_dates(self):
         calculate_data = {
             "reconcile_groups": [self.group.user_code],
         }
-        response = self.client.post(
-            f"{self.url}bulk-calculate/", data=calculate_data, format="json"
-        )
+        response = self.client.post(f"{self.url}bulk-calculate/", data=calculate_data, format="json")
         self.assertEqual(response.status_code, 400, response.content)
 
     @BaseTestCase.cases(
@@ -101,9 +91,7 @@ class BulkReconcileHistoryViewTest(BaseTestCase):
             "reconcile_groups": [self.group.user_code],
             "dates": [invalid_date, self.today().strftime("%Y-%m-%d")],
         }
-        response = self.client.post(
-            f"{self.url}bulk-calculate/", data=calculate_data, format="json"
-        )
+        response = self.client.post(f"{self.url}bulk-calculate/", data=calculate_data, format="json")
         self.assertEqual(response.status_code, 400, response.content)
 
     @mock.patch("poms.portfolios.tasks.bulk_calculate_reconcile_history.apply_async")
@@ -115,15 +103,11 @@ class BulkReconcileHistoryViewTest(BaseTestCase):
                 self.today().strftime("%Y-%m-%d"),
             ],
         }
-        response = self.client.post(
-            f"{self.url}bulk-calculate/", data=calculate_data, format="json"
-        )
+        response = self.client.post(f"{self.url}bulk-calculate/", data=calculate_data, format="json")
         self.assertEqual(response.status_code, 200, response.content)
         response_data = response.json()
 
         apply_async.assert_called()
         self.group.refresh_from_db()
-        self.assertEqual(
-            response_data["task_options"]["reconcile_groups"], [self.group.user_code]
-        )
+        self.assertEqual(response_data["task_options"]["reconcile_groups"], [self.group.user_code])
         self.assertEqual(response_data["task_status"], "I")

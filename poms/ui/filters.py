@@ -2,62 +2,61 @@ from django.contrib.contenttypes.models import ContentType
 from rest_framework.filters import BaseFilterBackend
 
 from poms.portfolios.models import (
-    PortfolioRegister,
-    PortfolioRegisterRecord,
     PortfolioHistory,
-    PortfolioType,
     PortfolioReconcileGroup,
     PortfolioReconcileHistory,
+    PortfolioRegister,
+    PortfolioRegisterRecord,
+    PortfolioType,
 )
-from poms.pricing.models import PriceHistoryError, CurrencyHistoryError
+from poms.pricing.models import CurrencyHistoryError, PriceHistoryError
 from poms.reports.models import (
     BalanceReport,
-    PLReport,
-    PerformanceReport,
     CashFlowReport,
+    PerformanceReport,
+    PLReport,
     TransactionReport,
 )
 
 
 class LayoutContentTypeFilter(BaseFilterBackend):
     def filter_queryset(self, request, queryset, view):
-        from poms.accounts.models import AccountType, Account
-        from poms.currencies.models import Currency, CurrencyHistory
-        from poms.instruments.models import (
-            InstrumentType,
-            Instrument,
-            PriceHistory,
-            PricingPolicy,
-            GeneratedEvent,
-        )
+        from poms.accounts.models import Account, AccountType
         from poms.counterparties.models import (
             Counterparty,
-            Responsible,
             CounterpartyGroup,
+            Responsible,
             ResponsibleGroup,
         )
+        from poms.csv_import.models import CsvImportScheme
+        from poms.currencies.models import Currency, CurrencyHistory
+        from poms.instruments.models import (
+            GeneratedEvent,
+            Instrument,
+            InstrumentType,
+            PriceHistory,
+            PricingPolicy,
+        )
+        from poms.integrations.models import ComplexTransactionImportScheme
+        from poms.portfolios.models import Portfolio
         from poms.strategies.models import (
+            Strategy1,
             Strategy1Group,
             Strategy1Subgroup,
-            Strategy1,
+            Strategy2,
             Strategy2Group,
             Strategy2Subgroup,
-            Strategy2,
+            Strategy3,
             Strategy3Group,
             Strategy3Subgroup,
-            Strategy3,
         )
-        from poms.portfolios.models import Portfolio
         from poms.transactions.models import (
-            TransactionTypeGroup,
-            TransactionType,
-            Transaction,
             ComplexTransaction,
+            Transaction,
+            TransactionType,
+            TransactionTypeGroup,
         )
         from poms.ui.models import Dashboard
-
-        from poms.integrations.models import ComplexTransactionImportScheme
-        from poms.csv_import.models import CsvImportScheme
 
         models = [
             AccountType,

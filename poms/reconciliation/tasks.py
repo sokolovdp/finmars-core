@@ -4,30 +4,29 @@ import logging
 # from poms.integrations.storage import import_file_storage
 from tempfile import NamedTemporaryFile
 
-from celery import shared_task
 from django.utils.translation import gettext_lazy
 
 from poms.celery_tasks import finmars_task
-from poms.expressions_engine import formula
+from poms.common.storage import get_storage
 from poms.common.utils import date_now
+from poms.expressions_engine import formula
 from poms.reconciliation.models import (
-    ReconciliationNewBankFileField,
     ReconciliationBankFileField,
+    ReconciliationNewBankFileField,
 )
 from poms.reconciliation.serializers import (
-    ReconciliationNewBankFileFieldSerializer,
     ReconciliationBankFileFieldSerializer,
+    ReconciliationNewBankFileFieldSerializer,
 )
 
 _l = logging.getLogger("poms.reconciliation")
 
-from poms.common.storage import get_storage
 
 storage = get_storage()
 
 
 @finmars_task(name="reconciliation.process_bank_file_for_reconcile", bind=True)
-def process_bank_file_for_reconcile(self, instance, *args, **kwargs):
+def process_bank_file_for_reconcile(self, instance, *args, **kwargs):  # noqa: PLR0915
     _l.debug("complex_transaction_file_import: %s", instance)
 
     instance.processed_rows = 0
@@ -39,7 +38,7 @@ def process_bank_file_for_reconcile(self, instance, *args, **kwargs):
 
     _now = date_now()
 
-    def _process_csv_file(file):
+    def _process_csv_file(file):  # noqa: PLR0912, PLR0915
         instance.processed_rows = 0
 
         delimiter = instance.delimiter.encode("utf-8").decode("unicode_escape")
@@ -94,16 +93,10 @@ def process_bank_file_for_reconcile(self, instance, *args, **kwargs):
 
                 try:
                     inputs_raw[i.name] = row[i.column - 1]
-                    error_rows["error_data"]["data"]["imported_columns"].append(
-                        row[i.column - 1]
-                    )
-                except:
-                    _l.debug(
-                        "can't process input: %s|%s", i.name, i.column, exc_info=True
-                    )
-                    error_rows["error_data"]["data"]["imported_columns"].append(
-                        gettext_lazy("Invalid expression")
-                    )
+                    error_rows["error_data"]["data"]["imported_columns"].append(row[i.column - 1])
+                except Exception:
+                    _l.debug("can't process input: %s|%s", i.name, i.column, exc_info=True)
+                    error_rows["error_data"]["data"]["imported_columns"].append(gettext_lazy("Invalid expression"))
                     inputs_error.append(i)
 
             if inputs_error:
@@ -111,11 +104,7 @@ def process_bank_file_for_reconcile(self, instance, *args, **kwargs):
 
                 error_rows["error_message"] = error_rows["error_message"] + str(
                     gettext_lazy("Can't process fields: %(inputs)s")
-                    % {
-                        "inputs": ", ".join(
-                            "[" + i.name + "] (Can't find input)" for i in inputs_error
-                        )
-                    }
+                    % {"inputs": ", ".join("[" + i.name + "] (Can't find input)" for i in inputs_error)}
                 )
                 instance.error_rows.append(error_rows)
                 if instance.break_on_error:
@@ -128,25 +117,23 @@ def process_bank_file_for_reconcile(self, instance, *args, **kwargs):
                     continue
 
             for i in scheme_inputs:
-                error_rows["error_data"]["columns"][
-                    "converted_imported_columns"
-                ].append(i.name + ": Conversion Expression " + "(" + i.name_expr + ")")
+                error_rows["error_data"]["columns"]["converted_imported_columns"].append(
+                    i.name + ": Conversion Expression " + "(" + i.name_expr + ")"
+                )
 
                 try:
                     inputs[i.name] = formula.safe_eval(i.name_expr, names=inputs_raw)
-                    error_rows["error_data"]["data"][
-                        "converted_imported_columns"
-                    ].append(row[i.column - 1])
-                except:
+                    error_rows["error_data"]["data"]["converted_imported_columns"].append(row[i.column - 1])
+                except Exception:
                     _l.debug(
                         "can't process conversion input: %s|%s",
                         i.name,
                         i.column,
                         exc_info=True,
                     )
-                    error_rows["error_data"]["data"][
-                        "converted_imported_columns"
-                    ].append(gettext_lazy("Invalid expression"))
+                    error_rows["error_data"]["data"]["converted_imported_columns"].append(
+                        gettext_lazy("Invalid expression")
+                    )
                     inputs_conversion_error.append(i)
 
             if inputs_conversion_error:
@@ -156,11 +143,7 @@ def process_bank_file_for_reconcile(self, instance, *args, **kwargs):
                     gettext_lazy("Can't process fields: %(inputs)s")
                     % {
                         "inputs": ", ".join(
-                            "["
-                            + i.name
-                            + '] (Imported column conversion expression, value; "'
-                            + i.name_exp
-                            + '")'
+                            "[" + i.name + '] (Imported column conversion expression, value; "' + i.name_exp + '")'
                             for i in inputs_conversion_error
                         )
                     }
@@ -177,15 +160,12 @@ def process_bank_file_for_reconcile(self, instance, *args, **kwargs):
 
             try:
                 selector_value = formula.safe_eval(scheme.rule_expr, names=inputs)
-            except:
+            except Exception:
                 error_rows["level"] = "error"
 
                 _l.debug("can't process selector value expression", exc_info=True)
                 error_rows["error_message"] = (
-                    error_rows["error_message"]
-                    + "\n"
-                    + "\n"
-                    + str(gettext_lazy("Can't eval rule expression"))
+                    error_rows["error_message"] + "\n" + "\n" + str(gettext_lazy("Can't eval rule expression"))
                 )
                 instance.error_rows.append(error_rows)
                 if instance.break_on_error:
@@ -218,19 +198,15 @@ def process_bank_file_for_reconcile(self, instance, *args, **kwargs):
 
                     result_row["fields"] = []
 
-                    fields = {}
-                    fields_error = []
+                    fields = {}  # noqa: F841
+                    fields_error = []  # noqa: F841
                     for field in scheme_recon.fields.all():
-                        new_bank_file_field = ReconciliationNewBankFileField(
-                            master_user=instance.master_user
-                        )
+                        new_bank_file_field = ReconciliationNewBankFileField(master_user=instance.master_user)
 
                         new_bank_file_field.reference_name = field.reference_name
                         new_bank_file_field.description = field.description
                         new_bank_file_field.file_name = instance.filename
-                        new_bank_file_field.import_scheme_name = (
-                            instance.scheme.scheme_name
-                        )
+                        new_bank_file_field.import_scheme_name = instance.scheme.scheme_name
 
                         try:
                             new_bank_file_field.source_id = formula.safe_eval(
@@ -248,24 +224,18 @@ def process_bank_file_for_reconcile(self, instance, *args, **kwargs):
 
                         if field.value_string:
                             try:
-                                new_bank_file_field.value_string = formula.safe_eval(
-                                    field.value_string, names=inputs
-                                )
+                                new_bank_file_field.value_string = formula.safe_eval(field.value_string, names=inputs)
                             except formula.InvalidExpression:
                                 new_bank_file_field.value_string = "<InvalidExpression>"
                         if field.value_float:
-                            try:
-                                new_bank_file_field.value_float = formula.safe_eval(
-                                    field.value_float, names=inputs
-                                )
+                            try:  # noqa: SIM105
+                                new_bank_file_field.value_float = formula.safe_eval(field.value_float, names=inputs)
                             except formula.InvalidExpression:
                                 pass
 
                         if field.value_date:
-                            try:
-                                new_bank_file_field.value_date = formula.safe_eval(
-                                    field.value_date, names=inputs
-                                )
+                            try:  # noqa: SIM105
+                                new_bank_file_field.value_date = formula.safe_eval(field.value_date, names=inputs)
                             except formula.InvalidExpression:
                                 pass
 
@@ -277,25 +247,19 @@ def process_bank_file_for_reconcile(self, instance, *args, **kwargs):
                                 import_scheme_name=new_bank_file_field.import_scheme_name,
                             )
 
-                            serializer = ReconciliationBankFileFieldSerializer(
-                                existed_bank_file_field
-                            )
+                            serializer = ReconciliationBankFileFieldSerializer(existed_bank_file_field)
 
                         except ReconciliationBankFileField.DoesNotExist:
                             new_bank_file_field.save()
 
-                            print("id %s" % new_bank_file_field.id)
+                            print(f"id {new_bank_file_field.id}")
 
-                            serializer = ReconciliationNewBankFileFieldSerializer(
-                                new_bank_file_field
-                            )
+                            serializer = ReconciliationNewBankFileFieldSerializer(new_bank_file_field)
 
                         result_row["fields"].append(serializer.data)
 
                         try:
-                            result_row["source_id"] = formula.safe_eval(
-                                scheme_recon.line_reference_id, names=inputs
-                            )
+                            result_row["source_id"] = formula.safe_eval(scheme_recon.line_reference_id, names=inputs)
                         except formula.InvalidExpression:
                             result_row["source_id"] = "<InvalidExpression>"
 
@@ -303,7 +267,7 @@ def process_bank_file_for_reconcile(self, instance, *args, **kwargs):
 
                     self.update_state(
                         task_id=instance.task_id,
-                        state=Task.STATUS_PENDING,
+                        state=Task.STATUS_PENDING,  # noqa: F821
                         meta={
                             "processed_rows": instance.processed_rows,
                             "total_rows": instance.total_rows,
@@ -340,51 +304,42 @@ def process_bank_file_for_reconcile(self, instance, *args, **kwargs):
 
         row_index = 0
 
-        for row_index, row in enumerate(reader):
+        for row_index, row in enumerate(reader):  # noqa: B007
             pass
         return row_index
 
     instance.error_rows = []
     try:
-        with storage.open(instance.file_path, "rb") as f:
-            with NamedTemporaryFile() as tmpf:
-                _l.debug("tmpf")
-                _l.debug(tmpf)
+        with storage.open(instance.file_path, "rb") as f, NamedTemporaryFile() as tmpf:
+            _l.debug("tmpf")
+            _l.debug(tmpf)
 
-                for chunk in f.chunks():
-                    tmpf.write(chunk)
-                tmpf.flush()
-                with open(
-                    tmpf.name, mode="rt", encoding=instance.encoding, errors="ignore"
-                ) as cfr:
-                    instance.total_rows = _row_count(cfr)
-                    self.update_state(
-                        task_id=instance.task_id,
-                        state=Task.STATUS_PENDING,
-                        meta={
-                            "total_rows": instance.total_rows,
-                            "scheme_name": instance.scheme.scheme_name,
-                            "file_name": instance.filename,
-                        },
-                    )
-                    # instance.save()
-                with open(
-                    tmpf.name, mode="rt", encoding=instance.encoding, errors="ignore"
-                ) as cf:
-                    _process_csv_file(cf)
+            for chunk in f.chunks():
+                tmpf.write(chunk)
+            tmpf.flush()
+            with open(tmpf.name, encoding=instance.encoding, errors="ignore") as cfr:
+                instance.total_rows = _row_count(cfr)
+                self.update_state(
+                    task_id=instance.task_id,
+                    state=Task.STATUS_PENDING,  # noqa: F821
+                    meta={
+                        "total_rows": instance.total_rows,
+                        "scheme_name": instance.scheme.scheme_name,
+                        "file_name": instance.filename,
+                    },
+                )
+                # instance.save()
+            with open(tmpf.name, encoding=instance.encoding, errors="ignore") as cf:
+                _process_csv_file(cf)
 
-    except:
+    except Exception:
         _l.debug("Can't process file", exc_info=True)
-        instance.error_message = gettext_lazy(
-            "Invalid file format or file already deleted."
-        )
+        instance.error_message = gettext_lazy("Invalid file format or file already deleted.")
     finally:
         storage.delete(instance.file_path)
 
     instance.error = (
-        bool(instance.error_message)
-        or (instance.error_row_index is not None)
-        or bool(instance.error_rows)
+        bool(instance.error_message) or (instance.error_row_index is not None) or bool(instance.error_rows)
     )
 
     return instance

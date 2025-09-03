@@ -1,7 +1,6 @@
 from datetime import timedelta
 
 import jwt
-
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
@@ -19,32 +18,22 @@ class SetAuthTokenSerializer(serializers.Serializer):
     user_id = serializers.CharField(label=_("User id"))
     user_legacy_id = serializers.IntegerField(required=False, label=_("User legacy id"))
     current_master_user_id = serializers.CharField(label=_("Current master user id"))
-    current_master_user_legacy_id = serializers.IntegerField(
-        required=False, label=_("Current master user legacy id")
-    )
+    current_master_user_legacy_id = serializers.IntegerField(required=False, label=_("Current master user legacy id"))
 
 
 class CreateUserSerializer(serializers.Serializer):
     username = serializers.CharField(label=_("Username"))
     email = serializers.CharField(label=_("Email"), required=False, allow_blank=True)
-    roles = serializers.CharField(
-        label=_("Roles"), required=False, allow_blank=True, default=""
-    )
-    groups = serializers.CharField(
-        label=_("Groups"), required=False, allow_blank=True, default=""
-    )
-    is_admin = serializers.BooleanField(
-        label=_("Is Admin"), required=False, default=False
-    )
+    roles = serializers.CharField(label=_("Roles"), required=False, allow_blank=True, default="")
+    groups = serializers.CharField(label=_("Groups"), required=False, allow_blank=True, default="")
+    is_admin = serializers.BooleanField(label=_("Is Admin"), required=False, default=False)
 
 
 class CreateMasterUserSerializer(serializers.Serializer):
     name = serializers.CharField(label=_("name"))
     unique_id = serializers.CharField(label=_("Unique id"))
     user_unique_id = serializers.CharField(label=_("User Unique id"))
-    old_backup_name = serializers.CharField(
-        label=_("Old backup name"), required=False, allow_blank=True
-    )
+    old_backup_name = serializers.CharField(label=_("Old backup name"), required=False, allow_blank=True)
 
 
 class RenameMasterUserSerializer(serializers.Serializer):
@@ -57,17 +46,13 @@ class MasterUserChangeOwnerSerializer(serializers.Serializer):
 
 
 class CreateMemberSerializer(serializers.Serializer):
-    groups = serializers.CharField(
-        required=False, label=_("Groups"), allow_blank=True, allow_null=True
-    )
+    groups = serializers.CharField(required=False, label=_("Groups"), allow_blank=True, allow_null=True)
     username = serializers.CharField(label=_("username"))
     user_id = serializers.CharField(label=_("User Id"))
     user_legacy_id = serializers.IntegerField(required=False, label=_("User legacy id"))
     member_id = serializers.CharField(label=_("Member id"))
     master_user_id = serializers.CharField(label=_("Master User id"))
-    master_user_legacy_id = serializers.IntegerField(
-        required=False, label=_("Current master user legacy id")
-    )
+    master_user_legacy_id = serializers.IntegerField(required=False, label=_("Current master user legacy id"))
 
 
 class DeleteMemberSerializer(serializers.Serializer):
@@ -96,7 +81,7 @@ class PersonalAccessTokenSerializer(
         ]
 
     def __init__(self, *args, **kwargs):
-        super(PersonalAccessTokenSerializer, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
 
 class CreatePersonalAccessTokenSerializer(serializers.ModelSerializer):
@@ -113,9 +98,7 @@ class CreatePersonalAccessTokenSerializer(serializers.ModelSerializer):
         help_text="Access level of the token.",
     )
     name = serializers.CharField(required=True, help_text="Human Readable Name")
-    user_code = serializers.CharField(
-        required=True, help_text="User Code for IAM policies"
-    )
+    user_code = serializers.CharField(required=True, help_text="User Code for IAM policies")
     notes = serializers.CharField(
         required=False,
         allow_null=True,
@@ -151,9 +134,7 @@ class CreatePersonalAccessTokenSerializer(serializers.ModelSerializer):
 
         access_token.set_exp(lifetime=timedelta(days=days_to_live))
 
-        decode_token = jwt.decode(
-            str(access_token), settings.SECRET_KEY, algorithms=["HS256"]
-        )
+        decode_token = jwt.decode(str(access_token), settings.SECRET_KEY, algorithms=["HS256"])
 
         decode_token["username"] = member.user.username
         decode_token["access_level"] = access_level

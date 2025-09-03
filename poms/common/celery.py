@@ -2,12 +2,10 @@ import logging
 from threading import local
 
 from celery.signals import task_postrun, task_prerun
-from django.db import connection
-from django.db import DatabaseError, InterfaceError
+from django.db import DatabaseError, InterfaceError, connection
 from django_celery_beat.schedulers import DatabaseScheduler
 
 from poms.common.db import get_all_tenant_schemas
-
 
 celery_state = local()
 
@@ -25,9 +23,7 @@ def get_active_celery_task_id():
 def cancel_existing_tasks(celery_app):
     from poms.celery_tasks.models import CeleryTask
 
-    tasks = CeleryTask.objects.filter(
-        status__in=[CeleryTask.STATUS_PENDING, CeleryTask.STATUS_INIT]
-    )
+    tasks = CeleryTask.objects.filter(status__in=[CeleryTask.STATUS_PENDING, CeleryTask.STATUS_INIT])
 
     _l_new = logging.getLogger("provision")
 
@@ -135,7 +131,7 @@ def set_task_context(task_id, task, kwargs=None, **unused):
 
 @task_postrun.connect
 def cleanup(task_id, **kwargs):
-    _l.info("cleanup %s" % task_id)
+    _l.info("cleanup %s", task_id)
 
     celery_state.celery_task_id = None
     celery_state.task = None
@@ -154,7 +150,7 @@ class PerSpaceDatabaseScheduler(DatabaseScheduler):
         for schema in schemas:
             set_schema_from_context({"space_code": schema})
             for model in self.Model.objects.enabled():
-                try:
+                try:  # noqa: SIM105
                     s[model.name] = self.Entry(model, app=self.app)
                 except ValueError:
                     pass
@@ -178,10 +174,7 @@ class PerSpaceDatabaseScheduler(DatabaseScheduler):
                 _l.exception("Database gave error: %r", exc)
                 return False
             except InterfaceError:
-                _l.warning(
-                    "DatabaseScheduler: InterfaceError in schedule_changed(), "
-                    "waiting to retry in next call..."
-                )
+                _l.warning("DatabaseScheduler: InterfaceError in schedule_changed(), waiting to retry in next call...")
                 return False
         try:
             if ts and ts > (last if last else ts):

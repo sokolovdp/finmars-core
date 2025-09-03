@@ -149,7 +149,6 @@ class Configuration(TimeStampedModel):
             text = json.dumps(value, cls=DjangoJSONEncoder, sort_keys=True, indent=1)
             self.manifest_data = json.loads(text)
 
-
     def __str__(self):
         return f"{self.configuration_code} ({self.version})"
 
@@ -160,9 +159,7 @@ class NewMemberSetupConfiguration(ConfigurationModel):
         null=True,
         blank=True,
         verbose_name=gettext_lazy("user code"),
-        help_text=gettext_lazy(
-            "Unique Code for this object. Used in Configuration and Permissions Logic"
-        ),
+        help_text=gettext_lazy("Unique Code for this object. Used in Configuration and Permissions Logic"),
     )
     name = models.CharField(
         max_length=255,

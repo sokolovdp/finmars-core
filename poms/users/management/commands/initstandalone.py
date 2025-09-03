@@ -9,6 +9,7 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         from django.contrib.auth.models import User
+
         from poms.users.models import MasterUser, Member
 
         with transaction.atomic():
@@ -20,13 +21,9 @@ class Command(BaseCommand):
                 user.save()
 
             if MasterUser.objects.count() == 0:
-                user, created = User.objects.get_or_create(
-                    username="finmars", defaults={}
-                )
+                user, created = User.objects.get_or_create(username="finmars", defaults={})
                 if created:
                     user.set_password("finmars")
                     user.save()
                 master_user = MasterUser.objects.create_master_user(name="default")
-                Member.objects.create(
-                    master_user=master_user, user=user, is_owner=True, is_admin=True
-                )
+                Member.objects.create(master_user=master_user, user=user, is_owner=True, is_admin=True)

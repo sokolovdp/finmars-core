@@ -158,9 +158,7 @@ class TransactionTypeActionInstrumentManualPricingFormulaAdmin(AbstractModelAdmi
     master_user.admin_order_field = "transaction_type__master_user"
 
 
-class TransactionTypeActionInstrumentAccrualCalculationSchedulesAdmin(
-    AbstractModelAdmin
-):
+class TransactionTypeActionInstrumentAccrualCalculationSchedulesAdmin(AbstractModelAdmin):
     model = TransactionTypeActionInstrumentAccrualCalculationSchedules
     master_user_path = "transaction_type__master_user"
     list_display = ["id", "master_user", "transaction_type", "order", "action_notes"]
@@ -623,11 +621,7 @@ admin.site.register(
     TransactionTypeActionInstrumentFactorSchedule,
     TransactionTypeActionInstrumentFactorScheduleAdmin,
 )
-admin.site.register(
-    TransactionTypeActionTransaction, TransactionTypeActionTransactionAdmin
-)
-admin.site.register(
-    TransactionTypeActionInstrument, TransactionTypeActionInstrumentAdmin
-)
+admin.site.register(TransactionTypeActionTransaction, TransactionTypeActionTransactionAdmin)
+admin.site.register(TransactionTypeActionInstrument, TransactionTypeActionInstrumentAdmin)
 admin.site.register(TransactionTypeInputSettings, TransactionTypeInputSettingsAdmin)
 admin.site.register(TransactionTypeGroup, TransactionTypeGroupAdmin)

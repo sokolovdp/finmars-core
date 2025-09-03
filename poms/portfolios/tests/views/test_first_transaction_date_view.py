@@ -85,9 +85,7 @@ class PortfolioFirstTransactionViewSetTest(BaseTestCase):
         return PortfolioRegisterRecord.objects.create(**prr_data)
 
     def get_portfolio_by_id(self):
-        response = self.client.get(
-            path=f"{self.url}?portfolio={self.portfolio.user_code}"
-        )
+        response = self.client.get(path=f"{self.url}?portfolio={self.portfolio.user_code}")
         self.assertEqual(response.status_code, 200, response.content)
 
         return response.json()
@@ -118,9 +116,7 @@ class PortfolioFirstTransactionViewSetTest(BaseTestCase):
     def test__with_portfolio_user_code_as_str(self):
         self.create_3_prr()
 
-        response = self.client.get(
-            path=f"{self.url}?portfolio={self.portfolio.user_code}"
-        )
+        response = self.client.get(path=f"{self.url}?portfolio={self.portfolio.user_code}")
         self.assertEqual(response.status_code, 200, response.content)
 
         response_json = response.json()
@@ -140,9 +136,7 @@ class PortfolioFirstTransactionViewSetTest(BaseTestCase):
     def test__different_date_field_values(self, date_field: str):
         self.create_3_prr()
 
-        response = self.client.get(
-            path=f"{self.url}?portfolio={self.portfolio.user_code}&date_field={date_field}"
-        )
+        response = self.client.get(path=f"{self.url}?portfolio={self.portfolio.user_code}&date_field={date_field}")
         self.assertEqual(response.status_code, 200, response.content)
 
         response_json = response.json()
@@ -163,9 +157,7 @@ class PortfolioFirstTransactionViewSetTest(BaseTestCase):
         ("jqhwgqjhge", "transaction_date_x"),
     )
     def test__different_invalid_date_field_values(self, date_field: str):
-        response = self.client.get(
-            path=f"{self.url}?portfolio={self.portfolio.user_code}&date_field={date_field}"
-        )
+        response = self.client.get(path=f"{self.url}?portfolio={self.portfolio.user_code}&date_field={date_field}")
         self.assertEqual(response.status_code, 400, response.content)
 
     @BaseTestCase.cases(
@@ -173,15 +165,11 @@ class PortfolioFirstTransactionViewSetTest(BaseTestCase):
         ("wrong_value", "8278372o9"),
     )
     def test__different_invalid_portfolio_values(self, date_field: str):
-        response = self.client.get(
-            path=f"{self.url}?portfolio={self.portfolio.user_code}&date_field={date_field}"
-        )
+        response = self.client.get(path=f"{self.url}?portfolio={self.portfolio.user_code}&date_field={date_field}")
         self.assertEqual(response.status_code, 400, response.content)
 
     def test__method_not_allowed(self):
-        response = self.client.get(
-            path=f"{self.url}{self.portfolio.id}/?portfolio={self.portfolio.user_code}"
-        )
+        response = self.client.get(path=f"{self.url}{self.portfolio.id}/?portfolio={self.portfolio.user_code}")
         self.assertEqual(response.status_code, 405, response.content)
 
     def test__delete_transaction(self):

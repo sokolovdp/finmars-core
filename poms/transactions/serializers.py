@@ -171,9 +171,7 @@ class TransactionTypeActionInstrumentPhantomField(serializers.IntegerField):
         return value.order if value else None
 
 
-class TransactionTypeActionInstrumentEventSchedulePhantomField(
-    serializers.IntegerField
-):
+class TransactionTypeActionInstrumentEventSchedulePhantomField(serializers.IntegerField):
     def to_representation(self, value):
         return value.order if value else None
 
@@ -190,12 +188,8 @@ class TransactionTypeContextParameterSerializer(serializers.ModelSerializer):
 
 
 class TransactionTypeInputSettingsSerializer(serializers.ModelSerializer):
-    linked_inputs_names = serializers.CharField(
-        required=False, allow_null=True, allow_blank=True
-    )
-    recalc_on_change_linked_inputs = serializers.CharField(
-        required=False, allow_null=True, allow_blank=True
-    )
+    linked_inputs_names = serializers.CharField(required=False, allow_null=True, allow_blank=True)
+    recalc_on_change_linked_inputs = serializers.CharField(required=False, allow_null=True, allow_blank=True)
 
     def __init__(self, **kwargs):
         kwargs["required"] = False
@@ -296,52 +290,26 @@ class TransactionTypeInputSerializer(serializers.ModelSerializer):
 
         super().__init__(*args, **kwargs)
 
-        self.fields["account_object"] = AccountViewSerializer(
-            source="account", read_only=True
-        )
-        self.fields["instrument_object"] = InstrumentViewSerializer(
-            source="instrument", read_only=True
-        )
-        self.fields["instrument_type_object"] = InstrumentTypeViewSerializer(
-            source="instrument_type", read_only=True
-        )
+        self.fields["account_object"] = AccountViewSerializer(source="account", read_only=True)
+        self.fields["instrument_object"] = InstrumentViewSerializer(source="instrument", read_only=True)
+        self.fields["instrument_type_object"] = InstrumentTypeViewSerializer(source="instrument_type", read_only=True)
         self.fields["daily_pricing_model_object"] = DailyPricingModelSerializer(
             source="daily_pricing_model", read_only=True
         )
         self.fields["payment_size_detail_object"] = PaymentSizeDetailSerializer(
             source="payment_size_detail", read_only=True
         )
-        self.fields["currency_object"] = CurrencyViewSerializer(
-            source="currency", read_only=True
-        )
-        self.fields["counterparty_object"] = CounterpartyViewSerializer(
-            source="counterparty", read_only=True
-        )
-        self.fields["responsible_object"] = ResponsibleViewSerializer(
-            source="responsible", read_only=True
-        )
-        self.fields["portfolio_object"] = PortfolioViewSerializer(
-            source="portfolio", read_only=True
-        )
-        self.fields["strategy1_object"] = Strategy1ViewSerializer(
-            source="strategy1", read_only=True
-        )
-        self.fields["strategy2_object"] = Strategy2ViewSerializer(
-            source="strategy2", read_only=True
-        )
-        self.fields["strategy3_object"] = Strategy3ViewSerializer(
-            source="strategy3", read_only=True
-        )
-        self.fields["pricing_policy_object"] = PricingPolicySerializer(
-            source="pricing_policy", read_only=True
-        )
-        self.fields["periodicity_object"] = PeriodicitySerializer(
-            source="periodicity", read_only=True
-        )
-        self.fields["accrual_calculation_model_object"] = (
-            AccrualCalculationModelSerializer(
-                source="accrual_calculation_model", read_only=True
-            )
+        self.fields["currency_object"] = CurrencyViewSerializer(source="currency", read_only=True)
+        self.fields["counterparty_object"] = CounterpartyViewSerializer(source="counterparty", read_only=True)
+        self.fields["responsible_object"] = ResponsibleViewSerializer(source="responsible", read_only=True)
+        self.fields["portfolio_object"] = PortfolioViewSerializer(source="portfolio", read_only=True)
+        self.fields["strategy1_object"] = Strategy1ViewSerializer(source="strategy1", read_only=True)
+        self.fields["strategy2_object"] = Strategy2ViewSerializer(source="strategy2", read_only=True)
+        self.fields["strategy3_object"] = Strategy3ViewSerializer(source="strategy3", read_only=True)
+        self.fields["pricing_policy_object"] = PricingPolicySerializer(source="pricing_policy", read_only=True)
+        self.fields["periodicity_object"] = PeriodicitySerializer(source="periodicity", read_only=True)
+        self.fields["accrual_calculation_model_object"] = AccrualCalculationModelSerializer(
+            source="accrual_calculation_model", read_only=True
         )
 
     def validate(self, data):
@@ -358,9 +326,7 @@ class TransactionTypeInputSerializer(serializers.ModelSerializer):
 
 class TransactionTypeInputViewOnlySerializer(serializers.ModelSerializer):
     id = serializers.IntegerField(read_only=False, required=False, allow_null=True)
-    name = serializers.CharField(
-        max_length=255, allow_null=False, allow_blank=False, validators=[name_validator]
-    )
+    name = serializers.CharField(max_length=255, allow_null=False, allow_blank=False, validators=[name_validator])
     content_type = TransactionTypeInputContentTypeField(
         required=False,
         allow_null=True,
@@ -542,9 +508,7 @@ class TransactionTypeActionInstrumentSerializer(serializers.ModelSerializer):
             if key in data and data[key]:
                 try:
                     if Model._meta.get_field("master_user"):
-                        field_instance = Model.objects.get(
-                            master_user=master_user, user_code=data[key]
-                        )
+                        field_instance = Model.objects.get(master_user=master_user, user_code=data[key])
                 except Exception:
                     field_instance = Model.objects.get(user_code=data[key])
 
@@ -918,9 +882,7 @@ class TransactionTypeActionTransactionSerializer(serializers.ModelSerializer):
             if key in data and data[key]:
                 try:
                     if Model._meta.get_field("master_user"):
-                        field_instance = Model.objects.get(
-                            master_user=master_user, user_code=data[key]
-                        )
+                        field_instance = Model.objects.get(master_user=master_user, user_code=data[key])
                 except Exception:
                     field_instance = Model.objects.get(user_code=data[key])
 
@@ -1077,9 +1039,7 @@ class TransactionTypeActionTransactionSerializer(serializers.ModelSerializer):
         return representation
 
 
-class TransactionTypeActionInstrumentFactorScheduleSerializer(
-    serializers.ModelSerializer
-):
+class TransactionTypeActionInstrumentFactorScheduleSerializer(serializers.ModelSerializer):
     instrument_input = TransactionInputField(
         required=False,
         allow_null=True,
@@ -1120,9 +1080,7 @@ class TransactionTypeActionInstrumentFactorScheduleSerializer(
             if key in data and data[key]:
                 try:
                     if Model._meta.get_field("master_user"):
-                        field_instance = Model.objects.get(
-                            master_user=master_user, user_code=data[key]
-                        )
+                        field_instance = Model.objects.get(master_user=master_user, user_code=data[key])
                 except Exception:
                     field_instance = Model.objects.get(user_code=data[key])
 
@@ -1152,9 +1110,7 @@ class TransactionTypeActionInstrumentFactorScheduleSerializer(
 
 
 # DEPRECATED
-class TransactionTypeActionInstrumentManualPricingFormulaSerializer(
-    serializers.ModelSerializer
-):
+class TransactionTypeActionInstrumentManualPricingFormulaSerializer(serializers.ModelSerializer):
     instrument_input = TransactionInputField(
         required=False,
         allow_null=True,
@@ -1200,14 +1156,10 @@ class TransactionTypeActionInstrumentManualPricingFormulaSerializer(
 
         super().__init__(*args, **kwargs)
 
-        self.fields["pricing_policy_object"] = PricingPolicySerializer(
-            source="pricing_policy", read_only=True
-        )
+        self.fields["pricing_policy_object"] = PricingPolicySerializer(source="pricing_policy", read_only=True)
 
 
-class TransactionTypeActionInstrumentAccrualCalculationSchedulesSerializer(
-    serializers.ModelSerializer
-):
+class TransactionTypeActionInstrumentAccrualCalculationSchedulesSerializer(serializers.ModelSerializer):
     instrument_input = TransactionInputField(
         required=False,
         allow_null=True,
@@ -1279,9 +1231,7 @@ class TransactionTypeActionInstrumentAccrualCalculationSchedulesSerializer(
             if key in data and data[key]:
                 try:
                     if Model._meta.get_field("master_user"):
-                        field_instance = Model.objects.get(
-                            master_user=master_user, user_code=data[key]
-                        )
+                        field_instance = Model.objects.get(master_user=master_user, user_code=data[key])
                 except Exception:
                     field_instance = Model.objects.get(user_code=data[key])
 
@@ -1317,22 +1267,18 @@ class TransactionTypeActionInstrumentAccrualCalculationSchedulesSerializer(
             Periodicity,
             PeriodicitySerializer,
         )
-        representation["accrual_calculation_model_object"] = (
-            self.lookup_for_relation_object(
-                master_user,
-                representation,
-                "accrual_calculation_model",
-                AccrualCalculationModel,
-                AccrualCalculationModelSerializer,
-            )
+        representation["accrual_calculation_model_object"] = self.lookup_for_relation_object(
+            master_user,
+            representation,
+            "accrual_calculation_model",
+            AccrualCalculationModel,
+            AccrualCalculationModelSerializer,
         )
 
         return representation
 
 
-class TransactionTypeActionInstrumentEventScheduleSerializer(
-    serializers.ModelSerializer
-):
+class TransactionTypeActionInstrumentEventScheduleSerializer(serializers.ModelSerializer):
     instrument_input = TransactionInputField(
         required=False,
         allow_null=True,
@@ -1421,9 +1367,7 @@ class TransactionTypeActionInstrumentEventScheduleSerializer(
             if key in data and data[key]:
                 try:
                     if Model._meta.get_field("master_user"):
-                        field_instance = Model.objects.get(
-                            master_user=master_user, user_code=data[key]
-                        )
+                        field_instance = Model.objects.get(master_user=master_user, user_code=data[key])
                 except Exception:
                     field_instance = Model.objects.get(user_code=data[key])
 
@@ -1472,9 +1416,7 @@ class TransactionTypeActionInstrumentEventScheduleSerializer(
         return representation
 
 
-class TransactionTypeActionInstrumentEventScheduleActionSerializer(
-    serializers.ModelSerializer
-):
+class TransactionTypeActionInstrumentEventScheduleActionSerializer(serializers.ModelSerializer):
     event_schedule = EventScheduleField(
         required=False,
         allow_null=True,
@@ -1568,38 +1510,30 @@ class TransactionTypeActionSerializer(serializers.ModelSerializer):
         required=False,
         allow_null=True,
     )
-    instrument_factor_schedule = (
-        TransactionTypeActionInstrumentFactorScheduleSerializer(
-            source="transactiontypeactioninstrumentfactorschedule",
-            required=False,
-            allow_null=True,
-        )
+    instrument_factor_schedule = TransactionTypeActionInstrumentFactorScheduleSerializer(
+        source="transactiontypeactioninstrumentfactorschedule",
+        required=False,
+        allow_null=True,
     )
-    instrument_manual_pricing_formula = (
-        TransactionTypeActionInstrumentManualPricingFormulaSerializer(
-            source="transactiontypeactioninstrumentmanualpricingformula",
-            required=False,
-            allow_null=True,
-        )
+    instrument_manual_pricing_formula = TransactionTypeActionInstrumentManualPricingFormulaSerializer(
+        source="transactiontypeactioninstrumentmanualpricingformula",
+        required=False,
+        allow_null=True,
     )
-    instrument_accrual_calculation_schedules = (
-        TransactionTypeActionInstrumentAccrualCalculationSchedulesSerializer(
-            source="transactiontypeactioninstrumentaccrualcalculationschedules",
-            required=False,
-            allow_null=True,
-        )
+    instrument_accrual_calculation_schedules = TransactionTypeActionInstrumentAccrualCalculationSchedulesSerializer(
+        source="transactiontypeactioninstrumentaccrualcalculationschedules",
+        required=False,
+        allow_null=True,
     )
     instrument_event_schedule = TransactionTypeActionInstrumentEventScheduleSerializer(
         source="transactiontypeactioninstrumenteventschedule",
         required=False,
         allow_null=True,
     )
-    instrument_event_schedule_action = (
-        TransactionTypeActionInstrumentEventScheduleActionSerializer(
-            source="transactiontypeactioninstrumenteventscheduleaction",
-            required=False,
-            allow_null=True,
-        )
+    instrument_event_schedule_action = TransactionTypeActionInstrumentEventScheduleActionSerializer(
+        source="transactiontypeactioninstrumenteventscheduleaction",
+        required=False,
+        allow_null=True,
     )
     execute_command = TransactionTypeActionExecuteCommandSerializer(
         source="transactiontypeactionexecutecommand",
@@ -2062,9 +1996,7 @@ class TransactionTypeLightSerializer(ModelWithUserCodeSerializer):
         self.fields["instrument_types_object"] = InstrumentTypeViewSerializer(
             source="instrument_types", many=True, read_only=True
         )
-        self.fields["portfolios_object"] = PortfolioViewSerializer(
-            source="portfolios", many=True, read_only=True
-        )
+        self.fields["portfolios_object"] = PortfolioViewSerializer(source="portfolios", many=True, read_only=True)
 
     def to_representation(self, instance):
         representation = super().to_representation(instance)
@@ -2072,11 +2004,9 @@ class TransactionTypeLightSerializer(ModelWithUserCodeSerializer):
         try:
             instance = TransactionTypeGroup.objects.get(id=representation["group"])
 
-            s = TransactionTypeGroupViewSerializer(
-                instance=instance, read_only=True, context=self.context
-            )
+            s = TransactionTypeGroupViewSerializer(instance=instance, read_only=True, context=self.context)
             representation["group_object"] = s.data
-        except Exception as e:
+        except Exception:
             # _l.info(f"Error in to_representation: {repr(e)} {traceback.format_exc()}")
 
             representation["group_object"] = None
@@ -2723,9 +2653,7 @@ class TransactionTypeSerializer(
         self.fields["instrument_types_object"] = InstrumentTypeViewSerializer(
             source="instrument_types", many=True, read_only=True
         )
-        self.fields["portfolios_object"] = PortfolioViewSerializer(
-            source="portfolios", many=True, read_only=True
-        )
+        self.fields["portfolios_object"] = PortfolioViewSerializer(source="portfolios", many=True, read_only=True)
 
     def to_representation(self, instance):
         representation = super().to_representation(instance)
@@ -2735,9 +2663,7 @@ class TransactionTypeSerializer(
                 id=representation["group"]
             )  # should be already converted to id
 
-            s = TransactionTypeGroupViewSerializer(
-                instance=instance, read_only=True, context=self.context
-            )
+            s = TransactionTypeGroupViewSerializer(instance=instance, read_only=True, context=self.context)
             representation["group_object"] = s.data
         except Exception as e:
             _l.error(f"Error in to_representation error: {e} {traceback.format_exc()}")
@@ -2871,9 +2797,7 @@ class TransactionTypeSerializer(
         if recon_fields is not empty:
             recon_fields = self.save_recon_fields(instance, recon_fields)
         if context_parameters is not empty:
-            context_parameters = self.save_context_parameters(
-                instance, context_parameters
-            )
+            context_parameters = self.save_context_parameters(instance, context_parameters)
 
         if inputs is not empty:
             instance.inputs.exclude(id__in=[i.id for i in inputs]).delete()
@@ -2882,9 +2806,7 @@ class TransactionTypeSerializer(
         if recon_fields is not empty:
             instance.recon_fields.exclude(id__in=[a.id for a in recon_fields]).delete()
         if context_parameters is not empty:
-            instance.context_parameters.exclude(
-                id__in=[a.id for a in context_parameters]
-            ).delete()
+            instance.context_parameters.exclude(id__in=[a.id for a in context_parameters]).delete()
 
         return instance
 
@@ -2898,9 +2820,7 @@ class TransactionTypeSerializer(
             settings_data = inp_data.pop("settings", None)
             if inp is None:
                 try:
-                    inp = TransactionTypeInput.objects.get(
-                        transaction_type=instance, name=inp_data["name"]
-                    )
+                    inp = TransactionTypeInput.objects.get(transaction_type=instance, name=inp_data["name"])
                 except TransactionTypeInput.DoesNotExist:
                     inp = TransactionTypeInput(transaction_type=instance)
 
@@ -2912,29 +2832,21 @@ class TransactionTypeSerializer(
             if settings_data:
                 if inp.settings:
                     if "linked_inputs_names" in settings_data:
-                        inp.settings.linked_inputs_names = settings_data[
-                            "linked_inputs_names"
-                        ]
+                        inp.settings.linked_inputs_names = settings_data["linked_inputs_names"]
 
                     if "recalc_on_change_linked_inputs" in settings_data:
-                        inp.settings.recalc_on_change_linked_inputs = settings_data[
-                            "recalc_on_change_linked_inputs"
-                        ]
+                        inp.settings.recalc_on_change_linked_inputs = settings_data["recalc_on_change_linked_inputs"]
 
                     inp.settings.save()
 
                 else:
-                    item = TransactionTypeInputSettings.objects.create(
-                        transaction_type_input=inp
-                    )
+                    item = TransactionTypeInputSettings.objects.create(transaction_type_input=inp)
 
                     if "linked_inputs_names" in settings_data:
                         item.linked_inputs_names = settings_data["linked_inputs_names"]
 
                     if "recalc_on_change_linked_inputs" in settings_data:
-                        item.recalc_on_change_linked_inputs = settings_data[
-                            "recalc_on_change_linked_inputs"
-                        ]
+                        item.recalc_on_change_linked_inputs = settings_data["recalc_on_change_linked_inputs"]
 
                     item.save()
 
@@ -2949,7 +2861,7 @@ class TransactionTypeSerializer(
         cur_recon_fields = {i.id: i for i in instance.recon_fields.all()}
         new_recon_fields = []
 
-        for order, rec_field_data in enumerate(recon_fields_data):
+        for order, rec_field_data in enumerate(recon_fields_data):  # noqa: B007
             pk = rec_field_data.pop("id", None)
             recon_field = cur_recon_fields.pop(pk, None)
             if recon_field is None:
@@ -2971,7 +2883,7 @@ class TransactionTypeSerializer(
         cur_context_parameters = {i.id: i for i in instance.context_parameters.all()}
         new_context_parameters = []
 
-        for order, context_parameter_field_data in enumerate(context_parameters_data):
+        for order, context_parameter_field_data in enumerate(context_parameters_data):  # noqa: B007
             pk = context_parameter_field_data.pop("id", None)
             context_parameter = cur_context_parameters.pop(pk, None)
             if context_parameter is None:
@@ -2983,9 +2895,7 @@ class TransactionTypeSerializer(
                         name=context_parameter_field_data["name"],
                     )
                 except TransactionTypeContextParameter.DoesNotExist:
-                    context_parameter = TransactionTypeContextParameter(
-                        transaction_type=instance
-                    )
+                    context_parameter = TransactionTypeContextParameter(transaction_type=instance)
 
             for attr, value in context_parameter_field_data.items():
                 setattr(context_parameter, attr, value)
@@ -2993,16 +2903,12 @@ class TransactionTypeSerializer(
             new_context_parameters.append(context_parameter)
         return new_context_parameters
 
-    def save_actions_instrument(
-        self, instance, inputs, actions, existed_actions, actions_data
-    ):
+    def save_actions_instrument(self, instance, inputs, actions, existed_actions, actions_data):
         for order, action_data in enumerate(actions_data):
             pk = action_data.pop("id", None)
             action = existed_actions.get(pk, None)
 
-            action_instrument_data = action_data.get(
-                "instrument", action_data.get("transactiontypeactioninstrument")
-            )
+            action_instrument_data = action_data.get("instrument", action_data.get("transactiontypeactioninstrument"))
             if action_instrument_data:
                 for attr, value in action_instrument_data.items():
                     if attr.endswith("_input") and value:
@@ -3017,9 +2923,7 @@ class TransactionTypeSerializer(
                         action_instrument = action.transactiontypeactioninstrument
 
                 if action_instrument is None:
-                    action_instrument = TransactionTypeActionInstrument(
-                        transaction_type=instance
-                    )
+                    action_instrument = TransactionTypeActionInstrument(transaction_type=instance)
 
                 for attr, value in action_instrument_data.items():
                     setattr(action_instrument, attr, value)
@@ -3028,18 +2932,12 @@ class TransactionTypeSerializer(
                 action_instrument.rebook_reaction = action_data.get(
                     "rebook_reaction", action_instrument.rebook_reaction
                 )
-                action_instrument.action_notes = action_data.get(
-                    "action_notes", action_instrument.action_notes
-                )
-                action_instrument.condition_expr = action_data.get(
-                    "condition_expr", action_instrument.condition_expr
-                )
+                action_instrument.action_notes = action_data.get("action_notes", action_instrument.action_notes)
+                action_instrument.condition_expr = action_data.get("condition_expr", action_instrument.condition_expr)
                 action_instrument.save()
                 actions[order] = action_instrument
 
-    def save_actions_transaction(
-        self, instance, inputs, actions, existed_actions, actions_data
-    ):
+    def save_actions_transaction(self, instance, inputs, actions, existed_actions, actions_data):  # noqa: PLR0912
         for order, action_data in enumerate(actions_data):
             pk = action_data.pop("id", None)
             action = existed_actions.get(pk, None)
@@ -3058,33 +2956,25 @@ class TransactionTypeSerializer(
                         try:
                             action_transaction_data[attr] = actions[value]
                         except IndexError as exc:
-                            raise ValidationError(
-                                f'Invalid action order "{value}"'
-                            ) from exc
+                            raise ValidationError(f'Invalid action order "{value}"') from exc
 
                     if attr == "linked_instrument_phantom" and value is not None:
                         try:
                             action_transaction_data[attr] = actions[value]
                         except IndexError as err:
-                            raise ValidationError(
-                                f'Invalid action order "{value}"'
-                            ) from err
+                            raise ValidationError(f'Invalid action order "{value}"') from err
 
                     if attr == "allocation_balance_phantom" and value is not None:
                         try:
                             action_transaction_data[attr] = actions[value]
                         except IndexError as err:
-                            raise ValidationError(
-                                f'Invalid action order "{value}"'
-                            ) from err
+                            raise ValidationError(f'Invalid action order "{value}"') from err
 
                     if attr == "allocation_pl_phantom" and value is not None:
                         try:
                             action_transaction_data[attr] = actions[value]
                         except IndexError as err:
-                            raise ValidationError(
-                                f'Invalid action order "{value}"'
-                            ) from err
+                            raise ValidationError(f'Invalid action order "{value}"') from err
 
                 action_transaction = None
                 if action:
@@ -3092,9 +2982,7 @@ class TransactionTypeSerializer(
                         action_transaction = action.transactiontypeactiontransaction
 
                 if action_transaction is None:
-                    action_transaction = TransactionTypeActionTransaction(
-                        transaction_type=instance
-                    )
+                    action_transaction = TransactionTypeActionTransaction(transaction_type=instance)
 
                 for attr, value in action_transaction_data.items():
                     setattr(action_transaction, attr, value)
@@ -3103,18 +2991,14 @@ class TransactionTypeSerializer(
                 action_transaction.rebook_reaction = action_data.get(
                     "rebook_reaction", action_transaction.rebook_reaction
                 )
-                action_transaction.action_notes = action_data.get(
-                    "action_notes", action_transaction.action_notes
-                )
+                action_transaction.action_notes = action_data.get("action_notes", action_transaction.action_notes)
                 action_transaction.condition_expr = action_data.get(
                     "condition_expr", action_transaction.condition_expr
                 )
                 action_transaction.save()
                 actions[order] = action_transaction
 
-    def save_actions_instrument_factor_schedule(
-        self, instance, inputs, actions, existed_actions, actions_data
-    ):
+    def save_actions_instrument_factor_schedule(self, instance, inputs, actions, existed_actions, actions_data):
         for order, action_data in enumerate(actions_data):
             pk = action_data.pop("id", None)
             action = existed_actions.get(pk, None)
@@ -3135,9 +3019,7 @@ class TransactionTypeSerializer(
                         try:
                             item_data[attr] = actions[value]
                         except IndexError as exc:
-                            raise ValidationError(
-                                f'Invalid action order "{value}"'
-                            ) from exc
+                            raise ValidationError(f'Invalid action order "{value}"') from exc
 
                 item = None
                 if action:
@@ -3145,28 +3027,20 @@ class TransactionTypeSerializer(
                         item = action.transactiontypeactioninstrumentfactorschedule
 
                 if item is None:
-                    item = TransactionTypeActionInstrumentFactorSchedule(
-                        transaction_type=instance
-                    )
+                    item = TransactionTypeActionInstrumentFactorSchedule(transaction_type=instance)
 
                 for attr, value in item_data.items():
                     setattr(item, attr, value)
 
                 item.order = order
-                item.rebook_reaction = action_data.get(
-                    "rebook_reaction", item.rebook_reaction
-                )
+                item.rebook_reaction = action_data.get("rebook_reaction", item.rebook_reaction)
                 item.action_notes = action_data.get("action_notes", item.action_notes)
-                item.condition_expr = action_data.get(
-                    "condition_expr", item.condition_expr
-                )
+                item.condition_expr = action_data.get("condition_expr", item.condition_expr)
 
                 item.save()
                 actions[order] = item
 
-    def save_actions_execute_command(
-        self, instance, inputs, actions, existed_actions, actions_data
-    ):
+    def save_actions_execute_command(self, instance, inputs, actions, existed_actions, actions_data):
         for order, action_data in enumerate(actions_data):
             pk = action_data.pop("id", None)
             action = existed_actions.get(pk, None)
@@ -3182,28 +3056,20 @@ class TransactionTypeSerializer(
                         item = action.transactiontypeactionexecutecommand
 
                 if item is None:
-                    item = TransactionTypeActionExecuteCommand(
-                        transaction_type=instance
-                    )
+                    item = TransactionTypeActionExecuteCommand(transaction_type=instance)
 
                 for attr, value in item_data.items():
                     setattr(item, attr, value)
 
                 item.order = order
-                item.rebook_reaction = action_data.get(
-                    "rebook_reaction", item.rebook_reaction
-                )
+                item.rebook_reaction = action_data.get("rebook_reaction", item.rebook_reaction)
                 item.action_notes = action_data.get("action_notes", item.action_notes)
-                item.condition_expr = action_data.get(
-                    "condition_expr", item.condition_expr
-                )
+                item.condition_expr = action_data.get("condition_expr", item.condition_expr)
 
                 item.save()
                 actions[order] = item
 
-    def save_actions_instrument_manual_pricing_formula(
-        self, instance, inputs, actions, existed_actions, actions_data
-    ):
+    def save_actions_instrument_manual_pricing_formula(self, instance, inputs, actions, existed_actions, actions_data):
         for order, action_data in enumerate(actions_data):
             pk = action_data.pop("id", None)
             action = existed_actions.get(pk, None)
@@ -3224,33 +3090,23 @@ class TransactionTypeSerializer(
                         try:
                             item_data[attr] = actions[value]
                         except IndexError as exc:
-                            raise ValidationError(
-                                f'Invalid action order "{value}"'
-                            ) from exc
+                            raise ValidationError(f'Invalid action order "{value}"') from exc
 
                 item = None
                 if action:
                     with contextlib.suppress(ObjectDoesNotExist):
-                        item = (
-                            action.transactiontypeactioninstrumentmanualpricingformula
-                        )
+                        item = action.transactiontypeactioninstrumentmanualpricingformula
 
                 if item is None:
-                    item = TransactionTypeActionInstrumentManualPricingFormula(
-                        transaction_type=instance
-                    )
+                    item = TransactionTypeActionInstrumentManualPricingFormula(transaction_type=instance)
 
                 for attr, value in item_data.items():
                     setattr(item, attr, value)
 
                 item.order = order
-                item.rebook_reaction = action_data.get(
-                    "rebook_reaction", item.rebook_reaction
-                )
+                item.rebook_reaction = action_data.get("rebook_reaction", item.rebook_reaction)
                 item.action_notes = action_data.get("action_notes", item.action_notes)
-                item.condition_expr = action_data.get(
-                    "condition_expr", item.condition_expr
-                )
+                item.condition_expr = action_data.get("condition_expr", item.condition_expr)
 
                 item.save()
                 actions[order] = item
@@ -3264,9 +3120,7 @@ class TransactionTypeSerializer(
 
             item_data = action_data.get(
                 "instrument_accrual_calculation_schedules",
-                action_data.get(
-                    "transactiontypeactioninstrumentaccrualcalculationschedules"
-                ),
+                action_data.get("transactiontypeactioninstrumentaccrualcalculationschedules"),
             )
             if item_data:
                 for attr, value in item_data.items():
@@ -3280,9 +3134,7 @@ class TransactionTypeSerializer(
                         try:
                             item_data[attr] = actions[value]
                         except IndexError as exc:
-                            raise ValidationError(
-                                f'Invalid action order "{value}"'
-                            ) from exc
+                            raise ValidationError(f'Invalid action order "{value}"') from exc
 
                 item = None
                 if action:
@@ -3290,28 +3142,20 @@ class TransactionTypeSerializer(
                         item = action.transactiontypeactioninstrumentaccrualcalculationschedules
 
                 if item is None:
-                    item = TransactionTypeActionInstrumentAccrualCalculationSchedules(
-                        transaction_type=instance
-                    )
+                    item = TransactionTypeActionInstrumentAccrualCalculationSchedules(transaction_type=instance)
 
                 for attr, value in item_data.items():
                     setattr(item, attr, value)
 
                 item.order = order
-                item.rebook_reaction = action_data.get(
-                    "rebook_reaction", item.rebook_reaction
-                )
+                item.rebook_reaction = action_data.get("rebook_reaction", item.rebook_reaction)
                 item.action_notes = action_data.get("action_notes", item.action_notes)
-                item.condition_expr = action_data.get(
-                    "condition_expr", item.condition_expr
-                )
+                item.condition_expr = action_data.get("condition_expr", item.condition_expr)
 
                 item.save()
                 actions[order] = item
 
-    def save_actions_instrument_event_schedule(
-        self, instance, inputs, actions, existed_actions, actions_data
-    ):
+    def save_actions_instrument_event_schedule(self, instance, inputs, actions, existed_actions, actions_data):
         for order, action_data in enumerate(actions_data):
             pk = action_data.pop("id", None)
             action = existed_actions.get(pk, None)
@@ -3332,9 +3176,7 @@ class TransactionTypeSerializer(
                         try:
                             item_data[attr] = actions[value]
                         except IndexError as exc:
-                            raise ValidationError(
-                                f'Invalid action order "{value}"'
-                            ) from exc
+                            raise ValidationError(f'Invalid action order "{value}"') from exc
 
                 item = None
                 if action:
@@ -3342,28 +3184,20 @@ class TransactionTypeSerializer(
                         item = action.transactiontypeactioninstrumenteventschedule
 
                 if item is None:
-                    item = TransactionTypeActionInstrumentEventSchedule(
-                        transaction_type=instance
-                    )
+                    item = TransactionTypeActionInstrumentEventSchedule(transaction_type=instance)
 
                 for attr, value in item_data.items():
                     setattr(item, attr, value)
 
                 item.order = order
-                item.rebook_reaction = action_data.get(
-                    "rebook_reaction", item.rebook_reaction
-                )
+                item.rebook_reaction = action_data.get("rebook_reaction", item.rebook_reaction)
                 item.action_notes = action_data.get("action_notes", item.action_notes)
-                item.condition_expr = action_data.get(
-                    "condition_expr", item.condition_expr
-                )
+                item.condition_expr = action_data.get("condition_expr", item.condition_expr)
 
                 item.save()
                 actions[order] = item
 
-    def save_actions_instrument_event_schedule_action(
-        self, instance, inputs, actions, existed_actions, actions_data
-    ):
+    def save_actions_instrument_event_schedule_action(self, instance, inputs, actions, existed_actions, actions_data):
         for order, action_data in enumerate(actions_data):
             pk = action_data.pop("id", None)
             action = existed_actions.get(pk, None)
@@ -3377,14 +3211,14 @@ class TransactionTypeSerializer(
                     if attr.endswith("_input") and value:
                         try:
                             item_data[attr] = inputs[value]
-                        except KeyError:
-                            raise ValidationError(f'Invalid input "{value}"')
+                        except KeyError as e:
+                            raise ValidationError(f'Invalid input "{value}"') from e
 
                     if attr == "event_schedule_phantom" and value is not None:
                         try:
                             item_data[attr] = actions[value]
-                        except IndexError:
-                            raise ValidationError(f'Invalid action order "{value}"')
+                        except IndexError as e:
+                            raise ValidationError(f'Invalid action order "{value}"') from e
 
                 item = None
                 if action:
@@ -3392,21 +3226,15 @@ class TransactionTypeSerializer(
                         item = action.transactiontypeactioninstrumenteventscheduleaction
 
                 if item is None:
-                    item = TransactionTypeActionInstrumentEventScheduleAction(
-                        transaction_type=instance
-                    )
+                    item = TransactionTypeActionInstrumentEventScheduleAction(transaction_type=instance)
 
                 for attr, value in item_data.items():
                     setattr(item, attr, value)
 
                 item.order = order
-                item.rebook_reaction = action_data.get(
-                    "rebook_reaction", item.rebook_reaction
-                )
+                item.rebook_reaction = action_data.get("rebook_reaction", item.rebook_reaction)
                 item.action_notes = action_data.get("action_notes", item.action_notes)
-                item.condition_expr = action_data.get(
-                    "condition_expr", item.condition_expr
-                )
+                item.condition_expr = action_data.get("condition_expr", item.condition_expr)
 
                 item.save()
                 actions[order] = item
@@ -3431,37 +3259,23 @@ class TransactionTypeSerializer(
 
         actions = [None for _ in actions_data]
 
-        self.save_actions_instrument(
-            instance, inputs, actions, existed_actions, actions_data
-        )
+        self.save_actions_instrument(instance, inputs, actions, existed_actions, actions_data)
 
-        self.save_actions_transaction(
-            instance, inputs, actions, existed_actions, actions_data
-        )
+        self.save_actions_transaction(instance, inputs, actions, existed_actions, actions_data)
 
-        self.save_actions_instrument_factor_schedule(
-            instance, inputs, actions, existed_actions, actions_data
-        )
+        self.save_actions_instrument_factor_schedule(instance, inputs, actions, existed_actions, actions_data)
 
-        self.save_actions_instrument_manual_pricing_formula(
-            instance, inputs, actions, existed_actions, actions_data
-        )
+        self.save_actions_instrument_manual_pricing_formula(instance, inputs, actions, existed_actions, actions_data)
 
         self.save_actions_instrument_accrual_calculation_schedule(
             instance, inputs, actions, existed_actions, actions_data
         )
 
-        self.save_actions_instrument_event_schedule(
-            instance, inputs, actions, existed_actions, actions_data
-        )
+        self.save_actions_instrument_event_schedule(instance, inputs, actions, existed_actions, actions_data)
 
-        self.save_actions_instrument_event_schedule_action(
-            instance, inputs, actions, existed_actions, actions_data
-        )
+        self.save_actions_instrument_event_schedule_action(instance, inputs, actions, existed_actions, actions_data)
 
-        self.save_actions_execute_command(
-            instance, inputs, actions, existed_actions, actions_data
-        )
+        self.save_actions_execute_command(instance, inputs, actions, existed_actions, actions_data)
 
         return actions
 
@@ -3550,15 +3364,11 @@ class TransactionTypeViewSerializer(ModelWithUserCodeSerializer):
             if isinstance(representation["group"], int):
                 instance = TransactionTypeGroup.objects.get(id=representation["group"])
             else:
-                instance = TransactionTypeGroup.objects.get(
-                    user_code=representation["group"]
-                )
+                instance = TransactionTypeGroup.objects.get(user_code=representation["group"])
 
-            s = TransactionTypeGroupViewSerializer(
-                instance=instance, read_only=True, context=self.context
-            )
+            s = TransactionTypeGroupViewSerializer(instance=instance, read_only=True, context=self.context)
             representation["group_object"] = s.data
-        except TransactionTypeGroup.DoesNotExist as e:
+        except TransactionTypeGroup.DoesNotExist:
             representation["group_object"] = None
 
         return representation
@@ -3595,9 +3405,7 @@ class TransactionSerializer(serializers.ModelSerializer):
     complex_transaction = serializers.PrimaryKeyRelatedField(read_only=True)
     complex_transaction_order = serializers.IntegerField(read_only=True)
     instrument = InstrumentField(required=False, allow_null=True)
-    transaction_currency = CurrencyField(
-        default=CurrencyDefault(), required=False, allow_null=True
-    )
+    transaction_currency = CurrencyField(default=CurrencyDefault(), required=False, allow_null=True)
     settlement_currency = CurrencyField(default=SystemCurrencyDefault())
     portfolio = PortfolioField(default=PortfolioDefault())
     account_cash = AccountField(default=AccountDefault())
@@ -3697,15 +3505,11 @@ class TransactionSerializer(serializers.ModelSerializer):
         )
 
         if not skip_complex_transaction:
-            self.fields["complex_transaction_object"] = (
-                ComplexTransactionViewSerializer(
-                    source="complex_transaction", read_only=True
-                )
+            self.fields["complex_transaction_object"] = ComplexTransactionViewSerializer(
+                source="complex_transaction", read_only=True
             )
 
-        self.fields["instrument_object"] = InstrumentViewSerializer(
-            source="instrument", read_only=True
-        )
+        self.fields["instrument_object"] = InstrumentViewSerializer(source="instrument", read_only=True)
         self.fields["transaction_currency_object"] = CurrencyViewSerializer(
             source="transaction_currency", read_only=True
         )
@@ -3713,55 +3517,27 @@ class TransactionSerializer(serializers.ModelSerializer):
             source="settlement_currency", read_only=True
         )
 
-        self.fields["portfolio_object"] = PortfolioViewSerializer(
-            source="portfolio", read_only=True
-        )
+        self.fields["portfolio_object"] = PortfolioViewSerializer(source="portfolio", read_only=True)
 
-        self.fields["account_position_object"] = AccountViewSerializer(
-            source="account_position", read_only=True
-        )
-        self.fields["account_cash_object"] = AccountViewSerializer(
-            source="account_cash", read_only=True
-        )
-        self.fields["account_interim_object"] = AccountViewSerializer(
-            source="account_interim", read_only=True
-        )
+        self.fields["account_position_object"] = AccountViewSerializer(source="account_position", read_only=True)
+        self.fields["account_cash_object"] = AccountViewSerializer(source="account_cash", read_only=True)
+        self.fields["account_interim_object"] = AccountViewSerializer(source="account_interim", read_only=True)
 
-        self.fields["strategy1_position_object"] = Strategy1ViewSerializer(
-            source="strategy1_position", read_only=True
-        )
-        self.fields["strategy1_cash_object"] = Strategy1ViewSerializer(
-            source="strategy1_cash", read_only=True
-        )
-        self.fields["strategy2_position_object"] = Strategy2ViewSerializer(
-            source="strategy2_position", read_only=True
-        )
-        self.fields["strategy2_cash_object"] = Strategy2ViewSerializer(
-            source="strategy2_cash", read_only=True
-        )
-        self.fields["strategy3_position_object"] = Strategy3ViewSerializer(
-            source="strategy3_position", read_only=True
-        )
-        self.fields["strategy3_cash_object"] = Strategy3ViewSerializer(
-            source="strategy3_cash", read_only=True
-        )
+        self.fields["strategy1_position_object"] = Strategy1ViewSerializer(source="strategy1_position", read_only=True)
+        self.fields["strategy1_cash_object"] = Strategy1ViewSerializer(source="strategy1_cash", read_only=True)
+        self.fields["strategy2_position_object"] = Strategy2ViewSerializer(source="strategy2_position", read_only=True)
+        self.fields["strategy2_cash_object"] = Strategy2ViewSerializer(source="strategy2_cash", read_only=True)
+        self.fields["strategy3_position_object"] = Strategy3ViewSerializer(source="strategy3_position", read_only=True)
+        self.fields["strategy3_cash_object"] = Strategy3ViewSerializer(source="strategy3_cash", read_only=True)
 
-        self.fields["responsible_object"] = ResponsibleViewSerializer(
-            source="responsible", read_only=True
-        )
-        self.fields["counterparty_object"] = CounterpartyViewSerializer(
-            source="counterparty", read_only=True
-        )
+        self.fields["responsible_object"] = ResponsibleViewSerializer(source="responsible", read_only=True)
+        self.fields["counterparty_object"] = CounterpartyViewSerializer(source="counterparty", read_only=True)
 
-        self.fields["linked_instrument_object"] = InstrumentViewSerializer(
-            source="linked_instrument", read_only=True
-        )
+        self.fields["linked_instrument_object"] = InstrumentViewSerializer(source="linked_instrument", read_only=True)
         self.fields["allocation_balance_object"] = InstrumentViewSerializer(
             source="allocation_balance", read_only=True
         )
-        self.fields["allocation_pl_object"] = InstrumentViewSerializer(
-            source="allocation_pl", read_only=True
-        )
+        self.fields["allocation_pl_object"] = InstrumentViewSerializer(source="allocation_pl", read_only=True)
 
 
 # TODO check permissions?
@@ -3796,27 +3572,21 @@ class TransactionViewOnlySerializer(serializers.ModelSerializer):
         from poms.instruments.serializers import InstrumentViewSerializer
         from poms.portfolios.serializers import PortfolioViewSerializer
 
-        skip_complex_transaction = kwargs.pop("skip_complex_transaction", False)
+        skip_complex_transaction = kwargs.pop("skip_complex_transaction", False)  # noqa: F841
         super().__init__(*args, **kwargs)
 
         self.fields["transaction_class_object"] = TransactionClassSerializer(
             source="transaction_class", read_only=True
         )
 
-        self.fields["instrument_object"] = InstrumentViewSerializer(
-            source="instrument", read_only=True
-        )
+        self.fields["instrument_object"] = InstrumentViewSerializer(source="instrument", read_only=True)
         self.fields["settlement_currency_object"] = CurrencyViewSerializer(
             source="settlement_currency", read_only=True
         )
 
-        self.fields["portfolio_object"] = PortfolioViewSerializer(
-            source="portfolio", read_only=True
-        )
+        self.fields["portfolio_object"] = PortfolioViewSerializer(source="portfolio", read_only=True)
 
-        self.fields["account_position_object"] = AccountViewSerializer(
-            source="account_position", read_only=True
-        )
+        self.fields["account_position_object"] = AccountViewSerializer(source="account_position", read_only=True)
 
 
 class InstrumentSimpleViewSerializer(serializers.ModelSerializer):
@@ -3997,9 +3767,7 @@ class ComplexTransactionMixin:
 
 class ComplexTransactionInputSerializer(serializers.ModelSerializer):
     transaction_type_input = TransactionTypeInputField()
-    transaction_type_input_object = TransactionTypeInputSerializer(
-        source="transaction_type_input"
-    )
+    transaction_type_input_object = TransactionTypeInputSerializer(source="transaction_type_input")
     value_type = serializers.SerializerMethodField(read_only=True)
     content_type = serializers.SerializerMethodField(read_only=True)
 
@@ -4040,15 +3808,11 @@ def remove_user_fields_from_representation(data: dict) -> dict:
     return data
 
 
-class ComplexTransactionSerializer(
-    ModelWithAttributesSerializer, ModelWithTimeStampSerializer, ModelMetaSerializer
-):
+class ComplexTransactionSerializer(ModelWithAttributesSerializer, ModelWithTimeStampSerializer, ModelMetaSerializer):
     master_user = MasterUserField()
     transaction_type = serializers.PrimaryKeyRelatedField(read_only=True)
     transactions = serializers.PrimaryKeyRelatedField(read_only=True, many=True)
-    recon_fields = ReconciliationComplexTransactionFieldSerializer(
-        required=False, many=True
-    )
+    recon_fields = ReconciliationComplexTransactionFieldSerializer(required=False, many=True)
     source = serializers.JSONField(read_only=True, allow_null=True)
     inputs = ComplexTransactionInputSerializer(many=True)
 
@@ -4058,9 +3822,7 @@ class ComplexTransactionSerializer(
         self.fields["transaction_type_object"] = TransactionTypeViewSerializer(
             source="transaction_type", read_only=True
         )
-        self.fields["transactions_object"] = TransactionSerializer(
-            source="transactions", many=True, read_only=True
-        )
+        self.fields["transactions_object"] = TransactionSerializer(source="transactions", many=True, read_only=True)
 
     class Meta:
         model = ComplexTransaction
@@ -4155,9 +3917,7 @@ class ComplexTransactionSimpleSerializer(ModelWithAttributesSerializer):
         model = ComplexTransaction
         fields = ["id", "is_locked", "is_canceled", "status", "is_deleted"]
 
-    def update_base_transactions_permissions(
-        self, instance, complex_transaction_permissions
-    ):
+    def update_base_transactions_permissions(self, instance, complex_transaction_permissions):
         view_permissions = []
 
         for perm in complex_transaction_permissions:
@@ -4203,18 +3963,14 @@ class ComplexTransactionSimpleSerializer(ModelWithAttributesSerializer):
                 transaction.save()
 
         if "object_permissions" in validated_data:
-            self.update_base_transactions_permissions(
-                instance, validated_data["object_permissions"]
-            )
+            self.update_base_transactions_permissions(instance, validated_data["object_permissions"])
 
         instance = super().update(instance, validated_data)
 
         return instance
 
 
-class ComplexTransactionViewSerializer(
-    ComplexTransactionMixin, serializers.ModelSerializer
-):
+class ComplexTransactionViewSerializer(ComplexTransactionMixin, serializers.ModelSerializer):
     transaction_type = serializers.PrimaryKeyRelatedField(read_only=True)
 
     class Meta:
@@ -4458,7 +4214,7 @@ class ComplexTransactionEvItemSerializer(ModelWithAttributesSerializer):
 
 
 class TransactionTypeProcessValuesSerializer(serializers.Serializer):
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs):  # noqa: PLR0912, PLR0915
         from poms.accounts.serializers import AccountViewSerializer
         from poms.counterparties.serializers import (
             CounterpartyViewSerializer,
@@ -4556,9 +4312,7 @@ class TransactionTypeProcessValuesSerializer(serializers.Serializer):
                         label=i.name,
                         help_text=i.verbose_name,
                     )
-                    field_object = InstrumentTypeViewSerializer(
-                        source=name, read_only=True
-                    )
+                    field_object = InstrumentTypeViewSerializer(source=name, read_only=True)
 
                 elif issubclass(model_class, Counterparty):
                     field = CounterpartyField(
@@ -4567,9 +4321,7 @@ class TransactionTypeProcessValuesSerializer(serializers.Serializer):
                         label=i.name,
                         help_text=i.verbose_name,
                     )
-                    field_object = CounterpartyViewSerializer(
-                        source=name, read_only=True
-                    )
+                    field_object = CounterpartyViewSerializer(source=name, read_only=True)
 
                 elif issubclass(model_class, Responsible):
                     field = ResponsibleField(
@@ -4578,9 +4330,7 @@ class TransactionTypeProcessValuesSerializer(serializers.Serializer):
                         label=i.name,
                         help_text=i.verbose_name,
                     )
-                    field_object = ResponsibleViewSerializer(
-                        source=name, read_only=True
-                    )
+                    field_object = ResponsibleViewSerializer(source=name, read_only=True)
 
                 elif issubclass(model_class, Strategy1):
                     field = Strategy1Field(
@@ -4617,9 +4367,7 @@ class TransactionTypeProcessValuesSerializer(serializers.Serializer):
                         label=i.name,
                         help_text=i.verbose_name,
                     )
-                    field_object = DailyPricingModelSerializer(
-                        source=name, read_only=True
-                    )
+                    field_object = DailyPricingModelSerializer(source=name, read_only=True)
 
                 elif issubclass(model_class, PaymentSizeDetail):
                     field = serializers.PrimaryKeyRelatedField(
@@ -4629,9 +4377,7 @@ class TransactionTypeProcessValuesSerializer(serializers.Serializer):
                         label=i.name,
                         help_text=i.verbose_name,
                     )
-                    field_object = PaymentSizeDetailSerializer(
-                        source=name, read_only=True
-                    )
+                    field_object = PaymentSizeDetailSerializer(source=name, read_only=True)
 
                 elif issubclass(model_class, Portfolio):
                     field = PortfolioField(
@@ -4649,9 +4395,7 @@ class TransactionTypeProcessValuesSerializer(serializers.Serializer):
                         label=i.name,
                         help_text=i.verbose_name,
                     )
-                    field_object = PriceDownloadSchemeViewSerializer(
-                        source=name, read_only=True
-                    )
+                    field_object = PriceDownloadSchemeViewSerializer(source=name, read_only=True)
 
                 elif issubclass(model_class, PricingPolicy):
                     field = PricingPolicyField(
@@ -4660,9 +4404,7 @@ class TransactionTypeProcessValuesSerializer(serializers.Serializer):
                         label=i.name,
                         help_text=i.verbose_name,
                     )
-                    field_object = PricingPolicyViewSerializer(
-                        source=name, read_only=True
-                    )
+                    field_object = PricingPolicyViewSerializer(source=name, read_only=True)
 
                 elif issubclass(model_class, Periodicity):
                     field = PeriodicityField(
@@ -4686,9 +4428,7 @@ class TransactionTypeProcessValuesSerializer(serializers.Serializer):
                         AccrualCalculationModelSerializer,
                     )
 
-                    field_object = AccrualCalculationModelSerializer(
-                        source=name, read_only=True
-                    )
+                    field_object = AccrualCalculationModelSerializer(source=name, read_only=True)
 
                 elif issubclass(model_class, EventClass):
                     field = EventClassField(
@@ -4706,9 +4446,7 @@ class TransactionTypeProcessValuesSerializer(serializers.Serializer):
                         label=i.name,
                         help_text=i.verbose_name,
                     )
-                    field_object = NotificationClassSerializer(
-                        source=name, read_only=True
-                    )
+                    field_object = NotificationClassSerializer(source=name, read_only=True)
 
                 elif issubclass(model_class, EventSchedule):
                     field = EventScheduleField(
@@ -4729,7 +4467,7 @@ class TransactionTypeProcessValuesSerializer(serializers.Serializer):
             if field_object:
                 self.fields[name_object] = field_object
 
-        result_time = "{:3.3f}".format(time.perf_counter() - _st)
+        result_time = f"{time.perf_counter() - _st:3.3f}"
         _l.info(f"TransactionTypeProcessValuesSerializer serialize {result_time}")
 
 
@@ -4779,9 +4517,7 @@ class TransactionTypeComplexTransactionSerializer(ModelWithAttributesSerializer)
         self.fields["transaction_type_object"] = TransactionTypeViewSerializer(
             source="transaction_type", read_only=True
         )
-        self.fields["transactions_object"] = TransactionSerializer(
-            source="transactions", many=True, read_only=True
-        )
+        self.fields["transactions_object"] = TransactionSerializer(source="transactions", many=True, read_only=True)
 
     class Meta:
         model = ComplexTransaction
@@ -4872,9 +4608,7 @@ class TransactionTypeComplexTransactionSerializer(ModelWithAttributesSerializer)
         return representation
 
 
-class ComplexTransactionViewOnlyComplexTransactionSerializer(
-    serializers.ModelSerializer
-):
+class ComplexTransactionViewOnlyComplexTransactionSerializer(serializers.ModelSerializer):
     source = serializers.JSONField(read_only=True)
 
     def __init__(self, *args, **kwargs):
@@ -4959,7 +4693,7 @@ class ComplexTransactionViewOnlyComplexTransactionSerializer(
         ]
 
 
-class ComplexTransactionViewOnly(object):
+class ComplexTransactionViewOnly:
     def __init__(self, complex_transaction, transaction_type):
         _st = time.perf_counter()
 
@@ -4991,59 +4725,35 @@ class ComplexTransactionViewOnly(object):
             if value is not None:
                 self.values[i.name] = value
 
-        result_time = "{:3.3f}".format(time.perf_counter() - _st)
+        result_time = f"{time.perf_counter() - _st:3.3f}"
         _l.debug(f"ComplexTransactionViewOnly.init {result_time}")
 
-    def _get_val_by_model_cls_for_complex_transaction_input(
-        self, master_user, obj, model_class
-    ):
+    def _get_val_by_model_cls_for_complex_transaction_input(self, master_user, obj, model_class):  # noqa: PLR0911, PLR0912
         try:
             if issubclass(model_class, Account):
-                return Account.objects.get(
-                    master_user=master_user, user_code=obj.value_relation
-                )
+                return Account.objects.get(master_user=master_user, user_code=obj.value_relation)
             elif issubclass(model_class, Currency):
-                return Currency.objects.get(
-                    master_user=master_user, user_code=obj.value_relation
-                )
+                return Currency.objects.get(master_user=master_user, user_code=obj.value_relation)
             elif issubclass(model_class, Instrument):
-                return Instrument.objects.get(
-                    master_user=master_user, user_code=obj.value_relation
-                )
+                return Instrument.objects.get(master_user=master_user, user_code=obj.value_relation)
             elif issubclass(model_class, InstrumentType):
-                return InstrumentType.objects.get(
-                    master_user=master_user, user_code=obj.value_relation
-                )
+                return InstrumentType.objects.get(master_user=master_user, user_code=obj.value_relation)
             elif issubclass(model_class, Counterparty):
-                return Counterparty.objects.get(
-                    master_user=master_user, user_code=obj.value_relation
-                )
+                return Counterparty.objects.get(master_user=master_user, user_code=obj.value_relation)
             elif issubclass(model_class, Responsible):
-                return Responsible.objects.get(
-                    master_user=master_user, user_code=obj.value_relation
-                )
+                return Responsible.objects.get(master_user=master_user, user_code=obj.value_relation)
             elif issubclass(model_class, Strategy1):
-                return Strategy1.objects.get(
-                    master_user=master_user, user_code=obj.value_relation
-                )
+                return Strategy1.objects.get(master_user=master_user, user_code=obj.value_relation)
             elif issubclass(model_class, Strategy2):
-                return Strategy2.objects.get(
-                    master_user=master_user, user_code=obj.value_relation
-                )
+                return Strategy2.objects.get(master_user=master_user, user_code=obj.value_relation)
             elif issubclass(model_class, Strategy3):
-                return Strategy3.objects.get(
-                    master_user=master_user, user_code=obj.value_relation
-                )
+                return Strategy3.objects.get(master_user=master_user, user_code=obj.value_relation)
             elif issubclass(model_class, PaymentSizeDetail):
                 return PaymentSizeDetail.objects.get(user_code=obj.value_relation)
             elif issubclass(model_class, Portfolio):
-                return Portfolio.objects.get(
-                    master_user=master_user, user_code=obj.value_relation
-                )
+                return Portfolio.objects.get(master_user=master_user, user_code=obj.value_relation)
             elif issubclass(model_class, PricingPolicy):
-                return PricingPolicy.objects.get(
-                    master_user=master_user, user_code=obj.value_relation
-                )
+                return PricingPolicy.objects.get(master_user=master_user, user_code=obj.value_relation)
             elif issubclass(model_class, Periodicity):
                 return Periodicity.objects.get(user_code=obj.value_relation)
             elif issubclass(model_class, AccrualCalculationModel):
@@ -5064,9 +4774,7 @@ class ComplexTransactionViewOnlySerializer(serializers.Serializer):
         super().__init__(**kwargs)
         context["instance"] = self.instance
 
-        self.fields["transaction_type"] = serializers.PrimaryKeyRelatedField(
-            read_only=True
-        )
+        self.fields["transaction_type"] = serializers.PrimaryKeyRelatedField(read_only=True)
         self.fields["transaction_type_object"] = TransactionTypeViewOnlySerializer(
             source="transaction_type", read_only=True
         )
@@ -5082,14 +4790,10 @@ class ComplexTransactionViewOnlySerializer(serializers.Serializer):
                 (ComplexTransaction.IGNORE, "Ignore"),
             ),
         )
-        self.fields["complex_transaction"] = (
-            ComplexTransactionViewOnlyComplexTransactionSerializer(
-                read_only=False, required=False, allow_null=True
-            )
+        self.fields["complex_transaction"] = ComplexTransactionViewOnlyComplexTransactionSerializer(
+            read_only=False, required=False, allow_null=True
         )
-        self.fields["values"] = TransactionTypeProcessValuesSerializer(
-            instance=self.instance, required=False
-        )
+        self.fields["values"] = TransactionTypeProcessValuesSerializer(instance=self.instance, required=False)
 
     def get_book_transaction_layout(self, obj):
         return obj.transaction_type.book_transaction_layout
@@ -5104,9 +4808,7 @@ class TransactionTypeProcessSerializer(serializers.Serializer):
 
         context["instance"] = self.instance
 
-        self.fields["transaction_type"] = serializers.PrimaryKeyRelatedField(
-            read_only=True
-        )
+        self.fields["transaction_type"] = serializers.PrimaryKeyRelatedField(read_only=True)
         self.fields["complex_transaction_status"] = serializers.ChoiceField(
             required=False,
             allow_null=True,
@@ -5131,14 +4833,10 @@ class TransactionTypeProcessSerializer(serializers.Serializer):
         )
 
         if self.instance:
-            self.fields["values"] = TransactionTypeProcessValuesSerializer(
-                instance=self.instance, required=False
-            )
+            self.fields["values"] = TransactionTypeProcessValuesSerializer(instance=self.instance, required=False)
 
         if self.instance:
-            recalculate_inputs = [
-                (i.name, i.verbose_name) for i in self.instance.inputs
-            ]
+            recalculate_inputs = [(i.name, i.verbose_name) for i in self.instance.inputs]
             self.fields["recalculate_inputs"] = serializers.ListField(
                 required=False,
                 allow_null=True,
@@ -5155,17 +4853,11 @@ class TransactionTypeProcessSerializer(serializers.Serializer):
         self.fields["complex_transaction_errors"] = serializers.ReadOnlyField()
         self.fields["transactions_errors"] = serializers.ReadOnlyField()
         self.fields["general_errors"] = serializers.ReadOnlyField()
-        self.fields["instruments"] = InstrumentSerializer(
-            many=True, read_only=True, required=False, allow_null=True
+        self.fields["instruments"] = InstrumentSerializer(many=True, read_only=True, required=False, allow_null=True)
+        self.fields["complex_transaction"] = TransactionTypeComplexTransactionSerializer(
+            read_only=False, required=False, allow_null=True
         )
-        self.fields["complex_transaction"] = (
-            TransactionTypeComplexTransactionSerializer(
-                read_only=False, required=False, allow_null=True
-            )
-        )
-        self.fields["transaction_type_object"] = TransactionTypeSerializer(
-            source="transaction_type", read_only=True
-        )
+        self.fields["transaction_type_object"] = TransactionTypeSerializer(source="transaction_type", read_only=True)
 
         self.fields["book_transaction_layout"] = serializers.SerializerMethodField()
 
@@ -5200,9 +4892,7 @@ class TransactionTypeRecalculateSerializer(serializers.Serializer):
 
         context["instance"] = self.instance
 
-        self.fields["transaction_type"] = serializers.PrimaryKeyRelatedField(
-            read_only=True
-        )
+        self.fields["transaction_type"] = serializers.PrimaryKeyRelatedField(read_only=True)
 
         self.fields["process_mode"] = serializers.ChoiceField(
             required=False,
@@ -5217,14 +4907,10 @@ class TransactionTypeRecalculateSerializer(serializers.Serializer):
         )
 
         if self.instance:
-            self.fields["values"] = TransactionTypeProcessValuesSerializer(
-                instance=self.instance, required=False
-            )
+            self.fields["values"] = TransactionTypeProcessValuesSerializer(instance=self.instance, required=False)
 
         if self.instance:
-            recalculate_inputs = [
-                (i.name, i.verbose_name) for i in self.instance.inputs
-            ]
+            recalculate_inputs = [(i.name, i.verbose_name) for i in self.instance.inputs]
             self.fields["recalculate_inputs"] = serializers.ListField(
                 required=False,
                 allow_null=True,
@@ -5235,13 +4921,11 @@ class TransactionTypeRecalculateSerializer(serializers.Serializer):
                 required=False, allow_null=True, choices=[]
             )
 
-        self.fields["complex_transaction"] = serializers.PrimaryKeyRelatedField(
-            read_only=True
-        )
+        self.fields["complex_transaction"] = serializers.PrimaryKeyRelatedField(read_only=True)
 
         _l.debug(
             "TransactionTypeRecalculateSerializer init done: %s",
-            "{:3.3f}".format(time.perf_counter() - st),
+            f"{time.perf_counter() - st:3.3f}",
         )
 
     def validate(self, attrs):
@@ -5288,15 +4972,13 @@ class TransactionTypeRecalculateSerializer(serializers.Serializer):
 
         _l.debug(
             "TransactionTypeRecalculateSerializer done: %s",
-            "{:3.3f}".format(time.perf_counter() - st),
+            f"{time.perf_counter() - st:3.3f}",
         )
 
         return instance
 
     def _create_complex_transaction(self, instance, ctrn_values) -> ComplexTransaction:
-        ctrn_ser = ComplexTransactionSerializer(
-            instance=instance.complex_transaction, context=self.context
-        )
+        ctrn_ser = ComplexTransactionSerializer(instance=instance.complex_transaction, context=self.context)
         ctrn_values = ctrn_values.copy()
 
         is_date_was_empty = False
@@ -5321,9 +5003,7 @@ class TransactionTypeRecalculateSerializer(serializers.Serializer):
 
         result_st = time.perf_counter() - st
 
-        _l.debug(
-            f"TransactionTypeRecalculateSerializer to representation done {result_st}"
-        )
+        _l.debug(f"TransactionTypeRecalculateSerializer to representation done {result_st}")
 
         return representation
 
@@ -5481,7 +5161,7 @@ class TransactionEvalSerializer(serializers.ModelSerializer):
             Strategy3EvalSerializer,
         )
 
-        skip_complex_transaction = kwargs.pop("skip_complex_transaction", False)
+        skip_complex_transaction = kwargs.pop("skip_complex_transaction", False)  # noqa: F841
         super().__init__(*args, **kwargs)
 
         self.fields["portfolio"] = PortfolioEvalSerializer(read_only=True)

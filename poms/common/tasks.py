@@ -1,9 +1,9 @@
 import logging
-from celery import shared_task
+from io import StringIO
 
+from celery import shared_task
 from django.core.management import call_command
 from django.db import connection
-from io import StringIO
 
 _l = logging.getLogger("poms.common")
 
@@ -17,7 +17,7 @@ def apply_migration_to_space(self, realm_code, space_code):
     out_buffer = StringIO()
     err_buffer = StringIO()
 
-    _l.info("RealmMigrateSchemeView.space_code %s" % space_code)
+    _l.info("RealmMigrateSchemeView.space_code %s", space_code)
 
     # Programmatically call the migrate command
     call_command("migrate", stdout=out_buffer, stderr=err_buffer)

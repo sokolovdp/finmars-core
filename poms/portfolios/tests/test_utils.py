@@ -48,9 +48,7 @@ class UpdatePriceHistoriesTest(BaseTestCase):
 
         utils.update_price_histories(prices, error_message=self.err_msg)
 
-        count = PriceHistory.objects.filter(
-            error_message__icontains=self.err_msg
-        ).count()
+        count = PriceHistory.objects.filter(error_message__icontains=self.err_msg).count()
         self.assertEqual(count, amount)
 
         value = self.random_int()

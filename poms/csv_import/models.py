@@ -40,9 +40,7 @@ CLASSIFIER_HANDLER = [
 COLUMN_MATCHER_CHOICES = [["index", "Index"], ["name", "Name"]]
 
 
-class CsvImportScheme(
-    NamedModel, TimeStampedModel, ConfigurationModel, FakeDeletableModel
-):
+class CsvImportScheme(NamedModel, TimeStampedModel, ConfigurationModel, FakeDeletableModel):
     content_type = models.ForeignKey(
         ContentType,
         verbose_name=gettext_lazy("content type"),
@@ -280,13 +278,13 @@ class CsvDataImport(models.Model):
     file = ""
 
 
-class ProcessType(object):
+class ProcessType:
     CSV = "CSV"
     JSON = "JSON"
     EXCEL = "EXCEL"
 
 
-class SimpleImportResult(object):
+class SimpleImportResult:
     def __init__(
         self,
         task=None,
@@ -314,7 +312,7 @@ class SimpleImportResult(object):
         self.reports = reports
 
 
-class SimpleImportConversionItem(object):
+class SimpleImportConversionItem:
     def __init__(
         self,
         file_inputs=None,
@@ -328,7 +326,7 @@ class SimpleImportConversionItem(object):
         self.row_number = row_number
 
 
-class SimpleImportProcessPreprocessItem(object):
+class SimpleImportProcessPreprocessItem:
     def __init__(
         self,
         file_inputs=None,
@@ -344,13 +342,13 @@ class SimpleImportProcessPreprocessItem(object):
         self.row_number = row_number
 
 
-class SimpleImportImportedItem(object):
+class SimpleImportImportedItem:
     def __init__(self, id=None, user_code=None):
         self.id = id
         self.user_code = user_code
 
 
-class SimpleImportProcessItem(object):
+class SimpleImportProcessItem:
     def __init__(
         self,
         status="init",

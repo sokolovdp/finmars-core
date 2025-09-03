@@ -2,9 +2,9 @@ import logging
 
 from poms.celery_tasks import finmars_task
 from poms.celery_tasks.models import CeleryTask
+from poms.configuration.utils import run_workflow
 from poms.currencies.models import Currency
 from poms.instruments.models import Instrument
-from poms.configuration.utils import run_workflow, wait_workflow_until_end
 
 _l = logging.getLogger("poms.pricing")
 
@@ -15,9 +15,7 @@ def _run_pricing(task, reference_type, objects):
     for count, obj in enumerate(objects):
         pricing_policies = obj.pricing_policies.all()
         if options.get("pricing_policies"):
-            pricing_policies = pricing_policies.filter(
-                pricing_policy__user_code__in=options["pricing_policies"]
-            )
+            pricing_policies = pricing_policies.filter(pricing_policy__user_code__in=options["pricing_policies"])
         for schema in pricing_policies:
             payload = schema.options.copy()
             payload["date_from"] = options["date_from"]
@@ -65,9 +63,7 @@ def run_pricing(self, *args, **kwargs):
     objects = instruments_exception = currencies_exception = None
 
     if options.get("instrument_types"):
-        objects = Instrument.objects.filter(
-            instrument_type__user_code__in=options["instrument_types"]
-        )
+        objects = Instrument.objects.filter(instrument_type__user_code__in=options["instrument_types"])
     elif options.get("instruments"):
         objects = Instrument.objects.filter(user_code__in=options["instruments"])
     if objects:

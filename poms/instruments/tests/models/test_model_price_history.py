@@ -1,6 +1,6 @@
 from poms.common.common_base_test import BaseTestCase
-from poms.instruments.models import Instrument, PriceHistory
 from poms.instruments.fields import AUTO_CALCULATE
+from poms.instruments.models import Instrument, PriceHistory
 
 
 class PriceHistoryModeltTest(BaseTestCase):

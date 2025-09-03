@@ -5,8 +5,9 @@ class Command(BaseCommand):
     help = "Set Master Users Tokens"
 
     def handle(self, *args, **options):
-        from poms.users.models import MasterUser
         import uuid
+
+        from poms.users.models import MasterUser
 
         master_users = MasterUser.objects.all()
 
@@ -23,9 +24,7 @@ class Command(BaseCommand):
                     count = count + 1
 
                 except Exception as e:
-                    self.stdout.write(
-                        "Error occurred. master_user id %s" % master_user.id
-                    )
-                    self.stdout.write("Error occurred. e %s" % e)
+                    self.stdout.write(f"Error occurred. master_user id {master_user.id}")
+                    self.stdout.write(f"Error occurred. e {e}")
 
-        self.stdout.write("Job Done. Master Users Affected %s " % count)
+        self.stdout.write(f"Job Done. Master Users Affected {count}")

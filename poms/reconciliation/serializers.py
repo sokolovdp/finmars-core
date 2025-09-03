@@ -175,10 +175,7 @@ class ProcessBankFileForReconcile:
         self.results = results
 
     def __str__(self):
-        return (
-            f"{getattr(self.master_user, 'id', None)}-"
-            f"{getattr(self.member, 'id', None)}:{self.file_path}"
-        )
+        return f"{getattr(self.master_user, 'id', None)}-{getattr(self.member, 'id', None)}:{self.file_path}"
 
     @property
     def break_on_error(self):
@@ -255,9 +252,7 @@ class ProcessBankFileForReconcileSerializer(serializers.Serializer):
     total_rows = serializers.ReadOnlyField()
     results = serializers.ReadOnlyField()
 
-    scheme_object = ComplexTransactionImportSchemeSerializer(
-        source="scheme", read_only=True
-    )
+    scheme_object = ComplexTransactionImportSchemeSerializer(source="scheme", read_only=True)
 
     def create(self, validated_data):
         filetmp = validated_data.get("file", None)

@@ -1,5 +1,3 @@
-from __future__ import unicode_literals, print_function
-
 from django.conf import settings
 from django.core.files.storage import get_storage_class
 from django.utils.functional import LazyObject

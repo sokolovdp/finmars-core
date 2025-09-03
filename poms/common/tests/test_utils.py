@@ -91,9 +91,7 @@ class TestBusinessDayFunctions(SimpleTestCase):
         ]
 
         for i, test_case in enumerate(test_cases):
-            dates = split_date_range(
-                test_case[0], test_case[1], test_case[2], test_case[3]
-            )
+            dates = split_date_range(test_case[0], test_case[1], test_case[2], test_case[3])
             self.assertEqual(dates, expected[i])
 
     def test_pick_dates_from_range(self):
@@ -130,9 +128,7 @@ class TestBusinessDayFunctions(SimpleTestCase):
         ]
 
         for i, test_case in enumerate(test_cases):
-            dates = pick_dates_from_range(
-                test_case[0], test_case[1], test_case[2], test_case[3], test_case[4]
-            )
+            dates = pick_dates_from_range(test_case[0], test_case[1], test_case[2], test_case[3], test_case[4])
             self.assertEqual(dates, expected[i])
 
     def test_get_calc_period_date(self):
@@ -159,9 +155,7 @@ class TestBusinessDayFunctions(SimpleTestCase):
         ]
 
         for i, test_case in enumerate(test_cases):
-            date = calculate_period_date(
-                test_case[0], test_case[1], test_case[2], test_case[3], test_case[4]
-            )
+            date = calculate_period_date(test_case[0], test_case[1], test_case[2], test_case[3], test_case[4])
             self.assertEqual(date, expected[i])
 
 

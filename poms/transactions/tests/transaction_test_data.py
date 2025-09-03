@@ -218,7 +218,9 @@ TRANSACTION_TYPE_WITH_INPUTS_DICT = {
         {
             "id": 1,
             "name": "ZPLTIJHUSD",
-            "verbose_name": "RXXNRHSOKYSPMEVIHQGTASUZRNQUFDFRXAIWIHTLUJFUIUFIWKKTOLQZNDDAGSJRBNYIDKZKVSAOMCXNUWAJVLASCIUSWVLYWALH",
+            "verbose_name": (
+                "RXXNRHSOKYSPMEVIHQGTASUZRNQUFDFRXAIWIHTLUJFUIUFIWKKTOLQZNDDAGSJRBNYIDKZKVSAOMCXNUWAJVLASCIUSWVLYWALH"
+            ),
             "value_type": 20,
             "reference_table": "WLXFKDWHRO",
             "content_type": None,
@@ -356,7 +358,72 @@ TRANSACTION_TYPE_BOOK_DICT = {
         "user_date_4": None,
         "user_date_5": None,
         "recon_fields": [],
-        "execution_log": '[2023-07-27 14:21:32] Booking Complex Transaction\n[2023-07-27 14:21:32] Start 2023-07-27 \n[2023-07-27 14:21:32] Transaction Type: XGYMAARJPZ:bhihepr\n[2023-07-27 14:21:32] Member: \n[2023-07-27 14:21:32] Execution_context: manual\n[2023-07-27 14:21:32] ==== SETTINGS VALUES ====\n[2023-07-27 14:21:32] ==== COMPLEX TRANSACTION VALUES ====\n{\n    "context_instrument": null,\n    "context_pricing_currency": null,\n    "context_accrued_currency": null,\n    "context_portfolio": null,\n    "context_account": null,\n    "context_strategy1": null,\n    "context_strategy2": null,\n    "context_strategy3": null,\n    "context_position_size": null,\n    "context_effective_date": null,\n    "context_currency": null,\n    "context_report_date": null,\n    "context_report_start_date": null,\n    "context_pricing_policy": null,\n    "context_allocation_balance": null,\n    "context_allocation_pl": null,\n    "context_parameter": null,\n    "phantom_instrument_0": null,\n    "phantom_instrument_1": null,\n    "phantom_instrument_2": null,\n    "phantom_instrument_3": null,\n    "phantom_instrument_4": null,\n    "phantom_instrument_5": null,\n    "phantom_instrument_6": null,\n    "phantom_instrument_7": null,\n    "phantom_instrument_8": null,\n    "phantom_instrument_9": null\n}\n[2023-07-27 14:21:32] ==== CALCULATED INPUTS ====\n[2023-07-27 14:21:32] Key: context_instrument. Value: None. Type: NoneType\n[2023-07-27 14:21:32] Key: context_pricing_currency. Value: None. Type: NoneType\n[2023-07-27 14:21:32] Key: context_accrued_currency. Value: None. Type: NoneType\n[2023-07-27 14:21:32] Key: context_portfolio. Value: None. Type: NoneType\n[2023-07-27 14:21:32] Key: context_account. Value: None. Type: NoneType\n[2023-07-27 14:21:32] Key: context_strategy1. Value: None. Type: NoneType\n[2023-07-27 14:21:32] Key: context_strategy2. Value: None. Type: NoneType\n[2023-07-27 14:21:32] Key: context_strategy3. Value: None. Type: NoneType\n[2023-07-27 14:21:32] Key: context_position_size. Value: None. Type: NoneType\n[2023-07-27 14:21:32] Key: context_effective_date. Value: None. Type: NoneType\n[2023-07-27 14:21:32] Key: context_currency. Value: None. Type: NoneType\n[2023-07-27 14:21:32] Key: context_report_date. Value: None. Type: NoneType\n[2023-07-27 14:21:32] Key: context_report_start_date. Value: None. Type: NoneType\n[2023-07-27 14:21:32] Key: context_pricing_policy. Value: None. Type: NoneType\n[2023-07-27 14:21:32] Key: context_allocation_balance. Value: None. Type: NoneType\n[2023-07-27 14:21:32] Key: context_allocation_pl. Value: None. Type: NoneType\n[2023-07-27 14:21:32] Key: context_parameter. Value: None. Type: NoneType\n[2023-07-27 14:21:32] Key: phantom_instrument_0. Value: None. Type: NoneType\n[2023-07-27 14:21:32] Key: phantom_instrument_1. Value: None. Type: NoneType\n[2023-07-27 14:21:32] Key: phantom_instrument_2. Value: None. Type: NoneType\n[2023-07-27 14:21:32] Key: phantom_instrument_3. Value: None. Type: NoneType\n[2023-07-27 14:21:32] Key: phantom_instrument_4. Value: None. Type: NoneType\n[2023-07-27 14:21:32] Key: phantom_instrument_5. Value: None. Type: NoneType\n[2023-07-27 14:21:32] Key: phantom_instrument_6. Value: None. Type: NoneType\n[2023-07-27 14:21:32] Key: phantom_instrument_7. Value: None. Type: NoneType\n[2023-07-27 14:21:32] Key: phantom_instrument_8. Value: None. Type: NoneType\n[2023-07-27 14:21:32] Key: phantom_instrument_9. Value: None. Type: NoneType\n',
+        "execution_log": (
+            "[2023-07-27 14:21:32] Booking Complex Transaction\n"
+            "[2023-07-27 14:21:32] Start 2023-07-27 \n"
+            "[2023-07-27 14:21:32] Transaction Type: XGYMAARJPZ:bhihepr\n"
+            "[2023-07-27 14:21:32] Member: \n"
+            "[2023-07-27 14:21:32] Execution_context: manual\n"
+            "[2023-07-27 14:21:32] ==== SETTINGS VALUES ====\n"
+            "[2023-07-27 14:21:32] ==== COMPLEX TRANSACTION VALUES ====\n"
+            "{\n"
+            '    "context_instrument": null,\n'
+            '    "context_pricing_currency": null,\n'
+            '    "context_accrued_currency": null,\n'
+            '    "context_portfolio": null,\n'
+            '    "context_account": null,\n'
+            '    "context_strategy1": null,\n'
+            '    "context_strategy2": null,\n'
+            '    "context_strategy3": null,\n'
+            '    "context_position_size": null,\n'
+            '    "context_effective_date": null,\n'
+            '    "context_currency": null,\n'
+            '    "context_report_date": null,\n'
+            '    "context_report_start_date": null,\n'
+            '    "context_pricing_policy": null,\n'
+            '    "context_allocation_balance": null,\n'
+            '    "context_allocation_pl": null,\n'
+            '    "context_parameter": null,\n'
+            '    "phantom_instrument_0": null,\n'
+            '    "phantom_instrument_1": null,\n'
+            '    "phantom_instrument_2": null,\n'
+            '    "phantom_instrument_3": null,\n'
+            '    "phantom_instrument_4": null,\n'
+            '    "phantom_instrument_5": null,\n'
+            '    "phantom_instrument_6": null,\n'
+            '    "phantom_instrument_7": null,\n'
+            '    "phantom_instrument_8": null,\n'
+            '    "phantom_instrument_9": null\n'
+            "}\n"
+            "[2023-07-27 14:21:32] ==== CALCULATED INPUTS ====\n"
+            "[2023-07-27 14:21:32] Key: context_instrument. Value: None. Type: NoneType\n"
+            "[2023-07-27 14:21:32] Key: context_pricing_currency. Value: None. Type: NoneType\n"
+            "[2023-07-27 14:21:32] Key: context_accrued_currency. Value: None. Type: NoneType\n"
+            "[2023-07-27 14:21:32] Key: context_portfolio. Value: None. Type: NoneType\n"
+            "[2023-07-27 14:21:32] Key: context_account. Value: None. Type: NoneType\n"
+            "[2023-07-27 14:21:32] Key: context_strategy1. Value: None. Type: NoneType\n"
+            "[2023-07-27 14:21:32] Key: context_strategy2. Value: None. Type: NoneType\n"
+            "[2023-07-27 14:21:32] Key: context_strategy3. Value: None. Type: NoneType\n"
+            "[2023-07-27 14:21:32] Key: context_position_size. Value: None. Type: NoneType\n"
+            "[2023-07-27 14:21:32] Key: context_effective_date. Value: None. Type: NoneType\n"
+            "[2023-07-27 14:21:32] Key: context_currency. Value: None. Type: NoneType\n"
+            "[2023-07-27 14:21:32] Key: context_report_date. Value: None. Type: NoneType\n"
+            "[2023-07-27 14:21:32] Key: context_report_start_date. Value: None. Type: NoneType\n"
+            "[2023-07-27 14:21:32] Key: context_pricing_policy. Value: None. Type: NoneType\n"
+            "[2023-07-27 14:21:32] Key: context_allocation_balance. Value: None. Type: NoneType\n"
+            "[2023-07-27 14:21:32] Key: context_allocation_pl. Value: None. Type: NoneType\n"
+            "[2023-07-27 14:21:32] Key: context_parameter. Value: None. Type: NoneType\n"
+            "[2023-07-27 14:21:32] Key: phantom_instrument_0. Value: None. Type: NoneType\n"
+            "[2023-07-27 14:21:32] Key: phantom_instrument_1. Value: None. Type: NoneType\n"
+            "[2023-07-27 14:21:32] Key: phantom_instrument_2. Value: None. Type: NoneType\n"
+            "[2023-07-27 14:21:32] Key: phantom_instrument_3. Value: None. Type: NoneType\n"
+            "[2023-07-27 14:21:32] Key: phantom_instrument_4. Value: None. Type: NoneType\n"
+            "[2023-07-27 14:21:32] Key: phantom_instrument_5. Value: None. Type: NoneType\n"
+            "[2023-07-27 14:21:32] Key: phantom_instrument_6. Value: None. Type: NoneType\n"
+            "[2023-07-27 14:21:32] Key: phantom_instrument_7. Value: None. Type: NoneType\n"
+            "[2023-07-27 14:21:32] Key: phantom_instrument_8. Value: None. Type: NoneType\n"
+            "[2023-07-27 14:21:32] Key: phantom_instrument_9. Value: None. Type: NoneType\n"
+        ),
         "source": None,
         "attributes": [],
         "transaction_type_object": {

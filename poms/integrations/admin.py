@@ -1,52 +1,48 @@
-from __future__ import unicode_literals, print_function
-
 from django import forms
 from django.contrib import admin
-from django.urls import reverse_lazy
-from django.utils.html import escape
 from django.utils.translation import gettext_lazy
 
-from poms.common.admin import ClassModelAdmin, AbstractModelAdmin
+from poms.common.admin import AbstractModelAdmin, ClassModelAdmin
 from poms.integrations.models import (
-    ImportConfig,
-    ProviderClass,
-    CurrencyMapping,
-    InstrumentTypeMapping,
-    FactorScheduleDownloadMethod,
-    AccrualScheduleDownloadMethod,
-    InstrumentDownloadScheme,
-    InstrumentDownloadSchemeInput,
-    InstrumentDownloadSchemeAttribute,
-    PriceDownloadScheme,
-    AccrualCalculationModelMapping,
-    PeriodicityMapping,
+    AccountClassifierMapping,
     AccountMapping,
-    InstrumentMapping,
-    CounterpartyMapping,
-    ResponsibleMapping,
-    PortfolioMapping,
-    Strategy1Mapping,
-    Strategy2Mapping,
-    Strategy3Mapping,
-    DailyPricingModelMapping,
-    PaymentSizeDetailMapping,
-    PriceDownloadSchemeMapping,
-    InstrumentAttributeValueMapping,
+    AccrualCalculationModelMapping,
+    AccrualScheduleDownloadMethod,
+    BloombergDataProviderCredential,
     ComplexTransactionImportScheme,
     ComplexTransactionImportSchemeField,
     ComplexTransactionImportSchemeInput,
-    PortfolioClassifierMapping,
-    AccountClassifierMapping,
-    CounterpartyClassifierMapping,
-    ResponsibleClassifierMapping,
-    InstrumentClassifierMapping,
-    ComplexTransactionImportSchemeRuleScenario,
-    ComplexTransactionImportSchemeReconScenario,
     ComplexTransactionImportSchemeReconField,
-    BloombergDataProviderCredential,
+    ComplexTransactionImportSchemeReconScenario,
+    ComplexTransactionImportSchemeRuleScenario,
+    CounterpartyClassifierMapping,
+    CounterpartyMapping,
+    CurrencyMapping,
+    DailyPricingModelMapping,
     DataProvider,
-    TransactionFileResult,
+    FactorScheduleDownloadMethod,
+    ImportConfig,
+    InstrumentAttributeValueMapping,
+    InstrumentClassifierMapping,
+    InstrumentDownloadScheme,
+    InstrumentDownloadSchemeAttribute,
+    InstrumentDownloadSchemeInput,
+    InstrumentMapping,
+    InstrumentTypeMapping,
+    PaymentSizeDetailMapping,
+    PeriodicityMapping,
+    PortfolioClassifierMapping,
+    PortfolioMapping,
+    PriceDownloadScheme,
+    PriceDownloadSchemeMapping,
     PricingConditionMapping,
+    ProviderClass,
+    ResponsibleClassifierMapping,
+    ResponsibleMapping,
+    Strategy1Mapping,
+    Strategy2Mapping,
+    Strategy3Mapping,
+    TransactionFileResult,
 )
 
 admin.site.register(ProviderClass, ClassModelAdmin)
@@ -105,9 +101,7 @@ class BloombergDataProviderCredentialAdmin(AbstractModelAdmin):
     list_display = ["id", "master_user", "created_at", "modified_at", "is_valid"]
 
 
-admin.site.register(
-    BloombergDataProviderCredential, BloombergDataProviderCredentialAdmin
-)
+admin.site.register(BloombergDataProviderCredential, BloombergDataProviderCredentialAdmin)
 
 
 class InstrumentDownloadSchemeInputInline(admin.TabularInline):
@@ -176,9 +170,7 @@ class PriceDownloadSchemeAdmin(AbstractModelAdmin):
             return ", ".join(f)
         return None
 
-    instrument_yesterday_fields0.short_description = gettext_lazy(
-        "instrument yesterday fields"
-    )
+    instrument_yesterday_fields0.short_description = gettext_lazy("instrument yesterday fields")
 
     def instrument_history_fields0(self, obj):
         f = obj.instrument_history_fields
@@ -186,9 +178,7 @@ class PriceDownloadSchemeAdmin(AbstractModelAdmin):
             return ", ".join(f)
         return None
 
-    instrument_history_fields0.short_description = gettext_lazy(
-        "instrument history fields"
-    )
+    instrument_history_fields0.short_description = gettext_lazy("instrument history fields")
 
     def currency_history_fields0(self, obj):
         f = obj.currency_history_fields
@@ -268,9 +258,7 @@ class InstrumentAttributeValueMappingAdmin(AbstractMappingAdmin):
 admin.site.register(CurrencyMapping, AbstractMappingAdmin)
 admin.site.register(InstrumentTypeMapping, AbstractMappingAdmin)
 admin.site.register(AccrualCalculationModelMapping, AbstractMappingAdmin)
-admin.site.register(
-    InstrumentAttributeValueMapping, InstrumentAttributeValueMappingAdmin
-)
+admin.site.register(InstrumentAttributeValueMapping, InstrumentAttributeValueMappingAdmin)
 admin.site.register(PeriodicityMapping, AbstractMappingAdmin)
 admin.site.register(AccountMapping, AbstractMappingAdmin)
 admin.site.register(AccountClassifierMapping, AbstractClassifierMappingAdmin)

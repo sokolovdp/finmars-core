@@ -1,13 +1,12 @@
-from __future__ import unicode_literals
-
 import binascii
+import logging
 import os
 
 import pytz
 from django.conf import settings
 from django.db import models
-from django.utils.translation import gettext_lazy
 from django.utils import timezone
+from django.utils.translation import gettext_lazy
 
 from poms.common.models import NamedModel, TimeStampedModel
 from poms.users.models import MasterUser, Member
@@ -17,7 +16,6 @@ TIMEZONE_MAX_LENGTH = 20
 TIMEZONE_CHOICES = sorted(list((k, k) for k in pytz.all_timezones))
 TIMEZONE_COMMON_CHOICES = sorted(list((k, k) for k in pytz.common_timezones))
 
-import logging
 
 _l = logging.getLogger("poms.auth_tokens")
 
@@ -59,7 +57,7 @@ class AuthToken(TimeStampedModel):
     def save(self, *args, **kwargs):
         if not self.key:
             self.key = self.generate_key()
-        return super(AuthToken, self).save(*args, **kwargs)
+        return super().save(*args, **kwargs)
 
     def generate_key(self):
         return binascii.hexlify(os.urandom(20)).decode()
@@ -88,12 +86,8 @@ class PersonalAccessToken(NamedModel):
         on_delete=models.SET_NULL,
     )
 
-    token = (
-        models.TextField()
-    )  # Storing the token; consider encrypting this field in production
-    access_level = models.CharField(
-        max_length=10, choices=AccessLevel.choices, default=AccessLevel.READ
-    )
+    token = models.TextField()  # Storing the token; consider encrypting this field in production
+    access_level = models.CharField(max_length=10, choices=AccessLevel.choices, default=AccessLevel.READ)
     created_at = models.DateTimeField(auto_now_add=True)
     expires_at = models.DateTimeField()
 

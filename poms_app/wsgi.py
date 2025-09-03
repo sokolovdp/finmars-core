@@ -7,10 +7,9 @@ For more information on this file, see
 https://docs.djangoproject.com/en/1.9/howto/deployment/wsgi/
 """
 
-from __future__ import unicode_literals
-
 import os
 import sys
+
 from django.core.wsgi import get_wsgi_application
 
 del sys.path[0]

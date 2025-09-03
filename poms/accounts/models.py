@@ -1,16 +1,15 @@
 from django.contrib.contenttypes.fields import GenericRelation
+from django.core.cache import cache
 from django.db import models
 from django.utils.translation import gettext_lazy
+
 from poms.common.fields import ResourceGroupsField
-
-from django.core.cache import cache
-
 from poms.common.models import (
     EXPRESSION_FIELD_LENGTH,
-    TimeStampedModel,
     FakeDeletableModel,
     NamedModel,
     ObjectStateModel,
+    TimeStampedModel,
 )
 from poms.configuration.models import ConfigurationModel
 from poms.obj_attrs.models import GenericAttribute
@@ -131,14 +130,10 @@ class Account(NamedModel, FakeDeletableModel, TimeStampedModel, ObjectStateModel
         default=True,
         verbose_name=gettext_lazy("is valid for all portfolios"),
     )
-    attributes = GenericRelation(
-        GenericAttribute, verbose_name=gettext_lazy("attributes")
-    )
+    attributes = GenericRelation(GenericAttribute, verbose_name=gettext_lazy("attributes"))
 
     resource_groups = ResourceGroupsField(
-        verbose_name=gettext_lazy(
-            "list of resource groups user_codes, to which account belongs"
-        ),
+        verbose_name=gettext_lazy("list of resource groups user_codes, to which account belongs"),
     )
 
     class Meta(NamedModel.Meta, FakeDeletableModel.Meta):

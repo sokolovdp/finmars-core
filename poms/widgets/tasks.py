@@ -3,7 +3,7 @@ import traceback
 
 from poms.celery_tasks import finmars_task
 from poms.celery_tasks.models import CeleryTask
-from poms.common.models import ProxyUser, ProxyRequest
+from poms.common.models import ProxyRequest, ProxyUser
 from poms.common.utils import (
     get_closest_bday_of_yesterday,
     get_list_of_dates_between_two_dates,
@@ -24,19 +24,19 @@ from poms.widgets.models import (
     BalanceReportHistory,
     BalanceReportHistoryItem,
     PLReportHistory,
-    WidgetStats,
     PLReportHistoryItem,
+    WidgetStats,
 )
 from poms.widgets.utils import (
-    find_next_date_to_process,
     collect_asset_type_category,
-    collect_currency_category,
-    collect_country_category,
-    collect_sector_category,
-    collect_region_category,
-    collect_pl_history,
     collect_balance_history,
+    collect_country_category,
+    collect_currency_category,
+    collect_pl_history,
+    collect_region_category,
+    collect_sector_category,
     collect_widget_stats,
+    find_next_date_to_process,
     str_to_date,
 )
 
@@ -47,10 +47,9 @@ def start_new_balance_history_collect(task):
     task = CeleryTask.objects.get(id=task.id)
     task_options_object = task.options_object
 
-    if (
-        len(task_options_object["processed_dates"])
-        + len(task_options_object["error_dates"])
-    ) < len(task_options_object["dates_to_process"]):
+    if (len(task_options_object["processed_dates"]) + len(task_options_object["error_dates"])) < len(
+        task_options_object["dates_to_process"]
+    ):
         collect_balance_report_history.apply_async(
             kwargs={
                 "task_id": task.id,
@@ -68,8 +67,10 @@ def start_new_balance_history_collect(task):
             section="schedules",
             type="success",
             title="Balance History Collected",
-            description="Balances from %s to %s are available for widgets"
-            % (task_options_object["date_from"], task_options_object["date_to"]),
+            description=(
+                f"Balances from {task_options_object['date_from']} to {task_options_object['date_to']} are "
+                "available for widgets"
+            ),
         )
 
         task.status = CeleryTask.STATUS_DONE
@@ -77,7 +78,7 @@ def start_new_balance_history_collect(task):
 
 
 @finmars_task(name="widgets.collect_balance_report_history", bind=True)
-def collect_balance_report_history(self, task_id, *args, **kwargs):
+def collect_balance_report_history(self, task_id, *args, **kwargs):  # noqa: PLR0915
     """
 
     ==== Hope this thing will move into workflow/olap ASAP ====
@@ -88,24 +89,18 @@ def collect_balance_report_history(self, task_id, *args, **kwargs):
 
     """
 
-    _l.info("collect_balance_report_history init task_id %s" % task_id)
+    _l.info("collect_balance_report_history init task_id %s", task_id)
 
     task = CeleryTask.objects.get(id=task_id)
     report_date = str_to_date(find_next_date_to_process(task))
 
     try:
-        _l.info("task.options_object %s" % task.options_object)
+        _l.info("task.options_object %s", task.options_object)
 
-        report_currency = Currency.objects.get(
-            id=task.options_object.get("report_currency_id", None)
-        )
+        report_currency = Currency.objects.get(id=task.options_object.get("report_currency_id", None))
 
-        cost_method = CostMethod.objects.get(
-            id=task.options_object.get("cost_method_id", None)
-        )
-        pricing_policy = PricingPolicy.objects.get(
-            id=task.options_object.get("pricing_policy_id", None)
-        )
+        cost_method = CostMethod.objects.get(id=task.options_object.get("cost_method_id", None))
+        pricing_policy = PricingPolicy.objects.get(id=task.options_object.get("pricing_policy_id", None))
 
         portfolio_id = task.options_object.get("portfolio_id")
 
@@ -138,7 +133,7 @@ def collect_balance_report_history(self, task_id, *args, **kwargs):
                 master_user=task.master_user, date=report_date, portfolio=portfolio
             )
 
-        except Exception as e:
+        except Exception:
             balance_report_history = BalanceReportHistory.objects.create(
                 master_user=task.master_user,
                 date=report_date,
@@ -152,12 +147,10 @@ def collect_balance_report_history(self, task_id, *args, **kwargs):
 
         balance_report_history.save()
 
-        BalanceReportHistoryItem.objects.filter(
-            balance_report_history=balance_report_history
-        ).delete()
+        BalanceReportHistoryItem.objects.filter(balance_report_history=balance_report_history).delete()
 
         # _l.info('instance_serialized %s' % instance_serialized)
-        _l.info("instance_serialized len items %s" % len(instance_serialized["items"]))
+        _l.info("instance_serialized len items %s", len(instance_serialized["items"]))
 
         nav = 0
         for item in instance_serialized["items"]:
@@ -181,10 +174,7 @@ def collect_balance_report_history(self, task_id, *args, **kwargs):
                 "market_value",
             )
         except Exception as e:
-            _l.error(
-                "collect_balance_report_history. Could not collect asset type category %s"
-                % e
-            )
+            _l.error("collect_balance_report_history. Could not collect asset type category %s", e)
         try:
             collect_currency_category(
                 "balance",
@@ -194,10 +184,7 @@ def collect_balance_report_history(self, task_id, *args, **kwargs):
                 "market_value",
             )
         except Exception as e:
-            _l.error(
-                "collect_balance_report_history. Could not collect currency category %s"
-                % e
-            )
+            _l.error("collect_balance_report_history. Could not collect currency category %s", e)
         try:
             collect_country_category(
                 "balance",
@@ -207,10 +194,7 @@ def collect_balance_report_history(self, task_id, *args, **kwargs):
                 "market_value",
             )
         except Exception as e:
-            _l.error(
-                "collect_balance_report_history. Could not collect country category %s"
-                % e
-            )
+            _l.error("collect_balance_report_history. Could not collect country category %s", e)
 
         try:
             collect_region_category(
@@ -221,10 +205,7 @@ def collect_balance_report_history(self, task_id, *args, **kwargs):
                 "market_value",
             )
         except Exception as e:
-            _l.error(
-                "collect_balance_report_history. Could not collect region category %s"
-                % e
-            )
+            _l.error("collect_balance_report_history. Could not collect region category %s", e)
 
         try:
             collect_sector_category(
@@ -235,10 +216,7 @@ def collect_balance_report_history(self, task_id, *args, **kwargs):
                 "market_value",
             )
         except Exception as e:
-            _l.error(
-                "collect_balance_report_history. Could not collect sector category %s"
-                % e
-            )
+            _l.error("collect_balance_report_history. Could not collect sector category %s", e)
 
         task_options_object = task.options_object
 
@@ -266,10 +244,8 @@ def collect_balance_report_history(self, task_id, *args, **kwargs):
         start_new_balance_history_collect(task)
 
     except Exception as e:
-        _l.error("collect_balance_report_history. error %s" % e)
-        _l.error(
-            "collect_balance_report_history. traceback %s" % traceback.format_exc()
-        )
+        _l.error("collect_balance_report_history. error %s", e)
+        _l.error("collect_balance_report_history. traceback %s", traceback.format_exc())
 
         task_options_object = task.options_object
 
@@ -291,10 +267,9 @@ def start_new_pl_history_collect(task):
     task = CeleryTask.objects.get(id=task.id)
     task_options_object = task.options_object
 
-    if (
-        len(task_options_object["processed_dates"])
-        + len(task_options_object["error_dates"])
-    ) < len(task_options_object["dates_to_process"]):
+    if (len(task_options_object["processed_dates"]) + len(task_options_object["error_dates"])) < len(
+        task_options_object["dates_to_process"]
+    ):
         collect_pl_report_history.apply_async(
             kwargs={
                 "task_id": task.id,
@@ -312,8 +287,10 @@ def start_new_pl_history_collect(task):
             section="schedules",
             type="success",
             title="PL History Collected",
-            description="PL History from %s to %s are available for widgets"
-            % (task_options_object["date_from"], task_options_object["date_to"]),
+            description=(
+                f"PL History from {task_options_object['date_from']} to {task_options_object['date_to']} are "
+                "available for widgets"
+            ),
         )
 
         task.status = CeleryTask.STATUS_DONE
@@ -321,7 +298,7 @@ def start_new_pl_history_collect(task):
 
 
 @finmars_task(name="widgets.collect_pl_report_history", bind=True)
-def collect_pl_report_history(self, task_id, *args, **kwargs):
+def collect_pl_report_history(self, task_id, *args, **kwargs):  # noqa: PLR0915
     """
 
     ==== Hope this thing will move into workflow/olap ASAP ====
@@ -333,24 +310,18 @@ def collect_pl_report_history(self, task_id, *args, **kwargs):
     It same logic as Collect Balance Report
 
     """
-    _l.info("collect_pl_report_history init task_id %s" % task_id)
+    _l.info("collect_pl_report_history init task_id %s", task_id)
 
     task = CeleryTask.objects.get(id=task_id)
     report_date = str_to_date(find_next_date_to_process(task))
 
     try:
-        _l.info("task.options_object %s" % task.options_object)
+        _l.info("task.options_object %s", task.options_object)
 
-        report_currency = Currency.objects.get(
-            id=task.options_object.get("report_currency_id", None)
-        )
+        report_currency = Currency.objects.get(id=task.options_object.get("report_currency_id", None))
         pl_first_date = str_to_date(task.options_object["pl_first_date"])
-        cost_method = CostMethod.objects.get(
-            id=task.options_object.get("cost_method_id", None)
-        )
-        pricing_policy = PricingPolicy.objects.get(
-            id=task.options_object.get("pricing_policy_id", None)
-        )
+        cost_method = CostMethod.objects.get(id=task.options_object.get("cost_method_id", None))
+        pricing_policy = PricingPolicy.objects.get(id=task.options_object.get("pricing_policy_id", None))
 
         portfolio_id = task.options_object.get("portfolio_id")
 
@@ -384,7 +355,7 @@ def collect_pl_report_history(self, task_id, *args, **kwargs):
                 master_user=task.master_user, date=report_date, portfolio=portfolio
             )
 
-        except Exception as e:
+        except Exception:
             pl_report_history = PLReportHistory.objects.create(
                 master_user=task.master_user,
                 date=report_date,
@@ -417,48 +388,27 @@ def collect_pl_report_history(self, task_id, *args, **kwargs):
                     _item["instrument_object"] = instrument
 
         try:
-            collect_asset_type_category(
-                "pl", task.master_user, instance_serialized, pl_report_history, "total"
-            )
+            collect_asset_type_category("pl", task.master_user, instance_serialized, pl_report_history, "total")
         except Exception as e:
-            _l.error(
-                "collect_pl_report_history. Could not collect asset type category %s"
-                % e
-            )
+            _l.error("collect_pl_report_history. Could not collect asset type category %s", e)
         try:
-            collect_currency_category(
-                "pl", task.master_user, instance_serialized, pl_report_history, "total"
-            )
+            collect_currency_category("pl", task.master_user, instance_serialized, pl_report_history, "total")
         except Exception as e:
-            _l.error(
-                "collect_pl_report_history. Could not collect currency category %s" % e
-            )
+            _l.error("collect_pl_report_history. Could not collect currency category %s", e)
         try:
-            collect_country_category(
-                "pl", task.master_user, instance_serialized, pl_report_history, "total"
-            )
+            collect_country_category("pl", task.master_user, instance_serialized, pl_report_history, "total")
         except Exception as e:
-            _l.error(
-                "collect_pl_report_history. Could not collect country category %s" % e
-            )
+            _l.error("collect_pl_report_history. Could not collect country category %s", e)
 
         try:
-            collect_region_category(
-                "pl", task.master_user, instance_serialized, pl_report_history, "total"
-            )
+            collect_region_category("pl", task.master_user, instance_serialized, pl_report_history, "total")
         except Exception as e:
-            _l.error(
-                "collect_pl_report_history. Could not collect region category %s" % e
-            )
+            _l.error("collect_pl_report_history. Could not collect region category %s", e)
 
         try:
-            collect_sector_category(
-                "pl", task.master_user, instance_serialized, pl_report_history, "total"
-            )
+            collect_sector_category("pl", task.master_user, instance_serialized, pl_report_history, "total")
         except Exception as e:
-            _l.error(
-                "collect_pl_report_history. Could not collect sector category %s" % e
-            )
+            _l.error("collect_pl_report_history. Could not collect sector category %s", e)
 
         task_options_object = task.options_object
 
@@ -471,9 +421,7 @@ def collect_pl_report_history(self, task_id, *args, **kwargs):
         if not result_object:
             result_object = {"results": []}
 
-        result_object["results"].append(
-            {"date": str(report_date), "status": "success", "id": pl_report_history.id}
-        )
+        result_object["results"].append({"date": str(report_date), "status": "success", "id": pl_report_history.id})
 
         task.result_object = result_object
 
@@ -482,8 +430,8 @@ def collect_pl_report_history(self, task_id, *args, **kwargs):
         start_new_pl_history_collect(task)
 
     except Exception as e:
-        _l.error("collect_pl_report_history. error %s" % e)
-        _l.error("collect_pl_report_history. traceback %s" % traceback.format_exc())
+        _l.error("collect_pl_report_history. error %s", e)
+        _l.error("collect_pl_report_history. traceback %s", traceback.format_exc())
 
         task_options_object = task.options_object
 
@@ -507,10 +455,9 @@ def start_new_collect_stats(task):
     task = CeleryTask.objects.get(id=task.id)
     task_options_object = task.options_object
 
-    if (
-        len(task_options_object["processed_dates"])
-        + len(task_options_object["error_dates"])
-    ) < len(task_options_object["dates_to_process"]):
+    if (len(task_options_object["processed_dates"]) + len(task_options_object["error_dates"])) < len(
+        task_options_object["dates_to_process"]
+    ):
         collect_stats.apply_async(
             kwargs={
                 "task_id": task.id,
@@ -528,8 +475,10 @@ def start_new_collect_stats(task):
             section="schedules",
             type="success",
             title="Stats Collected",
-            description="Stats from %s to %s are available for widgets"
-            % (task_options_object["date_from"], task_options_object["date_to"]),
+            description=(
+                f"Stats from {task_options_object['date_from']} to {task_options_object['date_to']} are available "
+                "for widgets"
+            ),
         )
 
         task.status = CeleryTask.STATUS_DONE
@@ -564,9 +513,7 @@ def collect_stats(self, task_id, *args, **kwargs):
             benchmark=task.options_object["benchmark"],
         )
 
-        max_annualized_drawdown, max_annualized_drawdown_month = (
-            stats_handler.get_max_annualized_drawdown()
-        )
+        max_annualized_drawdown, max_annualized_drawdown_month = stats_handler.get_max_annualized_drawdown()
 
         result = {
             "nav": stats_handler.get_balance_nav(),  # done
@@ -592,7 +539,7 @@ def collect_stats(self, task_id, *args, **kwargs):
                 portfolio_id=task.options_object["portfolio_id"],
                 benchmark=task.options_object["benchmark"],
             )
-        except Exception as e:
+        except Exception:
             widget_stats_instance = WidgetStats.objects.create(
                 master_user=task.master_user,
                 date=date,
@@ -605,13 +552,9 @@ def collect_stats(self, task_id, *args, **kwargs):
         widget_stats_instance.cumulative_return = result["cumulative_return"]
         widget_stats_instance.annualized_return = result["annualized_return"]
         widget_stats_instance.portfolio_volatility = result["portfolio_volatility"]
-        widget_stats_instance.annualized_portfolio_volatility = result[
-            "annualized_portfolio_volatility"
-        ]
+        widget_stats_instance.annualized_portfolio_volatility = result["annualized_portfolio_volatility"]
         widget_stats_instance.sharpe_ratio = result["sharpe_ratio"]
-        widget_stats_instance.max_annualized_drawdown = result[
-            "max_annualized_drawdown"
-        ]
+        widget_stats_instance.max_annualized_drawdown = result["max_annualized_drawdown"]
         widget_stats_instance.betta = result["betta"]
         widget_stats_instance.alpha = result["alpha"]
         widget_stats_instance.correlation = result["correlation"]
@@ -629,9 +572,7 @@ def collect_stats(self, task_id, *args, **kwargs):
         if not task_result_object:
             task_result_object = {"results": []}
 
-        task_result_object["results"].append(
-            {"date": str(date), "status": "success", "id": widget_stats_instance.id}
-        )
+        task_result_object["results"].append({"date": str(date), "status": "success", "id": widget_stats_instance.id})
 
         task.result_object = task_result_object
         task.save()
@@ -639,8 +580,8 @@ def collect_stats(self, task_id, *args, **kwargs):
         start_new_collect_stats(task)
 
     except Exception as e:
-        _l.error("collect_stats.error %s" % e)
-        _l.error("collect_stats.traceback %s" % traceback.format_exc())
+        _l.error("collect_stats.error %s", e)
+        _l.error("collect_stats.traceback %s", traceback.format_exc())
 
         task_options_object = task.options_object
 
@@ -686,10 +627,7 @@ def calculate_historical(self, task_id, *args, **kwargs):
 
         bday_yesterday = get_closest_bday_of_yesterday()
 
-        _l.info(
-            "widgets.calculate_historical for %s portfolios for %s"
-            % (len(portfolios), bday_yesterday)
-        )
+        _l.info("widgets.calculate_historical for %s portfolios for %s", len(portfolios), bday_yesterday)
 
         if not date_from:
             date_from = bday_yesterday
@@ -700,9 +638,7 @@ def calculate_historical(self, task_id, *args, **kwargs):
         # dates = [bday_yesterday]
         dates = get_list_of_dates_between_two_dates(date_from, date_to)
 
-        ecosystem_default = EcosystemDefault.cache.get_cache(
-            master_user_pk=master_user.pk
-        )
+        ecosystem_default = EcosystemDefault.cache.get_cache(master_user_pk=master_user.pk)
 
         report_currency_id = ecosystem_default.currency_id
         pricing_policy_id = ecosystem_default.pricing_policy_id
@@ -778,16 +714,13 @@ def calculate_historical(self, task_id, *args, **kwargs):
                         description=str(e),
                     )
 
-                    _l.error(
-                        "Portfolio %s index %s widget calculation error %s"
-                        % (portfolio.name, index, e)
-                    )
+                    _l.error("Portfolio %s index %s widget calculation error %s", portfolio.name, index, e)
                     _l.error(traceback.format_exc())
                     pass
 
     except Exception as e:
-        _l.error("widgets.calculate_historical %s" % e)
-        _l.error("widgets.calculate_historical %s" % traceback.format_exc())
+        _l.error("widgets.calculate_historical %s", e)
+        _l.error("widgets.calculate_historical %s", traceback.format_exc())
 
         send_system_message(
             master_user=master_user,

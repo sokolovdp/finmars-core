@@ -869,7 +869,10 @@ SCHEME_CURRENCY_FIELDS = [
     {
         "column": 9,
         "name": "country",
-        "name_expr": "country_obj = universal_parse_country(str(if_null(country,'-')))\nif country_obj:\n    country_obj['user_code']",
+        "name_expr": (
+            "country_obj = universal_parse_country(str(if_null(country,'-')))\n"
+            "if country_obj:\n    country_obj['user_code']"
+        ),
         "column_name": "country",
         "scheme": None,
     },

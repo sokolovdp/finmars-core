@@ -2,9 +2,9 @@ from modeltranslation.translator import translator
 
 from poms.common.translation import AbstractClassModelOptions
 from poms.integrations.models import (
-    ProviderClass,
-    FactorScheduleDownloadMethod,
     AccrualScheduleDownloadMethod,
+    FactorScheduleDownloadMethod,
+    ProviderClass,
 )
 
 translator.register(ProviderClass, AbstractClassModelOptions)

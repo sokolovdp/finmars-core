@@ -1,17 +1,13 @@
 from pyparsing import Keyword, Word, alphanums
 
 
-class ConditionOperand(object):
+class ConditionOperand:
     def __init__(self, t, check_cond_fn):
         self.label = t[0]
         self.check_condition_fn = check_cond_fn
 
-        assert self.check_condition_fn is not None, (
-            "The check_condition_fn should should be set"
-        )
-        assert callable(self.check_condition_fn), (
-            "The check_condition_fn should should be callable"
-        )
+        assert self.check_condition_fn is not None, "The check_condition_fn should should be set"
+        assert callable(self.check_condition_fn), "The check_condition_fn should should be callable"
 
     def __bool__(self):
         return self.check_condition_fn(self.label)
@@ -23,12 +19,12 @@ class ConditionOperand(object):
     __nonzero__ = __bool__
 
 
-class BoolBinOp(object):
+class BoolBinOp:
     def __init__(self, t):
         self.args = t[0][0::2]
 
     def __str__(self):
-        sep = " %s " % self.reprsymbol
+        sep = f" {self.reprsymbol} "
         return "(" + sep.join(map(str, self.args)) + ")"
 
     def __bool__(self):
@@ -48,7 +44,7 @@ class BoolOr(BoolBinOp):
     evalop = any
 
 
-class BoolNot(object):
+class BoolNot:
     def __init__(self, t):
         self.arg = t[0][1]
 
@@ -67,6 +63,6 @@ TRUE = Keyword("True")
 FALSE = Keyword("False")
 
 
-class BoolOperand(object):
+class BoolOperand:
     def __new__(cls):
         return TRUE | FALSE | Word(alphanums + "_:.*", max=256)

@@ -36,9 +36,7 @@ class UnzipTaskTest(BaseTestCase):
         self.file2.write(b"This is file 2.")
 
         self.zip_file = io.BytesIO()
-        with zipfile.ZipFile(
-            self.zip_file, mode="w", compression=zipfile.ZIP_DEFLATED
-        ) as zf:
+        with zipfile.ZipFile(self.zip_file, mode="w", compression=zipfile.ZIP_DEFLATED) as zf:
             zf.writestr("file1.txt", self.file1.getvalue())
             zf.writestr("file2.txt", self.file2.getvalue())
 

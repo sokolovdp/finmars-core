@@ -230,9 +230,7 @@ class PortfolioRegisterCreateTest(BaseTestCase):
         self.assertEqual(response.status_code, 201, response.content)
         response_json = response.json()
 
-        created_pr = PortfolioRegister.objects.filter(
-            user_code=self.pr_user_code
-        ).first()
+        created_pr = PortfolioRegister.objects.filter(user_code=self.pr_user_code).first()
         self.assertIsNotNone(created_pr)
 
         created_in = Instrument.objects.filter(user_code=self.pr_user_code).first()

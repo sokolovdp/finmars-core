@@ -1,16 +1,15 @@
 from datetime import timedelta
 
 import factory
-from factory.django import DjangoModelFactory
-from factory.fuzzy import FuzzyFloat, FuzzyInteger, FuzzyText, FuzzyChoice
-
 from django.contrib.auth.models import User
+from factory.django import DjangoModelFactory
+from factory.fuzzy import FuzzyChoice, FuzzyFloat, FuzzyInteger, FuzzyText
 
 from poms.currencies.models import Currency
 from poms.instruments.models import (
-    AccrualEvent,
     AccrualCalculationModel,
     AccrualCalculationSchedule,
+    AccrualEvent,
     Instrument,
     InstrumentClass,
     InstrumentType,
@@ -68,9 +67,7 @@ class MasterUserFactory(DjangoModelFactory):
 
     @classmethod
     def _create(cls, model_class, *args, **kwargs):
-        existing_instance = model_class.objects.filter(
-            space_code=cls.space_code
-        ).first()
+        existing_instance = model_class.objects.filter(space_code=cls.space_code).first()
         if existing_instance:
             return existing_instance
         return super()._create(model_class, *args, **kwargs)
@@ -105,9 +102,7 @@ class CurrencyFactory(DjangoModelFactory):
 
     @classmethod
     def _create(cls, model_class, *args, **kwargs):
-        existing_instance = model_class.objects.filter(
-            user_code=kwargs.get("user_code")
-        ).first()
+        existing_instance = model_class.objects.filter(user_code=kwargs.get("user_code")).first()
         if existing_instance:
             return existing_instance
         return super()._create(model_class, *args, **kwargs)
@@ -171,12 +166,8 @@ class PeriodicityFactory(DjangoModelFactory):
         periodicity_type = Periodicity.QUARTERLY
 
     id = factory.LazyAttribute(lambda obj: obj.periodicity_type)
-    user_code = factory.LazyAttribute(
-        lambda obj: Periodicity.CLASSES[obj.periodicity_type - 1][1]
-    )
-    name = factory.LazyAttribute(
-        lambda obj: Periodicity.CLASSES[obj.periodicity_type - 1][2]
-    )
+    user_code = factory.LazyAttribute(lambda obj: Periodicity.CLASSES[obj.periodicity_type - 1][1])
+    name = factory.LazyAttribute(lambda obj: Periodicity.CLASSES[obj.periodicity_type - 1][2])
     short_name = factory.LazyAttribute(lambda obj: obj.user_code)
 
     @classmethod
@@ -195,9 +186,7 @@ class AccrualCalculationModelFactory(DjangoModelFactory):
         model_type = FuzzyChoice(ACCRUAL_MODELS_IDS)
 
     id = factory.LazyAttribute(lambda obj: obj.model_type)
-    user_code = factory.LazyAttribute(
-        lambda obj: AccrualCalculationModel.CLASSES_DICT[obj.model_type]
-    )
+    user_code = factory.LazyAttribute(lambda obj: AccrualCalculationModel.CLASSES_DICT[obj.model_type])
     name = factory.LazyAttribute(lambda obj: obj.user_code)
     short_name = factory.LazyAttribute(lambda obj: obj.user_code)
 
@@ -225,14 +214,10 @@ class AccrualEventFactory(factory.django.DjangoModelFactory):
         model = AccrualEvent
 
     instrument = factory.SubFactory(InstrumentFactory)
-    user_code = factory.LazyAttribute(
-        lambda obj: f"{obj.instrument.user_code}:{obj.end_date}"
-    )
+    user_code = factory.LazyAttribute(lambda obj: f"{obj.instrument.user_code}:{obj.end_date}")
     periodicity_n = FuzzyInteger(90, 365)
     end_date = factory.Faker("date_object")
-    start_date = factory.LazyAttribute(
-        lambda obj: obj.end_date - timedelta(days=obj.periodicity_n)
-    )
+    start_date = factory.LazyAttribute(lambda obj: obj.end_date - timedelta(days=obj.periodicity_n))
     payment_date = factory.LazyAttribute(lambda obj: obj.end_date + timedelta(days=2))
     accrual_size = FuzzyFloat(0.1, 0.9)
     accrual_calculation_model = factory.SubFactory(AccrualCalculationModelFactory)

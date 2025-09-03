@@ -48,11 +48,7 @@ class MasterUserBackupsForOwnerOnlyFilter(BaseFilterBackend):
 
         for item in queryset:
             if item.status == MasterUser.STATUS_BACKUP:
-                ids.extend(
-                    item.id
-                    for member in item.members.all()
-                    if member.user_id == user.id and member.is_owner
-                )
+                ids.extend(item.id for member in item.members.all() if member.user_id == user.id and member.is_owner)
             else:
                 ids.append(item.id)
 

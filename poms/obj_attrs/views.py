@@ -43,7 +43,7 @@ class AbstractAttributeTypeViewSet(AbstractModelViewSet):
     ]
 
     def get_queryset(self):
-        qs = super(AbstractAttributeTypeViewSet, self).get_queryset()
+        qs = super().get_queryset()
         return qs.prefetch_related("options")
 
     def get_serializer(self, *args, **kwargs):
@@ -79,9 +79,7 @@ class AccountClassifierFilterSet(FilterSet):
 
 
 class GenericClassifierViewSet(AbstractReadOnlyModelViewSet):
-    queryset = GenericClassifier.objects.select_related(
-        "attribute_type", "parent"
-    ).prefetch_related("children")
+    queryset = GenericClassifier.objects.select_related("attribute_type", "parent").prefetch_related("children")
     filter_backends = AbstractReadOnlyModelViewSet.filter_backends + [
         OwnerByAttributeTypeFilter,
     ]
@@ -99,11 +97,7 @@ class GenericClassifierViewSet(AbstractReadOnlyModelViewSet):
     filter_class = AccountClassifierFilterSet
 
     def get_queryset(self):
-        return (
-            super(GenericClassifierViewSet, self)
-            .get_queryset()
-            .filter(attribute_type__content_type=self.target_model_content_type)
-        )
+        return super().get_queryset().filter(attribute_type__content_type=self.target_model_content_type)
 
     @property
     def target_model_content_type(self):
@@ -135,9 +129,7 @@ class GenericAttributeTypeFilterSet(FilterSet):
 
 # class GenericAttributeTypeViewSet(AbstractWithObjectPermissionViewSet):
 class GenericAttributeTypeViewSet(AbstractModelViewSet):
-    queryset = GenericAttributeType.objects.select_related(
-        "master_user", "content_type", "owner"
-    ).prefetch_related(
+    queryset = GenericAttributeType.objects.select_related("master_user", "content_type", "owner").prefetch_related(
         "options",
         "classifiers",
     )
@@ -157,11 +149,7 @@ class GenericAttributeTypeViewSet(AbstractModelViewSet):
     target_model_serializer = None
 
     def get_queryset(self):
-        return (
-            super(GenericAttributeTypeViewSet, self)
-            .get_queryset()
-            .filter(content_type=self.target_model_content_type)
-        )
+        return super().get_queryset().filter(content_type=self.target_model_content_type)
 
     def get_serializer(self, *args, **kwargs):
         return super().get_serializer(*args, **kwargs)
@@ -196,17 +184,13 @@ class GenericAttributeTypeViewSet(AbstractModelViewSet):
         self.perform_create(serializer)
         headers = self.get_success_headers(serializer.data)
 
-        return Response(
-            serializer.data, status=status.HTTP_201_CREATED, headers=headers
-        )
+        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
     @action(detail=True, methods=["get"], url_path="objects-to-recalculate")
     def objects_to_recalculate(self, request, pk, realm_code=None, space_code=None):
         master_user = request.user.master_user
 
-        attribute_type = GenericAttributeType.objects.get(
-            id=pk, master_user=master_user
-        )
+        attribute_type = GenericAttributeType.objects.get(id=pk, master_user=master_user)
 
         if attribute_type.can_recalculate is False:
             return Response({"count": 0})

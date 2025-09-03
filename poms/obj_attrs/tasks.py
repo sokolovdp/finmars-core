@@ -1,12 +1,10 @@
 from logging import getLogger
 
-from celery import shared_task
-
 from poms.celery_tasks import finmars_task
 from poms.celery_tasks.models import CeleryTask
-from poms.expressions_engine.formula import safe_eval, ExpressionEvalError
 from poms.common.utils import datetime_now
-from poms.obj_attrs.models import GenericAttributeType, GenericAttribute
+from poms.expressions_engine.formula import ExpressionEvalError, safe_eval
+from poms.obj_attrs.models import GenericAttribute, GenericAttributeType
 
 _l = getLogger("poms.obj_attrs")
 
@@ -14,9 +12,7 @@ _l = getLogger("poms.obj_attrs")
 def get_attributes_as_obj(instance, target_model_content_type):
     result = {}
 
-    attributes = GenericAttribute.objects.filter(
-        object_id=instance.id, content_type=target_model_content_type
-    )
+    attributes = GenericAttribute.objects.filter(object_id=instance.id, content_type=target_model_content_type)
 
     for attribute in attributes:
         attribute_type = attribute.attribute_type
@@ -55,9 +51,7 @@ def get_json_objs(
 
         result[instance.id] = serializer.data
 
-        result[instance.id]["attributes"] = get_attributes_as_obj(
-            instance, target_model_content_type
-        )
+        result[instance.id]["attributes"] = get_attributes_as_obj(instance, target_model_content_type)
 
     return result
 
@@ -67,18 +61,16 @@ def recalculate_attributes(self, instance, *args, **kwargs):
     _l.debug("recalculate_attributes: instance", instance)
     # _l.debug('recalculate_attributes: context', context)
 
-    attribute_type = GenericAttributeType.objects.get(
-        id=instance.attribute_type_id, master_user=instance.master_user
-    )
+    attribute_type = GenericAttributeType.objects.get(id=instance.attribute_type_id, master_user=instance.master_user)
 
     attributes = GenericAttribute.objects.filter(
         attribute_type=attribute_type, content_type=instance.target_model_content_type
     )
 
-    _l.debug("recalculate_attributes: attributes len %s" % len(attributes))
-    _l.debug("recalculate_attributes: attribute_type.expr %s" % attribute_type.expr)
+    _l.debug("recalculate_attributes: attributes len %s", len(attributes))
+    _l.debug("recalculate_attributes: attribute_type.expr %s", attribute_type.expr)
 
-    _l.debug("self task id %s" % self.request.id)
+    _l.debug("self task id %s", self.request.id)
 
     celery_task = CeleryTask.objects.create(
         master_user=instance.master_user,
@@ -111,9 +103,7 @@ def recalculate_attributes(self, instance, *args, **kwargs):
         # _l.debug('data %s' % data)
 
         try:
-            executed_expression = safe_eval(
-                attribute_type.expr, names={"this": data}, context=context
-            )
+            executed_expression = safe_eval(attribute_type.expr, names={"this": data}, context=context)
         except (ExpressionEvalError, TypeError, Exception, KeyError):
             executed_expression = "Invalid Expression"
 

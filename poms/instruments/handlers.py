@@ -28,7 +28,7 @@ class GeneratedEventProcess(TransactionTypeProcess):
             )
 
             # Some Inputs can choose from which context variable it will take value
-            context_values = kwargs.get("context_values", None) or {}
+            context_values = kwargs.get("context_values") or {}
             context_values.update(
                 {
                     "context_instrument": generated_event.instrument,
@@ -55,14 +55,9 @@ class GeneratedEventProcess(TransactionTypeProcess):
 
             if generated_event.data and (
                 "actions_parameters" in generated_event.data
-                and (
-                    str(action.button_position)
-                    in generated_event.data["actions_parameters"]
-                )
+                and (str(action.button_position) in generated_event.data["actions_parameters"])
             ):
-                for key, value in generated_event.data["actions_parameters"][
-                    str(action.button_position)
-                ].items():
+                for key, value in generated_event.data["actions_parameters"][str(action.button_position)].items():
                     _l.info(f"key {key}: value {value}")
                     context_values.update({key: value})
 
@@ -77,23 +72,19 @@ class GeneratedEventProcess(TransactionTypeProcess):
             else:
                 kwargs["complex_transaction_status"] = ComplexTransaction.PRODUCTION
 
-            super(GeneratedEventProcess, self).__init__(**kwargs)
+            super().__init__(**kwargs)
 
         except Exception as e:
-            _l.error(
-                f"GeneratedEventProcess.error {repr(e)} trace {traceback.print_exc()}"
-            )
+            _l.error(f"GeneratedEventProcess.error {repr(e)} trace {traceback.print_exc()}")
             raise e
 
 
-class InstrumentTypeProcess(object):
+class InstrumentTypeProcess:
     def __init__(self, instrument_type=None, context=None):
         self.instrument_type = instrument_type
         self.context = context
 
-        self.ecosystem_default = EcosystemDefault.cache.get_cache(
-            master_user_pk=self.instrument_type.master_user.pk
-        )
+        self.ecosystem_default = EcosystemDefault.cache.get_cache(master_user_pk=self.instrument_type.master_user.pk)
 
         self.instrument_object = {
             "instrument_type": instrument_type.id,
@@ -104,43 +95,31 @@ class InstrumentTypeProcess(object):
 
         self.instrument = self.instrument_object
 
-    def fill_instrument_with_instrument_type_defaults(self):
+    def fill_instrument_with_instrument_type_defaults(self):  # noqa: PLR0912, PLR0915
         try:
             start_time = time.time()
 
             # Set system attributes
 
             if self.instrument_type.payment_size_detail:
-                self.instrument_object["payment_size_detail"] = (
-                    self.instrument_type.payment_size_detail_id
-                )
+                self.instrument_object["payment_size_detail"] = self.instrument_type.payment_size_detail_id
             else:
                 self.instrument_object["payment_size_detail"] = None
 
             if self.instrument_type.pricing_condition:
-                self.instrument_object["pricing_condition"] = (
-                    self.instrument_type.pricing_condition_id
-                )
+                self.instrument_object["pricing_condition"] = self.instrument_type.pricing_condition_id
             else:
                 self.instrument_object["pricing_condition"] = None
 
             if self.instrument_type.accrued_currency:
-                self.instrument_object["accrued_currency"] = (
-                    self.instrument_type.accrued_currency_id
-                )
+                self.instrument_object["accrued_currency"] = self.instrument_type.accrued_currency_id
             else:
-                self.instrument_object["accrued_currency"] = (
-                    self.ecosystem_default.currency.pk
-                )
+                self.instrument_object["accrued_currency"] = self.ecosystem_default.currency.pk
 
             if self.instrument_type.pricing_currency:
-                self.instrument_object["pricing_currency"] = (
-                    self.instrument_type.pricing_currency_id
-                )
+                self.instrument_object["pricing_currency"] = self.instrument_type.pricing_currency_id
             else:
-                self.instrument_object["pricing_currency"] = (
-                    self.ecosystem_default.currency.pk
-                )
+                self.instrument_object["pricing_currency"] = self.ecosystem_default.currency.pk
 
             # self.instrument_object["instrument_type_pricing_policies"] = []
             #
@@ -151,29 +130,15 @@ class InstrumentTypeProcess(object):
 
             self.instrument_object["default_price"] = self.instrument_type.default_price
             self.instrument_object["maturity_date"] = self.instrument_type.maturity_date
-            self.instrument_object["maturity_price"] = (
-                self.instrument_type.maturity_price
-            )
+            self.instrument_object["maturity_price"] = self.instrument_type.maturity_price
 
-            self.instrument_object["accrued_multiplier"] = (
-                self.instrument_type.accrued_multiplier
-            )
-            self.instrument_object["price_multiplier"] = (
-                self.instrument_type.price_multiplier
-            )
+            self.instrument_object["accrued_multiplier"] = self.instrument_type.accrued_multiplier
+            self.instrument_object["price_multiplier"] = self.instrument_type.price_multiplier
 
-            self.instrument_object["default_accrued"] = (
-                self.instrument_type.default_accrued
-            )
-            self.instrument_object["reference_for_pricing"] = (
-                self.instrument_type.reference_for_pricing
-            )
-            self.instrument_object["pricing_condition"] = (
-                self.instrument_type.pricing_condition_id
-            )
-            self.instrument_object["position_reporting"] = (
-                self.instrument_type.position_reporting
-            )
+            self.instrument_object["default_accrued"] = self.instrument_type.default_accrued
+            self.instrument_object["reference_for_pricing"] = self.instrument_type.reference_for_pricing
+            self.instrument_object["pricing_condition"] = self.instrument_type.pricing_condition_id
+            self.instrument_object["position_reporting"] = self.instrument_type.position_reporting
 
             if self.instrument_type.exposure_calculation_model:
                 self.instrument_object["exposure_calculation_model"] = (
@@ -183,91 +148,54 @@ class InstrumentTypeProcess(object):
                 self.instrument_object["exposure_calculation_model"] = None
 
             try:
-                self.instrument_object["long_underlying_instrument"] = (
-                    Instrument.objects.get(
-                        master_user=self.instrument_type.master_user,
-                        user_code=self.instrument_type.long_underlying_instrument,
-                    ).pk
-                )
-            except Exception as e:
+                self.instrument_object["long_underlying_instrument"] = Instrument.objects.get(
+                    master_user=self.instrument_type.master_user,
+                    user_code=self.instrument_type.long_underlying_instrument,
+                ).pk
+            except Exception:
                 _l.info("Could not set long_underlying_instrument, fallback to default")
-                self.instrument_object["long_underlying_instrument"] = (
-                    self.ecosystem_default.instrument.pk
-                )
+                self.instrument_object["long_underlying_instrument"] = self.ecosystem_default.instrument.pk
 
-            self.instrument_object["underlying_long_multiplier"] = (
-                self.instrument_type.underlying_long_multiplier
-            )
+            self.instrument_object["underlying_long_multiplier"] = self.instrument_type.underlying_long_multiplier
 
-            self.instrument_object["short_underlying_instrument"] = (
-                self.instrument_type.short_underlying_instrument
-            )
+            self.instrument_object["short_underlying_instrument"] = self.instrument_type.short_underlying_instrument
 
             try:
-                self.instrument_object["short_underlying_instrument"] = (
-                    Instrument.objects.get(
-                        master_user=self.instrument_type.master_user,
-                        user_code=self.instrument_type.short_underlying_instrument,
-                    ).pk
-                )
+                self.instrument_object["short_underlying_instrument"] = Instrument.objects.get(
+                    master_user=self.instrument_type.master_user,
+                    user_code=self.instrument_type.short_underlying_instrument,
+                ).pk
             except Exception as e:
-                _l.info(
-                    f"Could not set short_underlying_instrument {repr(e)}, "
-                    f"fallback to default"
-                )
-                self.instrument_object["short_underlying_instrument"] = (
-                    self.ecosystem_default.instrument.pk
-                )
+                _l.info(f"Could not set short_underlying_instrument {repr(e)}, fallback to default")
+                self.instrument_object["short_underlying_instrument"] = self.ecosystem_default.instrument.pk
 
-            self.instrument_object["underlying_short_multiplier"] = (
-                self.instrument_type.underlying_short_multiplier
-            )
+            self.instrument_object["underlying_short_multiplier"] = self.instrument_type.underlying_short_multiplier
 
-            self.instrument_object["long_underlying_exposure"] = (
-                self.instrument_type.long_underlying_exposure_id
-            )
-            self.instrument_object["short_underlying_exposure"] = (
-                self.instrument_type.short_underlying_exposure_id
-            )
+            self.instrument_object["long_underlying_exposure"] = self.instrument_type.long_underlying_exposure_id
+            self.instrument_object["short_underlying_exposure"] = self.instrument_type.short_underlying_exposure_id
 
             try:
-                self.instrument_object["co_directional_exposure_currency"] = (
-                    Currency.objects.get(
-                        master_user=self.instrument_type.master_user,
-                        user_code=self.instrument_type.co_directional_exposure_currency,
-                    ).pk
-                )
+                self.instrument_object["co_directional_exposure_currency"] = Currency.objects.get(
+                    master_user=self.instrument_type.master_user,
+                    user_code=self.instrument_type.co_directional_exposure_currency,
+                ).pk
             except Exception as e:
-                _l.info(
-                    f"Could not set co_directional_exposure_currency, {repr(e)} "
-                    f"fallback to default"
-                )
-                self.instrument_object["co_directional_exposure_currency"] = (
-                    self.ecosystem_default.currency.pk
-                )
+                _l.info(f"Could not set co_directional_exposure_currency, {repr(e)} fallback to default")
+                self.instrument_object["co_directional_exposure_currency"] = self.ecosystem_default.currency.pk
 
             try:
-                self.instrument_object["counter_directional_exposure_currency"] = (
-                    Currency.objects.get(
-                        master_user=self.instrument_type.master_user,
-                        user_code=self.instrument_type.counter_directional_exposure_currency,
-                    ).pk
-                )
+                self.instrument_object["counter_directional_exposure_currency"] = Currency.objects.get(
+                    master_user=self.instrument_type.master_user,
+                    user_code=self.instrument_type.counter_directional_exposure_currency,
+                ).pk
             except Exception as e:
-                _l.info(
-                    f"Could not set counter_directional_exposure_currency {repr(e)}, "
-                    f"fallback to default"
-                )
-                self.instrument_object["counter_directional_exposure_currency"] = (
-                    self.ecosystem_default.currency.pk
-                )
+                _l.info(f"Could not set counter_directional_exposure_currency {repr(e)}, fallback to default")
+                self.instrument_object["counter_directional_exposure_currency"] = self.ecosystem_default.currency.pk
 
             # Set attributes
             self.instrument_object["attributes"] = []
 
-            content_type = ContentType.objects.get(
-                model="instrument", app_label="instruments"
-            )
+            content_type = ContentType.objects.get(model="instrument", app_label="instruments")
 
             for attribute in self.instrument_type.instrument_attributes.all():
                 attribute_type = GenericAttributeType.objects.get(
@@ -299,9 +227,7 @@ class InstrumentTypeProcess(object):
 
                 elif attribute.value_type == 30:
                     try:
-                        _l.info(
-                            f"attribute.value_classifier {attribute.value_classifier}"
-                        )
+                        _l.info(f"attribute.value_classifier {attribute.value_classifier}")
 
                         classifier = GenericClassifier.objects.filter(
                             name=attribute.value_classifier,
@@ -330,9 +256,7 @@ class InstrumentTypeProcess(object):
             self.instrument_object["event_schedules"] = []
 
             for instrument_type_event in self.instrument_type.events.all():
-                event_schedule = {
-                    "event_class": instrument_type_event.data["event_class"]
-                }
+                event_schedule = {"event_class": instrument_type_event.data["event_class"]}
 
                 for item in instrument_type_event.data["items"]:
                     # TODO add check for value type
@@ -344,7 +268,6 @@ class InstrumentTypeProcess(object):
                         if "default_value" in item:
                             event_schedule[item["key"]] = item["default_value"]
 
-                #
                 event_schedule["is_auto_generated"] = True
                 event_schedule["actions"] = []
 
@@ -352,12 +275,8 @@ class InstrumentTypeProcess(object):
                     action = {
                         "transaction_type": instrument_type_action["transaction_type"],
                         "text": instrument_type_action["text"],
-                        "is_sent_to_pending": instrument_type_action[
-                            "is_sent_to_pending"
-                        ],
-                        "is_book_automatic": instrument_type_action[
-                            "is_book_automatic"
-                        ],
+                        "is_sent_to_pending": instrument_type_action["is_sent_to_pending"],
+                        "is_book_automatic": instrument_type_action["is_book_automatic"],
                     }
 
                     event_schedule["actions"].append(action)
@@ -377,24 +296,21 @@ class InstrumentTypeProcess(object):
                 self.instrument_object["accrual_calculation_schedules"].append(accrual)
 
             _l.info(
-                f"InstrumentTypeProcess.fill_instrument_with_instrument_type_defaults instrument_object {self.instrument_object}"
+                "InstrumentTypeProcess.fill_instrument_with_instrument_type_defaults instrument_object "
+                f"{self.instrument_object}"
             )
 
             _l.info(
-                "InstrumentTypeProcess.fill_instrument_with_instrument_type_defaults %s seconds "
-                % "{:3.3f}".format(time.time() - start_time)
+                "InstrumentTypeProcess.fill_instrument_with_instrument_type_defaults %s seconds"
+                f"{time.time() - start_time:3.3f}"
             )
 
             return self.instrument_object
 
         except Exception as e:
-            _l.info(
-                f"set_defaults_from_instrument_type {repr(e)} {traceback.format_exc()}"
-            )
+            _l.info(f"set_defaults_from_instrument_type {repr(e)} {traceback.format_exc()}")
 
-            raise RuntimeError(
-                f"InstrumentType is not configured correctly {repr(e)}"
-            ) from e
+            raise RuntimeError(f"InstrumentType is not configured correctly {repr(e)}") from e
 
     def set_pricing_policies(self):
         try:

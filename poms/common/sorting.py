@@ -5,14 +5,14 @@ import time
 from django.db.models import Value
 from django.db.models.functions import Coalesce
 
-from poms.obj_attrs.models import GenericAttributeType, GenericAttribute
 from poms.common.utils import attr_is_relation
+from poms.obj_attrs.models import GenericAttribute, GenericAttributeType
 
 _l = logging.getLogger("poms.common")
 
 
-def sort_by_dynamic_attrs(queryset, ordering, master_user, content_type):
-    _l.debug("sort_by_dynamic_attrs.ordering %s" % ordering)
+def sort_by_dynamic_attrs(queryset, ordering, master_user, content_type):  # noqa: PLR0912
+    _l.debug("sort_by_dynamic_attrs.ordering %s", ordering)
 
     sort_st = time.perf_counter()
 
@@ -28,11 +28,9 @@ def sort_by_dynamic_attrs(queryset, ordering, master_user, content_type):
             user_code__exact=key, master_user=master_user, content_type=content_type
         )
 
-        attributes_queryset = GenericAttribute.objects.filter(
-            attribute_type=attribute_type, object_id__in=queryset
-        )
+        attributes_queryset = GenericAttribute.objects.filter(attribute_type=attribute_type, object_id__in=queryset)
 
-        _l.debug("attribute_type.value_type %s" % attribute_type.value_type)
+        _l.debug("attribute_type.value_type %s", attribute_type.value_type)
 
         if order == "-":
             if attribute_type.value_type == 10:
@@ -81,29 +79,22 @@ def sort_by_dynamic_attrs(queryset, ordering, master_user, content_type):
 
         _l.debug(
             "sort_by_dynamic_attrs  attributes_queryset done: %s",
-            "{:3.3f}".format(time.perf_counter() - attributes_queryset_st),
+            f"{time.perf_counter() - attributes_queryset_st:3.3f}",
         )
 
-        table_name = content_type.app_label + "_" + content_type.model
+        table_name = content_type.app_label + "_" + content_type.model  # noqa: F841
 
-        clauses = " ".join(
-            [
-                "WHEN %s.id=%s THEN %s" % (table_name, pk, i)
-                for i, pk in enumerate(result_ids)
-            ]
-        )
-        ordering = "CASE %s END" % clauses
-        queryset = queryset.filter(pk__in=result_ids).extra(
-            select={"ordering": ordering}, order_by=("ordering",)
-        )
+        clauses = " ".join(["WHEN {table_name}.id={pk} THEN {i}" for i, pk in enumerate(result_ids)])
+        ordering = f"CASE {clauses} END"
+        queryset = queryset.filter(pk__in=result_ids).extra(select={"ordering": ordering}, order_by=("ordering",))
 
         _l.debug(
             "sort_by_dynamic_attrs dynamic attrs done: %s",
-            "{:3.3f}".format(time.perf_counter() - sort_st),
+            f"{time.perf_counter() - sort_st:3.3f}",
         )
 
     else:
-        _l.debug("ordering in system attrs %s" % ordering)
+        _l.debug("ordering in system attrs %s", ordering)
 
         if "-" in ordering:
             field = ordering.split("-")[1]
@@ -112,8 +103,8 @@ def sort_by_dynamic_attrs(queryset, ordering, master_user, content_type):
 
         content_type_key = content_type.app_label + "." + content_type.model
 
-        _l.debug("ordering field %s" % field)
-        _l.debug("ordering is relation %s" % attr_is_relation(content_type_key, field))
+        _l.debug("ordering field %s", field)
+        _l.debug("ordering is relation %s", attr_is_relation(content_type_key, field))
 
         if attr_is_relation(content_type_key, field):
             queryset = queryset.order_by(ordering + "__name")
@@ -123,7 +114,7 @@ def sort_by_dynamic_attrs(queryset, ordering, master_user, content_type):
 
         _l.debug(
             "sort_by_dynamic_attrs system attrs done: %s",
-            "{:3.3f}".format(time.perf_counter() - sort_st),
+            f"{time.perf_counter() - sort_st:3.3f}",
         )
 
     return queryset

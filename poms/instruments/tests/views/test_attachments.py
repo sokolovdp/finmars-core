@@ -1,7 +1,6 @@
 from poms.common.common_base_test import BaseTestCase
-from poms.instruments.models import Instrument
 from poms.explorer.models import StorageObject
-
+from poms.instruments.models import Instrument
 
 expected_response = [
     {
@@ -36,7 +35,7 @@ expected_response = [
     },
 ]
 
-API_URL = f"/realm00000/space00000/api/v1/instruments/instrument/{{}}/attach-file/"
+API_URL = "/realm00000/space00000/api/v1/instruments/instrument/{}/attach-file/"
 
 
 class AttachmentViewSetTest(BaseTestCase):

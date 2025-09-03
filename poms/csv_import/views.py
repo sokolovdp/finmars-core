@@ -4,16 +4,17 @@ from logging import getLogger
 from django_filters.rest_framework import FilterSet
 from rest_framework import status
 from rest_framework.decorators import action
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.viewsets import ModelViewSet
 
 from poms.celery_tasks.models import CeleryTask
-from poms.common.filters import CharFilter, GroupsAttributeFilter, AttributeFilter, CharExactFilter
+from poms.common.filters import AttributeFilter, CharExactFilter, CharFilter, GroupsAttributeFilter
 from poms.common.views import AbstractAsyncViewSet, AbstractModelViewSet
 from poms.csv_import.tasks import simple_import
 from poms.users.filters import OwnerByMasterUserFilter
-from rest_framework.viewsets import ModelViewSet
-from ..common.mixins import UpdateModelMixinExt
 
+from ..common.mixins import UpdateModelMixinExt
 from ..system_messages.handlers import send_system_message
 from .filters import SchemeContentTypeFilter
 from .models import CsvImportScheme
@@ -22,8 +23,6 @@ from .serializers import (
     CsvImportSchemeLightSerializer,
     CsvImportSchemeSerializer,
 )
-
-from rest_framework.permissions import IsAuthenticated
 
 _l = getLogger("poms.csv_import")
 
@@ -115,8 +114,7 @@ class CsvDataImportViewSet(AbstractAsyncViewSet):
             master_user=request.user.master_user,
             performed_by="System",
             description=(
-                f"Member {request.user.member.username} started Simple Import "
-                f"(scheme {instance.scheme.name})"
+                f"Member {request.user.member.username} started Simple Import (scheme {instance.scheme.name})"
             ),
         )
 
@@ -131,9 +129,7 @@ class CsvDataImportViewSet(AbstractAsyncViewSet):
             queue="backend-background-queue",
         )
 
-        _l.info(
-            "CsvDataImportViewSet done: %s", "{:3.3f}".format(time.perf_counter() - st)
-        )
+        _l.info("CsvDataImportViewSet done: %s", f"{time.perf_counter() - st:3.3f}")
 
         return Response(
             {
@@ -166,9 +162,7 @@ class CsvDataImportViewSet(AbstractAsyncViewSet):
             type="simple_import",
         )
 
-        _l.info(
-            f"celery_task {celery_task.pk} created, options_object={options_object}"
-        )
+        _l.info(f"celery_task {celery_task.pk} created, options_object={options_object}")
 
         send_system_message(
             master_user=request.user.master_user,
@@ -190,9 +184,7 @@ class CsvDataImportViewSet(AbstractAsyncViewSet):
             queue="backend-background-queue",
         )
 
-        _l.info(
-            "CsvDataImportViewSet done: %s", "{:3.3f}".format(time.perf_counter() - st)
-        )
+        _l.info("CsvDataImportViewSet done: %s", f"{time.perf_counter() - st:3.3f}")
 
         return Response(
             {

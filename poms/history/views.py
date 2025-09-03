@@ -10,7 +10,6 @@ from rest_framework.response import Response
 
 from poms.celery_tasks.models import CeleryTask
 from poms.common.filters import NoOpFilter
-
 from poms.common.views import AbstractModelViewSet
 from poms.history.filters import (
     HistoryActionFilter,
@@ -61,9 +60,7 @@ class HistoricalRecordFilterSet(FilterSet):
 
 
 class HistoricalRecordViewSet(AbstractModelViewSet):
-    queryset = HistoricalRecord.objects.select_related(
-        "master_user", "member", "content_type"
-    )
+    queryset = HistoricalRecord.objects.select_related("master_user", "member", "content_type")
     serializer_class = HistoricalRecordSerializer
 
     filter_backends = AbstractModelViewSet.filter_backends + [
@@ -87,9 +84,7 @@ class HistoricalRecordViewSet(AbstractModelViewSet):
     def export(self, request, realm_code=None, space_code=None):
         from poms_app import celery_app
 
-        serializer = ExportJournalSerializer(
-            data=request.data, context=self.get_serializer_context()
-        )
+        serializer = ExportJournalSerializer(data=request.data, context=self.get_serializer_context())
         serializer.is_valid(raise_exception=True)
         options_object = {}
 
@@ -132,13 +127,7 @@ class HistoricalRecordViewSet(AbstractModelViewSet):
         )
 
         for item in items:
-            result["results"].append(
-                {
-                    "key": item["content_type__app_label"]
-                    + "."
-                    + item["content_type__model"]
-                }
-            )
+            result["results"].append({"key": item["content_type__app_label"] + "." + item["content_type__model"]})
 
         return Response(result)
 

@@ -9,7 +9,7 @@ from django.core.exceptions import FieldDoesNotExist
 from django.db import transaction
 from django.utils import timezone
 
-from poms.accounts.models import AccountType, Account
+from poms.accounts.models import Account, AccountType
 from poms.complex_import.models import (
     ComplexImportScheme,
     ComplexImportSchemeActionCsvImport,
@@ -17,127 +17,125 @@ from poms.complex_import.models import (
 )
 from poms.configuration_sharing.models import SharedConfigurationFile
 from poms.counterparties.models import (
-    CounterpartyGroup,
     Counterparty,
-    ResponsibleGroup,
+    CounterpartyGroup,
     Responsible,
+    ResponsibleGroup,
 )
-from poms.csv_import.models import CsvImportScheme, CsvField, EntityField
+from poms.csv_import.models import CsvField, CsvImportScheme, EntityField
 from poms.currencies.models import Currency, CurrencyHistory
 from poms.instruments.models import (
-    PricingPolicy,
-    DailyPricingModel,
-    InstrumentClass,
     AccrualCalculationModel,
-    PaymentSizeDetail,
-    Periodicity,
-    CostMethod,
-    InstrumentType,
-    Instrument,
-    ManualPricingFormula,
-    PriceHistory,
     AccrualCalculationSchedule,
-    InstrumentFactorSchedule,
-    EventScheduleConfig,
+    CostMethod,
+    DailyPricingModel,
     EventSchedule,
     EventScheduleAction,
+    EventScheduleConfig,
+    Instrument,
+    InstrumentClass,
+    InstrumentFactorSchedule,
+    InstrumentType,
+    ManualPricingFormula,
+    PaymentSizeDetail,
+    Periodicity,
+    PriceHistory,
     PricingCondition,
+    PricingPolicy,
 )
 from poms.integrations.models import (
-    PriceDownloadScheme,
-    ProviderClass,
+    AccountMapping,
+    AccrualCalculationModelMapping,
     AccrualScheduleDownloadMethod,
+    ComplexTransactionImportScheme,
+    ComplexTransactionImportSchemeCalculatedInput,
+    ComplexTransactionImportSchemeField,
+    ComplexTransactionImportSchemeInput,
+    ComplexTransactionImportSchemeReconField,
+    ComplexTransactionImportSchemeReconScenario,
+    ComplexTransactionImportSchemeRuleScenario,
+    ComplexTransactionImportSchemeSelectorValue,
+    CounterpartyMapping,
+    CurrencyMapping,
+    DailyPricingModelMapping,
     FactorScheduleDownloadMethod,
+    ImportConfig,
     InstrumentDownloadScheme,
     InstrumentDownloadSchemeInput,
-    CurrencyMapping,
-    InstrumentTypeMapping,
-    AccrualCalculationModelMapping,
-    PeriodicityMapping,
-    AccountMapping,
     InstrumentMapping,
-    CounterpartyMapping,
-    ResponsibleMapping,
+    InstrumentTypeMapping,
+    PaymentSizeDetailMapping,
+    PeriodicityMapping,
     PortfolioMapping,
+    PriceDownloadScheme,
+    PriceDownloadSchemeMapping,
+    ProviderClass,
+    ResponsibleMapping,
     Strategy1Mapping,
     Strategy2Mapping,
     Strategy3Mapping,
-    DailyPricingModelMapping,
-    PaymentSizeDetailMapping,
-    PriceDownloadSchemeMapping,
-    ComplexTransactionImportScheme,
-    ComplexTransactionImportSchemeInput,
-    ComplexTransactionImportSchemeField,
-    ImportConfig,
-    ComplexTransactionImportSchemeCalculatedInput,
-    ComplexTransactionImportSchemeSelectorValue,
-    ComplexTransactionImportSchemeRuleScenario,
-    ComplexTransactionImportSchemeReconScenario,
-    ComplexTransactionImportSchemeReconField,
 )
 from poms.obj_attrs.models import GenericAttributeType
 from poms.portfolios.models import Portfolio
-from poms.pricing.models import InstrumentPricingScheme, CurrencyPricingScheme
+from poms.pricing.models import CurrencyPricingScheme, InstrumentPricingScheme
 from poms.reconciliation.models import (
-    TransactionTypeReconField,
     ReconciliationBankFileField,
-    ReconciliationNewBankFileField,
     ReconciliationComplexTransactionField,
+    ReconciliationNewBankFileField,
+    TransactionTypeReconField,
 )
 from poms.reference_tables.models import ReferenceTable, ReferenceTableRow
 from poms.strategies.models import (
+    Strategy1,
     Strategy1Group,
     Strategy1Subgroup,
-    Strategy1,
+    Strategy2,
     Strategy2Group,
     Strategy2Subgroup,
-    Strategy2,
+    Strategy3,
     Strategy3Group,
     Strategy3Subgroup,
-    Strategy3,
 )
 from poms.transactions.models import (
-    TransactionClass,
     ActionClass,
+    ComplexTransaction,
+    ComplexTransactionInput,
     EventClass,
     NotificationClass,
-    TransactionTypeGroup,
+    Transaction,
+    TransactionClass,
     TransactionType,
-    TransactionTypeInput,
+    TransactionTypeActionExecuteCommand,
     TransactionTypeActionInstrument,
-    TransactionTypeActionTransaction,
-    TransactionTypeInputSettings,
-    TransactionTypeActionInstrumentFactorSchedule,
     TransactionTypeActionInstrumentAccrualCalculationSchedules,
     TransactionTypeActionInstrumentEventSchedule,
     TransactionTypeActionInstrumentEventScheduleAction,
-    TransactionTypeActionExecuteCommand,
-    ComplexTransaction,
-    ComplexTransactionInput,
-    Transaction,
+    TransactionTypeActionInstrumentFactorSchedule,
+    TransactionTypeActionTransaction,
+    TransactionTypeGroup,
+    TransactionTypeInput,
+    TransactionTypeInputSettings,
 )
 from poms.ui.models import (
-    ListLayout,
-    EditLayout,
-    DashboardLayout,
-    ContextMenuLayout,
+    Bookmark,
     ColorPalette,
     ColorPaletteColor,
-    EntityTooltip,
-    TransactionUserFieldModel,
-    InstrumentUserFieldModel,
     ConfigurationExportLayout,
-    Bookmark,
+    ContextMenuLayout,
+    DashboardLayout,
+    EditLayout,
+    EntityTooltip,
+    InstrumentUserFieldModel,
+    ListLayout,
+    TransactionUserFieldModel,
 )
-from poms.users.models import Group, Member, EcosystemDefault, MasterUser
+from poms.users.models import EcosystemDefault, Group, MasterUser, Member
 
 _l = logging.getLogger("poms.users.cloner")
 
 
-class FullDataCloner(object):
-    def __init__(
-        self, source_master_user, name=None, copy_settings=None, current_user=None
-    ):
+class FullDataCloner:
+    def __init__(self, source_master_user, name=None, copy_settings=None, current_user=None):
         self._now = None
         self._source_master_user = source_master_user
         self._source_owner = None
@@ -171,7 +169,7 @@ class FullDataCloner(object):
         if self._source_master_user.timezone:
             try:
                 src_tz = pytz.timezone(self._source_master_user.timezone)
-            except:
+            except Exception:
                 src_tz = settings.TIME_ZONE
         else:
             src_tz = settings.TIME_ZONE
@@ -183,16 +181,12 @@ class FullDataCloner(object):
         return self._target_master_user
 
     def _clone(self):
-        self._target_master_user = self._simple_clone(
-            None, self._source_master_user, "name", "language", "timezone"
-        )
+        self._target_master_user = self._simple_clone(None, self._source_master_user, "name", "language", "timezone")
 
         if self.name:
             self._target_master_user.name = self.name
         else:
-            self._target_master_user.name = "{} ({:%H:%M %d.%m.%Y})".format(
-                self._target_master_user, self._now
-            )
+            self._target_master_user.name = f"{self._target_master_user} ({self._now:%H:%M %d.%m.%Y})"
 
         self._target_master_user.status = MasterUser.STATUS_BACKUP
 
@@ -276,7 +270,7 @@ class FullDataCloner(object):
 
         # transaction.set_rollback(True)
 
-    def _load_consts(self):
+    def _load_consts(self):  # noqa: PLR0912
         for source in ContentType.objects.all():
             self._add_pk_map(source, source)
 
@@ -328,10 +322,10 @@ class FullDataCloner(object):
         for source in SharedConfigurationFile.objects.all():
             self._add_pk_map(source, source)
 
-        for source in InstrumentPricingSchemeType.objects.all():
+        for source in InstrumentPricingSchemeType.objects.all():  # noqa: F821
             self._add_pk_map(source, source)
 
-        for source in CurrencyPricingSchemeType.objects.all():
+        for source in CurrencyPricingSchemeType.objects.all():  # noqa: F821
             self._add_pk_map(source, source)
 
     # def _users_1(self):
@@ -347,20 +341,18 @@ class FullDataCloner(object):
     #     self._simple_list_clone(Group, None, 'master_user', 'name')
 
     def _ecosystem_defaults(self):
-        source_ecosystem_default = EcosystemDefault.cache.get_cache(
-            master_user_pk=self._source_master_user.pk
-        )
+        source_ecosystem_default = EcosystemDefault.cache.get_cache(master_user_pk=self._source_master_user.pk)
         target_ecosystem_default = EcosystemDefault()
 
         target_ecosystem_default.master_user = self._target_master_user
 
         for field in EcosystemDefault._meta.get_fields():
-            if field.name != "master_user" and field.name != "id":
-                print("field_name %s" % field.name)
+            if field.name not in ["master_user", "id"]:
+                print(f"field_name {field.name}")
 
                 attr = getattr(source_ecosystem_default, field.name)
 
-                print("attr %s" % attr)
+                print(f"attr {attr}")
 
                 try:
                     prop = field.remote_field.model._meta.get_field("user_code")
@@ -385,9 +377,7 @@ class FullDataCloner(object):
 
                     except (FieldDoesNotExist, AttributeError):
                         try:
-                            prop = field.remote_field.model._meta.get_field(
-                                "scheme_name"
-                            )
+                            prop = field.remote_field.model._meta.get_field("scheme_name")  # noqa: F841
 
                             scheme_name = attr.scheme_name
 
@@ -410,22 +400,14 @@ class FullDataCloner(object):
         target_ecosystem_default.save()
 
     def _members_1(self):
-        self._source_owner = (
-            self._source_master_user.members.filter(is_owner=True)
-            .order_by("join_date")
-            .first()
-        )
+        self._source_owner = self._source_master_user.members.filter(is_owner=True).order_by("join_date").first()
 
         self._simple_list_clone(Group, None, "master_user", "name")
 
-        self._source_members = self._source_owner = (
-            self._source_master_user.members.all()
-        )
+        self._source_members = self._source_owner = self._source_master_user.members.all()
 
         for source_member in self._source_members:
-            target_member = Member.objects.create(
-                master_user=self._target_master_user, user=source_member.user
-            )
+            target_member = Member.objects.create(master_user=self._target_master_user, user=source_member.user)
 
             target_member.username = source_member.username
             target_member.first_name = source_member.first_name
@@ -439,19 +421,13 @@ class FullDataCloner(object):
             # target_member.groups = source_member.groups
 
             for source_group in source_member.groups.all():
-                group = Group.objects.get(
-                    master_user=self._target_master_user, name=source_group.name
-                )
+                group = Group.objects.get(master_user=self._target_master_user, name=source_group.name)
 
                 target_member.groups.add(group)
 
             target_member.save()
 
-        self._target_owner = (
-            self._target_master_user.members.filter(is_owner=True)
-            .order_by("join_date")
-            .first()
-        )
+        self._target_owner = self._target_master_user.members.filter(is_owner=True).order_by("join_date").first()
 
     # def _copy_current_member(self):
     #     self._source_owner = self._source_master_user.members.filter(is_owner=True).order_by('join_date').first()
@@ -482,7 +458,7 @@ class FullDataCloner(object):
             "order",
         )
 
-        # self._simple_list_clone(GenericAttributeTypeOption, 'attribute_type__master_user', 'attribute_type', 'member', 'is_hidden',)
+        # self._simple_list_clone(GenericAttributeTypeOption, 'attribute_type__master_user', 'attribute_type', 'member', 'is_hidden',) # noqa: E501
 
     def _accounts(self):
         self._simple_list_clone(
@@ -778,7 +754,7 @@ class FullDataCloner(object):
         )
 
         self._simple_list_clone(
-            PricingAutomatedSchedule,
+            PricingAutomatedSchedule,  # noqa: F821
             None,
             "master_user",
             "is_enabled",
@@ -827,11 +803,9 @@ class FullDataCloner(object):
         )
 
         # TODO: uncomment after attributes
-        # self._simple_list_clone(InstrumentDownloadSchemeAttribute, 'scheme__master_user', 'scheme', 'attribute_type', 'value')
+        # self._simple_list_clone(InstrumentDownloadSchemeAttribute, 'scheme__master_user', 'scheme', 'attribute_type', 'value') # noqa: E501
 
-        self._simple_list_clone(
-            CurrencyMapping, None, "master_user", "provider", "value", "content_object"
-        )
+        self._simple_list_clone(CurrencyMapping, None, "master_user", "provider", "value", "content_object")
 
         self._simple_list_clone(
             InstrumentTypeMapping,
@@ -864,9 +838,7 @@ class FullDataCloner(object):
             "content_object",
         )
 
-        self._simple_list_clone(
-            AccountMapping, None, "master_user", "provider", "value", "content_object"
-        )
+        self._simple_list_clone(AccountMapping, None, "master_user", "provider", "value", "content_object")
 
         self._simple_list_clone(
             InstrumentMapping,
@@ -895,21 +867,13 @@ class FullDataCloner(object):
             "content_object",
         )
 
-        self._simple_list_clone(
-            PortfolioMapping, None, "master_user", "provider", "value", "content_object"
-        )
+        self._simple_list_clone(PortfolioMapping, None, "master_user", "provider", "value", "content_object")
 
-        self._simple_list_clone(
-            Strategy1Mapping, None, "master_user", "provider", "value", "content_object"
-        )
+        self._simple_list_clone(Strategy1Mapping, None, "master_user", "provider", "value", "content_object")
 
-        self._simple_list_clone(
-            Strategy2Mapping, None, "master_user", "provider", "value", "content_object"
-        )
+        self._simple_list_clone(Strategy2Mapping, None, "master_user", "provider", "value", "content_object")
 
-        self._simple_list_clone(
-            Strategy3Mapping, None, "master_user", "provider", "value", "content_object"
-        )
+        self._simple_list_clone(Strategy3Mapping, None, "master_user", "provider", "value", "content_object")
 
         self._simple_list_clone(
             DailyPricingModelMapping,
@@ -1700,17 +1664,11 @@ class FullDataCloner(object):
             "tooltip",
         )
 
-        self._simple_list_clone(
-            EntityTooltip, None, "master_user", "content_type", "name", "key", "text"
-        )
+        self._simple_list_clone(EntityTooltip, None, "master_user", "content_type", "name", "key", "text")
 
-        self._simple_list_clone(
-            TransactionUserFieldModel, None, "master_user", "name", "key"
-        )
+        self._simple_list_clone(TransactionUserFieldModel, None, "master_user", "name", "key")
 
-        self._simple_list_clone(
-            InstrumentUserFieldModel, None, "master_user", "name", "key"
-        )
+        self._simple_list_clone(InstrumentUserFieldModel, None, "master_user", "name", "key")
 
         _l.debug("Master User Clone: UI finished")
 
@@ -1794,7 +1752,7 @@ class FullDataCloner(object):
         )
 
         self._simple_list_clone(
-            InstrumentPricingSchemeManualPricingParameters,
+            InstrumentPricingSchemeManualPricingParameters,  # noqa: F821
             "instrument_pricing_scheme__master_user",
             "instrument_pricing_scheme",
             "default_value",
@@ -1802,7 +1760,7 @@ class FullDataCloner(object):
         )
 
         self._simple_list_clone(
-            CurrencyPricingSchemeManualPricingParameters,
+            CurrencyPricingSchemeManualPricingParameters,  # noqa: F821
             "currency_pricing_scheme__master_user",
             "currency_pricing_scheme",
             "default_value",
@@ -1810,7 +1768,7 @@ class FullDataCloner(object):
         )
 
         self._simple_list_clone(
-            InstrumentPricingSchemeSingleParameterFormulaParameters,
+            InstrumentPricingSchemeSingleParameterFormulaParameters,  # noqa: F821
             "instrument_pricing_scheme__master_user",
             "instrument_pricing_scheme",
             "expr",
@@ -1824,7 +1782,7 @@ class FullDataCloner(object):
         )
 
         self._simple_list_clone(
-            CurrencyPricingSchemeSingleParameterFormulaParameters,
+            CurrencyPricingSchemeSingleParameterFormulaParameters,  # noqa: F821
             "currency_pricing_scheme__master_user",
             "currency_pricing_scheme",
             "expr",
@@ -1835,7 +1793,7 @@ class FullDataCloner(object):
         )
 
         self._simple_list_clone(
-            InstrumentPricingSchemeMultipleParametersFormulaParameters,
+            InstrumentPricingSchemeMultipleParametersFormulaParameters,  # noqa: F821
             "instrument_pricing_scheme__master_user",
             "instrument_pricing_scheme",
             "expr",
@@ -1850,7 +1808,7 @@ class FullDataCloner(object):
         )
 
         self._simple_list_clone(
-            CurrencyPricingSchemeMultipleParametersFormulaParameters,
+            CurrencyPricingSchemeMultipleParametersFormulaParameters,  # noqa: F821
             "currency_pricing_scheme__master_user",
             "currency_pricing_scheme",
             "expr",
@@ -1862,7 +1820,7 @@ class FullDataCloner(object):
         )
 
         self._simple_list_clone(
-            InstrumentPricingSchemeBloombergParameters,
+            InstrumentPricingSchemeBloombergParameters,  # noqa: F821
             "instrument_pricing_scheme__master_user",
             "instrument_pricing_scheme",
             "expr",
@@ -1884,7 +1842,7 @@ class FullDataCloner(object):
         )
 
         self._simple_list_clone(
-            CurrencyPricingSchemeBloombergParameters,
+            CurrencyPricingSchemeBloombergParameters,  # noqa: F821
             "currency_pricing_scheme__master_user",
             "currency_pricing_scheme",
             "expr",
@@ -1896,7 +1854,7 @@ class FullDataCloner(object):
         )
 
         self._simple_list_clone(
-            InstrumentPricingSchemeAlphavParameters,
+            InstrumentPricingSchemeAlphavParameters,  # noqa: F821
             "instrument_pricing_scheme__master_user",
             "instrument_pricing_scheme",
             "expr",
@@ -1910,7 +1868,7 @@ class FullDataCloner(object):
         )
 
         self._simple_list_clone(
-            CurrencyPricingSchemeFixerParameters,
+            CurrencyPricingSchemeFixerParameters,  # noqa: F821
             "currency_pricing_scheme__master_user",
             "currency_pricing_scheme",
             "expr",
@@ -1922,7 +1880,7 @@ class FullDataCloner(object):
 
     def _pricing_2(self):
         self._simple_list_clone(
-            PricingProcedure,
+            PricingProcedure,  # noqa: F821
             None,
             "master_user",
             "name",
@@ -1955,7 +1913,7 @@ class FullDataCloner(object):
         )
 
         self._simple_list_clone(
-            CurrencyPricingPolicy,
+            CurrencyPricingPolicy,  # noqa: F821
             "currency__master_user",
             "currency",
             "pricing_policy",
@@ -1967,7 +1925,7 @@ class FullDataCloner(object):
         )
 
         self._simple_list_clone(
-            InstrumentTypePricingPolicy,
+            InstrumentTypePricingPolicy,  # noqa: F821
             "instrument_type__master_user",
             "instrument_type",
             "pricing_policy",
@@ -1980,7 +1938,7 @@ class FullDataCloner(object):
         )
 
         self._simple_list_clone(
-            InstrumentPricingPolicy,
+            InstrumentPricingPolicy,  # noqa: F821
             "instrument__master_user",
             "instrument",
             "pricing_policy",
@@ -1993,7 +1951,7 @@ class FullDataCloner(object):
 
     def _schedules_1(self):
         self._simple_list_clone(
-            PricingSchedule,
+            PricingSchedule,  # noqa: F821
             None,
             "master_user",
             "name",
@@ -2017,9 +1975,7 @@ class FullDataCloner(object):
             "filter_expr",
         )
 
-        self._simple_list_clone(
-            CsvField, "scheme__master_user", "scheme", "column", "name", "name_expr"
-        )
+        self._simple_list_clone(CsvField, "scheme__master_user", "scheme", "column", "name", "name_expr")
 
         self._simple_list_clone(
             EntityField,
@@ -2080,26 +2036,20 @@ class FullDataCloner(object):
             )
 
         _l.debug("clone %s", classifier_model)
-        for source in classifier_model.objects.filter(
-            attribute_type__master_user=self._source_master_user
-        ):
+        for source in classifier_model.objects.filter(attribute_type__master_user=self._source_master_user):  # noqa: B007
             # TODO: classifier is tree!
             # self._simple_clone(None, source, 'attribute_type', 'name')
             pass
 
         _l.debug("clone %s", value_model)
-        for source in value_model.objects.filter(
-            attribute_type__master_user=self._source_master_user
-        ):
+        for source in value_model.objects.filter(attribute_type__master_user=self._source_master_user):  # noqa: B007
             # TODO: uncomment when classifier is ready
             # self._simple_clone(None, source, 'attribute_type', 'content_object', 'classifier')
             pass
 
     def _object_permissions(self, object_permission_model):
         _l.debug("clone %s", object_permission_model)
-        for source in object_permission_model.filter(
-            content_object__master_user=self._source_master_user
-        ):
+        for source in object_permission_model.filter(content_object__master_user=self._source_master_user):
             self._simple_clone(
                 None,
                 source,
@@ -2113,9 +2063,7 @@ class FullDataCloner(object):
 
     # Copy logic starts here
 
-    def _simple_list_clone(
-        self, model, master_user_path, *fields, pk_map=True, store=False, filter=None
-    ):
+    def _simple_list_clone(self, model, master_user_path, *fields, pk_map=True, store=False, filter=None):
         # _l.debug('clone %s', model)
 
         fields_select_related = []
@@ -2151,9 +2099,7 @@ class FullDataCloner(object):
         for source in qs:
             self._simple_clone(None, source, *fields, pk_map=pk_map, store=store)
 
-    def _simple_list_clone_2(
-        self, model, master_user_path, *fields, pk_map=True, store=False
-    ):
+    def _simple_list_clone_2(self, model, master_user_path, *fields, pk_map=True, store=False):
         # _l.debug('clone2 %s ', model._meta.model_name)
         _l.debug("clone2 %s ", model._meta.model_name)
         for source in self._source_get_objects(model).values():
@@ -2251,10 +2197,7 @@ class FullDataCloner(object):
                 field = target._meta.get_field(item)
                 if field.many_to_many:
                     values = getattr(source, item).values_list("id", flat=True)
-                    values = [
-                        self._get_related_from_pk_map(field.remote_field.model, pk)
-                        for pk in values
-                    ]
+                    values = [self._get_related_from_pk_map(field.remote_field.model, pk) for pk in values]
 
                     values = field.remote_field.model.objects.filter(pk__in=values)
 
@@ -2331,10 +2274,7 @@ class FullDataCloner(object):
             field = target._meta.get_field(item)
             if field.many_to_many:
                 values = getattr(source, item).values_list("id", flat=True)
-                values = [
-                    self._get_related_from_pk_map(field.remote_field.model, pk)
-                    for pk in values
-                ]
+                values = [self._get_related_from_pk_map(field.remote_field.model, pk) for pk in values]
 
                 values = field.remote_field.model.objects.filter(pk__in=values)
 

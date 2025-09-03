@@ -3,10 +3,10 @@ from django.db import models
 from django.utils.translation import gettext_lazy
 
 from poms.common.models import (
-    TimeStampedModel,
     FakeDeletableModel,
     NamedModel,
     ObjectStateModel,
+    TimeStampedModel,
 )
 from poms.obj_attrs.models import GenericAttribute
 from poms.users.models import MasterUser
@@ -81,11 +81,7 @@ class Strategy1Group(NamedModel, FakeDeletableModel):
 
     @property
     def is_default(self):
-        return (
-            self.master_user.strategy1_group_id == self.id
-            if self.master_user_id
-            else False
-        )
+        return self.master_user.strategy1_group_id == self.id if self.master_user_id else False
 
 
 class Strategy1Subgroup(NamedModel, FakeDeletableModel, _SubgroupSystemAttrsMixin):
@@ -120,11 +116,7 @@ class Strategy1Subgroup(NamedModel, FakeDeletableModel, _SubgroupSystemAttrsMixi
 
     @property
     def is_default(self):
-        return (
-            self.master_user.strategy1_subgroup_id == self.id
-            if self.master_user_id
-            else False
-        )
+        return self.master_user.strategy1_subgroup_id == self.id if self.master_user_id else False
 
 
 class Strategy1(NamedModel, FakeDeletableModel, TimeStampedModel, ObjectStateModel):
@@ -142,9 +134,7 @@ class Strategy1(NamedModel, FakeDeletableModel, TimeStampedModel, ObjectStateMod
         related_name="strategies",
     )
 
-    attributes = GenericRelation(
-        GenericAttribute, verbose_name=gettext_lazy("attributes")
-    )
+    attributes = GenericRelation(GenericAttribute, verbose_name=gettext_lazy("attributes"))
 
     class Meta(NamedModel.Meta, FakeDeletableModel.Meta):
         verbose_name = gettext_lazy("strategy1")
@@ -163,9 +153,7 @@ class Strategy1(NamedModel, FakeDeletableModel, TimeStampedModel, ObjectStateMod
 
     @property
     def is_default(self):
-        return (
-            self.master_user.strategy1_id == self.id if self.master_user_id else False
-        )
+        return self.master_user.strategy1_id == self.id if self.master_user_id else False
 
 
 # 2 --
@@ -189,11 +177,7 @@ class Strategy2Group(NamedModel, FakeDeletableModel):
 
     @property
     def is_default(self):
-        return (
-            self.master_user.strategy2_group_id == self.id
-            if self.master_user_id
-            else False
-        )
+        return self.master_user.strategy2_group_id == self.id if self.master_user_id else False
 
 
 class Strategy2Subgroup(NamedModel, FakeDeletableModel, _SubgroupSystemAttrsMixin):
@@ -221,11 +205,7 @@ class Strategy2Subgroup(NamedModel, FakeDeletableModel, _SubgroupSystemAttrsMixi
 
     @property
     def is_default(self):
-        return (
-            self.master_user.strategy2_subgroup_id == self.id
-            if self.master_user_id
-            else False
-        )
+        return self.master_user.strategy2_subgroup_id == self.id if self.master_user_id else False
 
 
 class Strategy2(NamedModel, FakeDeletableModel, TimeStampedModel, ObjectStateModel):
@@ -243,9 +223,7 @@ class Strategy2(NamedModel, FakeDeletableModel, TimeStampedModel, ObjectStateMod
         related_name="strategies",
     )
 
-    attributes = GenericRelation(
-        GenericAttribute, verbose_name=gettext_lazy("attributes")
-    )
+    attributes = GenericRelation(GenericAttribute, verbose_name=gettext_lazy("attributes"))
 
     class Meta(NamedModel.Meta, FakeDeletableModel.Meta):
         verbose_name = gettext_lazy("strategy2")
@@ -264,9 +242,7 @@ class Strategy2(NamedModel, FakeDeletableModel, TimeStampedModel, ObjectStateMod
 
     @property
     def is_default(self):
-        return (
-            self.master_user.strategy2_id == self.id if self.master_user_id else False
-        )
+        return self.master_user.strategy2_id == self.id if self.master_user_id else False
 
 
 # 3 --
@@ -290,11 +266,7 @@ class Strategy3Group(NamedModel, FakeDeletableModel):
 
     @property
     def is_default(self):
-        return (
-            self.master_user.strategy3_group_id == self.id
-            if self.master_user_id
-            else False
-        )
+        return self.master_user.strategy3_group_id == self.id if self.master_user_id else False
 
 
 class Strategy3Subgroup(NamedModel, FakeDeletableModel, _SubgroupSystemAttrsMixin):
@@ -322,11 +294,7 @@ class Strategy3Subgroup(NamedModel, FakeDeletableModel, _SubgroupSystemAttrsMixi
 
     @property
     def is_default(self):
-        return (
-            self.master_user.strategy3_subgroup_id == self.id
-            if self.master_user_id
-            else False
-        )
+        return self.master_user.strategy3_subgroup_id == self.id if self.master_user_id else False
 
 
 class Strategy3(NamedModel, FakeDeletableModel, TimeStampedModel, ObjectStateModel):
@@ -344,9 +312,7 @@ class Strategy3(NamedModel, FakeDeletableModel, TimeStampedModel, ObjectStateMod
         related_name="strategies",
     )
 
-    attributes = GenericRelation(
-        GenericAttribute, verbose_name=gettext_lazy("attributes")
-    )
+    attributes = GenericRelation(GenericAttribute, verbose_name=gettext_lazy("attributes"))
 
     class Meta(NamedModel.Meta, FakeDeletableModel.Meta):
         verbose_name = gettext_lazy("strategy3")
@@ -365,6 +331,4 @@ class Strategy3(NamedModel, FakeDeletableModel, TimeStampedModel, ObjectStateMod
 
     @property
     def is_default(self):
-        return (
-            self.master_user.strategy3_id == self.id if self.master_user_id else False
-        )
+        return self.master_user.strategy3_id == self.id if self.master_user_id else False

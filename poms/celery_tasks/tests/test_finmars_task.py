@@ -6,13 +6,11 @@ from poms.common.common_base_test import BaseTestCase
 @finmars_task(name="task_wo_task_id")
 def simple_task(*args, **kwargs):
     print("task_wo_task_id is running")
-    return
 
 
 @finmars_task(name="complex_task")
 def complex_task(task_id, *args, **kwargs):
     print(f"task_with_task_id task_id={task_id} is running")
-    return
 
 
 class FinmarsTaskTestCase(BaseTestCase):

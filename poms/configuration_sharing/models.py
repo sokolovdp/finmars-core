@@ -10,7 +10,8 @@ from poms.users.models import MasterUser, Member
 
 class SharedConfigurationFile(models.Model):
     """
-    Probably Deprecated, really old feature which gives members ability to share their ui.ListLayout and ui.DashboardLayout
+    Probably Deprecated, really old feature which gives members ability to share their
+    ui.ListLayout and ui.DashboardLayout
     TODO: refactor
     TODO: Part of Finmars Marketplace
     """
@@ -24,9 +25,7 @@ class SharedConfigurationFile(models.Model):
         (MASTER_USER_ONLY, gettext_lazy("Master User Only")),
     )
 
-    json_data = models.TextField(
-        null=True, blank=True, verbose_name=gettext_lazy("json data")
-    )
+    json_data = models.TextField(null=True, blank=True, verbose_name=gettext_lazy("json data"))
 
     notes = models.TextField(blank=True, default="", verbose_name=gettext_lazy("notes"))
 

@@ -8,7 +8,6 @@ from poms_app.openapi import get_redoc_urlpatterns
 urlpatterns = []
 
 if "django.contrib.admin" in settings.INSTALLED_APPS:
-
     urlpatterns = urlpatterns + [
         # re_path(r'^' + settings.BASE_API_URL + '/admin/docs/', include('django.contrib.admindocs.urls')),
         # re_path(r"^" + settings.REALM_CODE + "/admin/", admin.site.urls),
@@ -23,9 +22,7 @@ urlpatterns = urlpatterns + [
     # New Approach
     path("<slug:realm_code>/<slug:space_code>/api/", include("poms.api.urls")),
     path("<slug:realm_code>/<slug:space_code>/healthcheck/", HealthcheckView.as_view()),
-    path(
-        "<slug:realm_code>/<slug:space_code>/healthz/", HealthcheckView.as_view()
-    ),  # needed for k8s healthcheck
+    path("<slug:realm_code>/<slug:space_code>/healthz/", HealthcheckView.as_view()),  # needed for k8s healthcheck
 ]
 
 if "drf_yasg" in settings.INSTALLED_APPS:

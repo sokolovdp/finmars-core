@@ -6,20 +6,20 @@ from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
-from poms.common.views import AbstractViewSet, AbstractModelViewSet
-from poms.vault.models import VaultRecord
+from poms.common.views import AbstractModelViewSet, AbstractViewSet
 from poms.users.filters import OwnerByMasterUserFilter
+from poms.vault.models import VaultRecord
 from poms.vault.serializers import (
-    VaultSecretSerializer,
-    VaultEngineSerializer,
-    VaultStatusSerializer,
-    GetVaultSecretSerializer,
     DeleteVaultEngineSerializer,
     DeleteVaultSecretSerializer,
+    GetVaultSecretSerializer,
     UpdateVaultSecretSerializer,
-    VaultSealSerializer,
-    VaultUnsealSerializer,
+    VaultEngineSerializer,
     VaultRecordSerializer,
+    VaultSealSerializer,
+    VaultSecretSerializer,
+    VaultStatusSerializer,
+    VaultUnsealSerializer,
 )
 from poms.vault.vault import FinmarsVault
 
@@ -33,9 +33,7 @@ class VaultViewSet(AbstractViewSet):
         request_body=VaultSealSerializer,
         responses={
             status.HTTP_200_OK: openapi.Response("Vault init successfully"),
-            status.HTTP_500_INTERNAL_SERVER_ERROR: openapi.Response(
-                "Internal server error"
-            ),
+            status.HTTP_500_INTERNAL_SERVER_ERROR: openapi.Response("Internal server error"),
         },
     )
     @action(
@@ -48,9 +46,7 @@ class VaultViewSet(AbstractViewSet):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        finmars_vault = FinmarsVault(
-            realm_code=request.realm_code, space_code=request.space_code
-        )
+        finmars_vault = FinmarsVault(realm_code=request.realm_code, space_code=request.space_code)
 
         try:
             data = finmars_vault.init()
@@ -59,9 +55,7 @@ class VaultViewSet(AbstractViewSet):
                 status=status.HTTP_200_OK,
             )
         except Exception as e:
-            return Response(
-                {"message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
+            return Response({"message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     @action(
         detail=False,
@@ -75,9 +69,7 @@ class VaultViewSet(AbstractViewSet):
         data["status"] = "ok"
         data["text"] = "Vault is responded with health check"
 
-        finmars_vault = FinmarsVault(
-            realm_code=request.realm_code, space_code=request.space_code
-        )
+        finmars_vault = FinmarsVault(realm_code=request.realm_code, space_code=request.space_code)
         status = finmars_vault.get_health()
 
         data["data"] = status
@@ -97,14 +89,12 @@ class VaultViewSet(AbstractViewSet):
 
         try:
             # needed to check if token is available
-            vault_token = VaultRecord.objects.get(user_code="hashicorp-vault-token")
+            vault_token = VaultRecord.objects.get(user_code="hashicorp-vault-token")  # noqa: F841
 
             data["status"] = "ok"
             data["text"] = "Vault is operational for storing secrets"
 
-            finmars_vault = FinmarsVault(
-                realm_code=request.realm_code, space_code=request.space_code
-            )
+            finmars_vault = FinmarsVault(realm_code=request.realm_code, space_code=request.space_code)
 
             status = finmars_vault.get_status()
 
@@ -124,9 +114,7 @@ class VaultViewSet(AbstractViewSet):
         request_body=VaultSealSerializer,
         responses={
             status.HTTP_200_OK: openapi.Response("Vault sealed successfully"),
-            status.HTTP_500_INTERNAL_SERVER_ERROR: openapi.Response(
-                "Internal server error"
-            ),
+            status.HTTP_500_INTERNAL_SERVER_ERROR: openapi.Response("Internal server error"),
         },
     )
     @action(
@@ -139,9 +127,7 @@ class VaultViewSet(AbstractViewSet):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        finmars_vault = FinmarsVault(
-            realm_code=request.realm_code, space_code=request.space_code
-        )
+        finmars_vault = FinmarsVault(realm_code=request.realm_code, space_code=request.space_code)
 
         try:
             data = finmars_vault.seal()
@@ -150,9 +136,7 @@ class VaultViewSet(AbstractViewSet):
                 status=status.HTTP_200_OK,
             )
         except Exception as e:
-            return Response(
-                {"message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
+            return Response({"message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     @action(
         detail=False,
@@ -166,9 +150,7 @@ class VaultViewSet(AbstractViewSet):
 
         key = serializer.validated_data["key"]
 
-        finmars_vault = FinmarsVault(
-            realm_code=request.realm_code, space_code=request.space_code
-        )
+        finmars_vault = FinmarsVault(realm_code=request.realm_code, space_code=request.space_code)
 
         try:
             data = finmars_vault.unseal(key)
@@ -177,18 +159,14 @@ class VaultViewSet(AbstractViewSet):
                 status=status.HTTP_200_OK,
             )
         except Exception as e:
-            return Response(
-                {"message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
+            return Response({"message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 class VaultEngineViewSet(AbstractViewSet):
     serializer_class = VaultEngineSerializer
 
     def list(self, request, *args, **kwargs):
-        finmars_vault = FinmarsVault(
-            realm_code=request.realm_code, space_code=request.space_code
-        )
+        finmars_vault = FinmarsVault(realm_code=request.realm_code, space_code=request.space_code)
 
         data = finmars_vault.get_list_engines()
 
@@ -197,12 +175,8 @@ class VaultEngineViewSet(AbstractViewSet):
     @swagger_auto_schema(
         request_body=VaultEngineSerializer,
         responses={
-            status.HTTP_201_CREATED: openapi.Response(
-                "Vault engine created successfully"
-            ),
-            status.HTTP_500_INTERNAL_SERVER_ERROR: openapi.Response(
-                "Internal server error"
-            ),
+            status.HTTP_201_CREATED: openapi.Response("Vault engine created successfully"),
+            status.HTTP_500_INTERNAL_SERVER_ERROR: openapi.Response("Internal server error"),
         },
     )
     @action(
@@ -217,9 +191,7 @@ class VaultEngineViewSet(AbstractViewSet):
 
         engine_name = serializer.validated_data["engine_name"]
 
-        finmars_vault = FinmarsVault(
-            realm_code=request.realm_code, space_code=request.space_code
-        )
+        finmars_vault = FinmarsVault(realm_code=request.realm_code, space_code=request.space_code)
 
         try:
             finmars_vault.create_engine(engine_name)
@@ -228,9 +200,7 @@ class VaultEngineViewSet(AbstractViewSet):
                 status=status.HTTP_201_CREATED,
             )
         except Exception as e:
-            return Response(
-                {"message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
+            return Response({"message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     @action(
         detail=False,
@@ -244,9 +214,7 @@ class VaultEngineViewSet(AbstractViewSet):
 
         engine_name = serializer.validated_data["engine_name"]
 
-        finmars_vault = FinmarsVault(
-            realm_code=request.realm_code, space_code=request.space_code
-        )
+        finmars_vault = FinmarsVault(realm_code=request.realm_code, space_code=request.space_code)
 
         try:
             finmars_vault.delete_engine(engine_name)
@@ -255,9 +223,7 @@ class VaultEngineViewSet(AbstractViewSet):
                 status=status.HTTP_200_OK,
             )
         except Exception as e:
-            return Response(
-                {"message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
+            return Response({"message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 class VaultSecretViewSet(AbstractViewSet):
@@ -267,13 +233,9 @@ class VaultSecretViewSet(AbstractViewSet):
         engine_name = request.query_params.get("engine_name")
 
         if not engine_name:
-            return Response(
-                {"error": "engine_name is required"}, status=status.HTTP_400_BAD_REQUEST
-            )
+            return Response({"error": "engine_name is required"}, status=status.HTTP_400_BAD_REQUEST)
 
-        finmars_vault = FinmarsVault(
-            realm_code=request.realm_code, space_code=request.space_code
-        )
+        finmars_vault = FinmarsVault(realm_code=request.realm_code, space_code=request.space_code)
 
         data = finmars_vault.get_list_secrets(engine_name)
 
@@ -282,12 +244,8 @@ class VaultSecretViewSet(AbstractViewSet):
     @swagger_auto_schema(
         request_body=VaultSecretSerializer,
         responses={
-            status.HTTP_201_CREATED: openapi.Response(
-                "Vault secret created successfully"
-            ),
-            status.HTTP_500_INTERNAL_SERVER_ERROR: openapi.Response(
-                "Internal server error"
-            ),
+            status.HTTP_201_CREATED: openapi.Response("Vault secret created successfully"),
+            status.HTTP_500_INTERNAL_SERVER_ERROR: openapi.Response("Internal server error"),
         },
     )
     @action(
@@ -304,9 +262,7 @@ class VaultSecretViewSet(AbstractViewSet):
         path = serializer.validated_data["path"]
         data = serializer.validated_data["data"]
 
-        finmars_vault = FinmarsVault(
-            realm_code=request.realm_code, space_code=request.space_code
-        )
+        finmars_vault = FinmarsVault(realm_code=request.realm_code, space_code=request.space_code)
 
         try:
             finmars_vault.create_secret(engine_name, path, data)
@@ -315,9 +271,7 @@ class VaultSecretViewSet(AbstractViewSet):
                 status=status.HTTP_201_CREATED,
             )
         except Exception as e:
-            return Response(
-                {"message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
+            return Response({"message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     @action(
         detail=False,
@@ -334,9 +288,7 @@ class VaultSecretViewSet(AbstractViewSet):
         data = serializer.validated_data["data"]
         version = serializer.validated_data["version"]
 
-        finmars_vault = FinmarsVault(
-            realm_code=request.realm_code, space_code=request.space_code
-        )
+        finmars_vault = FinmarsVault(realm_code=request.realm_code, space_code=request.space_code)
 
         try:
             finmars_vault.update_secret(engine_name, path, data, version)
@@ -345,9 +297,7 @@ class VaultSecretViewSet(AbstractViewSet):
                 status=status.HTTP_201_CREATED,
             )
         except Exception as e:
-            return Response(
-                {"message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
+            return Response({"message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     @swagger_auto_schema(method="get", responses={200: VaultSecretSerializer})
     @action(
@@ -367,9 +317,7 @@ class VaultSecretViewSet(AbstractViewSet):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        finmars_vault = FinmarsVault(
-            realm_code=request.realm_code, space_code=request.space_code
-        )
+        finmars_vault = FinmarsVault(realm_code=request.realm_code, space_code=request.space_code)
 
         try:
             if not version:
@@ -378,9 +326,7 @@ class VaultSecretViewSet(AbstractViewSet):
             result = finmars_vault.get_secret(engine_name, path, version)
             return Response(result, status=status.HTTP_200_OK)
         except Exception as e:
-            return Response(
-                {"message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
+            return Response({"message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     @action(
         detail=False,
@@ -398,17 +344,13 @@ class VaultSecretViewSet(AbstractViewSet):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        finmars_vault = FinmarsVault(
-            realm_code=request.realm_code, space_code=request.space_code
-        )
+        finmars_vault = FinmarsVault(realm_code=request.realm_code, space_code=request.space_code)
 
         try:
             result = finmars_vault.get_secret_metadata(engine_name, path)
             return Response(result, status=status.HTTP_200_OK)
         except Exception as e:
-            return Response(
-                {"message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
+            return Response({"message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     @action(
         detail=False,
@@ -423,9 +365,7 @@ class VaultSecretViewSet(AbstractViewSet):
         engine_name = serializer.validated_data["engine_name"]
         path = serializer.validated_data["path"]
 
-        finmars_vault = FinmarsVault(
-            realm_code=request.realm_code, space_code=request.space_code
-        )
+        finmars_vault = FinmarsVault(realm_code=request.realm_code, space_code=request.space_code)
 
         try:
             finmars_vault.delete_secret(engine_name, path)
@@ -434,9 +374,7 @@ class VaultSecretViewSet(AbstractViewSet):
                 status=status.HTTP_200_OK,
             )
         except Exception as e:
-            return Response(
-                {"message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
+            return Response({"message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 class VaultRecordViewSet(AbstractModelViewSet):

@@ -16,9 +16,7 @@ class StandardizedErrorsConfig(AppConfig):
     def ready(self):
         post_migrate.connect(self.delete_old_logs, sender=self)
 
-    def delete_old_logs(
-        self, app_config, verbosity=2, using=DEFAULT_DB_ALIAS, **kwargs
-    ):
+    def delete_old_logs(self, app_config, verbosity=2, using=DEFAULT_DB_ALIAS, **kwargs):
         from finmars_standardized_errors.models import ErrorRecord
 
         month_ago = timezone.now() - datetime.timedelta(days=30)

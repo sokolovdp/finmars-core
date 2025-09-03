@@ -1,7 +1,6 @@
-from poms.clients.models import Client, ClientSecret
-from django.db.models import Q
 from django_filters.rest_framework import FilterSet
-from django_filters.filters import BaseInFilter
+
+from poms.clients.models import Client, ClientSecret
 from poms.common.filters import (
     CharFilter,
     NoOpFilter,
@@ -23,9 +22,7 @@ class ClientsFilterSet(FilterSet):
     email = CharFilter()
     email_hash = CharFilter()
     portfolios = CharFilter(field_name="portfolios__user_code", lookup_expr="icontains")
-    client_secrets = CharFilter(
-        field_name="client_secrets__user_code", lookup_expr="icontains"
-    )
+    client_secrets = CharFilter(field_name="client_secrets__user_code", lookup_expr="icontains")
 
     class Meta:
         model = Client

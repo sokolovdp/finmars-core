@@ -24,18 +24,10 @@ class FinmarsVault:
 
         if self.realm_code:
             self.vault_host = (
-                "https://"
-                + settings.DOMAIN_NAME
-                + "/"
-                + self.realm_code
-                + "/"
-                + self.space_code
-                + "/vault"
+                "https://" + settings.DOMAIN_NAME + "/" + self.realm_code + "/" + self.space_code + "/vault"
             )
         else:
-            self.vault_host = (
-                "https://" + settings.DOMAIN_NAME + "/" + self.space_code + "/vault"
-            )
+            self.vault_host = "https://" + settings.DOMAIN_NAME + "/" + self.space_code + "/vault"
 
         self.auth_token = None
         try:
@@ -58,7 +50,7 @@ class FinmarsVault:
         try:
             response = requests.get(url, headers=headers, verify=settings.VERIFY_SSL)
             response.raise_for_status()
-            _l.info(f"Vault get health successfully")
+            _l.info("Vault get health successfully")
         except Exception as e:
             _l.info(f"Failed to get health: {e}")
 
@@ -71,7 +63,7 @@ class FinmarsVault:
         try:
             response = requests.get(url, headers=headers, verify=settings.VERIFY_SSL)
             response.raise_for_status()
-            _l.info(f"Vault get status successfully")
+            _l.info("Vault get status successfully")
         except Exception as e:
             _l.info(f"Failed to get status: {e}")
 
@@ -84,11 +76,9 @@ class FinmarsVault:
         data = {"secret_shares": 5, "secret_threshold": 3}
 
         try:
-            response = requests.post(
-                url, json=data, headers=headers, verify=settings.VERIFY_SSL
-            )
+            response = requests.post(url, json=data, headers=headers, verify=settings.VERIFY_SSL)
             response.raise_for_status()
-            _l.info(f"Vault inited successfully")
+            _l.info("Vault inited successfully")
         except Exception as e:
             _l.info(f"Failed to init: {e}")
 
@@ -101,7 +91,7 @@ class FinmarsVault:
         try:
             response = requests.post(url, headers=headers, verify=settings.VERIFY_SSL)
             response.raise_for_status()
-            _l.info(f"Vault sealed successfully")
+            _l.info("Vault sealed successfully")
         except Exception as e:
             _l.info(f"Failed to seal: {e}")
 
@@ -112,11 +102,9 @@ class FinmarsVault:
         data = {"key": key}
 
         try:
-            response = requests.post(
-                url, json=data, headers=headers, verify=settings.VERIFY_SSL
-            )
+            response = requests.post(url, json=data, headers=headers, verify=settings.VERIFY_SSL)
             response.raise_for_status()
-            _l.info(f"Vault sealed successfully")
+            _l.info("Vault sealed successfully")
         except Exception as e:
             _l.info(f"Failed to seal: {e}")
 
@@ -139,9 +127,7 @@ class FinmarsVault:
             filtered_keys = ["sys", "identity", "cubbyhole"]
 
             filtered_list = [
-                {"engine_name": k, "data": v}
-                for k, v in formatted_data.items()
-                if k not in filtered_keys
+                {"engine_name": k, "data": v} for k, v in formatted_data.items() if k not in filtered_keys
             ]
 
         return filtered_list
@@ -159,9 +145,7 @@ class FinmarsVault:
         }
 
         try:
-            response = requests.post(
-                url, json=payload, headers=headers, verify=settings.VERIFY_SSL
-            )
+            response = requests.post(url, json=payload, headers=headers, verify=settings.VERIFY_SSL)
             response.raise_for_status()
             _l.info(f"Secret engine {engine_name} created successfully")
         except Exception as e:
@@ -192,9 +176,7 @@ class FinmarsVault:
         data = {"data": secret_data, "options": {"cas": 0}}
 
         try:
-            response = requests.post(
-                url, headers=headers, json=data, verify=settings.VERIFY_SSL
-            )
+            response = requests.post(url, headers=headers, json=data, verify=settings.VERIFY_SSL)
             response.raise_for_status()
             _l.info(f"Secret {secret_path} created successfully")
         except Exception as e:
@@ -227,9 +209,7 @@ class FinmarsVault:
         data = {"data": secret_data, "options": {"cas": version}}
 
         try:
-            response = requests.put(
-                url, headers=headers, json=data, verify=settings.VERIFY_SSL
-            )
+            response = requests.put(url, headers=headers, json=data, verify=settings.VERIFY_SSL)
             response.raise_for_status()
             _l.info(f"Secret {secret_path} updated successfully")
         except Exception as e:

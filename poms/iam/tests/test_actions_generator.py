@@ -41,9 +41,7 @@ class ActionHandlingTest(BaseTestCase):
         }
         self.assertEqual(unknown_actions, set())
 
-        unknown_actions = FULL_ACCESS_ACTIONS.union(READ_ACCESS_ACTIONS).difference(
-            self.all_actions_names
-        )
+        unknown_actions = FULL_ACCESS_ACTIONS.union(READ_ACCESS_ACTIONS).difference(self.all_actions_names)
         self.assertEqual(unknown_actions, set())
 
     def test__get_views_from_all_apps(self):

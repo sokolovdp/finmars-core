@@ -1,4 +1,3 @@
-from typing import Optional
 from urllib.parse import quote
 
 from django.core.files.base import File
@@ -57,14 +56,10 @@ def validate_file_name(file: File):
         raise ValidationError("Filename is not a valid UTF-8 string") from e
 
     if len(file_name) > MAX_FILENAME_LENGTH:
-        raise ValidationError(
-            f"Filename '{file_name}' is too long, max length is {MAX_FILENAME_LENGTH}"
-        )
+        raise ValidationError(f"Filename '{file_name}' is too long, max length is {MAX_FILENAME_LENGTH}")
 
     if has_bad_symbols(file_name):
-        raise ValidationError(
-            f"Filename '{file_name}' contains invalid symbols: {CHARS_TO_AVOID}"
-        )
+        raise ValidationError(f"Filename '{file_name}' contains invalid symbols: {CHARS_TO_AVOID}")
 
     return file
 
@@ -144,9 +139,7 @@ class WhitelabelSerializer(ModelWithUserCodeSerializer, ModelMetaSerializer):
             - The function assumes that the storage module has a save method
               that takes in a file path and a file object.
         """
-        storage_prefix = (
-            f"{self.context['request'].user.master_user.space_code}/{UI_ROOT}"
-        )
+        storage_prefix = f"{self.context['request'].user.master_user.space_code}/{UI_ROOT}"
 
         params_fields = [
             ("theme_css_file", "theme_css_url"),
@@ -156,11 +149,9 @@ class WhitelabelSerializer(ModelWithUserCodeSerializer, ModelMetaSerializer):
         ]
 
         for param_name, model_field in params_fields:
-            file: Optional[File] = validated_data.pop(param_name, None)
+            file: File | None = validated_data.pop(param_name, None)
             if file:
-                self.save_to_storage(
-                    URL_PREFIX, storage_prefix, validated_data, file, model_field
-                )
+                self.save_to_storage(URL_PREFIX, storage_prefix, validated_data, file, model_field)
 
         return validated_data
 

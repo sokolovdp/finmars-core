@@ -1,8 +1,8 @@
 from copy import deepcopy
 
 from poms.common.common_base_test import BaseTestCase
-from poms.instruments.models import AccrualCalculationSchedule, Instrument
 from poms.iam.models import ResourceGroup
+from poms.instruments.models import AccrualCalculationSchedule, Instrument
 from poms.instruments.tests.common_test_data import (
     EXPECTED_INSTRUMENT,
     INSTRUMENT_CREATE_DATA,
@@ -16,9 +16,7 @@ class InstrumentViewSetTest(BaseTestCase):
     def setUp(self):
         super().setUp()
         self.init_test_case()
-        self.url = (
-            f"/{self.realm_code}/{self.space_code}/api/v1/instruments/instrument/"
-        )
+        self.url = f"/{self.realm_code}/{self.space_code}/api/v1/instruments/instrument/"
         self.pricing_policy = None
         self.instrument = Instrument.objects.first()
 
@@ -111,9 +109,7 @@ class InstrumentViewSetTest(BaseTestCase):
             instrument.user_code,
         )
 
-        response = self.client.get(
-            path=f"{self.url}?user_text_1={instrument.user_text_1}"
-        )
+        response = self.client.get(path=f"{self.url}?user_text_1={instrument.user_text_1}")
         self.assertEqual(response.status_code, 200, response.content)
         response_json = response.json()
         self.assertEqual(response_json["count"], 1)
@@ -184,9 +180,7 @@ class InstrumentViewSetTest(BaseTestCase):
         instrument_id = response_json["id"]
         new_user_text_1 = self.random_string()
         update_data = {"user_text_1": new_user_text_1}
-        response = self.client.patch(
-            path=f"{self.url}{instrument_id}/", format="json", data=update_data
-        )
+        response = self.client.patch(path=f"{self.url}{instrument_id}/", format="json", data=update_data)
         self.assertEqual(response.status_code, 200, response.content)
 
         response = self.client.get(path=f"{self.url}{instrument_id}/")
@@ -266,9 +260,7 @@ class InstrumentViewSetTest(BaseTestCase):
                 "12345",
             ],
         }
-        response = self.client.post(
-            path=f"{self.url}ev-group/", data=filter_data, format="json"
-        )
+        response = self.client.post(path=f"{self.url}ev-group/", data=filter_data, format="json")
         self.assertEqual(response.status_code, 400, response.content)
 
     def create_group(self, name: str = "test") -> ResourceGroup:

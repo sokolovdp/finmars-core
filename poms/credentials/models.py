@@ -26,9 +26,7 @@ class Credentials(NamedModel, TimeStampedModel):
         ),
     )
 
-    master_user = models.ForeignKey(
-        MasterUser, verbose_name=gettext_lazy("master user"), on_delete=models.CASCADE
-    )
+    master_user = models.ForeignKey(MasterUser, verbose_name=gettext_lazy("master user"), on_delete=models.CASCADE)
     type = models.PositiveSmallIntegerField(
         default=USERNAME_WITH_PASSWORD,
         choices=TYPE_CHOICES,
@@ -36,26 +34,12 @@ class Credentials(NamedModel, TimeStampedModel):
         verbose_name=gettext_lazy("type"),
     )
 
-    provider = models.ForeignKey(
-        DataProvider, verbose_name=gettext_lazy("provider"), on_delete=models.CASCADE
-    )
+    provider = models.ForeignKey(DataProvider, verbose_name=gettext_lazy("provider"), on_delete=models.CASCADE)
 
-    username = models.CharField(
-        max_length=255, null=True, blank=True, verbose_name=gettext_lazy("username")
-    )
-    password = models.CharField(
-        max_length=255, null=True, blank=True, verbose_name=gettext_lazy("password")
-    )
-    public_key = models.TextField(
-        null=True, blank=True, verbose_name=gettext_lazy("public key")
-    )
-    path_to_public_key = models.TextField(
-        blank=True, default="", verbose_name=gettext_lazy("Path to public key")
-    )
+    username = models.CharField(max_length=255, null=True, blank=True, verbose_name=gettext_lazy("username"))
+    password = models.CharField(max_length=255, null=True, blank=True, verbose_name=gettext_lazy("password"))
+    public_key = models.TextField(null=True, blank=True, verbose_name=gettext_lazy("public key"))
+    path_to_public_key = models.TextField(blank=True, default="", verbose_name=gettext_lazy("Path to public key"))
 
-    private_key = models.TextField(
-        null=True, blank=True, verbose_name=gettext_lazy("private key")
-    )
-    path_to_private_key = models.TextField(
-        blank=True, default="", verbose_name=gettext_lazy("Path to private key")
-    )
+    private_key = models.TextField(null=True, blank=True, verbose_name=gettext_lazy("private key"))
+    path_to_private_key = models.TextField(blank=True, default="", verbose_name=gettext_lazy("Path to private key"))

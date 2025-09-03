@@ -171,9 +171,7 @@ class ComplexTransactionViewSetTest(BaseTestCase):
             complex_transaction.code,
         )
 
-        response = self.client.get(
-            path=f"{self.url}?is_deleted={complex_transaction.is_deleted}"
-        )
+        response = self.client.get(path=f"{self.url}?is_deleted={complex_transaction.is_deleted}")
         self.assertEqual(response.status_code, 200, response.content)
         response_json = response.json()
         self.assertEqual(response_json["count"], 1)
@@ -192,9 +190,7 @@ class ComplexTransactionViewSetTest(BaseTestCase):
 
         new_code = self.random_int()
         update_data = {"code": new_code}
-        response = self.client.patch(
-            path=f"{self.url}{transaction_id}/", format="json", data=update_data
-        )
+        response = self.client.patch(path=f"{self.url}{transaction_id}/", format="json", data=update_data)
         self.assertEqual(response.status_code, 200, response.content)
 
         response = self.client.get(path=f"{self.url}{transaction_id}/")
@@ -242,6 +238,4 @@ class ComplexTransactionViewSetTest(BaseTestCase):
         # 2nd time - real delete
         complex_transaction.fake_delete()
 
-        self.assertIsNone(
-            ComplexTransaction.objects.filter(pk=complex_transaction.id).first()
-        )
+        self.assertIsNone(ComplexTransaction.objects.filter(pk=complex_transaction.id).first())

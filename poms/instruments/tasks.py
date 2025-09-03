@@ -23,9 +23,7 @@ _l = logging.getLogger("poms.instruments")
 
 
 @transaction.atomic()
-def calculate_prices_accrued_price(
-    master_user=None, begin_date=None, end_date=None, instruments=None
-):
+def calculate_prices_accrued_price(master_user=None, begin_date=None, end_date=None, instruments=None):
     instruments_qs = Instrument.objects.all()
     if master_user:
         instruments_qs = instruments_qs.filter(master_user=master_user)
@@ -35,9 +33,7 @@ def calculate_prices_accrued_price(
         instrument.calculate_prices_accrued_price(begin_date, end_date)
 
 
-@finmars_task(
-    name="instruments.calculate_prices_accrued_price", ignore_result=False, bind=True
-)
+@finmars_task(name="instruments.calculate_prices_accrued_price", ignore_result=False, bind=True)
 @transaction.atomic()
 def calculate_prices_accrued_price_async(
     self,
@@ -99,17 +95,15 @@ def fill_parameters_from_instrument(event_schedule, instrument):
             for parameter in action.data["parameters"]:
                 key = "parameter" + str(parameter["order"])
 
-                result[action.button_position][key] = (
-                    get_calculated_parameter_by_name_from_event(
-                        event_schedule, parameter["event_parameter_name"], instrument
-                    )
+                result[action.button_position][key] = get_calculated_parameter_by_name_from_event(
+                    event_schedule, parameter["event_parameter_name"], instrument
                 )
 
     return result
 
 
 @finmars_task(name="instruments.only_generate_events_at_date", bind=True)
-def only_generate_events_at_date(self, master_user_id, date, *args, **kwargs):
+def only_generate_events_at_date(self, master_user_id, date, *args, **kwargs):  # noqa: PLR0915
     try:
         master_user = MasterUser.objects.get(id=master_user_id)
 
@@ -127,8 +121,7 @@ def only_generate_events_at_date(self, master_user_id, date, *args, **kwargs):
         opened_instrument_items = [
             item
             for item in instance.items
-            if item["item_type"] == ReportItem.TYPE_INSTRUMENT
-            and not isclose(item["position_size"], 0.0)
+            if item["item_type"] == ReportItem.TYPE_INSTRUMENT and not isclose(item["position_size"], 0.0)
         ]
         if not opened_instrument_items:
             return
@@ -141,9 +134,7 @@ def only_generate_events_at_date(self, master_user_id, date, *args, **kwargs):
                 "periodicity",
                 "actions",
             )
-            .filter(
-                instrument__in={i["instrument_id"] for i in opened_instrument_items}
-            )
+            .filter(instrument__in={i["instrument_id"] for i in opened_instrument_items})
             .order_by("instrument__master_user__id", "instrument__id")
         )
 
@@ -154,16 +145,10 @@ def only_generate_events_at_date(self, master_user_id, date, *args, **kwargs):
         result = []
 
         for event_schedule in event_schedule_qs:
-            final_date = datetime.date(
-                datetime.strptime(event_schedule.final_date, "%Y-%m-%d")
-            )
-            effective_date = datetime.date(
-                datetime.strptime(event_schedule.effective_date, "%Y-%m-%d")
-            )
+            final_date = datetime.date(datetime.strptime(event_schedule.final_date, "%Y-%m-%d"))
+            effective_date = datetime.date(datetime.strptime(event_schedule.effective_date, "%Y-%m-%d"))
 
-            if final_date >= date and effective_date - timedelta(
-                days=event_schedule.notify_in_n_days
-            ):
+            if final_date >= date and effective_date - timedelta(days=event_schedule.notify_in_n_days):
                 result.append(event_schedule)
 
         event_schedules_cache = defaultdict(list)
@@ -233,9 +218,7 @@ def only_generate_events_at_date(self, master_user_id, date, *args, **kwargs):
 
                     _l.info(f"event_schedule {event_schedule}")
 
-                    parameters = fill_parameters_from_instrument(
-                        event_schedule, instrument
-                    )
+                    parameters = fill_parameters_from_instrument(event_schedule, instrument)
 
                     generated_event = GeneratedEvent()
                     generated_event.master_user = master_user
@@ -255,18 +238,11 @@ def only_generate_events_at_date(self, master_user_id, date, *args, **kwargs):
                     generated_event.save()
 
     except Exception as e:
-        _l.info(
-            f"only_generate_events_at_date exception occurred {e}\n "
-            f"{traceback.format_exc()}"
-        )
+        _l.info(f"only_generate_events_at_date exception occurred {e}\n {traceback.format_exc()}")
 
 
-@finmars_task(
-    name="instruments.only_generate_events_at_date_for_single_instrument", bind=True
-)
-def only_generate_events_at_date_for_single_instrument(
-    self, master_user_id, date, instrument_id, *args, **kwargs
-):
+@finmars_task(name="instruments.only_generate_events_at_date_for_single_instrument", bind=True)
+def only_generate_events_at_date_for_single_instrument(self, master_user_id, date, instrument_id, *args, **kwargs):  # noqa: PLR0915
     try:
         date = datetime.date(datetime.strptime(date, "%Y-%m-%d"))
         master_user = MasterUser.objects.get(id=master_user_id)
@@ -307,9 +283,7 @@ def only_generate_events_at_date_for_single_instrument(
                 "periodicity",
                 "actions",
             )
-            .filter(
-                instrument_id__in={i["instrument_id"] for i in opened_instrument_items}
-            )
+            .filter(instrument_id__in={i["instrument_id"] for i in opened_instrument_items})
             .order_by("instrument__master_user__id", "instrument__id")
         )
 
@@ -320,16 +294,10 @@ def only_generate_events_at_date_for_single_instrument(
         result = []
 
         for event_schedule in event_schedule_qs:
-            final_date = datetime.date(
-                datetime.strptime(event_schedule.final_date, "%Y-%m-%d")
-            )
-            effective_date = datetime.date(
-                datetime.strptime(event_schedule.effective_date, "%Y-%m-%d")
-            )
+            final_date = datetime.date(datetime.strptime(event_schedule.final_date, "%Y-%m-%d"))
+            effective_date = datetime.date(datetime.strptime(event_schedule.effective_date, "%Y-%m-%d"))
 
-            if final_date >= date and effective_date - timedelta(
-                days=event_schedule.notify_in_n_days
-            ):
+            if final_date >= date and effective_date - timedelta(days=event_schedule.notify_in_n_days):
                 result.append(event_schedule)
 
         event_schedules_cache = defaultdict(list)
@@ -401,9 +369,7 @@ def only_generate_events_at_date_for_single_instrument(
 
                     print(f"event_schedule {event_schedule}")
 
-                    parameters = fill_parameters_from_instrument(
-                        event_schedule, instrument
-                    )
+                    parameters = fill_parameters_from_instrument(event_schedule, instrument)
 
                     generated_event = GeneratedEvent()
                     generated_event.master_user = master_user
@@ -423,14 +389,12 @@ def only_generate_events_at_date_for_single_instrument(
                     generated_event.save()
 
     except Exception as e:
-        _l.info(
-            f"only_generate_events_at_date_for_single_instrument exception occurred {e}"
-        )
+        _l.info(f"only_generate_events_at_date_for_single_instrument exception occurred {e}")
         _l.info(traceback.format_exc())
 
 
 @finmars_task(name="instruments.generate_events", bind=True)
-def generate_events(self, task_id, *args, **kwargs):
+def generate_events(self, task_id, *args, **kwargs):  # noqa: PLR0915
     from poms.celery_tasks.models import CeleryTask
 
     # member = Member.objects.get(master_user=master_user, is_owner=True)
@@ -454,9 +418,7 @@ def generate_events(self, task_id, *args, **kwargs):
 
         now = date_now()
 
-        instance = Report(
-            master_user=master_user, allocation_mode=Report.MODE_IGNORE, report_date=now
-        )
+        instance = Report(master_user=master_user, allocation_mode=Report.MODE_IGNORE, report_date=now)
 
         builder = BalanceReportBuilderSql(instance=instance)
         instance = builder.build_balance()
@@ -464,8 +426,7 @@ def generate_events(self, task_id, *args, **kwargs):
         opened_instrument_items = [
             item
             for item in instance.items
-            if item["item_type"] == ReportItem.TYPE_INSTRUMENT
-            and not isclose(item["position_size"], 0.0)
+            if item["item_type"] == ReportItem.TYPE_INSTRUMENT and not isclose(item["position_size"], 0.0)
         ]
         if not opened_instrument_items:
             return
@@ -478,9 +439,7 @@ def generate_events(self, task_id, *args, **kwargs):
                 "periodicity",
                 "actions",
             )
-            .filter(
-                instrument__in={i["instrument_id"] for i in opened_instrument_items}
-            )
+            .filter(instrument__in={i["instrument_id"] for i in opened_instrument_items})
             .order_by("instrument__master_user__id", "instrument__id")
         )
 
@@ -490,19 +449,13 @@ def generate_events(self, task_id, *args, **kwargs):
         generated_events_count = 0
 
         for event_schedule in event_schedule_qs:
-            final_date = datetime.date(
-                datetime.strptime(event_schedule.final_date, "%Y-%m-%d")
-            )
-            effective_date = datetime.date(
-                datetime.strptime(event_schedule.effective_date, "%Y-%m-%d")
-            )
+            final_date = datetime.date(datetime.strptime(event_schedule.final_date, "%Y-%m-%d"))
+            effective_date = datetime.date(datetime.strptime(event_schedule.effective_date, "%Y-%m-%d"))
 
-            if final_date >= now and effective_date - timedelta(
-                days=event_schedule.notify_in_n_days
-            ):
+            if final_date >= now and effective_date - timedelta(days=event_schedule.notify_in_n_days):
                 result.append(event_schedule)
 
-        if not len(result):
+        if not result:
             celery_task.status = CeleryTask.STATUS_DONE
             celery_task.verbose_result = "event schedules not found"
             celery_task.save()
@@ -576,9 +529,7 @@ def generate_events(self, task_id, *args, **kwargs):
 
                     print(f"event_schedule {event_schedule}")
 
-                    parameters = fill_parameters_from_instrument(
-                        event_schedule, instrument
-                    )
+                    parameters = fill_parameters_from_instrument(event_schedule, instrument)
 
                     generated_event = GeneratedEvent()
                     generated_event.master_user = master_user
@@ -640,7 +591,7 @@ def generate_events(self, task_id, *args, **kwargs):
 
 
 @finmars_task(name="instruments.generate_events_do_not_inform_apply_default", bind=True)
-def generate_events_do_not_inform_apply_default(self, *args, **kwargs):
+def generate_events_do_not_inform_apply_default(self, *args, **kwargs):  # noqa: PLR0915
     try:
         master_user = MasterUser.objects.all()[0]
 
@@ -648,9 +599,7 @@ def generate_events_do_not_inform_apply_default(self, *args, **kwargs):
 
         now = date_now()
 
-        instance = Report(
-            master_user=master_user, allocation_mode=Report.MODE_IGNORE, report_date=now
-        )
+        instance = Report(master_user=master_user, allocation_mode=Report.MODE_IGNORE, report_date=now)
 
         builder = BalanceReportBuilderSql(instance=instance)
         instance = builder.build_balance()
@@ -658,8 +607,7 @@ def generate_events_do_not_inform_apply_default(self, *args, **kwargs):
         opened_instrument_items = [
             item
             for item in instance.items
-            if item["item_type"] == ReportItem.TYPE_INSTRUMENT
-            and not isclose(item["position_size"], 0.0)
+            if item["item_type"] == ReportItem.TYPE_INSTRUMENT and not isclose(item["position_size"], 0.0)
         ]
         _l.info(f"opened_instrument_items len {len(opened_instrument_items)}")
 
@@ -674,28 +622,20 @@ def generate_events_do_not_inform_apply_default(self, *args, **kwargs):
                 "periodicity",
                 "actions",
             )
-            .filter(
-                instrument__in={i["instrument_id"] for i in opened_instrument_items}
-            )
+            .filter(instrument__in={i["instrument_id"] for i in opened_instrument_items})
             .order_by("instrument__master_user__id", "instrument__id")
         )
 
         result = []
 
         for event_schedule in event_schedule_qs:
-            final_date = datetime.date(
-                datetime.strptime(event_schedule.final_date, "%Y-%m-%d")
-            )
-            effective_date = datetime.date(
-                datetime.strptime(event_schedule.effective_date, "%Y-%m-%d")
-            )
+            final_date = datetime.date(datetime.strptime(event_schedule.final_date, "%Y-%m-%d"))
+            effective_date = datetime.date(datetime.strptime(event_schedule.effective_date, "%Y-%m-%d"))
 
-            if final_date >= now and effective_date - timedelta(
-                days=event_schedule.notify_in_n_days
-            ):
+            if final_date >= now and effective_date - timedelta(days=event_schedule.notify_in_n_days):
                 result.append(event_schedule)
 
-        if not len(result):
+        if not result:
             _l.debug("event schedules not found")
             return
 
@@ -771,9 +711,7 @@ def generate_events_do_not_inform_apply_default(self, *args, **kwargs):
 
                     print(f"event_schedule {event_schedule}")
 
-                    parameters = fill_parameters_from_instrument(
-                        event_schedule, instrument
-                    )
+                    parameters = fill_parameters_from_instrument(event_schedule, instrument)
 
                     generated_event = GeneratedEvent()
                     generated_event.master_user = master_user
@@ -795,14 +733,12 @@ def generate_events_do_not_inform_apply_default(self, *args, **kwargs):
         process_events.apply_async()
 
     except Exception as e:
-        _l.info(
-            f"generate_events exception occurred {repr(e)}\n {traceback.format_exc()}"
-        )
+        _l.info(f"generate_events exception occurred {repr(e)}\n {traceback.format_exc()}")
 
 
 @finmars_task(name="instruments.process_events", bind=True)
 @transaction.atomic()
-def process_events(self, *args, **kwargs):
+def process_events(self, *args, **kwargs):  # noqa: PLR0915
     from poms.celery_tasks.models import CeleryTask
     from poms.instruments.handlers import GeneratedEventProcess
 
@@ -849,18 +785,10 @@ def process_events(self, *args, **kwargs):
         for gevent in generated_event_qs:
             is_notify_on_notification_date = gevent.is_notify_on_notification_date(now)
             is_notify_on_effective_date = gevent.is_notify_on_effective_date(now)
-            is_apply_default_on_notification_date = (
-                gevent.is_apply_default_on_notification_date(now)
-            )
-            is_apply_default_on_effective_date = (
-                gevent.is_apply_default_on_effective_date(now)
-            )
-            is_need_reaction_on_notification_date = (
-                gevent.is_need_reaction_on_notification_date(now)
-            )
-            is_need_reaction_on_effective_date = (
-                gevent.is_need_reaction_on_effective_date(now)
-            )
+            is_apply_default_on_notification_date = gevent.is_apply_default_on_notification_date(now)
+            is_apply_default_on_effective_date = gevent.is_apply_default_on_effective_date(now)
+            is_need_reaction_on_notification_date = gevent.is_need_reaction_on_notification_date(now)
+            is_need_reaction_on_effective_date = gevent.is_need_reaction_on_effective_date(now)
 
             _l.debug(
                 "process:"
@@ -888,9 +816,7 @@ def process_events(self, *args, **kwargs):
                 is_need_reaction_on_effective_date,
             )
 
-            owner = next(
-                iter([m for m in gevent.master_user.members.all() if m.is_owner])
-            )
+            owner = next(iter([m for m in gevent.master_user.members.all() if m.is_owner]))
 
             if is_notify_on_notification_date or is_notify_on_effective_date:
                 if is_notify_on_notification_date:
@@ -898,9 +824,7 @@ def process_events(self, *args, **kwargs):
                 if is_notify_on_effective_date:
                     gevent.effective_date_notified = True
 
-                recipients = [
-                    m for m in gevent.master_user.members.all() if not m.is_deleted
-                ]
+                recipients = [m for m in gevent.master_user.members.all() if not m.is_deleted]
 
                 expr = gevent.event_schedule.description or gevent.event_schedule.name
                 if expr:
@@ -924,16 +848,9 @@ def process_events(self, *args, **kwargs):
                         action_object=gevent.instrument,
                     )
 
-            if (
-                is_apply_default_on_notification_date
-                or is_apply_default_on_effective_date
-            ):
+            if is_apply_default_on_notification_date or is_apply_default_on_effective_date:
                 action = next(
-                    (
-                        a
-                        for a in gevent.event_schedule.actions.all()
-                        if a.is_book_automatic
-                    ),
+                    (a for a in gevent.event_schedule.actions.all() if a.is_book_automatic),
                     None,
                 )
                 if action:

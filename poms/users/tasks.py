@@ -1,6 +1,6 @@
 from logging import getLogger
 
-from celery import shared_task, current_task
+from celery import current_task
 
 from poms.celery_tasks import finmars_task
 from poms.users.models import MasterUser
@@ -23,12 +23,12 @@ def clone_master_user(self, instance, name, current_user, *args, **kwargs):
             copy_settings=copy_settings,
             current_user=current_user,
         )
-        new_master_user = cloner.clone()
+        new_master_user = cloner.clone()  # noqa: F841
 
     except Exception as e:
         _l.debug("Clone Master User Exception ")
         _l.debug(e)
 
-    setattr(instance, "task_id", current_task.request.id)
+    instance.task_id = current_task.request.id
 
     return instance

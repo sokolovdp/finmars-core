@@ -5,9 +5,9 @@ from django.utils.translation import gettext_lazy
 
 from poms.common.admin import AbstractModelAdmin, ClassModelAdmin
 from poms.instruments.models import (
-    AccrualEvent,
     AccrualCalculationModel,
     AccrualCalculationSchedule,
+    AccrualEvent,
     CostMethod,
     Country,
     DailyPricingModel,
@@ -99,9 +99,7 @@ class ManualPricingFormulaInline(admin.TabularInline):
     extra = 0
     raw_id_fields = ["pricing_policy"]
     formfield_overrides = {
-        models.TextField: {
-            "widget": widgets.Textarea(attrs={"cols": "40", "rows": "3"})
-        },
+        models.TextField: {"widget": widgets.Textarea(attrs={"cols": "40", "rows": "3"})},
     }
 
 
@@ -109,9 +107,7 @@ class AccrualCalculationScheduleInline(admin.TabularInline):
     model = AccrualCalculationSchedule
     extra = 0
     formfield_overrides = {
-        models.TextField: {
-            "widget": widgets.Textarea(attrs={"cols": "40", "rows": "3"})
-        },
+        models.TextField: {"widget": widgets.Textarea(attrs={"cols": "40", "rows": "3"})},
     }
 
 
@@ -119,9 +115,7 @@ class EventScheduleInline(admin.TabularInline):
     model = EventSchedule
     extra = 0
     formfield_overrides = {
-        models.TextField: {
-            "widget": widgets.Textarea(attrs={"cols": "40", "rows": "3"})
-        },
+        models.TextField: {"widget": widgets.Textarea(attrs={"cols": "40", "rows": "3"})},
     }
 
 
@@ -129,9 +123,7 @@ class InstrumentAttachmentInline(admin.TabularInline):
     model = InstrumentAttachment
     extra = 0
     formfield_overrides = {
-        models.TextField: {
-            "widget": widgets.Textarea(attrs={"cols": "40", "rows": "3"})
-        },
+        models.TextField: {"widget": widgets.Textarea(attrs={"cols": "40", "rows": "3"})},
     }
 
 
@@ -193,9 +185,7 @@ class InstrumentAdmin(AbstractModelAdmin):
     def calculate_prices_accrued_price(self, request, queryset):
         calculate_prices_accrued_price(instruments=queryset)
 
-    calculate_prices_accrued_price.short_description = (
-        "Calculate accrued price for prices"
-    )
+    calculate_prices_accrued_price.short_description = "Calculate accrued price for prices"
 
 
 class ManualPricingFormulaAdmin(AbstractModelAdmin):
@@ -343,7 +333,7 @@ class EventScheduleAdmin(AbstractModelAdmin):
     inlines = [EventScheduleActionInline]
 
     def get_queryset(self, request):
-        qs = super(EventScheduleAdmin, self).get_queryset(request)
+        qs = super().get_queryset(request)
         return qs.prefetch_related("actions", "actions__transaction_type")
 
     def master_user(self, obj):

@@ -8,7 +8,6 @@ from django.utils.encoding import force_text
 
 from poms.notifications.models import Notification
 
-
 # Can user is null  middleware process_response if used in Rest Framework authtoken?
 
 
@@ -33,19 +32,15 @@ class DbStorage(BaseStorage):
             if user.is_authenticated:
                 for message in messages:
                     if not hasattr(message, "id"):
-                        Notification.objects.create(
-                            recipient=user, level=message.level, message=message
-                        )
+                        Notification.objects.create(recipient=user, level=message.level, message=message)
         else:
-            Notification.objects.filter(recipient=user, read_date__isnull=True).update(
-                read_date=timezone.now()
-            )
+            Notification.objects.filter(recipient=user, read_date__isnull=True).update(read_date=timezone.now())
         return []
 
 
 class CookieStorage(DjangoCookieStorage):
     def _get(self, *args, **kwargs):
-        messages, all_retrieved = super(CookieStorage, self)._get(*args, **kwargs)
+        messages, all_retrieved = super()._get(*args, **kwargs)
         return messages, False
 
 

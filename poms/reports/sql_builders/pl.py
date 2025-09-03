@@ -13,24 +13,24 @@ from poms.celery_tasks.models import CeleryTask
 from poms.common.utils import (
     get_closest_bday_of_yesterday,
     get_last_business_day,
-    get_last_business_day_of_previous_year,
     get_last_business_day_in_previous_quarter,
     get_last_business_day_of_previous_month,
+    get_last_business_day_of_previous_year,
 )
 from poms.currencies.models import Currency
 from poms.iam.utils import get_allowed_queryset
-from poms.instruments.models import Instrument, CostMethod, InstrumentType, Country
+from poms.instruments.models import CostMethod, Country, Instrument, InstrumentType
 from poms.portfolios.models import Portfolio
 from poms.reports.common import Report
 from poms.reports.models import PLReportCustomField, ReportInstanceModel
 from poms.reports.sql_builders.helpers import (
-    get_transaction_filter_sql_string,
-    get_report_fx_rate,
-    get_fx_trades_and_fx_variations_transaction_filter_sql_string,
-    get_where_expression_for_position_consolidation,
-    get_position_consolidation_for_select,
     dictfetchall,
+    get_fx_trades_and_fx_variations_transaction_filter_sql_string,
+    get_position_consolidation_for_select,
+    get_report_fx_rate,
     get_transaction_date_filter_for_initial_position_sql_string,
+    get_transaction_filter_sql_string,
+    get_where_expression_for_position_consolidation,
 )
 from poms.strategies.models import Strategy1, Strategy2, Strategy3
 from poms.transactions.models import Transaction
@@ -45,9 +45,7 @@ class PLReportBuilderSql:
 
         self.instance = instance
 
-        self.ecosystem_defaults = EcosystemDefault.cache.get_cache(
-            master_user_pk=self.instance.master_user.pk
-        )
+        self.ecosystem_defaults = EcosystemDefault.cache.get_cache(master_user_pk=self.instance.master_user.pk)
 
         _l.debug("self.instance master_user %s" % self.instance.master_user)
         _l.debug("self.instance report_date %s" % self.instance.report_date)
@@ -91,36 +89,24 @@ class PLReportBuilderSql:
                 _l.info("inception.pl_first_date %s " % self.instance.pl_first_date)
 
             elif self.instance.period_type == "ytd":
-                self.instance.pl_first_date = get_last_business_day_of_previous_year(
-                    self.instance.report_date
-                )
+                self.instance.pl_first_date = get_last_business_day_of_previous_year(self.instance.report_date)
 
             elif self.instance.period_type == "qtd":
-                self.instance.pl_first_date = get_last_business_day_in_previous_quarter(
-                    self.instance.report_date
-                )
+                self.instance.pl_first_date = get_last_business_day_in_previous_quarter(self.instance.report_date)
 
             elif self.instance.period_type == "mtd":
-                self.instance.pl_first_date = get_last_business_day_of_previous_month(
-                    self.instance.report_date
-                )
+                self.instance.pl_first_date = get_last_business_day_of_previous_month(self.instance.report_date)
 
             elif self.instance.period_type == "daily":
-                self.instance.pl_first_date = get_last_business_day(
-                    self.instance.report_date - timedelta(days=1)
-                )
+                self.instance.pl_first_date = get_last_business_day(self.instance.report_date - timedelta(days=1))
 
     def transform_to_allowed_portfolios(self):
         if not len(self.instance.portfolios):
-            self.instance.portfolios = get_allowed_queryset(
-                self.instance.member, Portfolio.objects.all()
-            )
+            self.instance.portfolios = get_allowed_queryset(self.instance.member, Portfolio.objects.all())
 
     def transform_to_allowed_accounts(self):
         if not len(self.instance.accounts):
-            self.instance.accounts = get_allowed_queryset(
-                self.instance.member, Account.objects.all()
-            )
+            self.instance.accounts = get_allowed_queryset(self.instance.member, Account.objects.all())
 
     def get_first_transaction(self):
         try:
@@ -130,7 +116,7 @@ class PLReportBuilderSql:
 
             return transaction.transaction_date
 
-        except Exception as e:
+        except Exception:
             _l.error("Could not find first transaction date")
             return None
 
@@ -163,19 +149,17 @@ class PLReportBuilderSql:
         # self.parallel_build()
         self.serial_build()
 
-        self.instance.execution_time = float("{:3.3f}".format(time.perf_counter() - st))
+        self.instance.execution_time = float(f"{time.perf_counter() - st:3.3f}")
 
         _l.debug("items total %s" % len(self.instance.items))
 
-        _l.debug("build_st done: %s", "{:3.3f}".format(time.perf_counter() - st))
+        _l.debug("build_st done: %s", f"{time.perf_counter() - st:3.3f}")
 
         relation_prefetch_st = time.perf_counter()
 
         self.add_data_items()
 
-        self.instance.relation_prefetch_time = float(
-            "{:3.3f}".format(time.perf_counter() - relation_prefetch_st)
-        )
+        self.instance.relation_prefetch_time = float(f"{time.perf_counter() - relation_prefetch_st:3.3f}")
 
         return self.instance
 
@@ -205,7 +189,7 @@ class PLReportBuilderSql:
 
         resultString = ""
 
-        if len(result):
+        if result:
             resultString = ", ".join(result) + ", "
 
         return resultString
@@ -234,7 +218,7 @@ class PLReportBuilderSql:
 
         resultString = ""
 
-        if len(result):
+        if result:
             resultString = resultString + "and "
             resultString = resultString + " and ".join(result)
 
@@ -3265,9 +3249,7 @@ class PLReportBuilderSql:
 
     @staticmethod
     def get_query_for_first_date(instance):
-        ecosystem_defaults = EcosystemDefault.cache.get_cache(
-            master_user_pk=instance.master_user.pk
-        )
+        ecosystem_defaults = EcosystemDefault.cache.get_cache(master_user_pk=instance.master_user.pk)
 
         report_fx_rate = get_report_fx_rate(instance, instance.pl_first_date)
 
@@ -3279,21 +3261,15 @@ class PLReportBuilderSql:
                 instance.report_date, has_where=bool(len(transaction_filter_sql_string))
             )
         )
-        fx_trades_and_fx_variations_filter_sql_string = (
-            get_fx_trades_and_fx_variations_transaction_filter_sql_string(instance)
+        fx_trades_and_fx_variations_filter_sql_string = get_fx_trades_and_fx_variations_transaction_filter_sql_string(
+            instance
         )
-        transactions_all_with_multipliers_where_expression = (
-            get_where_expression_for_position_consolidation(
-                instance, prefix="tt_w_m.", prefix_second="t_o."
-            )
+        transactions_all_with_multipliers_where_expression = get_where_expression_for_position_consolidation(
+            instance, prefix="tt_w_m.", prefix_second="t_o."
         )
         consolidation_columns = get_position_consolidation_for_select(instance)
-        tt_consolidation_columns = get_position_consolidation_for_select(
-            instance, prefix="tt."
-        )
-        tt_in1_consolidation_columns = get_position_consolidation_for_select(
-            instance, prefix="tt_in1."
-        )
+        tt_consolidation_columns = get_position_consolidation_for_select(instance, prefix="tt.")
+        tt_in1_consolidation_columns = get_position_consolidation_for_select(instance, prefix="tt_in1.")
 
         query = PLReportBuilderSql.get_source_query(cost_method=instance.cost_method.id)
 
@@ -3320,9 +3296,7 @@ class PLReportBuilderSql:
     @staticmethod
     def get_query_for_second_date(instance):
         report_fx_rate = get_report_fx_rate(instance, instance.report_date)
-        ecosystem_defaults = EcosystemDefault.cache.get_cache(
-            master_user_pk=instance.master_user.pk
-        )
+        ecosystem_defaults = EcosystemDefault.cache.get_cache(master_user_pk=instance.master_user.pk)
 
         _l.debug("report_fx_rate %s" % report_fx_rate)
 
@@ -3332,22 +3306,16 @@ class PLReportBuilderSql:
                 instance.report_date, has_where=bool(len(transaction_filter_sql_string))
             )
         )
-        fx_trades_and_fx_variations_filter_sql_string = (
-            get_fx_trades_and_fx_variations_transaction_filter_sql_string(instance)
+        fx_trades_and_fx_variations_filter_sql_string = get_fx_trades_and_fx_variations_transaction_filter_sql_string(
+            instance
         )
-        transactions_all_with_multipliers_where_expression = (
-            get_where_expression_for_position_consolidation(
-                instance, prefix="tt_w_m.", prefix_second="t_o."
-            )
+        transactions_all_with_multipliers_where_expression = get_where_expression_for_position_consolidation(
+            instance, prefix="tt_w_m.", prefix_second="t_o."
         )
         consolidation_columns = get_position_consolidation_for_select(instance)
-        tt_consolidation_columns = get_position_consolidation_for_select(
-            instance, prefix="tt."
-        )
+        tt_consolidation_columns = get_position_consolidation_for_select(instance, prefix="tt.")
 
-        tt_in1_consolidation_columns = get_position_consolidation_for_select(
-            instance, prefix="tt_in1."
-        )
+        tt_in1_consolidation_columns = get_position_consolidation_for_select(instance, prefix="tt_in1.")
 
         query = PLReportBuilderSql.get_source_query(cost_method=instance.cost_method.id)
 
@@ -3380,17 +3348,13 @@ class PLReportBuilderSql:
 
             report_settings = celery_task.options_object
 
-            instance = ReportInstanceModel(
-                **report_settings, master_user=celery_task.master_user
-            )
+            instance = ReportInstanceModel(**report_settings, master_user=celery_task.master_user)
 
             with connection.cursor() as cursor:
                 query_1 = PLReportBuilderSql.get_query_for_first_date(instance)
                 query_2 = PLReportBuilderSql.get_query_for_second_date(instance)
 
-                ecosystem_defaults = EcosystemDefault.objects.get(
-                    master_user=celery_task.master_user
-                )
+                ecosystem_defaults = EcosystemDefault.objects.get(master_user=celery_task.master_user)
 
                 st = time.perf_counter()
 
@@ -3730,9 +3694,7 @@ class PLReportBuilderSql:
                 query = query.format(
                     query_first_date=query_1,
                     query_report_date=query_2,
-                    final_consolidation_columns=PLReportBuilderSql.get_final_consolidation_columns(
-                        instance
-                    ),
+                    final_consolidation_columns=PLReportBuilderSql.get_final_consolidation_columns(instance),
                     final_consolidation_where_filters=PLReportBuilderSql.get_final_consolidation_where_filters_columns(
                         instance
                     ),
@@ -3740,9 +3702,7 @@ class PLReportBuilderSql:
 
                 if settings.SERVER_TYPE == "local":
                     with open(
-                        os.path.join(
-                            settings.BASE_DIR, "query_result_before_execution_pl.txt"
-                        ),
+                        os.path.join(settings.BASE_DIR, "query_result_before_execution_pl.txt"),
                         "w",
                     ) as the_file:
                         the_file.write(query)
@@ -3751,15 +3711,13 @@ class PLReportBuilderSql:
 
                 _l.debug(
                     "PL report query execute done: %s",
-                    "{:3.3f}".format(time.perf_counter() - st),
+                    f"{time.perf_counter() - st:3.3f}",
                 )
 
                 query_str = str(cursor.query, "utf-8")
 
                 if settings.SERVER_TYPE == "local":
-                    with open(
-                        os.path.join(settings.BASE_DIR, "/tmp/query_result_pl.txt"), "w"
-                    ) as the_file:
+                    with open(os.path.join(settings.BASE_DIR, "/tmp/query_result_pl.txt"), "w") as the_file:
                         the_file.write(query_str)
 
                 result_tmp_raw = dictfetchall(cursor)
@@ -3780,168 +3738,104 @@ class PLReportBuilderSql:
                 ITEM_GROUP_CLOSED = 15
 
                 for item in result_tmp_raw:
-                    item["position_size"] = round(
-                        item["position_size"], settings.ROUND_NDIGITS
-                    )
-                    item["nominal_position_size"] = round(
-                        item["nominal_position_size"], settings.ROUND_NDIGITS
-                    )
+                    item["position_size"] = round(item["position_size"], settings.ROUND_NDIGITS)
+                    item["nominal_position_size"] = round(item["nominal_position_size"], settings.ROUND_NDIGITS)
 
                     # PLAT-1748
 
                     if item["total_opened"] is not None:
-                        item["total_opened"] = round(
-                            item["total_opened"], settings.ROUND_NDIGITS
-                        )
+                        item["total_opened"] = round(item["total_opened"], settings.ROUND_NDIGITS)
 
                     if item["total_opened_loc"] is not None:
-                        item["total_opened_loc"] = round(
-                            item["total_opened_loc"], settings.ROUND_NDIGITS
-                        )
+                        item["total_opened_loc"] = round(item["total_opened_loc"], settings.ROUND_NDIGITS)
 
                     if item["total_closed"] is not None:
-                        item["total_closed"] = round(
-                            item["total_closed"], settings.ROUND_NDIGITS
-                        )
+                        item["total_closed"] = round(item["total_closed"], settings.ROUND_NDIGITS)
 
                     if item["total_closed_loc"] is not None:
-                        item["total_closed_loc"] = round(
-                            item["total_closed_loc"], settings.ROUND_NDIGITS
-                        )
+                        item["total_closed_loc"] = round(item["total_closed_loc"], settings.ROUND_NDIGITS)
 
                     if item["total_fx_opened"] is not None:
-                        item["total_fx_opened"] = round(
-                            item["total_fx_opened"], settings.ROUND_NDIGITS
-                        )
+                        item["total_fx_opened"] = round(item["total_fx_opened"], settings.ROUND_NDIGITS)
 
                     if item["total_fx_opened_loc"] is not None:
-                        item["total_fx_opened_loc"] = round(
-                            item["total_fx_opened_loc"], settings.ROUND_NDIGITS
-                        )
+                        item["total_fx_opened_loc"] = round(item["total_fx_opened_loc"], settings.ROUND_NDIGITS)
 
                     if item["total_fx_closed"] is not None:
-                        item["total_fx_closed"] = round(
-                            item["total_fx_closed"], settings.ROUND_NDIGITS
-                        )
+                        item["total_fx_closed"] = round(item["total_fx_closed"], settings.ROUND_NDIGITS)
 
                     if item["total_fx_closed_loc"] is not None:
-                        item["total_fx_closed_loc"] = round(
-                            item["total_fx_closed_loc"], settings.ROUND_NDIGITS
-                        )
+                        item["total_fx_closed_loc"] = round(item["total_fx_closed_loc"], settings.ROUND_NDIGITS)
 
                     if item["total_fixed_opened"] is not None:
-                        item["total_fixed_opened"] = round(
-                            item["total_fixed_opened"], settings.ROUND_NDIGITS
-                        )
+                        item["total_fixed_opened"] = round(item["total_fixed_opened"], settings.ROUND_NDIGITS)
 
                     if item["total_fixed_opened_loc"] is not None:
-                        item["total_fixed_opened_loc"] = round(
-                            item["total_fixed_opened_loc"], settings.ROUND_NDIGITS
-                        )
+                        item["total_fixed_opened_loc"] = round(item["total_fixed_opened_loc"], settings.ROUND_NDIGITS)
 
                     if item["total_fixed_closed"] is not None:
-                        item["total_fixed_closed"] = round(
-                            item["total_fixed_closed"], settings.ROUND_NDIGITS
-                        )
+                        item["total_fixed_closed"] = round(item["total_fixed_closed"], settings.ROUND_NDIGITS)
 
                     if item["total_fixed_closed_loc"] is not None:
-                        item["total_fixed_closed_loc"] = round(
-                            item["total_fixed_closed_loc"], settings.ROUND_NDIGITS
-                        )
+                        item["total_fixed_closed_loc"] = round(item["total_fixed_closed_loc"], settings.ROUND_NDIGITS)
 
                     if item["principal_opened"] is not None:
-                        item["principal_opened"] = round(
-                            item["principal_opened"], settings.ROUND_NDIGITS
-                        )
+                        item["principal_opened"] = round(item["principal_opened"], settings.ROUND_NDIGITS)
 
                     if item["carry_opened"] is not None:
-                        item["carry_opened"] = round(
-                            item["carry_opened"], settings.ROUND_NDIGITS
-                        )
+                        item["carry_opened"] = round(item["carry_opened"], settings.ROUND_NDIGITS)
 
                     if item["overheads_opened"] is not None:
-                        item["overheads_opened"] = round(
-                            item["overheads_opened"], settings.ROUND_NDIGITS
-                        )
+                        item["overheads_opened"] = round(item["overheads_opened"], settings.ROUND_NDIGITS)
 
                     if item["principal_closed"] is not None:
-                        item["principal_closed"] = round(
-                            item["principal_closed"], settings.ROUND_NDIGITS
-                        )
+                        item["principal_closed"] = round(item["principal_closed"], settings.ROUND_NDIGITS)
 
                     if item["carry_closed"] is not None:
-                        item["carry_closed"] = round(
-                            item["carry_closed"], settings.ROUND_NDIGITS
-                        )
+                        item["carry_closed"] = round(item["carry_closed"], settings.ROUND_NDIGITS)
 
                     if item["overheads_closed"] is not None:
-                        item["overheads_closed"] = round(
-                            item["overheads_closed"], settings.ROUND_NDIGITS
-                        )
+                        item["overheads_closed"] = round(item["overheads_closed"], settings.ROUND_NDIGITS)
 
                     # FX
 
                     if item["principal_fx_opened"] is not None:
-                        item["principal_fx_opened"] = round(
-                            item["principal_fx_opened"], settings.ROUND_NDIGITS
-                        )
+                        item["principal_fx_opened"] = round(item["principal_fx_opened"], settings.ROUND_NDIGITS)
 
                     if item["carry_fx_opened"] is not None:
-                        item["carry_fx_opened"] = round(
-                            item["carry_fx_opened"], settings.ROUND_NDIGITS
-                        )
+                        item["carry_fx_opened"] = round(item["carry_fx_opened"], settings.ROUND_NDIGITS)
 
                     if item["overheads_fx_opened"] is not None:
-                        item["overheads_fx_opened"] = round(
-                            item["overheads_fx_opened"], settings.ROUND_NDIGITS
-                        )
+                        item["overheads_fx_opened"] = round(item["overheads_fx_opened"], settings.ROUND_NDIGITS)
 
                     if item["principal_fx_closed"] is not None:
-                        item["principal_fx_closed"] = round(
-                            item["principal_fx_closed"], settings.ROUND_NDIGITS
-                        )
+                        item["principal_fx_closed"] = round(item["principal_fx_closed"], settings.ROUND_NDIGITS)
 
                     if item["carry_fx_closed"] is not None:
-                        item["carry_fx_closed"] = round(
-                            item["carry_fx_closed"], settings.ROUND_NDIGITS
-                        )
+                        item["carry_fx_closed"] = round(item["carry_fx_closed"], settings.ROUND_NDIGITS)
 
                     if item["overheads_fx_closed"] is not None:
-                        item["overheads_fx_closed"] = round(
-                            item["overheads_fx_closed"], settings.ROUND_NDIGITS
-                        )
+                        item["overheads_fx_closed"] = round(item["overheads_fx_closed"], settings.ROUND_NDIGITS)
 
                     # FIXED
 
                     if item["principal_fixed_opened"] is not None:
-                        item["principal_fixed_opened"] = round(
-                            item["principal_fixed_opened"], settings.ROUND_NDIGITS
-                        )
+                        item["principal_fixed_opened"] = round(item["principal_fixed_opened"], settings.ROUND_NDIGITS)
 
                     if item["carry_fixed_opened"] is not None:
-                        item["carry_fixed_opened"] = round(
-                            item["carry_fixed_opened"], settings.ROUND_NDIGITS
-                        )
+                        item["carry_fixed_opened"] = round(item["carry_fixed_opened"], settings.ROUND_NDIGITS)
 
                     if item["overheads_fixed_opened"] is not None:
-                        item["overheads_fixed_opened"] = round(
-                            item["overheads_fixed_opened"], settings.ROUND_NDIGITS
-                        )
+                        item["overheads_fixed_opened"] = round(item["overheads_fixed_opened"], settings.ROUND_NDIGITS)
 
                     if item["principal_fixed_closed"] is not None:
-                        item["principal_fixed_closed"] = round(
-                            item["principal_fixed_closed"], settings.ROUND_NDIGITS
-                        )
+                        item["principal_fixed_closed"] = round(item["principal_fixed_closed"], settings.ROUND_NDIGITS)
 
                     if item["carry_fixed_closed"] is not None:
-                        item["carry_fixed_closed"] = round(
-                            item["carry_fixed_closed"], settings.ROUND_NDIGITS
-                        )
+                        item["carry_fixed_closed"] = round(item["carry_fixed_closed"], settings.ROUND_NDIGITS)
 
                     if item["overheads_fixed_closed"] is not None:
-                        item["overheads_fixed_closed"] = round(
-                            item["overheads_fixed_closed"], settings.ROUND_NDIGITS
-                        )
+                        item["overheads_fixed_closed"] = round(item["overheads_fixed_closed"], settings.ROUND_NDIGITS)
 
                     # FX LOC
 
@@ -3951,9 +3845,7 @@ class PLReportBuilderSql:
                         )
 
                     if item["carry_fx_opened_loc"] is not None:
-                        item["carry_fx_opened_loc"] = round(
-                            item["carry_fx_opened_loc"], settings.ROUND_NDIGITS
-                        )
+                        item["carry_fx_opened_loc"] = round(item["carry_fx_opened_loc"], settings.ROUND_NDIGITS)
 
                     if item["overheads_fx_opened_loc"] is not None:
                         item["overheads_fx_opened_loc"] = round(
@@ -3966,9 +3858,7 @@ class PLReportBuilderSql:
                         )
 
                     if item["carry_fx_closed_loc"] is not None:
-                        item["carry_fx_closed_loc"] = round(
-                            item["carry_fx_closed_loc"], settings.ROUND_NDIGITS
-                        )
+                        item["carry_fx_closed_loc"] = round(item["carry_fx_closed_loc"], settings.ROUND_NDIGITS)
 
                     if item["overheads_fx_closed_loc"] is not None:
                         item["overheads_fx_closed_loc"] = round(
@@ -3983,9 +3873,7 @@ class PLReportBuilderSql:
                         )
 
                     if item["carry_fixed_opened_loc"] is not None:
-                        item["carry_fixed_opened_loc"] = round(
-                            item["carry_fixed_opened_loc"], settings.ROUND_NDIGITS
-                        )
+                        item["carry_fixed_opened_loc"] = round(item["carry_fixed_opened_loc"], settings.ROUND_NDIGITS)
 
                     if item["overheads_fixed_opened_loc"] is not None:
                         item["overheads_fixed_opened_loc"] = round(
@@ -3998,9 +3886,7 @@ class PLReportBuilderSql:
                         )
 
                     if item["carry_fixed_closed_loc"] is not None:
-                        item["carry_fixed_closed_loc"] = round(
-                            item["carry_fixed_closed_loc"], settings.ROUND_NDIGITS
-                        )
+                        item["carry_fixed_closed_loc"] = round(item["carry_fixed_closed_loc"], settings.ROUND_NDIGITS)
 
                     if item["overheads_fixed_closed_loc"] is not None:
                         item["overheads_fixed_closed_loc"] = round(
@@ -4009,10 +3895,7 @@ class PLReportBuilderSql:
 
                     if item["item_type"] == ITEM_TYPE_MISMATCH:
                         if item["position_size"] and item["total_opened"]:
-                            if (
-                                item["instrument_id"]
-                                != ecosystem_defaults.instrument_id
-                            ):
+                            if item["instrument_id"] != ecosystem_defaults.instrument_id:
                                 result_tmp.append(item)
                     else:
                         result_tmp.append(item)
@@ -4046,75 +3929,39 @@ class PLReportBuilderSql:
                     result_item_opened["time_invested"] = item["time_invested"]
 
                     result_item_opened["amount_invested"] = item["amount_invested"]
-                    result_item_opened["amount_invested_loc"] = item[
-                        "amount_invested_loc"
-                    ]
+                    result_item_opened["amount_invested_loc"] = item["amount_invested_loc"]
 
-                    result_item_opened["principal_invested"] = item[
-                        "principal_invested"
-                    ]
-                    result_item_opened["principal_invested_loc"] = item[
-                        "principal_invested_loc"
-                    ]
+                    result_item_opened["principal_invested"] = item["principal_invested"]
+                    result_item_opened["principal_invested_loc"] = item["principal_invested_loc"]
 
-                    result_item_opened["amount_invested_fixed"] = item[
-                        "amount_invested_fixed"
-                    ]
-                    result_item_opened["amount_invested_fixed_loc"] = item[
-                        "amount_invested_fixed_loc"
-                    ]
+                    result_item_opened["amount_invested_fixed"] = item["amount_invested_fixed"]
+                    result_item_opened["amount_invested_fixed_loc"] = item["amount_invested_fixed_loc"]
 
-                    result_item_opened["principal_invested_fixed"] = item[
-                        "principal_invested_fixed"
-                    ]
-                    result_item_opened["principal_invested_fixed_loc"] = item[
-                        "principal_invested_fixed_loc"
-                    ]
+                    result_item_opened["principal_invested_fixed"] = item["principal_invested_fixed"]
+                    result_item_opened["principal_invested_fixed_loc"] = item["principal_invested_fixed_loc"]
 
                     result_item_opened["gross_cost_price"] = item["gross_cost_price"]
-                    result_item_opened["gross_cost_price_loc"] = item[
-                        "gross_cost_price_loc"
-                    ]
+                    result_item_opened["gross_cost_price_loc"] = item["gross_cost_price_loc"]
 
                     result_item_opened["net_cost_price"] = item["net_cost_price"]
-                    result_item_opened["net_cost_price_loc"] = item[
-                        "net_cost_price_loc"
-                    ]
+                    result_item_opened["net_cost_price_loc"] = item["net_cost_price_loc"]
 
                     result_item_opened["position_return"] = item["position_return"]
-                    result_item_opened["position_return_loc"] = item[
-                        "position_return_loc"
-                    ]
+                    result_item_opened["position_return_loc"] = item["position_return_loc"]
 
-                    result_item_opened["net_position_return"] = item[
-                        "net_position_return"
-                    ]
-                    result_item_opened["net_position_return_loc"] = item[
-                        "net_position_return_loc"
-                    ]
+                    result_item_opened["net_position_return"] = item["net_position_return"]
+                    result_item_opened["net_position_return_loc"] = item["net_position_return_loc"]
 
-                    result_item_opened["position_return_fixed"] = item[
-                        "position_return_fixed"
-                    ]
-                    result_item_opened["position_return_fixed_loc"] = item[
-                        "position_return_fixed_loc"
-                    ]
+                    result_item_opened["position_return_fixed"] = item["position_return_fixed"]
+                    result_item_opened["position_return_fixed_loc"] = item["position_return_fixed_loc"]
 
-                    result_item_opened["net_position_return_fixed"] = item[
-                        "net_position_return_fixed"
-                    ]
-                    result_item_opened["net_position_return_fixed_loc"] = item[
-                        "net_position_return_fixed_loc"
-                    ]
+                    result_item_opened["net_position_return_fixed"] = item["net_position_return_fixed"]
+                    result_item_opened["net_position_return_fixed_loc"] = item["net_position_return_fixed_loc"]
 
                     result_item_opened["position_size"] = item["position_size"]
-                    result_item_opened["nominal_position_size"] = item[
-                        "nominal_position_size"
-                    ]
+                    result_item_opened["nominal_position_size"] = item["nominal_position_size"]
 
-                    result_item_opened["period_start_position_size"] = item[
-                        "period_start_position_size"
-                    ]
+                    result_item_opened["period_start_position_size"] = item["period_start_position_size"]
                     result_item_opened["period_start_nominal_position_size"] = item[
                         "period_start_nominal_position_size"
                     ]
@@ -4124,66 +3971,40 @@ class PLReportBuilderSql:
                     result_item_opened["instrument_id"] = item["instrument_id"]
 
                     if "portfolio_id" not in item:
-                        result_item_opened["portfolio_id"] = (
-                            ecosystem_defaults.portfolio_id
-                        )
+                        result_item_opened["portfolio_id"] = ecosystem_defaults.portfolio_id
                     else:
                         result_item_opened["portfolio_id"] = item["portfolio_id"]
 
                     if "account_position_id" not in item:
-                        result_item_opened["account_position_id"] = (
-                            ecosystem_defaults.account_id
-                        )
+                        result_item_opened["account_position_id"] = ecosystem_defaults.account_id
                     else:
-                        result_item_opened["account_position_id"] = item[
-                            "account_position_id"
-                        ]
+                        result_item_opened["account_position_id"] = item["account_position_id"]
 
                     if "strategy1_position_id" not in item:
-                        result_item_opened["strategy1_position_id"] = (
-                            ecosystem_defaults.strategy1_id
-                        )
+                        result_item_opened["strategy1_position_id"] = ecosystem_defaults.strategy1_id
                     else:
-                        result_item_opened["strategy1_position_id"] = item[
-                            "strategy1_position_id"
-                        ]
+                        result_item_opened["strategy1_position_id"] = item["strategy1_position_id"]
 
                     if "strategy2_position_id" not in item:
-                        result_item_opened["strategy2_position_id"] = (
-                            ecosystem_defaults.strategy2_id
-                        )
+                        result_item_opened["strategy2_position_id"] = ecosystem_defaults.strategy2_id
                     else:
-                        result_item_opened["strategy2_position_id"] = item[
-                            "strategy2_position_id"
-                        ]
+                        result_item_opened["strategy2_position_id"] = item["strategy2_position_id"]
 
                     if "strategy3_position_id" not in item:
-                        result_item_opened["strategy3_position_id"] = (
-                            ecosystem_defaults.strategy3_id
-                        )
+                        result_item_opened["strategy3_position_id"] = ecosystem_defaults.strategy3_id
                     else:
-                        result_item_opened["strategy3_position_id"] = item[
-                            "strategy3_position_id"
-                        ]
+                        result_item_opened["strategy3_position_id"] = item["strategy3_position_id"]
 
                     if "allocation_pl_id" in item:
                         if item["allocation_pl_id"] == ecosystem_defaults.instrument_id:
-                            result_item_opened["allocation_pl_id"] = (
-                                ecosystem_defaults.instrument_id
-                            )
+                            result_item_opened["allocation_pl_id"] = ecosystem_defaults.instrument_id
                         elif item["allocation_pl_id"] == None:
                             if item["instrument_id"] == None:
-                                result_item_opened["allocation_pl_id"] = (
-                                    ecosystem_defaults.instrument_id
-                                )
+                                result_item_opened["allocation_pl_id"] = ecosystem_defaults.instrument_id
                             else:
-                                result_item_opened["allocation_pl_id"] = item[
-                                    "instrument_id"
-                                ]
+                                result_item_opened["allocation_pl_id"] = item["instrument_id"]
                         else:
-                            result_item_opened["allocation_pl_id"] = item[
-                                "allocation_pl_id"
-                            ]
+                            result_item_opened["allocation_pl_id"] = item["allocation_pl_id"]
 
                         # Before 2023-10-10
                         # if item['allocation_pl_id'] == ecosystem_defaults.instrument_id or \
@@ -4201,9 +4022,7 @@ class PLReportBuilderSql:
                         #     # TODO do not remove that, its really important
                         #     result_item_opened['allocation_pl_id'] = item['allocation_pl_id']
                     else:
-                        result_item_opened["allocation_pl_id"] = (
-                            ecosystem_defaults.instrument_id
-                        )
+                        result_item_opened["allocation_pl_id"] = ecosystem_defaults.instrument_id
 
                     if result_item_opened["item_type"] == ITEM_TYPE_INSTRUMENT:
                         result_item_opened["item_group"] = ITEM_GROUP_OPENED
@@ -4230,29 +4049,19 @@ class PLReportBuilderSql:
                         result_item_opened["item_group_code"] = "MISMATCH"
                         result_item_opened["item_group_name"] = "Mismatch"
 
-                    result_item_opened["exposure_currency_id"] = item[
-                        "co_directional_exposure_currency_id"
-                    ]
-                    result_item_opened["pricing_currency_id"] = item[
-                        "pricing_currency_id"
-                    ]
+                    result_item_opened["exposure_currency_id"] = item["co_directional_exposure_currency_id"]
+                    result_item_opened["pricing_currency_id"] = item["pricing_currency_id"]
                     result_item_opened["instrument_pricing_currency_fx_rate"] = item[
                         "instrument_pricing_currency_fx_rate"
                     ]
                     result_item_opened["instrument_accrued_currency_fx_rate"] = item[
                         "instrument_accrued_currency_fx_rate"
                     ]
-                    result_item_opened["instrument_principal_price"] = item[
-                        "instrument_principal_price"
-                    ]
-                    result_item_opened["instrument_accrued_price"] = item[
-                        "instrument_accrued_price"
-                    ]
+                    result_item_opened["instrument_principal_price"] = item["instrument_principal_price"]
+                    result_item_opened["instrument_accrued_price"] = item["instrument_accrued_price"]
                     result_item_opened["instrument_factor"] = item["instrument_factor"]
                     result_item_opened["instrument_ytm"] = item["instrument_ytm"]
-                    result_item_opened["daily_price_change"] = item[
-                        "daily_price_change"
-                    ]
+                    result_item_opened["daily_price_change"] = item["daily_price_change"]
 
                     result_item_opened["principal"] = item["principal_opened"]
                     result_item_opened["carry"] = item["carry_opened"]
@@ -4264,13 +4073,9 @@ class PLReportBuilderSql:
                     result_item_opened["overheads_fx"] = item["overheads_fx_opened"]
                     result_item_opened["total_fx"] = item["total_fx_opened"]
 
-                    result_item_opened["principal_fixed"] = item[
-                        "principal_fixed_opened"
-                    ]
+                    result_item_opened["principal_fixed"] = item["principal_fixed_opened"]
                     result_item_opened["carry_fixed"] = item["carry_fixed_opened"]
-                    result_item_opened["overheads_fixed"] = item[
-                        "overheads_fixed_opened"
-                    ]
+                    result_item_opened["overheads_fixed"] = item["overheads_fixed_opened"]
                     result_item_opened["total_fixed"] = item["total_fixed_opened"]
 
                     # loc
@@ -4280,27 +4085,15 @@ class PLReportBuilderSql:
                     result_item_opened["overheads_loc"] = item["overheads_opened_loc"]
                     result_item_opened["total_loc"] = item["total_opened_loc"]
 
-                    result_item_opened["principal_fx_loc"] = item[
-                        "principal_fx_opened_loc"
-                    ]
+                    result_item_opened["principal_fx_loc"] = item["principal_fx_opened_loc"]
                     result_item_opened["carry_fx_loc"] = item["carry_fx_opened_loc"]
-                    result_item_opened["overheads_fx_loc"] = item[
-                        "overheads_fx_opened_loc"
-                    ]
+                    result_item_opened["overheads_fx_loc"] = item["overheads_fx_opened_loc"]
                     result_item_opened["total_fx_loc"] = item["total_fx_opened_loc"]
 
-                    result_item_opened["principal_fixed_loc"] = item[
-                        "principal_fixed_opened_loc"
-                    ]
-                    result_item_opened["carry_fixed_loc"] = item[
-                        "carry_fixed_opened_loc"
-                    ]
-                    result_item_opened["overheads_fixed_loc"] = item[
-                        "overheads_fixed_opened_loc"
-                    ]
-                    result_item_opened["total_fixed_loc"] = item[
-                        "total_fixed_opened_loc"
-                    ]
+                    result_item_opened["principal_fixed_loc"] = item["principal_fixed_opened_loc"]
+                    result_item_opened["carry_fixed_loc"] = item["carry_fixed_opened_loc"]
+                    result_item_opened["overheads_fixed_loc"] = item["overheads_fixed_opened_loc"]
+                    result_item_opened["total_fixed_loc"] = item["total_fixed_opened_loc"]
 
                     #  CLOSED POSITIONS BELOW
 
@@ -4308,145 +4101,82 @@ class PLReportBuilderSql:
 
                     has_opened_value = False
 
-                    if (
-                        item["principal_opened"] is not None
-                        and item["principal_opened"] != 0
-                    ):
+                    if item["principal_opened"] is not None and item["principal_opened"] != 0:
                         has_opened_value = True
 
                     if item["carry_opened"] is not None and item["carry_opened"] != 0:
                         has_opened_value = True
 
-                    if (
-                        item["overheads_opened"] is not None
-                        and item["overheads_opened"] != 0
-                    ):
+                    if item["overheads_opened"] is not None and item["overheads_opened"] != 0:
                         has_opened_value = True
 
                     # PLAT-1417
 
-                    if (
-                        item["principal_fixed_opened"] is not None
-                        and item["principal_fixed_opened"] != 0
-                    ):
+                    if item["principal_fixed_opened"] is not None and item["principal_fixed_opened"] != 0:
                         has_opened_value = True
 
-                    if (
-                        item["carry_fixed_opened"] is not None
-                        and item["carry_fixed_opened"] != 0
-                    ):
+                    if item["carry_fixed_opened"] is not None and item["carry_fixed_opened"] != 0:
                         has_opened_value = True
 
-                    if (
-                        item["overheads_fixed_opened"] is not None
-                        and item["overheads_fixed_opened"] != 0
-                    ):
+                    if item["overheads_fixed_opened"] is not None and item["overheads_fixed_opened"] != 0:
                         has_opened_value = True
 
-                    if (
-                        item["principal_fx_opened"] is not None
-                        and item["principal_fx_opened"] != 0
-                    ):
+                    if item["principal_fx_opened"] is not None and item["principal_fx_opened"] != 0:
                         has_opened_value = True
 
-                    if (
-                        item["carry_fx_opened"] is not None
-                        and item["carry_fx_opened"] != 0
-                    ):
+                    if item["carry_fx_opened"] is not None and item["carry_fx_opened"] != 0:
                         has_opened_value = True
 
-                    if (
-                        item["overheads_fx_opened"] is not None
-                        and item["overheads_fx_opened"] != 0
-                    ):
+                    if item["overheads_fx_opened"] is not None and item["overheads_fx_opened"] != 0:
                         has_opened_value = True
 
                     has_closed_value = False
 
-                    if (
-                        item["principal_closed"] is not None
-                        and item["principal_closed"] != 0
-                    ):
+                    if item["principal_closed"] is not None and item["principal_closed"] != 0:
                         has_closed_value = True
 
                     if item["carry_closed"] is not None and item["carry_closed"] != 0:
                         has_closed_value = True
 
-                    if (
-                        item["overheads_closed"] is not None
-                        and item["overheads_closed"] != 0
-                    ):
+                    if item["overheads_closed"] is not None and item["overheads_closed"] != 0:
                         has_closed_value = True
 
                     # PLAT-1417
-                    if (
-                        item["principal_fixed_closed"] is not None
-                        and item["principal_fixed_closed"] != 0
-                    ):
+                    if item["principal_fixed_closed"] is not None and item["principal_fixed_closed"] != 0:
                         has_closed_value = True
 
-                    if (
-                        item["carry_fixed_closed"] is not None
-                        and item["carry_fixed_closed"] != 0
-                    ):
+                    if item["carry_fixed_closed"] is not None and item["carry_fixed_closed"] != 0:
                         has_closed_value = True
 
-                    if (
-                        item["overheads_fixed_closed"] is not None
-                        and item["overheads_fixed_closed"] != 0
-                    ):
+                    if item["overheads_fixed_closed"] is not None and item["overheads_fixed_closed"] != 0:
                         has_closed_value = True
 
-                    if (
-                        item["principal_fx_closed"] is not None
-                        and item["principal_fx_closed"] != 0
-                    ):
+                    if item["principal_fx_closed"] is not None and item["principal_fx_closed"] != 0:
                         has_closed_value = True
 
-                    if (
-                        item["carry_fx_closed"] is not None
-                        and item["carry_fx_closed"] != 0
-                    ):
+                    if item["carry_fx_closed"] is not None and item["carry_fx_closed"] != 0:
                         has_closed_value = True
 
-                    if (
-                        item["overheads_fx_closed"] is not None
-                        and item["overheads_fx_closed"] != 0
-                    ):
+                    if item["overheads_fx_closed"] is not None and item["overheads_fx_closed"] != 0:
                         has_closed_value = True
 
-                    if (
-                        result_item_opened["item_type"] == ITEM_TYPE_FX_VARIATIONS
-                        and has_opened_value
-                    ):
+                    if result_item_opened["item_type"] == ITEM_TYPE_FX_VARIATIONS and has_opened_value:
                         result.append(result_item_opened)
 
-                    if (
-                        result_item_opened["item_type"] == ITEM_TYPE_FX_TRADES
-                        and has_opened_value
-                    ):
+                    if result_item_opened["item_type"] == ITEM_TYPE_FX_TRADES and has_opened_value:
                         result.append(result_item_opened)
 
-                    if (
-                        result_item_opened["item_type"] == ITEM_TYPE_TRANSACTION_PL
-                        and has_opened_value
-                    ):
+                    if result_item_opened["item_type"] == ITEM_TYPE_TRANSACTION_PL and has_opened_value:
                         result.append(result_item_opened)
 
                     if result_item_opened["item_type"] == ITEM_TYPE_MISMATCH:
                         result.append(result_item_opened)
 
                     # if result_item_opened['item_type'] == ITEM_TYPE_INSTRUMENT and (item["position_size"] != 0 or item["period_start_position_size"] != 0):
-                    if (
-                        result_item_opened["item_type"] == ITEM_TYPE_INSTRUMENT
-                        and has_opened_value
-                    ):
+                    if result_item_opened["item_type"] == ITEM_TYPE_INSTRUMENT and has_opened_value:
                         result.append(result_item_opened)
 
-                    if (
-                        result_item_opened["item_type"] == ITEM_TYPE_INSTRUMENT
-                        and has_closed_value
-                    ):
+                    if result_item_opened["item_type"] == ITEM_TYPE_INSTRUMENT and has_closed_value:
                         _l.debug("PL opened position has closed value")
 
                         # result_item_closed = item.copy()
@@ -4472,83 +4202,43 @@ class PLReportBuilderSql:
 
                         result_item_closed["ytm"] = item["ytm"]
                         result_item_closed["ytm_at_cost"] = item["ytm_at_cost"]
-                        result_item_closed["modified_duration"] = item[
-                            "modified_duration"
-                        ]
+                        result_item_closed["modified_duration"] = item["modified_duration"]
                         result_item_closed["time_invested"] = item["time_invested"]
 
                         result_item_closed["amount_invested"] = item["amount_invested"]
-                        result_item_closed["amount_invested_loc"] = item[
-                            "amount_invested_loc"
-                        ]
+                        result_item_closed["amount_invested_loc"] = item["amount_invested_loc"]
 
-                        result_item_closed["principal_invested"] = item[
-                            "principal_invested"
-                        ]
-                        result_item_closed["principal_invested_loc"] = item[
-                            "principal_invested_loc"
-                        ]
+                        result_item_closed["principal_invested"] = item["principal_invested"]
+                        result_item_closed["principal_invested_loc"] = item["principal_invested_loc"]
 
-                        result_item_closed["amount_invested_fixed"] = item[
-                            "amount_invested_fixed"
-                        ]
-                        result_item_closed["amount_invested_fixed_loc"] = item[
-                            "amount_invested_fixed_loc"
-                        ]
+                        result_item_closed["amount_invested_fixed"] = item["amount_invested_fixed"]
+                        result_item_closed["amount_invested_fixed_loc"] = item["amount_invested_fixed_loc"]
 
-                        result_item_closed["principal_invested_fixed"] = item[
-                            "principal_invested_fixed"
-                        ]
-                        result_item_closed["principal_invested_fixed_loc"] = item[
-                            "principal_invested_fixed_loc"
-                        ]
+                        result_item_closed["principal_invested_fixed"] = item["principal_invested_fixed"]
+                        result_item_closed["principal_invested_fixed_loc"] = item["principal_invested_fixed_loc"]
 
-                        result_item_closed["gross_cost_price"] = item[
-                            "gross_cost_price"
-                        ]
-                        result_item_closed["gross_cost_price_loc"] = item[
-                            "gross_cost_price_loc"
-                        ]
+                        result_item_closed["gross_cost_price"] = item["gross_cost_price"]
+                        result_item_closed["gross_cost_price_loc"] = item["gross_cost_price_loc"]
 
                         result_item_closed["net_cost_price"] = item["net_cost_price"]
-                        result_item_closed["net_cost_price_loc"] = item[
-                            "net_cost_price_loc"
-                        ]
+                        result_item_closed["net_cost_price_loc"] = item["net_cost_price_loc"]
 
                         result_item_closed["position_return"] = item["position_return"]
-                        result_item_closed["position_return_loc"] = item[
-                            "position_return_loc"
-                        ]
+                        result_item_closed["position_return_loc"] = item["position_return_loc"]
 
-                        result_item_closed["net_position_return"] = item[
-                            "net_position_return"
-                        ]
-                        result_item_closed["net_position_return_loc"] = item[
-                            "net_position_return_loc"
-                        ]
+                        result_item_closed["net_position_return"] = item["net_position_return"]
+                        result_item_closed["net_position_return_loc"] = item["net_position_return_loc"]
 
-                        result_item_closed["position_return_fixed"] = item[
-                            "position_return_fixed"
-                        ]
-                        result_item_closed["position_return_fixed_loc"] = item[
-                            "position_return_fixed_loc"
-                        ]
+                        result_item_closed["position_return_fixed"] = item["position_return_fixed"]
+                        result_item_closed["position_return_fixed_loc"] = item["position_return_fixed_loc"]
 
-                        result_item_closed["net_position_return_fixed"] = item[
-                            "net_position_return_fixed"
-                        ]
-                        result_item_closed["net_position_return_fixed_loc"] = item[
-                            "net_position_return_fixed_loc"
-                        ]
+                        result_item_closed["net_position_return_fixed"] = item["net_position_return_fixed"]
+                        result_item_closed["net_position_return_fixed_loc"] = item["net_position_return_fixed_loc"]
 
                         result_item_closed["position_size"] = item["position_size"]
-                        result_item_closed["nominal_position_size"] = item[
-                            "nominal_position_size"
-                        ]
+                        result_item_closed["nominal_position_size"] = item["nominal_position_size"]
 
-                        result_item_closed["period_start_position_size"] = item[
-                            "period_start_position_size"
-                        ]
+                        result_item_closed["period_start_position_size"] = item["period_start_position_size"]
                         result_item_closed["period_start_nominal_position_size"] = item[
                             "period_start_nominal_position_size"
                         ]
@@ -4558,36 +4248,20 @@ class PLReportBuilderSql:
                         result_item_closed["exposure"] = item["exposure"]
                         result_item_closed["ytm"] = item["ytm"]
                         result_item_closed["ytm_at_cost"] = item["ytm_at_cost"]
-                        result_item_closed["modified_duration"] = item[
-                            "modified_duration"
-                        ]
+                        result_item_closed["modified_duration"] = item["modified_duration"]
                         result_item_closed["time_invested"] = item["time_invested"]
 
-                        result_item_closed["amount_invested_fixed"] = item[
-                            "amount_invested_fixed"
-                        ]
-                        result_item_closed["amount_invested_fixed_loc"] = item[
-                            "amount_invested_fixed_loc"
-                        ]
+                        result_item_closed["amount_invested_fixed"] = item["amount_invested_fixed"]
+                        result_item_closed["amount_invested_fixed_loc"] = item["amount_invested_fixed_loc"]
 
-                        result_item_closed["principal_invested_fixed"] = item[
-                            "principal_invested_fixed"
-                        ]
-                        result_item_closed["principal_invested_fixed_loc"] = item[
-                            "principal_invested_fixed_loc"
-                        ]
+                        result_item_closed["principal_invested_fixed"] = item["principal_invested_fixed"]
+                        result_item_closed["principal_invested_fixed_loc"] = item["principal_invested_fixed_loc"]
 
-                        result_item_closed["gross_cost_price"] = item[
-                            "gross_cost_price"
-                        ]
-                        result_item_closed["gross_cost_price_loc"] = item[
-                            "gross_cost_price_loc"
-                        ]
+                        result_item_closed["gross_cost_price"] = item["gross_cost_price"]
+                        result_item_closed["gross_cost_price_loc"] = item["gross_cost_price_loc"]
 
                         result_item_closed["net_cost_price"] = item["net_cost_price"]
-                        result_item_closed["net_cost_price_loc"] = item[
-                            "net_cost_price_loc"
-                        ]
+                        result_item_closed["net_cost_price_loc"] = item["net_cost_price_loc"]
 
                         result_item_closed["position_size"] = item["position_size"]
                         result_item_closed["mismatch"] = item["mismatch"]
@@ -4595,47 +4269,29 @@ class PLReportBuilderSql:
                         result_item_closed["instrument_id"] = item["instrument_id"]
 
                         if "portfolio_id" not in item:
-                            result_item_closed["portfolio_id"] = (
-                                ecosystem_defaults.portfolio_id
-                            )
+                            result_item_closed["portfolio_id"] = ecosystem_defaults.portfolio_id
                         else:
                             result_item_closed["portfolio_id"] = item["portfolio_id"]
 
                         if "account_position_id" not in item:
-                            result_item_closed["account_position_id"] = (
-                                ecosystem_defaults.account_id
-                            )
+                            result_item_closed["account_position_id"] = ecosystem_defaults.account_id
                         else:
-                            result_item_closed["account_position_id"] = item[
-                                "account_position_id"
-                            ]
+                            result_item_closed["account_position_id"] = item["account_position_id"]
 
                         if "strategy1_position_id" not in item:
-                            result_item_closed["strategy1_position_id"] = (
-                                ecosystem_defaults.strategy1_id
-                            )
+                            result_item_closed["strategy1_position_id"] = ecosystem_defaults.strategy1_id
                         else:
-                            result_item_closed["strategy1_position_id"] = item[
-                                "strategy1_position_id"
-                            ]
+                            result_item_closed["strategy1_position_id"] = item["strategy1_position_id"]
 
                         if "strategy2_position_id" not in item:
-                            result_item_closed["strategy2_position_id"] = (
-                                ecosystem_defaults.strategy2_id
-                            )
+                            result_item_closed["strategy2_position_id"] = ecosystem_defaults.strategy2_id
                         else:
-                            result_item_closed["strategy2_position_id"] = item[
-                                "strategy2_position_id"
-                            ]
+                            result_item_closed["strategy2_position_id"] = item["strategy2_position_id"]
 
                         if "strategy3_position_id" not in item:
-                            result_item_closed["strategy3_position_id"] = (
-                                ecosystem_defaults.strategy3_id
-                            )
+                            result_item_closed["strategy3_position_id"] = ecosystem_defaults.strategy3_id
                         else:
-                            result_item_closed["strategy3_position_id"] = item[
-                                "strategy3_position_id"
-                            ]
+                            result_item_closed["strategy3_position_id"] = item["strategy3_position_id"]
 
                         # if "allocation_pl_id" not in item:
                         #     result_item_closed['allocation_pl_id'] = None
@@ -4662,26 +4318,15 @@ class PLReportBuilderSql:
                         #     result_item_closed['allocation_pl_id'] = ecosystem_defaults.instrument_id
 
                         if "allocation_pl_id" in item:
-                            if (
-                                item["allocation_pl_id"]
-                                == ecosystem_defaults.instrument_id
-                            ):
-                                result_item_closed["allocation_pl_id"] = (
-                                    ecosystem_defaults.instrument_id
-                                )
+                            if item["allocation_pl_id"] == ecosystem_defaults.instrument_id:
+                                result_item_closed["allocation_pl_id"] = ecosystem_defaults.instrument_id
                             elif item["allocation_pl_id"] == None:
                                 if item["instrument_id"] == None:
-                                    result_item_closed["allocation_pl_id"] = (
-                                        ecosystem_defaults.instrument_id
-                                    )
+                                    result_item_closed["allocation_pl_id"] = ecosystem_defaults.instrument_id
                                 else:
-                                    result_item_closed["allocation_pl_id"] = item[
-                                        "instrument_id"
-                                    ]
+                                    result_item_closed["allocation_pl_id"] = item["instrument_id"]
                             else:
-                                result_item_closed["allocation_pl_id"] = item[
-                                    "allocation_pl_id"
-                                ]
+                                result_item_closed["allocation_pl_id"] = item["allocation_pl_id"]
 
                             # Before 2023-10-10
                             # if item['allocation_pl_id'] == ecosystem_defaults.instrument_id or \
@@ -4699,39 +4344,25 @@ class PLReportBuilderSql:
                             #     # TODO do not remove that, its really important
                             #     result_item_opened['allocation_pl_id'] = item['allocation_pl_id']
                         else:
-                            result_item_closed["allocation_pl_id"] = (
-                                ecosystem_defaults.instrument_id
-                            )
+                            result_item_closed["allocation_pl_id"] = ecosystem_defaults.instrument_id
 
                         result_item_closed["item_group"] = ITEM_GROUP_CLOSED
                         result_item_closed["item_group_code"] = "CLOSED"
                         result_item_closed["item_group_name"] = "Closed"
 
-                        result_item_closed["exposure_currency_id"] = item[
-                            "co_directional_exposure_currency_id"
+                        result_item_closed["exposure_currency_id"] = item["co_directional_exposure_currency_id"]
+                        result_item_closed["pricing_currency_id"] = item["pricing_currency_id"]
+                        result_item_closed["instrument_pricing_currency_fx_rate"] = item[
+                            "instrument_pricing_currency_fx_rate"
                         ]
-                        result_item_closed["pricing_currency_id"] = item[
-                            "pricing_currency_id"
+                        result_item_closed["instrument_accrued_currency_fx_rate"] = item[
+                            "instrument_accrued_currency_fx_rate"
                         ]
-                        result_item_closed["instrument_pricing_currency_fx_rate"] = (
-                            item["instrument_pricing_currency_fx_rate"]
-                        )
-                        result_item_closed["instrument_accrued_currency_fx_rate"] = (
-                            item["instrument_accrued_currency_fx_rate"]
-                        )
-                        result_item_closed["instrument_principal_price"] = item[
-                            "instrument_principal_price"
-                        ]
-                        result_item_closed["instrument_accrued_price"] = item[
-                            "instrument_accrued_price"
-                        ]
-                        result_item_closed["instrument_factor"] = item[
-                            "instrument_factor"
-                        ]
+                        result_item_closed["instrument_principal_price"] = item["instrument_principal_price"]
+                        result_item_closed["instrument_accrued_price"] = item["instrument_accrued_price"]
+                        result_item_closed["instrument_factor"] = item["instrument_factor"]
                         result_item_closed["instrument_ytm"] = item["instrument_ytm"]
-                        result_item_closed["daily_price_change"] = item[
-                            "daily_price_change"
-                        ]
+                        result_item_closed["daily_price_change"] = item["daily_price_change"]
 
                         result_item_closed["position_size"] = 0
                         result_item_closed["nominal_position_size"] = 0
@@ -4746,47 +4377,27 @@ class PLReportBuilderSql:
                         result_item_closed["overheads_fx"] = item["overheads_fx_closed"]
                         result_item_closed["total_fx"] = item["total_fx_closed"]
 
-                        result_item_closed["principal_fixed"] = item[
-                            "principal_fixed_closed"
-                        ]
+                        result_item_closed["principal_fixed"] = item["principal_fixed_closed"]
                         result_item_closed["carry_fixed"] = item["carry_fixed_closed"]
-                        result_item_closed["overheads_fixed"] = item[
-                            "overheads_fixed_closed"
-                        ]
+                        result_item_closed["overheads_fixed"] = item["overheads_fixed_closed"]
                         result_item_closed["total_fixed"] = item["total_fixed_closed"]
 
                         # loc
 
-                        result_item_closed["principal_loc"] = item[
-                            "principal_closed_loc"
-                        ]
+                        result_item_closed["principal_loc"] = item["principal_closed_loc"]
                         result_item_closed["carry_loc"] = item["carry_closed_loc"]
-                        result_item_closed["overheads_loc"] = item[
-                            "overheads_closed_loc"
-                        ]
+                        result_item_closed["overheads_loc"] = item["overheads_closed_loc"]
                         result_item_closed["total_loc"] = item["total_closed_loc"]
 
-                        result_item_closed["principal_fx_loc"] = item[
-                            "principal_fx_closed_loc"
-                        ]
+                        result_item_closed["principal_fx_loc"] = item["principal_fx_closed_loc"]
                         result_item_closed["carry_fx_loc"] = item["carry_fx_closed_loc"]
-                        result_item_closed["overheads_fx_loc"] = item[
-                            "overheads_fx_closed_loc"
-                        ]
+                        result_item_closed["overheads_fx_loc"] = item["overheads_fx_closed_loc"]
                         result_item_closed["total_fx_loc"] = item["total_fx_closed_loc"]
 
-                        result_item_closed["principal_fixed_loc"] = item[
-                            "principal_fixed_closed_loc"
-                        ]
-                        result_item_closed["carry_fixed_loc"] = item[
-                            "carry_fixed_closed_loc"
-                        ]
-                        result_item_closed["overheads_fixed_loc"] = item[
-                            "overheads_fixed_closed_loc"
-                        ]
-                        result_item_closed["total_fixed_loc"] = item[
-                            "total_fixed_closed_loc"
-                        ]
+                        result_item_closed["principal_fixed_loc"] = item["principal_fixed_closed_loc"]
+                        result_item_closed["carry_fixed_loc"] = item["carry_fixed_closed_loc"]
+                        result_item_closed["overheads_fixed_loc"] = item["overheads_fixed_closed_loc"]
+                        result_item_closed["total_fixed_loc"] = item["total_fixed_closed_loc"]
 
                         result.append(result_item_closed)
 
@@ -4835,18 +4446,10 @@ class PLReportBuilderSql:
                         "pl_first_date": self.instance.pl_first_date,
                         "bday_yesterday_of_report_date": self.bday_yesterday_of_report_date,
                         "portfolios_ids": [portfolio.id],
-                        "accounts_ids": [
-                            instance.id for instance in self.instance.accounts
-                        ],
-                        "strategies1_ids": [
-                            instance.id for instance in self.instance.strategies1
-                        ],
-                        "strategies2_ids": [
-                            instance.id for instance in self.instance.strategies2
-                        ],
-                        "strategies3_ids": [
-                            instance.id for instance in self.instance.strategies3
-                        ],
+                        "accounts_ids": [instance.id for instance in self.instance.accounts],
+                        "strategies1_ids": [instance.id for instance in self.instance.strategies1],
+                        "strategies2_ids": [instance.id for instance in self.instance.strategies2],
+                        "strategies3_ids": [instance.id for instance in self.instance.strategies3],
                         "report_currency_id": self.instance.report_currency.id,
                         "pricing_policy_id": self.instance.pricing_policy.id,
                         "cost_method_id": self.instance.cost_method.id,
@@ -4872,21 +4475,11 @@ class PLReportBuilderSql:
                     "report_date": self.instance.report_date,
                     "pl_first_date": self.instance.pl_first_date,
                     "bday_yesterday_of_report_date": self.bday_yesterday_of_report_date,
-                    "portfolios_ids": [
-                        instance.id for instance in self.instance.portfolios
-                    ],
-                    "accounts_ids": [
-                        instance.id for instance in self.instance.accounts
-                    ],
-                    "strategies1_ids": [
-                        instance.id for instance in self.instance.strategies1
-                    ],
-                    "strategies2_ids": [
-                        instance.id for instance in self.instance.strategies2
-                    ],
-                    "strategies3_ids": [
-                        instance.id for instance in self.instance.strategies3
-                    ],
+                    "portfolios_ids": [instance.id for instance in self.instance.portfolios],
+                    "accounts_ids": [instance.id for instance in self.instance.accounts],
+                    "strategies1_ids": [instance.id for instance in self.instance.strategies1],
+                    "strategies2_ids": [instance.id for instance in self.instance.strategies2],
+                    "strategies3_ids": [instance.id for instance in self.instance.strategies3],
                     "report_currency_id": self.instance.report_currency.id,
                     "pricing_policy_id": self.instance.pricing_policy.id,
                     "cost_method_id": self.instance.cost_method.id,
@@ -4937,7 +4530,7 @@ class PLReportBuilderSql:
         # 'all_dicts' is now a list of all dicts returned by the tasks
         self.instance.items = all_dicts
 
-        _l.debug("parallel_build done: %s", "{:3.3f}".format(time.perf_counter() - st))
+        _l.debug("parallel_build done: %s", f"{time.perf_counter() - st:3.3f}")
 
     def build_pl_sync(self):
         st = time.perf_counter()
@@ -4946,7 +4539,7 @@ class PLReportBuilderSql:
 
         self.serial_build()
 
-        self.instance.execution_time = float("{:3.3f}".format(time.perf_counter() - st))
+        self.instance.execution_time = float(f"{time.perf_counter() - st:3.3f}")
 
         _l.debug("items total %s" % len(self.instance.items))
 
@@ -4955,9 +4548,7 @@ class PLReportBuilderSql:
         if not self.instance.only_numbers:
             self.add_data_items()
 
-        self.instance.relation_prefetch_time = float(
-            "{:3.3f}".format(time.perf_counter() - relation_prefetch_st)
-        )
+        self.instance.relation_prefetch_time = float(f"{time.perf_counter() - relation_prefetch_st:3.3f}")
 
         _l.debug("build_st done: %s" % self.instance.execution_time)
 
@@ -4979,19 +4570,11 @@ class PLReportBuilderSql:
                 "report_date": self.instance.report_date,
                 "pl_first_date": self.instance.pl_first_date,
                 "bday_yesterday_of_report_date": self.instance.bday_yesterday_of_report_date,
-                "portfolios_ids": [
-                    instance.id for instance in self.instance.portfolios
-                ],
+                "portfolios_ids": [instance.id for instance in self.instance.portfolios],
                 "accounts_ids": [instance.id for instance in self.instance.accounts],
-                "strategies1_ids": [
-                    instance.id for instance in self.instance.strategies1
-                ],
-                "strategies2_ids": [
-                    instance.id for instance in self.instance.strategies2
-                ],
-                "strategies3_ids": [
-                    instance.id for instance in self.instance.strategies3
-                ],
+                "strategies1_ids": [instance.id for instance in self.instance.strategies1],
+                "strategies2_ids": [instance.id for instance in self.instance.strategies2],
+                "strategies3_ids": [instance.id for instance in self.instance.strategies3],
                 "report_currency_id": self.instance.report_currency.id,
                 "pricing_policy_id": self.instance.pricing_policy.id,
                 "cost_method_id": self.instance.cost_method.id,
@@ -5010,7 +4593,7 @@ class PLReportBuilderSql:
         # 'all_dicts' is now a list of all dicts returned by the tasks
         self.instance.items = result
 
-        _l.debug("parallel_build done: %s", "{:3.3f}".format(time.perf_counter() - st))
+        _l.debug("parallel_build done: %s", f"{time.perf_counter() - st:3.3f}")
 
     def get_cash_consolidation_for_select(self):
         result = []
@@ -5032,7 +4615,7 @@ class PLReportBuilderSql:
 
         resultString = ""
 
-        if len(result):
+        if result:
             resultString = ", ".join(result) + ", "
 
         return resultString
@@ -5180,14 +4763,14 @@ class PLReportBuilderSql:
 
         _l.debug(
             "_refresh_with_perms_optimized instance relations done: %s",
-            "{:3.3f}".format(time.perf_counter() - instance_relations_st),
+            f"{time.perf_counter() - instance_relations_st:3.3f}",
         )
 
         permissions_st = time.perf_counter()
 
         _l.debug(
             "_refresh_with_perms_optimized permissions done: %s",
-            "{:3.3f}".format(time.perf_counter() - permissions_st),
+            f"{time.perf_counter() - permissions_st:3.3f}",
         )
 
         item_relations_st = time.perf_counter()
@@ -5209,7 +4792,7 @@ class PLReportBuilderSql:
                 instrument_ids.append(item["instrument_id"])
                 try:
                     instrument_ids.append(item["allocation_pl_id"])
-                except Exception as e:
+                except Exception:
                     _l.debug("no allocation_pl_id %s" % item)
 
             if "account_position_id" in item and item["account_position_id"] != "-":
@@ -5239,7 +4822,7 @@ class PLReportBuilderSql:
 
             if "strategy3_cash_id" in item:
                 strategies3_ids.append(item["strategy3_cash_id"])
-
+    
         _l.debug("len instrument_ids %s" % len(instrument_ids))
 
         self.add_data_items_instruments(instrument_ids)
@@ -5255,11 +4838,9 @@ class PLReportBuilderSql:
         self.add_data_items_countries(self.instance.item_instruments)
         self.add_data_items_account_types(self.instance.item_accounts)
 
-        self.instance.custom_fields = PLReportCustomField.objects.filter(
-            master_user=self.instance.master_user
-        )
+        self.instance.custom_fields = PLReportCustomField.objects.filter(master_user=self.instance.master_user)
 
         _l.debug(
             "_refresh_with_perms_optimized item relations done: %s",
-            "{:3.3f}".format(time.perf_counter() - item_relations_st),
+            f"{time.perf_counter() - item_relations_st:3.3f}",
         )

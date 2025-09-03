@@ -1,10 +1,10 @@
+import logging
+
 from django.core.cache import cache
-from django.db.models.signals import post_save, post_delete
+from django.db.models.signals import post_delete, post_save
 from django.dispatch import receiver
 
-from poms.iam.models import AccessPolicy, Role, Group
-
-import logging
+from poms.iam.models import AccessPolicy, Group, Role
 
 _l = logging.getLogger("poms.iam")
 
@@ -17,7 +17,7 @@ code below just clears the cache when access policy is updated
 
 def clear_member_access_policies_cache(member):
     cache_key = f"member_access_policies_{member.id}"
-    _l.debug("clear_member_access_policies_cache.going to clear cache for %s" % member)
+    _l.debug("clear_member_access_policies_cache.going to clear cache for %s", member)
     cache.delete(cache_key)
 
 

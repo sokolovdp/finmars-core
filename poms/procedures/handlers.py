@@ -2,11 +2,9 @@ import json
 import logging
 import traceback
 
+import requests
 from django.db import transaction
 from django.utils.timezone import now
-
-import requests
-from poms_app import settings
 
 from poms.celery_tasks.models import CeleryTask
 from poms.common.crypto.RSACipher import RSACipher
@@ -19,11 +17,12 @@ from poms.procedures.models import RequestDataFileProcedureInstance
 from poms.procedures.tasks import procedure_request_data_file
 from poms.system_messages.handlers import send_system_message
 from poms.users.models import MasterUser, Member
+from poms_app import settings
 
 _l = logging.getLogger("poms.procedures")
 
 
-class DataProcedureProcess(object):
+class DataProcedureProcess:
     def __init__(
         self,
         procedure=None,
@@ -35,10 +34,7 @@ class DataProcedureProcess(object):
         context=None,
         procedure_instance=None,
     ):
-        _l.info(
-            "DataProcedureProcess. Master user: %s. Procedure: %s"
-            % (master_user, procedure)
-        )
+        _l.info("DataProcedureProcess. Master user: %s. Procedure: %s", master_user, procedure)
 
         self.master_user = master_user
         self.procedure = procedure
@@ -59,19 +55,15 @@ class DataProcedureProcess(object):
     def execute_procedure_date_expressions(self):
         if self.procedure.date_from_expr:
             try:
-                self.procedure.date_from = formula.safe_eval(
-                    self.procedure.date_from_expr, names={}
-                )
+                self.procedure.date_from = formula.safe_eval(self.procedure.date_from_expr, names={})
             except formula.InvalidExpression as e:
-                _l.error("Cant execute date from expression %s " % e)
+                _l.error("Cant execute date from expression %s ", e)
 
         if self.procedure.date_to_expr:
             try:
-                self.procedure.date_to = formula.safe_eval(
-                    self.procedure.date_to_expr, names={}
-                )
+                self.procedure.date_to = formula.safe_eval(self.procedure.date_to_expr, names={})
             except formula.InvalidExpression as e:
-                _l.error("Cant execute date to expression %s " % e)
+                _l.error("Cant execute date to expression %s ", e)
 
     def update_procedure_options(self, options):
         if self.procedure.data:
@@ -81,7 +73,7 @@ class DataProcedureProcess(object):
 
             self.procedure.data = data
 
-        _l.info("update_procedure_options.procedure.data %s" % self.procedure.data)
+        _l.info("update_procedure_options.procedure.data %s", self.procedure.data)
 
     def update_procedure_date_from(self, date_from):
         self.procedure.date_from = date_from
@@ -89,7 +81,7 @@ class DataProcedureProcess(object):
     def update_procedure_date_to(self, date_to):
         self.procedure.date_to = date_to
 
-    def process(self):
+    def process(self):  # noqa: PLR0912, PLR0915
         from poms.integrations.tasks import (
             complex_transaction_csv_file_import_by_procedure_json,
         )
@@ -97,26 +89,23 @@ class DataProcedureProcess(object):
         if self.procedure.provider.user_code == "universal":
             try:
                 if not self.procedure_instance:
-                    self.procedure_instance = (
-                        RequestDataFileProcedureInstance.objects.create(
-                            procedure=self.procedure,
-                            master_user=self.master_user,
-                            status=RequestDataFileProcedureInstance.STATUS_PENDING,
-                            schedule_instance=self.schedule_instance,
-                            action="request_transaction_file",
-                            provider="universal",
-                            date_from=self.procedure.date_from,
-                            date_to=self.procedure.date_to,
-                            action_verbose="Request file with Transactions",
-                            provider_verbose="Universal",
-                        )
+                    self.procedure_instance = RequestDataFileProcedureInstance.objects.create(
+                        procedure=self.procedure,
+                        master_user=self.master_user,
+                        status=RequestDataFileProcedureInstance.STATUS_PENDING,
+                        schedule_instance=self.schedule_instance,
+                        action="request_transaction_file",
+                        provider="universal",
+                        date_from=self.procedure.date_from,
+                        date_to=self.procedure.date_to,
+                        action_verbose="Request file with Transactions",
+                        provider_verbose="Universal",
                     )
 
                 send_system_message(
                     master_user=self.master_user,
                     performed_by="System",
-                    description="universal Broker.  Procedure %s. Start"
-                    % self.procedure_instance.id,
+                    description=f"universal Broker.  Procedure {self.procedure_instance.id}. Start",
                 )
 
                 headers = {
@@ -150,9 +139,7 @@ class DataProcedureProcess(object):
                             if "echo" in data["options"]:
                                 for key, value in data["options"]["echo"].items():
                                     if value in self.context["names"]:
-                                        data["options"]["echo"][key] = str(
-                                            self.context["names"][value]
-                                        )
+                                        data["options"]["echo"][key] = str(self.context["names"][value])
 
                     if self.procedure.date_from:
                         data["date_from"] = str(self.procedure.date_from)
@@ -163,32 +150,24 @@ class DataProcedureProcess(object):
                     # if self.procedure.data['currencies']:
                     #     data["options"]['currencies'] = self.procedure.data['currencies']
 
-                    _l.info("request universal url %s" % url)
-                    _l.info("request universal data %s" % data)
-                    _l.info("request universal self.context %s" % self.context)
+                    _l.info("request universal url %s", url)
+                    _l.info("request universal data %s", data)
+                    _l.info("request universal self.context %s", self.context)
 
                     self.procedure_instance.request_data = data
                     self.procedure_instance.save()
                 except Exception as e:
-                    self.procedure_instance.error_message = "Data Config Error %s" % e
-                    self.procedure_instance.status = (
-                        RequestDataFileProcedureInstance.STATUS_ERROR
-                    )
+                    self.procedure_instance.error_message = f"Data Config Error {e}"
+                    self.procedure_instance.status = RequestDataFileProcedureInstance.STATUS_ERROR
                     self.procedure_instance.save()
 
                 response = None
 
                 try:
-                    response = requests.post(
-                        url=url, json=data, headers=headers, verify=settings.VERIFY_SSL
-                    )
+                    response = requests.post(url=url, json=data, headers=headers, verify=settings.VERIFY_SSL)
                 except Exception as e:
-                    self.procedure_instance.error_message = (
-                        "Request To Remote Server Error %s." % e
-                    )
-                    self.procedure_instance.status = (
-                        RequestDataFileProcedureInstance.STATUS_ERROR
-                    )
+                    self.procedure_instance.error_message = f"Request To Remote Server Error {e}."
+                    self.procedure_instance.status = RequestDataFileProcedureInstance.STATUS_ERROR
                     self.procedure_instance.save()
 
                     return
@@ -199,10 +178,7 @@ class DataProcedureProcess(object):
 
                 file_report = FileReport()
 
-                file_name = "Universal Broker Response %s %s.json" % (
-                    self.procedure_instance.id,
-                    current_date_time,
-                )
+                file_name = f"Universal Broker Response {self.procedure_instance.id} {current_date_time}.json"
 
                 file_content = ""
 
@@ -216,19 +192,15 @@ class DataProcedureProcess(object):
                 except Exception as e:
                     self.procedure_instance.response_data = response.text
 
-                    self.procedure_instance.error_message = "Received JSON Error %s" % e
-                    self.procedure_instance.status = (
-                        RequestDataFileProcedureInstance.STATUS_ERROR
-                    )
+                    self.procedure_instance.error_message = f"Received JSON Error {e}"
+                    self.procedure_instance.status = RequestDataFileProcedureInstance.STATUS_ERROR
                     self.procedure_instance.save()
 
-                    _l.info("response %s" % response.text)
-                    _l.info("Response parse error %s" % e)
+                    _l.info("response %s", response.text)
+                    _l.info("Response parse error %s", e)
                     file_content = response.text
 
-                file_report.upload_file(
-                    file_name=file_name, text=file_content, master_user=self.master_user
-                )
+                file_report.upload_file(file_name=file_name, text=file_content, master_user=self.master_user)
                 file_report.master_user = self.master_user
                 file_report.name = file_name
                 file_report.file_name = file_name
@@ -241,16 +213,13 @@ class DataProcedureProcess(object):
                 send_system_message(
                     master_user=self.procedure_instance.master_user,
                     performed_by="System",
-                    description="universal Broker. Procedure %s. Response Received"
-                    % self.procedure_instance.id,
+                    description=f"universal Broker. Procedure {self.procedure_instance.id}. Response Received",
                     attachments=[file_report.id],
                 )
 
                 procedure_id = response_data["id"]
 
-                master_user = MasterUser.objects.get(
-                    token=response_data["user"]["token"]
-                )
+                master_user = MasterUser.objects.get(token=response_data["user"]["token"])
 
                 procedure_instance = RequestDataFileProcedureInstance.objects.get(
                     id=procedure_id, master_user=master_user
@@ -262,16 +231,14 @@ class DataProcedureProcess(object):
                 send_system_message(
                     master_user=procedure_instance.master_user,
                     performed_by="System",
-                    description="universal Broker. Procedure %s. Done, start import"
-                    % procedure_instance.id,
+                    description=f"universal Broker. Procedure {procedure_instance.id}. Done, start import",
                 )
 
                 if procedure_instance.procedure.scheme_type == "transaction_import":
                     celery_task = CeleryTask.objects.create(
                         master_user=master_user,
                         member=self.member,
-                        notes="Import initiated by data procedure instance %s"
-                        % procedure_instance.id,
+                        notes=f"Import initiated by data procedure instance {procedure_instance.id}",
                         verbose_name="Transaction Import",
                         type="transaction_import",
                     )
@@ -302,8 +269,7 @@ class DataProcedureProcess(object):
                     celery_task = CeleryTask.objects.create(
                         master_user=master_user,
                         member=self.member,
-                        notes="Import initiated by data procedure instance %s"
-                        % procedure_instance.id,
+                        notes=f"Import initiated by data procedure instance {procedure_instance.id}",
                         verbose_name="Simple Import",
                         type="simple_import",
                     )
@@ -331,49 +297,42 @@ class DataProcedureProcess(object):
                     )
 
             except Exception as e:
-                _l.error("universal broker error %s" % e)
-                _l.error("universal broker traceback %s" % traceback.format_exc())
+                _l.error("universal broker error %s", e)
+                _l.error("universal broker traceback %s", traceback.format_exc())
                 send_system_message(
                     master_user=self.master_user,
                     performed_by="System",
                     action_status="required",
                     type="error",
-                    title="Data Procedure Failed. User Code: %s "
-                    % self.procedure.user_code,
-                    description="Universal Broker. Procedure is not created.  Something went wrong %s"
-                    % e,
+                    title=f"Data Procedure Failed. User Code: {self.procedure.user_code} ",
+                    description=f"Universal Broker. Procedure is not created.  Something went wrong {e}",
                 )
 
         elif settings.DATA_FILE_SERVICE_URL:
             with transaction.atomic():
                 if not self.procedure_instance:
-                    self.procedure_instance = (
-                        RequestDataFileProcedureInstance.objects.create(
-                            procedure=self.procedure,
-                            master_user=self.master_user,
-                            status=RequestDataFileProcedureInstance.STATUS_PENDING,
-                            schedule_instance=self.schedule_instance,
-                            action="request_transaction_file",
-                            provider="finmars",
-                            action_verbose="Request file with Transactions",
-                            provider_verbose="Finmars",
-                        )
+                    self.procedure_instance = RequestDataFileProcedureInstance.objects.create(
+                        procedure=self.procedure,
+                        master_user=self.master_user,
+                        status=RequestDataFileProcedureInstance.STATUS_PENDING,
+                        schedule_instance=self.schedule_instance,
+                        action="request_transaction_file",
+                        provider="finmars",
+                        action_verbose="Request file with Transactions",
+                        provider_verbose="Finmars",
                     )
 
                 if self.member:
-                    self.procedure_instance.started_by = (
-                        RequestDataFileProcedureInstance.STARTED_BY_MEMBER
-                    )
+                    self.procedure_instance.started_by = RequestDataFileProcedureInstance.STARTED_BY_MEMBER
                     self.procedure_instance.member = self.member
 
                 if self.schedule_instance:
                     # member = Member.objects.get(master_user=self.master_user, is_owner=True)
                     member = Member.objects.get(username="finmars_bot")
 
-                    self.procedure_instance.member = member  # Add owner of ecosystem as member who stared schedule (Need to transaction expr execution)
-                    self.procedure_instance.started_by = (
-                        RequestDataFileProcedureInstance.STARTED_BY_SCHEDULE
-                    )
+                    # Add owner of ecosystem as member who stared schedule (Need to transaction expr execution)
+                    self.procedure_instance.member = member
+                    self.procedure_instance.started_by = RequestDataFileProcedureInstance.STARTED_BY_SCHEDULE
                     self.procedure_instance.schedule_instance = self.schedule_instance
 
                 rsa_cipher = RSACipher()
@@ -385,17 +344,14 @@ class DataProcedureProcess(object):
                 self.procedure_instance.save()
 
                 _l.debug(
-                    "RequestDataFileProcedureInstance procedure_instance created id: %s"
-                    % self.procedure_instance.id
+                    "RequestDataFileProcedureInstance procedure_instance created id: %s", self.procedure_instance.id
                 )
 
             _l.debug(
-                "DataProcedureProcess: Request_transaction_file. Master User: %s. Provider: %s, Scheme name: %s"
-                % (
-                    self.master_user,
-                    self.procedure.provider,
-                    self.procedure.scheme_user_code,
-                )
+                "DataProcedureProcess: Request_transaction_file. Master User: %s. Provider: %s, Scheme name: %s",
+                self.master_user,
+                self.procedure.provider,
+                self.procedure.scheme_user_code,
             )
 
             item = TransactionFileResult.objects.create(
@@ -411,30 +367,18 @@ class DataProcedureProcess(object):
 
             if self.procedure.provider.user_code == "cim_bank":
                 if self.procedure.data:
-                    if (
-                        "filenamemask" in self.procedure.data
-                        and self.procedure.data["filenamemask"]
-                    ):
+                    if "filenamemask" in self.procedure.data and self.procedure.data["filenamemask"]:
                         params["filenamemask"] = self.procedure.data["filenamemask"]
 
             if self.procedure.provider.user_code == "email_provider":
                 if self.procedure.data:
-                    if (
-                        "sender" in self.procedure.data
-                        and self.procedure.data["sender"]
-                    ):
+                    if "sender" in self.procedure.data and self.procedure.data["sender"]:
                         params["sender"] = self.procedure.data["sender"]
 
-                    if (
-                        "filename" in self.procedure.data
-                        and self.procedure.data["filename"]
-                    ):
+                    if "filename" in self.procedure.data and self.procedure.data["filename"]:
                         params["filename"] = self.procedure.data["filename"]
 
-                    if (
-                        "subject" in self.procedure.data
-                        and self.procedure.data["subject"]
-                    ):
+                    if "subject" in self.procedure.data and self.procedure.data["subject"]:
                         params["subject"] = self.procedure.data["subject"]
 
                     if "hasNoDelete" in self.procedure.data:
@@ -459,7 +403,7 @@ class DataProcedureProcess(object):
                     params["sftpuser"] = credentials.username
                     params["sftpkeypath"] = credentials.path_to_private_key
 
-                except Exception as error:
+                except Exception:
                     send_system_message(
                         master_user=self.master_user,
                         performed_by="System",
@@ -477,13 +421,8 @@ class DataProcedureProcess(object):
                     params["sftppassword"] = credentials.password
 
                     if self.procedure.data:
-                        if (
-                            "archivepassword" in self.procedure.data
-                            and self.procedure.data["archivepassword"]
-                        ):
-                            params["archivepassword"] = self.procedure.data[
-                                "archivepassword"
-                            ]
+                        if "archivepassword" in self.procedure.data and self.procedure.data["archivepassword"]:
+                            params["archivepassword"] = self.procedure.data["archivepassword"]
 
                     else:
                         send_system_message(
@@ -493,7 +432,7 @@ class DataProcedureProcess(object):
                             description="Lombard Odier Provider Procedure is not configured",
                         )
 
-                except Exception as error:
+                except Exception:
                     send_system_message(
                         master_user=self.master_user,
                         performed_by="System",
@@ -507,16 +446,10 @@ class DataProcedureProcess(object):
                     if "code" in self.procedure.data and self.procedure.data["code"]:
                         params["code"] = self.procedure.data["code"]
 
-                    if (
-                        "issuer" in self.procedure.data
-                        and self.procedure.data["issuer"]
-                    ):
+                    if "issuer" in self.procedure.data and self.procedure.data["issuer"]:
                         params["issuer"] = self.procedure.data["issuer"]
 
-                    if (
-                        "client_id" in self.procedure.data
-                        and self.procedure.data["client_id"]
-                    ):
+                    if "client_id" in self.procedure.data and self.procedure.data["client_id"]:
                         params["client_id"] = self.procedure.data["client_id"]
 
                     if "jwt" in self.procedure.data and self.procedure.data["jwt"]:
@@ -558,7 +491,7 @@ class DataProcedureProcess(object):
                 "callbackURL": callback_url,
             }
 
-            _l.info("callback_url %s" % callback_url)
+            _l.info("callback_url %s", callback_url)
 
             # internal/data/transactions/callback
 
@@ -593,7 +526,7 @@ class DataProcedureProcess(object):
             )
 
 
-class ExpressionProcedureProcess(object):
+class ExpressionProcedureProcess:
     def __init__(
         self,
         procedure=None,
@@ -602,10 +535,7 @@ class ExpressionProcedureProcess(object):
         schedule_instance=None,
         context=None,
     ):
-        _l.debug(
-            "ExpressionProcedureProcess. Master user: %s. Procedure: %s"
-            % (master_user, procedure)
-        )
+        _l.debug("ExpressionProcedureProcess. Master user: %s. Procedure: %s", master_user, procedure)
 
         self.master_user = master_user
         self.procedure = procedure
@@ -617,9 +547,9 @@ class ExpressionProcedureProcess(object):
         if not self.context:
             self.context = {}
 
-        if not "master_user" in self.context:
+        if "master_user" not in self.context:
             self.context.update({"master_user": master_user})
-        if not "member" in self.context:
+        if "member" not in self.context:
             self.context.update({"member": member})
 
         self.execute_context_variables_expressions()
@@ -628,8 +558,8 @@ class ExpressionProcedureProcess(object):
         self.context_names = {}
 
         _l.info(
-            "ExpressionProcedureProcess.execute_context_variables_expressions %s "
-            % self.procedure.context_variables.all()
+            "ExpressionProcedureProcess.execute_context_variables_expressions %s ",
+            self.procedure.context_variables.all(),
         )
 
         for item in self.procedure.context_variables.all():
@@ -639,10 +569,10 @@ class ExpressionProcedureProcess(object):
                 )
 
             except Exception as e:
-                _l.info("execute_context_variables_expressions.e %s" % e)
+                _l.info("execute_context_variables_expressions.e %s", e)
                 self.context_names[item.name] = "Invalid Expression"
 
-        _l.info("self.context_names %s" % self.context_names)
+        _l.info("self.context_names %s", self.context_names)
 
     def process(self):
         try:
@@ -665,7 +595,7 @@ class ExpressionProcedureProcess(object):
             send_system_message(
                 master_user=self.master_user,
                 performed_by="System",
-                description="Procedure %s. Start" % self.celery_task.id,
+                description=f"Procedure {self.celery_task.id}. Start",
             )
 
             names = self.procedure.data
@@ -678,35 +608,25 @@ class ExpressionProcedureProcess(object):
 
             self.context["names"] = names
 
-            _l.info("ExpressionProcedureProcess.names %s" % names)
-            _l.info("ExpressionProcedureProcess.context %s" % self.context)
+            _l.info("ExpressionProcedureProcess.names %s", names)
+            _l.info("ExpressionProcedureProcess.context %s", self.context)
 
             self.celery_task.notes = ""
 
             if "execution_context" in self.context:
                 self.celery_task.notes = self.celery_task.notes = (
-                    "Executed by: %s %s"
-                    % (
-                        self.context["execution_context"]["source"],
-                        self.context["execution_context"]["actor"],
-                    )
-                    + "\n"
+                    f"Executed by: {self.context['execution_context']['source']} "
+                    f"{self.context['execution_context']['actor']}\n"
                 )
 
-            self.celery_task.notes = (
-                self.celery_task.notes + "Content: \n" + str(names) + "\n"
-            )
+            self.celery_task.notes = self.celery_task.notes + f"Content: \n{names}\n"
             self.celery_task.notes = self.celery_task.notes + "==========\n"
-            self.celery_task.notes = (
-                self.celery_task.notes + "Code: " + str(self.procedure.code)
-            )
+            self.celery_task.notes = self.celery_task.notes + f"Code: {self.procedure.code}"
 
             try:
-                result, log = formula.safe_eval_with_logs(
-                    self.procedure.code, names=names, context=self.context
-                )
+                result, log = formula.safe_eval_with_logs(self.procedure.code, names=names, context=self.context)
 
-                _l.debug("ExpressionProcedureProcess.result %s" % result)
+                _l.debug("ExpressionProcedureProcess.result %s", result)
 
                 if result:
                     self.celery_task.result_object = result
@@ -723,8 +643,7 @@ class ExpressionProcedureProcess(object):
                     master_user=self.master_user,
                     action_status="required",
                     type="warning",
-                    title="Expression Procedure Failed. User Code: %s"
-                    % self.procedure.user_code,
+                    title=f"Expression Procedure Failed. User Code: {self.procedure.user_code}",
                     description=str(e),
                 )
 
@@ -733,30 +652,23 @@ class ExpressionProcedureProcess(object):
                 self.celery_task.error_message = str(e)
                 self.celery_task.save()
 
-                _l.error("ExpressionProcedureProcess.safe_eval error %s" % e)
-                _l.error(
-                    "ExpressionProcedureProcess.safe_eval traceback %s"
-                    % traceback.print_exc()
-                )
+                _l.error("ExpressionProcedureProcess.safe_eval error %s", e)
+                _l.error("ExpressionProcedureProcess.safe_eval traceback %s", traceback.print_exc())
 
             send_system_message(
                 master_user=self.master_user,
                 performed_by="System",
-                description="Procedure %s. Done" % self.celery_task.id,
+                description=f"Procedure {self.celery_task.id}. Done",
             )
 
         except Exception as e:
-            _l.error("ExpressionProcedureProcess.process error %s" % e)
-            _l.error(
-                "ExpressionProcedureProcess.process traceback %s"
-                % traceback.format_exc()
-            )
+            _l.error("ExpressionProcedureProcess.process error %s", e)
+            _l.error("ExpressionProcedureProcess.process traceback %s", traceback.format_exc())
 
             send_system_message(
                 master_user=self.master_user,
                 action_status="required",
                 type="error",
-                title="Expression Procedure Unknown Exception. User Code: %s"
-                % self.procedure.user_code,
+                title=f"Expression Procedure Unknown Exception. User Code: {self.procedure.user_code}",
                 description=str(e),
             )

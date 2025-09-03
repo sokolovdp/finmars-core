@@ -40,12 +40,12 @@ class ManifestQueryFilter(BaseFilterBackend):
 
     def filter_queryset(self, request, queryset, view):
         for param, raw_value in request.query_params.items():
-            if not param.startswith('manifest.'):
+            if not param.startswith("manifest."):
                 continue
 
             # param = "manifest.settings.ui.is_shown_in_sidenav"
             # split into ['manifest', 'settings', 'ui', 'is_shown_in_sidenav']
-            parts = param.split('.')
+            parts = param.split(".")
 
             # build the Django lookup: manifest_data__settings__ui__is_shown_in_sidenav
             lookup = "manifest_data"

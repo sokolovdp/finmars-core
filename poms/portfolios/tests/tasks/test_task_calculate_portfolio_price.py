@@ -1,4 +1,3 @@
-from typing import Optional
 from unittest import mock  # , skip
 
 from django.conf import settings
@@ -41,7 +40,7 @@ class CalculatePortfolioRegisterPriceHistoryTest(BaseTestCase):
             "public_name": "public_name",
         }
 
-    def create_celery_task(self, options: Optional[dict] = None) -> CeleryTask:
+    def create_celery_task(self, options: dict | None = None) -> CeleryTask:
         self.celery_task = CeleryTask.objects.create(
             master_user=self.master_user,
             member=self.member,

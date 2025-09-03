@@ -4,6 +4,8 @@ from datetime import timedelta
 from logging import getLogger
 
 import django_filters
+import pyotp
+from celery.result import AsyncResult
 from django.conf import settings
 from django.contrib.auth import login, logout
 from django.contrib.auth.models import User
@@ -25,9 +27,6 @@ from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.viewsets import ViewSet
-
-import pyotp
-from celery.result import AsyncResult
 
 from poms.accounts.models import Account, AccountType
 from poms.celery_tasks.models import CeleryTask
@@ -73,10 +72,11 @@ from poms.users.filters import (
 from poms.users.models import (
     EcosystemDefault,
     MasterUser,
+    MasterUserSymmetricKey,
     Member,
     OtpToken,
     ResetPasswordToken,
-    UsercodePrefix, MasterUserSymmetricKey,
+    UsercodePrefix,
 )
 from poms.users.permissions import (
     IsCurrentMasterUser,
@@ -90,6 +90,7 @@ from poms.users.serializers import (
     MasterUserCreateSerializer,
     MasterUserLightSerializer,
     MasterUserSerializer,
+    MasterUserSymmetricKeySerializer,
     MemberSerializer,
     OtpTokenSerializer,
     PasswordTokenSerializer,
@@ -98,7 +99,7 @@ from poms.users.serializers import (
     UserRegisterSerializer,
     UserSerializer,
     UserSetPasswordSerializer,
-    UserUnsubscribeSerializer, MasterUserSymmetricKeySerializer,
+    UserUnsubscribeSerializer,
 )
 from poms.users.tasks import clone_master_user
 
@@ -184,7 +185,7 @@ class LoginViewSet(ViewSet):
 
             active_tokens = False
 
-            if len(list(tokens)):
+            if list(tokens):
                 for token in tokens:
                     if token.is_active:
                         active_tokens = True
@@ -273,9 +274,7 @@ class MasterUserCopyViewSet(AbstractAsyncViewSet):
             res = AsyncResult(signer.unsign(task_id))
 
             try:
-                celery_task = CeleryTask.objects.get(
-                    master_user=request.user.master_user, task_id=task_id
-                )
+                celery_task = CeleryTask.objects.get(master_user=request.user.master_user, task_id=task_id)
             except CeleryTask.DoesNotExist:
                 celery_task = None
                 _l.debug("Cant create Celery Task")
@@ -399,9 +398,7 @@ class ResetPasswordConfirmViewSet(AbstractApiView, ViewSet):
             return Response({"status": "notfound"}, status=status.HTTP_404_NOT_FOUND)
 
         # check expiry date
-        expiry_date = reset_password_token.created_at + timedelta(
-            hours=password_reset_token_validation_time
-        )
+        expiry_date = reset_password_token.created_at + timedelta(hours=password_reset_token_validation_time)
 
         if timezone.now() > expiry_date:
             # delete expired token
@@ -445,14 +442,10 @@ class ResetPasswordRequestTokenViewSet(AbstractApiView, ViewSet):
         password_reset_token_validation_time = get_password_reset_token_expiry_time()
 
         # datetime.now minus expiry hours
-        now_minus_expiry_time = timezone.now() - timedelta(
-            hours=password_reset_token_validation_time
-        )
+        now_minus_expiry_time = timezone.now() - timedelta(hours=password_reset_token_validation_time)
 
         # delete all tokens where created_at < now - 24 hours
-        ResetPasswordToken.objects.filter(
-            created_at__lte=now_minus_expiry_time
-        ).delete()
+        ResetPasswordToken.objects.filter(created_at__lte=now_minus_expiry_time).delete()
 
         # find a user by email address (case insensitive search)
         users = User.objects.filter(email__iexact=email)
@@ -473,7 +466,8 @@ class ResetPasswordRequestTokenViewSet(AbstractApiView, ViewSet):
                 {
                     "email": ValidationError(
                         gettext_lazy(
-                            "There is no active user associated with this e-mail address or the password can not be changed"
+                            "There is no active user associated with this e-mail address "
+                            "or the password can not be changed"
                         ),
                         code="invalid",
                     )
@@ -501,10 +495,7 @@ class ResetPasswordRequestTokenViewSet(AbstractApiView, ViewSet):
                         ip_address=request.META["REMOTE_ADDR"],
                     )
 
-                link = (
-                    f"https://{settings.DOMAIN_NAME}/forgot-password-confirm.html"
-                    f"?token={token.key}"
-                )
+                link = f"https://{settings.DOMAIN_NAME}/forgot-password-confirm.html?token={token.key}"
 
                 _l.debug(f"link {link}")
 
@@ -528,7 +519,7 @@ class UserViewSet(AbstractModelViewSet):
     ]
 
     def get_queryset(self):
-        qs = super(UserViewSet, self).get_queryset()
+        qs = super().get_queryset()
         qs = qs.filter(id=self.request.user.id)
         return qs
 
@@ -623,11 +614,9 @@ class MasterUserViewSet(AbstractModelViewSet):
 
         try:
             master_user = MasterUser.objects.get(id=request.data["id"])
-            member_qs = Member.objects.filter(
-                master_user=master_user, user=user, is_admin=True
-            )
+            member_qs = Member.objects.filter(master_user=master_user, user=user, is_admin=True)
 
-            if len(list(member_qs)):
+            if list(member_qs):
                 self._save_master_user_data(request, master_user)
             else:
                 raise PermissionDenied()
@@ -646,18 +635,14 @@ class MasterUserViewSet(AbstractModelViewSet):
         try:
             master_user = MasterUser.objects.get(space_code=request.space_code)
 
-            member_qs = Member.objects.filter(
-                master_user=master_user, user=user, is_admin=True
-            )
+            member_qs = Member.objects.filter(master_user=master_user, user=user, is_admin=True)
 
-            if len(list(member_qs)):
+            if list(member_qs):
                 master_user.name = request.data["name"]
                 master_user.description = request.data["description"]
                 master_user.status = request.data["status"]
                 master_user.journal_status = request.data["journal_status"]
-                master_user.journal_storage_policy = request.data[
-                    "journal_storage_policy"
-                ]
+                master_user.journal_storage_policy = request.data["journal_storage_policy"]
                 master_user.save()
             else:
                 raise PermissionDenied()
@@ -701,7 +686,7 @@ class MasterUserLightViewSet(AbstractModelViewSet):
         lookup_value = self.kwargs[lookup_url_kwarg]
         if lookup_value == "0":
             return self.request.user.master_user
-        return super(MasterUserLightViewSet, self).get_object()
+        return super().get_object()
 
     def create(self, request, *args, **kwargs):
         raise PermissionDenied()
@@ -907,9 +892,7 @@ class MemberViewSet(AbstractModelViewSet):
                     space_code=request.space_code,
                 )
                 headers = self.get_success_headers(serializer.data)
-                return Response(
-                    serializer.data, status=status.HTTP_201_CREATED, headers=headers
-                )
+                return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
             except Exception as err:
                 # Authorizer API call failed, rollback the transaction
                 transaction.set_rollback(True)
@@ -924,10 +907,7 @@ class MemberViewSet(AbstractModelViewSet):
             "is_admin": member.is_admin,
             "from_user_username": request.user.username,
         }
-        error_message = (
-            f"Could not create/invite member, using params={params}, due to "
-            f"Authorizer error={repr(err)}"
-        )
+        error_message = f"Could not create/invite member, using params={params}, due to Authorizer error={repr(err)}"
         _l.error(f"MemberViewSet.create {error_message} trace {traceback.format_exc()}")
 
         return Response(
@@ -959,17 +939,12 @@ class MemberViewSet(AbstractModelViewSet):
             raise ValidationError("Could not remove owner rights from owner")
         if not member.is_owner and form_data_is_owner is True:
             if not self.request.user.member.is_owner:
-                raise ValidationError(
-                    "Only the owner himself can pass owner rights to another user"
-                )
+                raise ValidationError("Only the owner himself can pass owner rights to another user")
 
         if member.is_owner and member.is_admin and form_data_is_admin is False:
             raise ValidationError("Could not remove admin rights from owner")
 
-        if (
-            member.is_admin != form_data_is_admin
-            or member.is_owner != form_data_is_owner
-        ):
+        if member.is_admin != form_data_is_admin or member.is_owner != form_data_is_owner:
             authorizer = AuthorizerService()
             authorizer.update_member(
                 member,
@@ -1008,10 +983,7 @@ class MemberViewSet(AbstractModelViewSet):
         if self.get_object().username == "finmars_bot":
             raise PermissionDenied()
 
-        if (
-            request.user.member.id != self.get_object().id
-            and not request.user.member.is_admin
-        ):
+        if request.user.member.id != self.get_object().id and not request.user.member.is_admin:
             raise PermissionDenied()
 
         instance = self.get_object()
@@ -1075,9 +1047,7 @@ class MasterUserSymmetricKeyViewSet(AbstractModelViewSet):
         OwnerByMasterUserFilter,
     ]
     filter_class = MasterUserSymmetricKeyFilterSet
-    ordering_fields = [
-
-    ]
+    ordering_fields = []
     pagination_class = BigPagination
 
 
@@ -1155,12 +1125,8 @@ class DeleteMasterUserViewSet(AbstractApiView, ViewSet):
 
         transaction_types = TransactionType.objects.filter(master_user=master_user_id)
 
-        TransactionTypeAction.objects.filter(
-            transaction_type__in=transaction_types
-        ).delete()
-        TransactionTypeInput.objects.filter(
-            transaction_type__in=transaction_types
-        ).delete()
+        TransactionTypeAction.objects.filter(transaction_type__in=transaction_types).delete()
+        TransactionTypeInput.objects.filter(transaction_type__in=transaction_types).delete()
 
         TransactionType.objects.filter(master_user=master_user_id).delete()
 

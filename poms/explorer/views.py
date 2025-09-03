@@ -109,11 +109,7 @@ class ExplorerViewSet(AbstractViewSet):
 
         directories, files = storage.listdir(path)
 
-        members_usernames = set(
-            Member.objects.exclude(user=request.user).values_list(
-                "user__username", flat=True
-            )
-        )
+        members_usernames = set(Member.objects.exclude(user=request.user).values_list("user__username", flat=True))
 
         results = [
             {
@@ -121,9 +117,7 @@ class ExplorerViewSet(AbstractViewSet):
                 "name": dir_name,
             }
             for dir_name in directories
-            if path == f"{space_code}/"
-            and dir_name not in members_usernames
-            or path != f"{space_code}/"
+            if path == f"{space_code}/" and dir_name not in members_usernames or path != f"{space_code}/"
         ]
         for file in files:
             created_at = storage.get_created_time(f"{path}/{file}")
@@ -425,7 +419,7 @@ class DownloadAsZipViewSet(AbstractViewSet):
             )
         else:
             response = FileResponse(
-                open(zip_file_path, "rb"),
+                open(zip_file_path, "rb"),  # noqa: SIM115
                 content_type="application/zip",
             )
             response["Content-Disposition"] = 'attachment; filename="archive.zip"'
@@ -460,10 +454,10 @@ class DownloadViewSet(AbstractViewSet):
 
         try:
             response = FileResponse(
-                storage.open(path, "rb"), 
+                storage.open(path, "rb"),
                 content_type="application/octet-stream",
                 as_attachment=True,
-                filename=os.path.basename(path)
+                filename=os.path.basename(path),
             )
             if file_size:
                 response["Content-Length"] = file_size
@@ -475,7 +469,7 @@ class DownloadViewSet(AbstractViewSet):
             return Response(
                 ResponseSerializer(result).data,
                 status=status.HTTP_400_BAD_REQUEST,
-            )            
+            )
 
 
 class MoveViewSet(ContextMixin, AbstractViewSet):
@@ -592,7 +586,7 @@ class StorageObjectFilter(BaseFilterBackend):
 
         options = Q()
         for query in queries.split(","):
-            query = query.strip("/")
+            query = query.strip("/")  # noqa: PLW2901
             options.add(Q(path__icontains=query), Q.OR)
 
         return queryset.filter(options)

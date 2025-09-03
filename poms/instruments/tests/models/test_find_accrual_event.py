@@ -37,9 +37,7 @@ class NearestFutureAccrualTest(BaseTestCase):
         self.create_accruals(AMOUNT)
         accrual = self.instrument.find_accrual_event(price_date)
         self.assertIsNotNone(accrual)
-        self.assertEqual(
-            accrual.end_date, date(year=price_date.year + 1, month=1, day=1)
-        )
+        self.assertEqual(accrual.end_date, date(year=price_date.year + 1, month=1, day=1))
 
     @BaseTestCase.cases(
         ("0", date(year=YEAR - 1, month=12, day=31)),

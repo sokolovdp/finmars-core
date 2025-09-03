@@ -1,23 +1,19 @@
 import inspect
-from typing import Type
-
 
 from rest_framework.response import Response
 
 from poms.iam.access_policy import AccessPolicy
 
 
-class AccessViewSetMixin(object):
-    access_policy: Type[AccessPolicy]
+class AccessViewSetMixin:
+    access_policy: type[AccessPolicy]
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
         access_policy = getattr(self, "access_policy", None)
 
-        if not inspect.isclass(access_policy) or not issubclass(
-            access_policy, AccessPolicy
-        ):
+        if not inspect.isclass(access_policy) or not issubclass(access_policy, AccessPolicy):
             raise Exception(
                 """
                     When mixing AccessViewSetMixin into your view set, you must assign an AccessPolicy 

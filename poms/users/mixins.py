@@ -1,9 +1,3 @@
-from __future__ import unicode_literals, print_function
-
-from django.contrib.contenttypes.models import ContentType
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.response import Response
-
 # from poms.users.permissions import ObjectPermissionSerializer, ObjectPermission, ObjectPermissionGuard
 
 # class PomsModelPermissionMixin(object):
@@ -70,7 +64,7 @@ from rest_framework.response import Response
 #             # all_perms = self._globalize_perms(ctype, get_perms_for_model(model), is_model=True)
 #             # new_perms = self._globalize_perms(ctype, op.permissions)
 #             # new_perms = {p for p in new_perms if p in all_perms}  # filter
-#             # old_perms = self._globalize_perms(ctype, op.group.permissions.filter(content_type=ctype), is_model=True)
+#             # old_perms = self._globalize_perms(ctype, op.group.permissions.filter(content_type=ctype), is_model=True) # noqa: E501
 #
 #             for p in new_perms - old_perms:
 #                 assign_perm(p, group)

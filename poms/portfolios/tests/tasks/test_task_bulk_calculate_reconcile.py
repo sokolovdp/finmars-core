@@ -94,9 +94,7 @@ class CalculateReconcileHistoryTest(BaseTestCase):
         bulk_calculate_reconcile_history(task_id=celery_task.id)
 
         celery_task.refresh_from_db()
-        self.assertEqual(
-            celery_task.status, CeleryTask.STATUS_DONE, celery_task.error_message
-        )
+        self.assertEqual(celery_task.status, CeleryTask.STATUS_DONE, celery_task.error_message)
 
         self.assertEqual(calculate.call_count, 2)  # once per date
 
@@ -117,9 +115,7 @@ class CalculateReconcileHistoryTest(BaseTestCase):
         bulk_calculate_reconcile_history(task_id=celery_task.id)
 
         celery_task.refresh_from_db()
-        self.assertEqual(
-            celery_task.status, CeleryTask.STATUS_ERROR, celery_task.error_message
-        )
+        self.assertEqual(celery_task.status, CeleryTask.STATUS_ERROR, celery_task.error_message)
 
         messages = celery_task.error_message.split("\n")
         self.assertEqual(len(messages), 2)

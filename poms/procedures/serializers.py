@@ -22,9 +22,7 @@ from poms.procedures.models import (
 from poms.users.fields import MasterUserField
 
 
-class PricingProcedureSerializer(
-    ModelWithTimeStampSerializer, ModelWithUserCodeSerializer, ModelMetaSerializer
-):
+class PricingProcedureSerializer(ModelWithTimeStampSerializer, ModelWithUserCodeSerializer, ModelMetaSerializer):
     master_user = MasterUserField()
 
     price_date_from_expr = ExpressionField(
@@ -80,9 +78,7 @@ class PricingProcedureSerializer(
 
         if data["price_date_from_expr"]:
             try:
-                data["price_date_from_calculated"] = str(
-                    formula.safe_eval(data["price_date_from_expr"], names={})
-                )
+                data["price_date_from_calculated"] = str(formula.safe_eval(data["price_date_from_expr"], names={}))
             except formula.InvalidExpression:
                 data["price_date_from_calculated"] = "Invalid Expression"
         else:
@@ -90,9 +86,7 @@ class PricingProcedureSerializer(
 
         if data["price_date_to_expr"]:
             try:
-                data["price_date_to_calculated"] = str(
-                    formula.safe_eval(data["price_date_to_expr"], names={})
-                )
+                data["price_date_to_calculated"] = str(formula.safe_eval(data["price_date_to_expr"], names={}))
             except formula.InvalidExpression:
                 data["price_date_to_calculated"] = "Invalid Expression"
         else:
@@ -150,7 +144,7 @@ class PricingParentProcedureInstanceSerializer(serializers.ModelSerializer):
 class RunProcedureSerializer(serializers.Serializer):
     def __init__(self, **kwargs):
         kwargs["context"] = context = kwargs.get("context", {}) or {}
-        super(RunProcedureSerializer, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         context["instance"] = self.instance
 
         self.fields["procedure"] = serializers.PrimaryKeyRelatedField(read_only=True)
@@ -178,13 +172,11 @@ class RequestDataFileProcedureSerializer(
     )
 
     def __init__(self, *args, **kwargs):
-        super(RequestDataFileProcedureSerializer, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
         from poms.integrations.serializers import DataProviderSerializer
 
-        self.fields["provider_object"] = DataProviderSerializer(
-            source="provider", read_only=True
-        )
+        self.fields["provider_object"] = DataProviderSerializer(source="provider", read_only=True)
 
     class Meta:
         model = RequestDataFileProcedure
@@ -207,9 +199,7 @@ class RequestDataFileProcedureSerializer(
 
 
 class RequestDataFileProcedureInstanceSerializer(serializers.ModelSerializer):
-    procedure_object = RequestDataFileProcedureSerializer(
-        source="procedure", read_only=True
-    )
+    procedure_object = RequestDataFileProcedureSerializer(source="procedure", read_only=True)
 
     request_data = serializers.JSONField(allow_null=True, required=False)
 
@@ -237,9 +227,7 @@ class ExpressionProcedureContextVariableSerializer(serializers.ModelSerializer):
         fields = ("id", "order", "name", "expression", "notes")
 
 
-class ExpressionProcedureSerializer(
-    ModelWithTimeStampSerializer, ModelWithUserCodeSerializer, ModelMetaSerializer
-):
+class ExpressionProcedureSerializer(ModelWithTimeStampSerializer, ModelWithUserCodeSerializer, ModelMetaSerializer):
     context_variables = ExpressionProcedureContextVariableSerializer(
         many=True, allow_null=True, required=False, read_only=False
     )
@@ -248,7 +236,7 @@ class ExpressionProcedureSerializer(
     data = serializers.JSONField(allow_null=True, required=False)
 
     def __init__(self, *args, **kwargs):
-        super(ExpressionProcedureSerializer, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
     class Meta:
         model = ExpressionProcedure
@@ -286,7 +274,7 @@ class ExpressionProcedureSerializer(
     def create(self, validated_data):
         context_variables = validated_data.pop("context_variables", None) or []
 
-        instance = super(ExpressionProcedureSerializer, self).create(validated_data)
+        instance = super().create(validated_data)
 
         self.save_context_variables(instance, context_variables)
 
@@ -295,9 +283,7 @@ class ExpressionProcedureSerializer(
     def update(self, instance, validated_data):
         context_variables = validated_data.pop("context_variables", None) or []
 
-        instance = super(ExpressionProcedureSerializer, self).update(
-            instance, validated_data
-        )
+        instance = super().update(instance, validated_data)
 
         self.save_context_variables(instance, context_variables)
 
@@ -307,7 +293,7 @@ class ExpressionProcedureSerializer(
 class RunExpressionProcedureSerializer(serializers.Serializer):
     def __init__(self, **kwargs):
         kwargs["context"] = context = kwargs.get("context", {}) or {}
-        super(RunExpressionProcedureSerializer, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         context["instance"] = self.instance
 
         self.fields["procedure"] = serializers.PrimaryKeyRelatedField(read_only=True)

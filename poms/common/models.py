@@ -30,9 +30,7 @@ class NamedModel(OwnerModel):
         null=True,
         blank=True,
         verbose_name=gettext_lazy("user code"),
-        help_text=gettext_lazy(
-            "Unique Code for this object. Used in Configuration and Permissions Logic"
-        ),
+        help_text=gettext_lazy("Unique Code for this object. Used in Configuration and Permissions Logic"),
     )
     name = models.CharField(
         max_length=255,
@@ -81,7 +79,7 @@ class NamedModel(OwnerModel):
         if not self.short_name:
             self.short_name = self.name
 
-        super(NamedModel, self).save(*args, **kwargs)
+        super().save(*args, **kwargs)
 
 
 class TimeStampedModel(models.Model):
@@ -171,8 +169,7 @@ class FakeDeletableModel(models.Model):
         blank=True,
         verbose_name=gettext_lazy("deleted user code"),
         help_text=(
-            "Stores original user_code of object. Deleted objects has null "
-            "user_code which makes it available again."
+            "Stores original user_code of object. Deleted objects has null user_code which makes it available again."
         ),
     )
 
@@ -210,9 +207,7 @@ class FakeDeletableModel(models.Model):
                 context={"master_user": self.master_user},
             )
             # 'del00000000000000001'
-            fields_to_update.extend(
-                ["deleted_user_code", "name", "short_name", "user_code"]
-            )
+            fields_to_update.extend(["deleted_user_code", "name", "short_name", "user_code"])
 
         if hasattr(self, "is_enabled"):
             self.is_enabled = False
@@ -272,9 +267,7 @@ class FakeDeletableModel(models.Model):
             self.short_name = self.name.replace("(del) ", "")
             self.user_code = self.deleted_user_code
             self.deleted_user_code = None
-            fields_to_update.extend(
-                ["deleted_user_code", "name", "short_name", "user_code"]
-            )
+            fields_to_update.extend(["deleted_user_code", "name", "short_name", "user_code"])
 
         if hasattr(self, "is_enabled"):
             self.is_enabled = True
@@ -318,7 +311,10 @@ class ObjectStateModel(models.Model):
     )
     actual_at = models.DateTimeField(
         null=True,
-        help_text="Show the Date that object is truth for, e.g. price created_at is 2024-07-10 but actually this price is 2024-01-01",
+        help_text=(
+            "Show the Date that object is truth for, e.g. price created_at is 2024-07-10 but actually "
+            "this price is 2024-01-01"
+        ),
     )
     source_type = models.CharField(
         default="manual",
@@ -326,12 +322,8 @@ class ObjectStateModel(models.Model):
     source_origin = models.CharField(
         default="manual",
     )
-    external_id = models.CharField(
-        null=True, help_text="how object is referenced in external system"
-    )
-    is_manual_locked = models.BooleanField(
-        default=False, help_text="just a flag to disable form on frontend"
-    )
+    external_id = models.CharField(null=True, help_text="how object is referenced in external system")
+    is_manual_locked = models.BooleanField(default=False, help_text="just a flag to disable form on frontend")
     is_locked = models.BooleanField(
         default=True,
         help_text="blocked to any change (only from finmars frontend change is allowed)",
@@ -374,7 +366,7 @@ class BaseCacheManager(models.Manager):
             obj = cache.get(key)
             if obj is None:  # Cache miss
                 raise ValueError("Cache miss")
-        except Exception as e:
+        except Exception:
             # Log the error if needed
             obj = self._get_obj_from_db(pk)  # Fetch from DB
             self.set_cache(obj)  # Store in cache again
@@ -443,12 +435,12 @@ class CacheModel(models.Model):
 
 
 # These models need to create custom context, that could be passed to serializers
-class ProxyUser(object):
+class ProxyUser:
     def __init__(self, member, master_user):
         self.member = member
         self.master_user = master_user
 
 
-class ProxyRequest(object):
+class ProxyRequest:
     def __init__(self, user):
         self.user = user

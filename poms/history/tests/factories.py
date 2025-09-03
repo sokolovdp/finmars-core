@@ -1,8 +1,7 @@
-import json
 import factory
-from faker import Faker
 from factory.django import DjangoModelFactory
 from factory.fuzzy import FuzzyChoice
+from faker import Faker
 
 from poms.common.factories import MasterUserFactory, MemberFactory
 from poms.history.models import HistoricalRecord

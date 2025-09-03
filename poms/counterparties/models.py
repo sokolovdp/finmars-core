@@ -4,10 +4,10 @@ from django.utils.translation import gettext_lazy
 
 from poms.common.fields import ResourceGroupsField
 from poms.common.models import (
-    TimeStampedModel,
     FakeDeletableModel,
     NamedModel,
     ObjectStateModel,
+    TimeStampedModel,
 )
 from poms.obj_attrs.models import GenericAttribute
 from poms.users.models import MasterUser
@@ -64,11 +64,7 @@ class CounterpartyGroup(NamedModel, FakeDeletableModel):
 
     @property
     def is_default(self):
-        return (
-            self.master_user.counterparty_group_id == self.id
-            if self.master_user_id
-            else False
-        )
+        return self.master_user.counterparty_group_id == self.id if self.master_user_id else False
 
 
 # noinspection PyUnresolvedReferences
@@ -155,11 +151,7 @@ class Counterparty(NamedModel, FakeDeletableModel, TimeStampedModel, ObjectState
 
     @property
     def is_default(self):
-        return (
-            self.master_user.counterparty_id == self.id
-            if self.master_user_id
-            else False
-        )
+        return self.master_user.counterparty_id == self.id if self.master_user_id else False
 
 
 # noinspection PyUnresolvedReferences
@@ -213,11 +205,7 @@ class ResponsibleGroup(NamedModel, FakeDeletableModel):
 
     @property
     def is_default(self):
-        return (
-            self.master_user.counterparty_group_id == self.id
-            if self.master_user_id
-            else False
-        )
+        return self.master_user.counterparty_group_id == self.id if self.master_user_id else False
 
 
 # noinspection PyUnresolvedReferences
@@ -251,9 +239,7 @@ class Responsible(NamedModel, FakeDeletableModel, TimeStampedModel, ObjectStateM
     )
 
     resource_groups = ResourceGroupsField(
-        verbose_name=gettext_lazy(
-            "list of resource groups user_codes, to which responsible belongs"
-        ),
+        verbose_name=gettext_lazy("list of resource groups user_codes, to which responsible belongs"),
     )
 
     class Meta(NamedModel.Meta, FakeDeletableModel.Meta):
@@ -316,6 +302,4 @@ class Responsible(NamedModel, FakeDeletableModel, TimeStampedModel, ObjectStateM
 
     @property
     def is_default(self):
-        return (
-            self.master_user.responsible_id == self.id if self.master_user_id else False
-        )
+        return self.master_user.responsible_id == self.id if self.master_user_id else False

@@ -28,14 +28,12 @@ from poms.users.filters import OwnerByMasterUserFilter
 AUTO_CALCULATE = float("-inf")
 
 
-class InstrumentTypeDefault(object):
+class InstrumentTypeDefault:
     requires_context = True
 
     def set_context(self, serializer_field):
         request = serializer_field.context["request"]
-        self._master_user = (
-            request.user.master_user if request.user.is_authenticated else None
-        )
+        self._master_user = request.user.master_user if request.user.is_authenticated else None
 
     def __call__(self, serializer_field):
         self.set_context(serializer_field)
@@ -49,14 +47,12 @@ class InstrumentTypeField(UserCodeOrPrimaryKeyRelatedField):
     ]
 
 
-class InstrumentDefault(object):
+class InstrumentDefault:
     requires_context = True
 
     def set_context(self, serializer_field):
         request = serializer_field.context["request"]
-        self._master_user = (
-            request.user.master_user if request.user.is_authenticated else None
-        )
+        self._master_user = request.user.master_user if request.user.is_authenticated else None
 
     def __call__(self, serializer_field):
         self.set_context(serializer_field)
@@ -140,9 +136,7 @@ class SystemPricingPolicyDefault:
 
         self.set_context(serializer_field)
 
-        ecosystem_default = EcosystemDefault.cache.get_cache(
-            master_user_pk=self._master_user.pk
-        )
+        ecosystem_default = EcosystemDefault.cache.get_cache(master_user_pk=self._master_user.pk)
 
         return ecosystem_default.pricing_policy
 

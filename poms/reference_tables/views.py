@@ -1,7 +1,6 @@
 from django_filters.rest_framework import FilterSet
 
 from poms.common.filters import CharFilter, NoOpFilter
-
 from poms.common.views import AbstractModelViewSet
 from poms.reference_tables.models import ReferenceTable
 from poms.reference_tables.serializers import ReferenceTableSerializer

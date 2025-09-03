@@ -2,8 +2,8 @@ from django.contrib import admin
 
 # Register your models here.
 from poms.configuration_sharing.models import (
-    SharedConfigurationFile,
     InviteToSharedConfigurationFile,
+    SharedConfigurationFile,
 )
 
 
@@ -35,6 +35,4 @@ class InviteToSharedConfigurationFileAdmin(admin.ModelAdmin):
     search_fields = ["id"]
 
 
-admin.site.register(
-    InviteToSharedConfigurationFile, InviteToSharedConfigurationFileAdmin
-)
+admin.site.register(InviteToSharedConfigurationFile, InviteToSharedConfigurationFileAdmin)

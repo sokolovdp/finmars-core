@@ -1,6 +1,7 @@
-from poms.common.common_base_test import BaseTestCase, GenericAttribute
 from django.contrib.contenttypes.models import ContentType
-from poms.instruments.models import InstrumentType, InstrumentClass
+
+from poms.common.common_base_test import BaseTestCase, GenericAttribute
+from poms.instruments.models import InstrumentClass, InstrumentType
 from poms.instruments.tests.common_test_data import EXPECTED_INSTRUMENT_TYPE
 
 
@@ -12,9 +13,7 @@ class InstrumentTypeViewSetTest(BaseTestCase):
         self.init_test_case()
         self.realm_code = "realm00000"
         self.space_code = "space00000"
-        self.url = (
-            f"/{self.realm_code}/{self.space_code}/api/v1/instruments/instrument-type/"
-        )
+        self.url = f"/{self.realm_code}/{self.space_code}/api/v1/instruments/instrument-type/"
         self.content_type = ContentType.objects.get_for_model(InstrumentType)
         self.attribute_type = self.create_attribute_type(content_type=self.content_type)
 
@@ -25,9 +24,7 @@ class InstrumentTypeViewSetTest(BaseTestCase):
     def prepare_data_for_create(self) -> dict:
         currency_id = self.get_currency().id
 
-        attribute = self.create_attribute(
-            content_type=self.content_type, attribute_type=self.attribute_type
-        )
+        attribute = self.create_attribute(content_type=self.content_type, attribute_type=self.attribute_type)
         return {
             "user_code": self.random_string(11),
             "name": self.random_string(11),
@@ -167,9 +164,7 @@ class InstrumentTypeViewSetTest(BaseTestCase):
 
         new_user_code = self.random_string()
         update_data = {"user_code": new_user_code}
-        response = self.client.patch(
-            path=f"{self.url}{instrument_type_id}/", format="json", data=update_data
-        )
+        response = self.client.patch(path=f"{self.url}{instrument_type_id}/", format="json", data=update_data)
         self.assertEqual(response.status_code, 200, response.content)
 
         response = self.client.get(path=f"{self.url}{instrument_type_id}/")
@@ -206,9 +201,7 @@ class InstrumentTypeViewSetTest(BaseTestCase):
 
         instrument_type_id = response_json["id"]
 
-        response = self.client.get(
-            path=f"{self.url}{instrument_type_id}/update-pricing/"
-        )
+        response = self.client.get(path=f"{self.url}{instrument_type_id}/update-pricing/")
         self.assertEqual(response.status_code, 200, response.content)
         response_json = response.json()
 
@@ -250,9 +243,7 @@ class InstrumentTypeViewSetTest(BaseTestCase):
         it = InstrumentType.objects.get(pk=instrument_type_id)
         self.assertEqual(it.attributes.count(), 1)
 
-        new_attribute_type = self.create_attribute_type(
-            content_type=self.content_type, value_type=10
-        )
+        new_attribute_type = self.create_attribute_type(content_type=self.content_type, value_type=10)
         new_attribute = GenericAttribute.objects.create(
             attribute_type=new_attribute_type,
             content_type=self.content_type,
@@ -269,9 +260,7 @@ class InstrumentTypeViewSetTest(BaseTestCase):
                 }
             ],
         }
-        response = self.client.patch(
-            path=f"{self.url}{instrument_type_id}/", format="json", data=update_data
-        )
+        response = self.client.patch(path=f"{self.url}{instrument_type_id}/", format="json", data=update_data)
         self.assertEqual(response.status_code, 200, response.content)
 
         it.refresh_from_db()

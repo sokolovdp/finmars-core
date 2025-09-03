@@ -25,7 +25,7 @@ def get_workflows_list(date_from, date_to, realm_code, space_code):
     headers = {
         "Content-type": "application/json",
         "Accept": "application/json",
-        "Authorization": "Bearer %s" % refresh.access_token,
+        "Authorization": f"Bearer {refresh.access_token}",
     }
 
     if realm_code:
@@ -57,7 +57,7 @@ def get_workflows_list(date_from, date_to, realm_code, space_code):
     response = requests.get(url, headers=headers, verify=settings.VERIFY_SSL)
 
     if response.status_code != 200:
-        _l.info("get_workflows_list.response.status_code %s" % response.status_code)
+        _l.info("get_workflows_list.response.status_code %s", response.status_code)
         raise Exception(response.text)
 
     data = response.json()

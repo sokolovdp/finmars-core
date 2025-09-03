@@ -1,6 +1,6 @@
 from django.db.models import Prefetch
 
-from poms.obj_attrs.models import GenericAttribute, GenericAttributeType
+from poms.obj_attrs.models import GenericAttribute
 
 
 def get_attr_type_view_perms(model_cls):

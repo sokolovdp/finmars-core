@@ -1,7 +1,4 @@
 from datetime import date
-import random
-
-from django.conf import settings
 
 from poms.common.common_base_test import BIG, SMALL, BaseTestCase
 from poms.portfolios.models import PortfolioRegisterRecord
@@ -20,12 +17,8 @@ class PortfolioRegisterRecordViewSetTest(BaseTestCase):
         self.portfolio = self.db_data.portfolios[BIG]
         self.prr_data = None
 
-    def create_prr_data(
-        self, trade_price=1.0, t_class=0, use_default_portfolio=True, current_date=True
-    ):
-        complex_transaction, transaction = self.db_data.cash_in_transaction(
-            self.portfolio
-        )
+    def create_prr_data(self, trade_price=1.0, t_class=0, use_default_portfolio=True, current_date=True):
+        complex_transaction, transaction = self.db_data.cash_in_transaction(self.portfolio)
         if trade_price > 0:
             transaction.trade_price = trade_price
             transaction.save()
@@ -40,9 +33,7 @@ class PortfolioRegisterRecordViewSetTest(BaseTestCase):
             user_code=self.random_string(),
         )
         self.prr_data = {
-            "portfolio": self.portfolio.id
-            if use_default_portfolio
-            else self.db_data.portfolios[SMALL].id,
+            "portfolio": self.portfolio.id if use_default_portfolio else self.db_data.portfolios[SMALL].id,
             "instrument": instrument.id,
             "transaction_class": trans_class.id,
             "transaction_code": self.random_int(1_000, 10_000),
@@ -97,23 +88,17 @@ class PortfolioRegisterRecordViewSetTest(BaseTestCase):
     def test_get_list(self):
         self.create_portfolio_register_record()
         self.create_portfolio_register_record()
-        self.create_portfolio_register_record(
-            use_default_portfolio=False, current_date=False
-        )
+        self.create_portfolio_register_record(use_default_portfolio=False, current_date=False)
 
         response = self.client.get(path=f"{self.url}")
         self.assertEqual(response.status_code, 200, response.content)
         self.assertEqual(response.json().get("count"), 3)
 
-        response = self.client.get(
-            path=f"{self.url}?portfolio__user_code={self.portfolio.user_code}"
-        )
+        response = self.client.get(path=f"{self.url}?portfolio__user_code={self.portfolio.user_code}")
         self.assertEqual(response.status_code, 200, response.content)
         self.assertEqual(response.json().get("count"), 2)
 
-        response = self.client.get(
-            path=f"{self.url}?transaction_date_before=2024-01-02"
-        )
+        response = self.client.get(path=f"{self.url}?transaction_date_before=2024-01-02")
         self.assertEqual(response.status_code, 200, response.content)
         self.assertEqual(response.json().get("count"), 1)
 

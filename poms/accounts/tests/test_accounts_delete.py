@@ -1,7 +1,6 @@
-from django.conf import settings
-from poms.currencies.constants import DASH
-from poms.common.common_base_test import BaseTestCase
 from poms.accounts.models import Account
+from poms.common.common_base_test import BaseTestCase
+from poms.currencies.constants import DASH
 
 
 class AccountDeleteViewSetTest(BaseTestCase):
@@ -21,7 +20,7 @@ class AccountDeleteViewSetTest(BaseTestCase):
 
     def test_detail_delete_custom_accounts(self):
         account = Account.objects.last()
-        portfolio = Account.objects.create(
+        portfolio = Account.objects.create(  # noqa: F841
             user_code="test",
             name="test",
             owner=account.owner,

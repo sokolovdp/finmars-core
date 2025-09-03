@@ -7,9 +7,9 @@ from django.contrib.postgres.fields import ArrayField
 from django.db import models, transaction
 from django.utils.translation import gettext_lazy
 
-from poms.common.models import NamedModel, TimeStampedModel
+from poms.common.models import TimeStampedModel
 from poms.configuration.models import ConfigurationModel
-from poms.users.models import MasterUser, Member
+from poms.users.models import Member
 
 
 def default_list():
@@ -119,8 +119,7 @@ class ResourceGroupManager(models.Manager):
     def validate_obj(obj: Any):
         if not hasattr(obj, "resource_groups"):
             raise RuntimeError(
-                f"ResourceGroupManager: instance of {obj._meta.model_name} "
-                f"does not have 'resource_groups' field"
+                f"ResourceGroupManager: instance of {obj._meta.model_name} does not have 'resource_groups' field"
             )
 
     def add_object(self, group_user_code: str, obj_instance: Any):
@@ -235,10 +234,7 @@ class ResourceGroupAssignment(models.Model):
         ]
 
     def __str__(self) -> str:
-        return (
-            f"{self.resource_group.name} assigned to "
-            f"{self.content_object}:{self.object_user_code}"
-        )
+        return f"{self.resource_group.name} assigned to {self.content_object}:{self.object_user_code}"
 
     def delete(self, **kwargs):
         model = self.content_type.model_class()
@@ -252,4 +248,3 @@ class ResourceGroupAssignment(models.Model):
 
 
 # Important, needs for cache clearance after Policy Updated !!!
-from . import signals
