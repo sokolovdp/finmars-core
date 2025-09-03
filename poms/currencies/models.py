@@ -144,19 +144,13 @@ class Currency(NamedModel, FakeDeletableModel, TimeStampedModel, ObjectStateMode
 
 
 class CurrencyPricingPolicy(TimeStampedModel):
-    pricing_policy = models.ForeignKey(
-        "instruments.PricingPolicy", on_delete=models.CASCADE
-    )
-    currency = models.ForeignKey(
-        Currency, on_delete=models.CASCADE, related_name="pricing_policies"
-    )
+    pricing_policy = models.ForeignKey("instruments.PricingPolicy", on_delete=models.CASCADE)
+    currency = models.ForeignKey(Currency, on_delete=models.CASCADE, related_name="pricing_policies")
     target_pricing_schema_user_code = models.CharField(
         max_length=1024,
         help_text="link to some workflow from marketplace, e.g. com.finmars.bank-a-pricing-bond",
     )
-    options = models.JSONField(
-        default=dict, help_text="options populated from module form"
-    )
+    options = models.JSONField(default=dict, help_text="options populated from module form")
 
     class Meta:
         unique_together = ("pricing_policy", "currency")

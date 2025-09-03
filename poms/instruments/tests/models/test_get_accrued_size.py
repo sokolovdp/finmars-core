@@ -1,7 +1,7 @@
 from datetime import date
 
 from poms.common.common_base_test import BaseTestCase
-from poms.common.factories import AccrualEventFactory, AccrualCalculationScheduleFactory
+from poms.common.factories import AccrualCalculationScheduleFactory, AccrualEventFactory
 from poms.instruments.models import Instrument
 
 YEAR = date.today().year

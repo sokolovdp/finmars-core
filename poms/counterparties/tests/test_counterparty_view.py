@@ -1,7 +1,5 @@
 from copy import deepcopy
 
-from django.conf import settings
-
 from poms.common.common_base_test import BaseTestCase
 from poms.counterparties.models import Counterparty, CounterpartyGroup
 
@@ -95,9 +93,7 @@ class CounterpartyViewSetTest(BaseTestCase):
         self.init_test_case()
         self.realm_code = "realm00000"
         self.space_code = "space00000"
-        self.url = (
-            f"/{self.realm_code}/{self.space_code}/api/v1/counterparties/counterparty/"
-        )
+        self.url = f"/{self.realm_code}/{self.space_code}/api/v1/counterparties/counterparty/"
         self.counterparty = None
 
     def create_counterparty_group(self) -> CREATE_DATA:
@@ -166,9 +162,7 @@ class CounterpartyViewSetTest(BaseTestCase):
 
     def test__get_filters(self):  # sourcery skip: extract-duplicate-method
         counterparty = self.create_counterparty()
-        response = self.client.get(
-            path=f"{self.url}?user_code={counterparty.user_code}"
-        )
+        response = self.client.get(path=f"{self.url}?user_code={counterparty.user_code}")
         self.assertEqual(response.status_code, 200, response.content)
         response_json = response.json()
         self.assertEqual(response_json["count"], 1)
@@ -209,9 +203,7 @@ class CounterpartyViewSetTest(BaseTestCase):
         new_user_code = self.random_string()
         update_data = deepcopy(create_data)
         update_data["user_code"] = new_user_code
-        response = self.client.put(
-            path=f"{self.url}{counterparty_id}/", format="json", data=update_data
-        )
+        response = self.client.put(path=f"{self.url}{counterparty_id}/", format="json", data=update_data)
         self.assertEqual(response.status_code, 200, response.content)
 
         response = self.client.get(path=f"{self.url}{counterparty_id}/")
@@ -230,9 +222,7 @@ class CounterpartyViewSetTest(BaseTestCase):
         new_short_name = self.random_string(3)
         update_data = {"short_name": new_short_name}
 
-        response = self.client.patch(
-            path=f"{self.url}{counterparty_id}/", format="json", data=update_data
-        )
+        response = self.client.patch(path=f"{self.url}{counterparty_id}/", format="json", data=update_data)
         self.assertEqual(response.status_code, 200, response.content)
 
         response = self.client.get(path=f"{self.url}{counterparty_id}/")

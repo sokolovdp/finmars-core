@@ -14,9 +14,9 @@ class Command(BaseCommand):
         from poms.users.models import MasterUser
 
         name = options["name"]
-        if not isinstance(name, (list, tuple, set)):
+        if not isinstance(name, list | tuple | set):
             name = [name]
         for n in name:
             with transaction.atomic():
                 MasterUser.objects.create_master_user(name=n)
-            self.stdout.write("Master user '%s' created." % n)
+            self.stdout.write(f"Master user '{n}' created.")

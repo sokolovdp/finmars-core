@@ -1,6 +1,6 @@
-from poms.common.common_base_test import BIG, BaseTestCase, SMALL
-from poms.portfolios.models import PortfolioReconcileGroup, PortfolioReconcileHistory
+from poms.common.common_base_test import BIG, SMALL, BaseTestCase
 from poms.file_reports.models import FileReport
+from poms.portfolios.models import PortfolioReconcileGroup, PortfolioReconcileHistory
 
 
 class DeleteReconcileHistoryTest(BaseTestCase):
@@ -25,9 +25,7 @@ class DeleteReconcileHistoryTest(BaseTestCase):
             },
         )
 
-    def create_reconcile_history(
-        self, group: PortfolioReconcileGroup
-    ) -> PortfolioReconcileHistory:
+    def create_reconcile_history(self, group: PortfolioReconcileGroup) -> PortfolioReconcileHistory:
         return PortfolioReconcileHistory.objects.create(
             master_user=self.master_user,
             owner=self.member,
@@ -48,15 +46,11 @@ class DeleteReconcileHistoryTest(BaseTestCase):
         group.portfolios.add(self.portfolio_2)
         history = self.create_reconcile_history(group)
 
-        self.assertIsNotNone(
-            PortfolioReconcileHistory.objects.filter(pk=history.pk).first()
-        )
+        self.assertIsNotNone(PortfolioReconcileHistory.objects.filter(pk=history.pk).first())
 
         self.portfolio_1.destroy_reconcile_histories()
 
-        self.assertIsNone(
-            PortfolioReconcileHistory.objects.filter(pk=history.pk).first()
-        )
+        self.assertIsNone(PortfolioReconcileHistory.objects.filter(pk=history.pk).first())
 
     def test__delete_with_file_report(self):
         group = self.create_reconcile_group()
@@ -67,14 +61,10 @@ class DeleteReconcileHistoryTest(BaseTestCase):
         history.file_report = file_report
         history.save()
 
-        self.assertIsNotNone(
-            PortfolioReconcileHistory.objects.filter(pk=history.pk).first()
-        )
+        self.assertIsNotNone(PortfolioReconcileHistory.objects.filter(pk=history.pk).first())
         self.assertEqual(file_report.pk, history.file_report.pk)
 
         self.portfolio_1.destroy_reconcile_histories()
 
-        self.assertIsNone(
-            PortfolioReconcileHistory.objects.filter(pk=history.pk).first()
-        )
+        self.assertIsNone(PortfolioReconcileHistory.objects.filter(pk=history.pk).first())
         self.assertIsNone(FileReport.objects.filter(pk=history.pk).first())

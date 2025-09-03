@@ -15,7 +15,6 @@ from poms.configuration.utils import (
     save_serialized_entity_layout,
     save_serialized_layout,
 )
-from poms_app import settings
 
 _l = logging.getLogger("poms.configuration")
 
@@ -25,29 +24,19 @@ storage = get_storage()
 def export_workflows_to_directory(source_directory, configuration, master_user, member):
     configuration_code_as_path = "/".join(configuration.configuration_code.split("."))
 
-    workflows_dir = (
-        master_user.space_code + "/workflows/" + configuration_code_as_path + "/"
-    )
+    workflows_dir = master_user.space_code + "/workflows/" + configuration_code_as_path + "/"
 
-    _l.info("export_workflows_to_folder.Workflows source: %s" % workflows_dir)
-    _l.info(
-        "export_workflows_to_folder.Workflows destination: %s" % source_directory
-        + "/workflows"
-    )
+    _l.info("export_workflows_to_folder.Workflows source: %s", workflows_dir)
+    _l.info("export_workflows_to_folder.Workflows destination: %s", source_directory + "/workflows")
 
     if storage.folder_exists_and_has_files(workflows_dir):
         _l.info("export_workflows_to_folder exists")
         storage.download_directory(workflows_dir, source_directory + "/workflows")
     else:
-        _l.info(
-            "No workflows found for configuration: %s"
-            % configuration.configuration_code
-        )
+        _l.info("No workflows found for configuration: %s", configuration.configuration_code)
 
 
-def export_configuration_to_directory(
-    source_directory, configuration, master_user, member
-):
+def export_configuration_to_directory(source_directory, configuration, master_user, member):  # noqa: PLR0915
     try:
         proxy_user = ProxyUser(member, master_user)
         proxy_request = ProxyRequest(proxy_user)
@@ -837,7 +826,7 @@ def export_configuration_to_directory(
             )
 
         except Exception as e:
-            _l.error("Could not export aliases e: %s" % e)
+            _l.error("Could not export aliases e: %s", e)
 
         #     IAM
         save_serialized_entity(

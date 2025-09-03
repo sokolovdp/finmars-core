@@ -1,11 +1,11 @@
 import datetime
 from dataclasses import asdict
 from http import HTTPStatus
-from typing import List, Union
 
 from django.utils.timezone import now
 from rest_framework import exceptions
 from rest_framework.status import is_client_error
+
 from .models import ErrorRecord
 from .settings import package_settings
 from .types import (
@@ -77,7 +77,7 @@ class ExceptionFormatter:
         else:
             return ErrorType.SERVER_ERROR
 
-    def get_errors(self) -> List[Error]:
+    def get_errors(self) -> list[Error]:
         """
         Account for validation errors in nested serializers by returning a list
         of errors instead of a nested dict
@@ -93,21 +93,17 @@ class ExceptionFormatter:
         message,
         error_datetime,
         error_type: ErrorType,
-        errors: List[Error],
+        errors: list[Error],
     ):
         error_response_details = ErrorResponseDetails(error_type, errors)
 
-        return ErrorResponse(
-            url, method, username, status_code, message, error_datetime, error_response_details
-        )
+        return ErrorResponse(url, method, username, status_code, message, error_datetime, error_response_details)
 
     def format_error_response(self, error_response: ErrorResponse):
         return {"error": asdict(error_response)}
 
 
-def flatten_errors(
-    detail: Union[list, dict, exceptions.ErrorDetail], attr=None, index=None
-) -> List[Error]:
+def flatten_errors(detail: list | dict | exceptions.ErrorDetail, attr=None, index=None) -> list[Error]:
     """
     convert this:
     {
@@ -149,20 +145,12 @@ def flatten_errors(
     elif isinstance(detail, list):
         first_item, *rest = detail
         if isinstance(first_item, exceptions.ErrorDetail):
-            return flatten_errors(first_item, attr, index) + flatten_errors(
-                rest, attr, index
-            )
+            return flatten_errors(first_item, attr, index) + flatten_errors(rest, attr, index)
 
         index = 0 if index is None else index + 1
-        new_attr = (
-            f"{attr}{package_settings.NESTED_FIELD_SEPARATOR}{index}"
-            if attr
-            else str(index)
-        )
+        new_attr = f"{attr}{package_settings.NESTED_FIELD_SEPARATOR}{index}" if attr else str(index)
 
-        return flatten_errors(first_item, new_attr, index) + flatten_errors(
-            rest, attr, index
-        )
+        return flatten_errors(first_item, new_attr, index) + flatten_errors(rest, attr, index)
 
     elif isinstance(detail, dict):
         (key, value), *rest = list(detail.items())
@@ -171,10 +159,9 @@ def flatten_errors(
         return flatten_errors(value, key) + flatten_errors(dict(rest), attr)
 
     else:
-
         error_key = None
 
-        if getattr(detail, 'error_key', None):
+        if getattr(detail, "error_key", None):
             error_key = detail.error_key
 
-        return [Error(detail.code,  str(detail), error_key, attr)]
+        return [Error(detail.code, str(detail), error_key, attr)]

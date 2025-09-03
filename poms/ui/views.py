@@ -1,3 +1,4 @@
+import logging
 import traceback
 
 import django_filters
@@ -79,8 +80,6 @@ from poms.ui.serializers import (
 )
 from poms.users.filters import OwnerByMasterUserFilter, OwnerByMemberFilter
 
-import logging
-
 _l = logging.getLogger("poms.ui")
 
 
@@ -150,9 +149,7 @@ class ComplexTransactionUserFieldFilterSet(FilterSet):
 
 
 class ComplexTransactionUserFieldViewSet(AbstractModelViewSet):
-    queryset = ComplexTransactionUserField.objects.select_related(
-        "master_user", "owner"
-    )
+    queryset = ComplexTransactionUserField.objects.select_related("master_user", "owner")
     serializer_class = ComplexTransactionUserFieldSerializer
     filter_class = ComplexTransactionUserFieldFilterSet
     filter_backends = AbstractModelViewSet.filter_backends + [
@@ -165,9 +162,7 @@ class ComplexTransactionUserFieldViewSet(AbstractModelViewSet):
 
         active_configuration = Configuration.objects.get(is_primary=True)
 
-        queryset = self.get_queryset().filter(
-            configuration_code=active_configuration.configuration_code
-        )
+        queryset = self.get_queryset().filter(configuration_code=active_configuration.configuration_code)
 
         page = self.paginator.post_paginate_queryset(queryset, request)
         serializer = self.get_serializer(page, many=True)
@@ -201,9 +196,7 @@ class TransactionUserFieldViewSet(AbstractModelViewSet):
 
         active_configuration = Configuration.objects.get(is_primary=True)
 
-        queryset = self.get_queryset().filter(
-            configuration_code=active_configuration.configuration_code
-        )
+        queryset = self.get_queryset().filter(configuration_code=active_configuration.configuration_code)
 
         page = self.paginator.post_paginate_queryset(queryset, request)
         serializer = self.get_serializer(page, many=True)
@@ -312,9 +305,7 @@ class InstrumentUserFieldViewSet(AbstractModelViewSet):
 
         active_configuration = Configuration.objects.get(is_primary=True)
 
-        queryset = self.get_queryset().filter(
-            configuration_code=active_configuration.configuration_code
-        )
+        queryset = self.get_queryset().filter(configuration_code=active_configuration.configuration_code)
 
         page = self.paginator.post_paginate_queryset(queryset, request)
         serializer = self.get_serializer(page, many=True)

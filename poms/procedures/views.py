@@ -60,21 +60,18 @@ class PricingProcedureViewSet(AbstractModelViewSet):
     def run_procedure(self, request, pk=None, realm_code=None, space_code=None):
         _l.debug(f"Run Procedure {pk} data {request.data}")
 
-        procedure = PricingProcedure.objects.get(pk=pk)
+        procedure = PricingProcedure.objects.get(pk=pk)  # noqa: F841
 
-        master_user = request.user.master_user
+        master_user = request.user.master_user  # noqa: F841
 
         date_from = None
         date_to = None
 
-        if (
-            "user_price_date_from" in request.data
-            and request.data["user_price_date_from"]
-        ):
-            date_from = parse_date_iso(request.data["user_price_date_from"])
+        if "user_price_date_from" in request.data and request.data["user_price_date_from"]:
+            date_from = parse_date_iso(request.data["user_price_date_from"])  # noqa: F841
 
         if "user_price_date_to" in request.data and request.data["user_price_date_to"]:
-            date_to = parse_date_iso(request.data["user_price_date_to"])
+            date_to = parse_date_iso(request.data["user_price_date_to"])  # noqa: F841
 
         instance = None
         # instance = PricingProcedureProcess(
@@ -178,9 +175,7 @@ class RequestDataFileProcedureViewSet(AbstractModelViewSet):
             }
         )
 
-        return Response(
-            {"procedure_id": pk, "procedure_instance_id": procedure_instance.id}
-        )
+        return Response({"procedure_id": pk, "procedure_instance_id": procedure_instance.id})
 
     @action(detail=False, methods=["post"], url_path="execute")
     def execute(self, request, realm_code=None, space_code=None):
@@ -278,15 +273,11 @@ class ExpressionProcedureViewSet(AbstractModelViewSet):
         master_user = request.user.master_user
         member = request.user.member
 
-        instance = ExpressionProcedureProcess(
-            procedure=procedure, master_user=master_user, member=member
-        )
+        instance = ExpressionProcedureProcess(procedure=procedure, master_user=master_user, member=member)
         instance.process()
 
         text = f"Expression Procedure {procedure.name}. Start processing"
 
-        send_system_message(
-            master_user=master_user, performed_by="System", description=text
-        )
+        send_system_message(master_user=master_user, performed_by="System", description=text)
 
         return Response({"task_id": instance.celery_task.id})

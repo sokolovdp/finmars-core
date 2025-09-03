@@ -3,30 +3,28 @@ import logging
 _l = logging.getLogger("poms.transaction_import")
 
 
-class ProcessType(object):
+class ProcessType:
     CSV = "CSV"
     JSON = "JSON"
     EXCEL = "EXCEL"
 
 
-class TransactionImportBookedTransaction(object):
+class TransactionImportBookedTransaction:
     def __init__(self, code=None, text=None, transaction_unique_code=None):
         self.code = code
         self.text = text
         self.transaction_unique_code = transaction_unique_code
 
 
-class TransactionImportConversionItem(object):
-    def __init__(
-        self, file_inputs=None, raw_inputs=None, conversion_inputs=None, row_number=None
-    ):
+class TransactionImportConversionItem:
+    def __init__(self, file_inputs=None, raw_inputs=None, conversion_inputs=None, row_number=None):
         self.file_inputs = file_inputs
         self.raw_inputs = raw_inputs
         self.conversion_inputs = conversion_inputs
         self.row_number = row_number
 
 
-class TransactionImportProcessPreprocessItem(object):
+class TransactionImportProcessPreprocessItem:
     def __init__(
         self,
         file_inputs=None,
@@ -42,7 +40,7 @@ class TransactionImportProcessPreprocessItem(object):
         self.row_number = row_number
 
 
-class TransactionImportProcessItem(object):
+class TransactionImportProcessItem:
     def __init__(
         self,
         status="init",
@@ -68,7 +66,7 @@ class TransactionImportProcessItem(object):
         self.booked_transactions = booked_transactions
 
 
-class TransactionImportResult(object):
+class TransactionImportResult:
     def __init__(
         self,
         task=None,

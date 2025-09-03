@@ -1,6 +1,5 @@
-from django.conf import settings
-
 import requests
+from django.conf import settings
 from requests.adapters import HTTPAdapter, Retry
 from requests.exceptions import RequestException
 

@@ -82,9 +82,7 @@ class ExplorerViewSetTest(CreateUserMemberMixin, BaseTestCase):
 
         response_data = response.json()
         if path:
-            self.assertEqual(
-                response_data["path"], f"{self.space_code}/{path.strip('/')}/"
-            )
+            self.assertEqual(response_data["path"], f"{self.space_code}/{path.strip('/')}/")
         else:
             self.assertEqual(response_data["path"], f"{self.space_code}/")
         self.assertEqual(len(response_data["results"]), items_amount)
@@ -108,9 +106,7 @@ class ExplorerViewSetTest(CreateUserMemberMixin, BaseTestCase):
         self.storage_mock.size.return_value = size
         self.storage_mock.convert_size.return_value = f"{size // 1024}KB"
 
-        response = self.client.get(
-            self.url, {"path": "test_path", "page": page, "page_size": page_size}
-        )
+        response = self.client.get(self.url, {"path": "test_path", "page": page, "page_size": page_size})
 
         self.assertEqual(response.status_code, 200)
         response_data = response.json()

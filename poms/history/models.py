@@ -333,14 +333,10 @@ def deepdiff_to_human_readable(diff):
     for key, details in values_changed.items():
         field_name = key.split("[")[-1].replace("']", "")
 
-        if (
-            "execution_log" not in field_name
-        ):  # special case for transaction execution log
+        if "execution_log" not in field_name:  # special case for transaction execution log
             old_value = details["old_value"]
             new_value = details["new_value"]
-            messages.append(
-                f"Value for {field_name} changed from {old_value} to {new_value}."
-            )
+            messages.append(f"Value for {field_name} changed from {old_value} to {new_value}.")
 
     # Handling type_changes
     type_changes = diff.get("type_changes", {})
@@ -350,9 +346,7 @@ def deepdiff_to_human_readable(diff):
         new_type = details["new_type"]
         old_value = details["old_value"]
         new_value = details["new_value"]
-        messages.append(
-            f"Type for {field_name} changed from {old_type} ({old_value}) to {new_type} ({new_value})."
-        )
+        messages.append(f"Type for {field_name} changed from {old_type} ({old_value}) to {new_type} ({new_value}).")
 
     # Similarly, handle other diff types like type_changes, dictionary_item_added, etc.
 
@@ -431,15 +425,10 @@ def get_record_context():
 
                 result["member"] = finmars_bot
                 result["master_user"] = master_user
-                result["context_url"] = (
-                    lib_celery_task.name if lib_celery_task else "Shell"
-                )
+                result["context_url"] = lib_celery_task.name if lib_celery_task else "Shell"
 
         except Exception as e:
-            _l.error(
-                f"Error getting context for celery exception {e} "
-                f"traceback {traceback.format_exc()}"
-            )
+            _l.error(f"Error getting context for celery exception {e} traceback {traceback.format_exc()}")
 
     return result
 
@@ -505,11 +494,7 @@ def post_save(sender, instance, created, using=None, update_fields=None, **kwarg
                 content_type_key = get_model_content_type_as_text(sender)
                 user_code = get_user_code_from_instance(instance, content_type_key)
 
-                exist = bool(
-                    HistoricalRecord.objects.filter(
-                        user_code=user_code, content_type=content_type
-                    ).count()
-                )
+                exist = bool(HistoricalRecord.objects.filter(user_code=user_code, content_type=content_type).count())
                 if exist:
                     action = HistoricalRecord.ACTION_CHANGE
                 else:
@@ -532,9 +517,7 @@ def post_save(sender, instance, created, using=None, update_fields=None, **kwarg
 
                 if action != HistoricalRecord.ACTION_RECYCLE_BIN:
                     data = get_serialized_data(sender, instance)
-                    diff, notes = get_notes_for_history_record(
-                        user_code, content_type, data
-                    )
+                    diff, notes = get_notes_for_history_record(user_code, content_type, data)
                 else:
                     data = None
                     diff = None
@@ -572,10 +555,7 @@ def post_delete(sender, instance, using=None, **kwargs):
         try:
             post_delete_action(sender, instance)
         except Exception as e:
-            _l.error(
-                f"Could not save history record exception {repr(e)} "
-                f"traceback {traceback.format_exc()} "
-            )
+            _l.error(f"Could not save history record exception {repr(e)} traceback {traceback.format_exc()} ")
 
 
 def post_delete_action(sender, instance):
@@ -625,7 +605,7 @@ def record_history():
 
     to_representation_st = time.perf_counter()
 
-    _l.info("record_history %s" % sys.argv)
+    _l.info("record_history %s", sys.argv)
 
     if (
         "test" in sys.argv
@@ -643,10 +623,7 @@ def record_history():
         except Exception as e:
             _l.error(f"Could not add history listeners {e}")
 
-    _l.info(
-        "Record History init time: %s"
-        % "{:3.3f}".format(time.perf_counter() - to_representation_st)
-    )
+    _l.info("Record History init time: %s", f"{time.perf_counter() - to_representation_st:3.3f}")
 
 
 # TODO refactor this code, HISTORY TEMPORARY DISABLED

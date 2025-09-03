@@ -2,9 +2,9 @@ from unittest import mock
 
 from poms.celery_tasks.models import CeleryTask
 from poms.common.common_base_test import BaseTestCase
+from poms.currencies.models import Currency
 from poms.integrations.database_client import get_backend_callback_urls
 from poms.integrations.monad import Monad, MonadStatus
-from poms.currencies.models import Currency
 
 
 class ImportCurrencyDatabaseViewSetTest(BaseTestCase):

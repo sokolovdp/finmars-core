@@ -1,16 +1,16 @@
 import re
 import sys
 import traceback
-from typing import Optional
 
 import django
 from django.conf import settings
 from django.core import signals
-# from django.core.exceptions import PermissionDenied
-from rest_framework.exceptions import PermissionDenied
 from django.http import Http404
 from django.utils.log import log_response
 from rest_framework import exceptions
+
+# from django.core.exceptions import PermissionDenied
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.response import Response
 from rest_framework.status import is_server_error
 from rest_framework.views import set_rollback
@@ -19,13 +19,9 @@ from .exceptions import FinmarsApiException
 from .formatter import ExceptionFormatter
 from .settings import package_settings
 from .types import ExceptionHandlerContext
-import logging
 
 
-def exception_handler(
-        exc: Exception, context: ExceptionHandlerContext
-) -> Optional[Response]:
-
+def exception_handler(exc: Exception, context: ExceptionHandlerContext) -> Response | None:
     exception_handler_class = package_settings.EXCEPTION_HANDLER_CLASS
     msg = "`EXCEPTION_HANDLER_CLASS` should be a subclass of ExceptionHandler."
     assert issubclass(exception_handler_class, ExceptionHandler), msg
@@ -37,7 +33,7 @@ class ExceptionHandler:
         self.exc = exc
         self.context = context
 
-    def run(self) -> Optional[Response]:
+    def run(self) -> Response | None:
         """entrypoint for handling an exception"""
         exc = self.convert_known_exceptions(self.exc)
         if self.should_not_handle(exc):
@@ -52,8 +48,7 @@ class ExceptionHandler:
         for line in lines:
             traceback_lines.append(re.sub(r'File ".*[\\/]([^\\/]+.py)"', r'File "\1"', line))
 
-        data['error']['details']['traceback'] = '\n'.join(traceback_lines),
-
+        data["error"]["details"]["traceback"] = ("\n".join(traceback_lines),)
 
         # print('data %s' % data)
 
@@ -71,7 +66,6 @@ class ExceptionHandler:
         if isinstance(exc, Http404):
             return exceptions.NotFound()
         elif isinstance(exc, PermissionDenied):
-
             if hasattr(self.context["request"], "permission_error_message"):
                 return exceptions.PermissionDenied(detail=self.context["request"].permission_error_message)
             else:
@@ -86,9 +80,9 @@ class ExceptionHandler:
         traceback.
         """
         return (
-                getattr(settings, "DEBUG", False)
-                and not package_settings.ENABLE_IN_DEBUG_FOR_UNHANDLED_EXCEPTIONS
-                and not isinstance(exc, exceptions.APIException)
+            getattr(settings, "DEBUG", False)
+            and not package_settings.ENABLE_IN_DEBUG_FOR_UNHANDLED_EXCEPTIONS
+            and not isinstance(exc, exceptions.APIException)
         )
 
     def convert_unhandled_exceptions(self, exc: Exception) -> exceptions.APIException:
@@ -127,7 +121,7 @@ class ExceptionHandler:
         if getattr(exc, "auth_header", None):
             headers["WWW-Authenticate"] = exc.auth_header
         if getattr(exc, "wait", None):
-            headers["Retry-After"] = "%d" % exc.wait
+            headers["Retry-After"] = exc.wait
         return headers
 
     def report_exception(self, exc: exceptions.APIException, response):

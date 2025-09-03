@@ -33,7 +33,6 @@ from poms.common.filters import (
     NoOpFilter,
 )
 from poms.common.models import ProxyRequest, ProxyUser
-
 from poms.common.views import AbstractModelViewSet
 from poms.configuration.utils import get_default_configuration_code
 from poms.users.filters import OwnerByMasterUserFilter
@@ -127,9 +126,7 @@ class SetAuthToken(APIView):
         user = None
 
         try:
-            user_profile = UserProfile.objects.get(
-                user_unique_id=serializer.validated_data["user_id"]
-            )
+            user_profile = UserProfile.objects.get(user_unique_id=serializer.validated_data["user_id"])
             user = user_profile.user
         except UserProfile.DoesNotExist:
             _l.info("Could not find User Profile by UUID")
@@ -137,8 +134,8 @@ class SetAuthToken(APIView):
         if user is None and "user_legacy_id" in serializer.validated_data:
             try:
                 user = User.objects.get(id=serializer.validated_data["user_legacy_id"])
-            except User.DoesNotExist:
-                raise Exception("User does not exist")
+            except User.DoesNotExist as e:
+                raise Exception("User does not exist") from e
 
         # ====================== Getting Master User and Member
 
@@ -146,36 +143,25 @@ class SetAuthToken(APIView):
         member = None
 
         try:
-            master_user = MasterUser.objects.get(
-                unique_id=serializer.validated_data["current_master_user_id"]
-            )
+            master_user = MasterUser.objects.get(unique_id=serializer.validated_data["current_master_user_id"])
         except MasterUser.DoesNotExist:
             _l.info("Could not find  Master User by UUID")
 
-        if (
-            master_user is None
-            and "current_master_user_legacy_id" in serializer.validated_data
-        ):
+        if master_user is None and "current_master_user_legacy_id" in serializer.validated_data:
             try:
-                master_user = MasterUser.objects.get(
-                    id=serializer.validated_data["current_master_user_legacy_id"]
-                )
-            except MasterUser.DoesNotExist:
+                master_user = MasterUser.objects.get(id=serializer.validated_data["current_master_user_legacy_id"])
+            except MasterUser.DoesNotExist as e:
                 _l.info("Could not find Master User by Legacy id")
-                raise Exception("Master User does not exist")
+                raise Exception("Master User does not exist") from e
 
         if master_user and user:
             member = Member.objects.get(master_user=master_user, user=user)
 
             # ======================= Generating/Updating Token
             try:
-                token = AuthToken.objects.get(
-                    key=serializer.validated_data["key"], user=user
-                )
+                token = AuthToken.objects.get(key=serializer.validated_data["key"], user=user)
             except AuthToken.DoesNotExist:
-                token = AuthToken.objects.create(
-                    key=serializer.validated_data["key"], user=user
-                )
+                token = AuthToken.objects.create(key=serializer.validated_data["key"], user=user)
 
             token.current_master_user = master_user
             token.current_member = member
@@ -241,9 +227,7 @@ class CreateUser(APIView):
 
         except User.DoesNotExist:
             try:
-                user = User.objects.create(
-                    email=email, username=username, password=password
-                )
+                user = User.objects.create(email=email, username=username, password=password)
                 user.save()
 
             except Exception as e:
@@ -256,9 +240,7 @@ class CreateUser(APIView):
         master_user = MasterUser.objects.all().first()
 
         try:
-            member = Member.objects.create(
-                user=user, username=user.username, master_user=master_user
-            )
+            member = Member.objects.create(user=user, username=user.username, master_user=master_user)
             member.save()
 
             roles = roles.split(",")
@@ -271,16 +253,12 @@ class CreateUser(APIView):
                 try:
                     configuration_code = get_default_configuration_code()
 
-                    viewer_only_role = Role.objects.get(
-                        user_code=f"{configuration_code}:viewer"
-                    )
+                    viewer_only_role = Role.objects.get(user_code=f"{configuration_code}:viewer")
 
                     roles_instances = [viewer_only_role]
 
-                except Exception as e:
-                    _l.error(
-                        "Roles are not set, even default view only is not available"
-                    )
+                except Exception:
+                    _l.error("Roles are not set, even default view only is not available")
 
             member.iam_roles.set(roles_instances)
             member.iam_groups.set(groups_instances)
@@ -294,9 +272,7 @@ class CreateUser(APIView):
 
 
 class AcceptInvite(APIView):
-    permission_classes = (
-        AllowAny,
-    )  # TODO consider change, maybe add more sophisticated permissions
+    permission_classes = (AllowAny,)  # TODO consider change, maybe add more sophisticated permissions
     parser_classes = (
         parsers.FormParser,
         parsers.MultiPartParser,
@@ -338,9 +314,7 @@ class AcceptInvite(APIView):
 
 
 class DeclineInvite(APIView):
-    permission_classes = (
-        AllowAny,
-    )  # TODO consider change, maybe add more sophisticated permissions
+    permission_classes = (AllowAny,)  # TODO consider change, maybe add more sophisticated permissions
     parser_classes = (
         parsers.FormParser,
         parsers.MultiPartParser,
@@ -412,9 +386,7 @@ class CreateMasterUser(APIView):
 
         if "old_backup_name" in serializer.validated_data:
             # If From backup
-            master_user = MasterUser.objects.get(
-                name=serializer.validated_data["old_backup_name"]
-            )
+            master_user = MasterUser.objects.get(name=serializer.validated_data["old_backup_name"])
             master_user.name = name
             master_user.unique_id = unique_id
             master_user.save()
@@ -426,9 +398,7 @@ class CreateMasterUser(APIView):
             )
             master_user.unique_id = unique_id
             master_user.save()
-            member = Member.objects.create(
-                user=user, master_user=master_user, is_owner=True, is_admin=True
-            )
+            member = Member.objects.create(user=user, master_user=master_user, is_owner=True, is_admin=True)
             member.save()
         return Response({"status": "ok"})
 
@@ -495,9 +465,7 @@ class MasterUserChangeOwner(APIView):
             member.is_owner = False
             member.save()
 
-        new_owner_member = Member.objects.get(
-            master_user=master_user, user__username=target_member_username
-        )
+        new_owner_member = Member.objects.get(master_user=master_user, user__username=target_member_username)
         new_owner_member.is_owner = True
         new_owner_member.save()
         return Response({"status": "ok"})
@@ -525,15 +493,13 @@ class CreateMember(APIView):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        groups = serializer.validated_data["groups"]
+        groups = serializer.validated_data["groups"]  # noqa: F841
         username = serializer.validated_data["username"]
         user, created = User.objects.get_or_create(username=username)
         master_user = MasterUser.objects.all().first()
 
         try:
-            member = Member.objects.create(
-                user=user, username=user.username, master_user=master_user
-            )
+            member = Member.objects.create(user=user, username=user.username, master_user=master_user)
             member.save()
             member.is_admin = True
             member.save()
@@ -567,9 +533,7 @@ class DeleteMember(APIView):
         serializer.is_valid(raise_exception=True)
 
         try:
-            Member.objects.filter(
-                username=serializer.validated_data["username"]
-            ).delete()
+            Member.objects.filter(username=serializer.validated_data["username"]).delete()
 
         except Exception as e:
             _l.info(f"Could not delete member Error {e}")

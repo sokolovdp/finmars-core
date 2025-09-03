@@ -1,9 +1,9 @@
 from rest_framework import serializers
 
 from poms.common.serializers import (
+    ModelWithObjectStateSerializer,
     ModelWithTimeStampSerializer,
     ModelWithUserCodeSerializer,
-    ModelWithObjectStateSerializer,
 )
 from poms.counterparties.fields import CounterpartyGroupField, ResponsibleGroupField
 from poms.counterparties.models import (
@@ -59,9 +59,7 @@ class CounterpartySerializer(
     group = CounterpartyGroupField()
     group_object = CounterpartyGroupViewSerializer(source="group", read_only=True)
     portfolios = PortfolioField(many=True, required=False, allow_null=True)
-    portfolios_object = serializers.PrimaryKeyRelatedField(
-        source="portfolios", many=True, read_only=True
-    )
+    portfolios_object = serializers.PrimaryKeyRelatedField(source="portfolios", many=True, read_only=True)
 
     class Meta:
         model = Counterparty
@@ -243,9 +241,7 @@ class ResponsibleViewSerializer(serializers.ModelSerializer):
         ]
 
 
-class CounterpartyEvalSerializer(
-    ModelWithUserCodeSerializer, ModelWithTimeStampSerializer
-):
+class CounterpartyEvalSerializer(ModelWithUserCodeSerializer, ModelWithTimeStampSerializer):
     master_user = MasterUserField()
     group = CounterpartyGroupField()
 
@@ -268,9 +264,7 @@ class CounterpartyEvalSerializer(
         read_only_fields = fields
 
 
-class ResponsibleEvalSerializer(
-    ModelWithUserCodeSerializer, ModelWithTimeStampSerializer
-):
+class ResponsibleEvalSerializer(ModelWithUserCodeSerializer, ModelWithTimeStampSerializer):
     master_user = MasterUserField()
     group = ResponsibleGroupField()
 

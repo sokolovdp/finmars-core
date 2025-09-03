@@ -1,5 +1,4 @@
 from poms.common.common_base_test import BaseTestCase
-
 from poms.explorer.models import StorageObject
 from poms.instruments.models import Instrument
 
@@ -52,5 +51,5 @@ class FinmarsFileTest(BaseTestCase):
         StorageObject.objects.create(**kwargs)
 
         kwargs["size"] = 2
-        with self.assertRaises(Exception):
+        with self.assertRaises(Exception):  # noqa: B017
             StorageObject.objects.create(**kwargs)

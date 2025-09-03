@@ -34,9 +34,7 @@ class Command(BaseCommand):
         try:
             for schema in get_all_tenant_schemas():
                 if "public" not in schema:
-                    self.stdout.write(
-                        self.style.SUCCESS(f"Applying migrations to {schema}...")
-                    )
+                    self.stdout.write(self.style.SUCCESS(f"Applying migrations to {schema}..."))
 
                     # Set the search path to the tenant's schema
                     with connection.cursor() as cursor:
@@ -56,10 +54,7 @@ class Command(BaseCommand):
                         try:
                             superuser = User.objects.get(username=username)
 
-                            _l.info(
-                                "Skip. Super user '%s' already exists."
-                                % superuser.username
-                            )
+                            _l.info(f"Skip. Super user '{superuser.username}' already exists.")
 
                         except User.DoesNotExist:
                             superuser = User.objects.create_superuser(
@@ -67,12 +62,10 @@ class Command(BaseCommand):
                             )
 
                             superuser.save()
-                            _l.info("Super user '%s' created." % superuser.username)
+                            _l.info(f"Super user '{superuser.username}' created.")
 
                     else:
-                        _l.info(
-                            "Skip. Super user username and password are not provided."
-                        )
+                        _l.info("Skip. Super user username and password are not provided.")
 
                     # Optionally, reset the search path to default after migrating
                     with connection.cursor() as cursor:

@@ -3,6 +3,7 @@ import datetime
 import logging
 
 import django_filters
+import requests
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import connection, transaction
@@ -21,8 +22,6 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.settings import api_settings
 from rest_framework.views import APIView
-
-import requests
 
 from poms.common.authentication import get_access_token
 from poms.common.filters import (
@@ -247,9 +246,7 @@ class InstrumentTypeFilterSet(FilterSet):
     name = CharFilter()
     short_name = CharFilter()
     public_name = CharFilter()
-    instrument_class = django_filters.ModelMultipleChoiceFilter(
-        queryset=InstrumentClass.objects
-    )
+    instrument_class = django_filters.ModelMultipleChoiceFilter(queryset=InstrumentClass.objects)
 
     class Meta:
         model = InstrumentType
@@ -309,9 +306,7 @@ class InstrumentTypeViewSet(AbstractModelViewSet):
     def book(self, request, pk=None, realm_code=None, space_code=None):
         instrument_type = InstrumentType.objects.get(pk=pk)
 
-        instance = InstrumentTypeProcess(
-            instrument_type=instrument_type, context=self.get_serializer_context()
-        )
+        instance = InstrumentTypeProcess(instrument_type=instrument_type, context=self.get_serializer_context())
 
         serializer = self.get_serializer(instance=instance)
         return Response(serializer.data)
@@ -536,16 +531,11 @@ class InstrumentTypeViewSet(AbstractModelViewSet):
         instrument_type = self.get_object()
         instruments = Instrument.objects.filter(instrument_type=instrument_type)
 
-        _l.info(
-            f"instrument_type.apply request.data={request.data} "
-            f"instruments affected={len(instruments)}"
-        )
+        _l.info(f"instrument_type.apply request.data={request.data} instruments affected={len(instruments)}")
 
         if "pricing_policies" in serializer.data["fields_to_update"]:
             serializer.data["fields_to_update"].remove("pricing_policies")
-            self._apply_pricing_to_instruments(
-                instrument_type, instruments, serializer.data["mode"]
-            )
+            self._apply_pricing_to_instruments(instrument_type, instruments, serializer.data["mode"])
 
         to_update = []
         for instrument in instruments:
@@ -582,10 +572,7 @@ class InstrumentTypeViewSet(AbstractModelViewSet):
             instrument__in=instruments,
             pricing_policy_id__in=pricing_policy_ids,
         )
-        existing_policies = {
-            (ip.pricing_policy_id, ip.instrument_id): ip
-            for ip in instrument_pricing_policies
-        }
+        existing_policies = {(ip.pricing_policy_id, ip.instrument_id): ip for ip in instrument_pricing_policies}
 
         to_create = []
         to_update = []
@@ -595,9 +582,7 @@ class InstrumentTypeViewSet(AbstractModelViewSet):
                 if key in existing_policies:
                     ip = existing_policies[key]
 
-                    ip.target_pricing_schema_user_code = (
-                        instrument_type_pricing_policy.target_pricing_schema_user_code
-                    )
+                    ip.target_pricing_schema_user_code = instrument_type_pricing_policy.target_pricing_schema_user_code
                     ip.options = instrument_type_pricing_policy.options
 
                     to_update.append(ip)
@@ -620,9 +605,9 @@ class InstrumentTypeViewSet(AbstractModelViewSet):
                 ["target_pricing_schema_user_code", "options"],
             )
             # Remove instrument pricing policies that are no longer associated with the given instrument type
-            to_delete = InstrumentPricingPolicy.objects.filter(
-                instrument__in=instruments
-            ).exclude(pricing_policy_id__in=pricing_policy_ids)
+            to_delete = InstrumentPricingPolicy.objects.filter(instrument__in=instruments).exclude(
+                pricing_policy_id__in=pricing_policy_ids
+            )
             to_delete.delete()
 
     @action(
@@ -635,10 +620,7 @@ class InstrumentTypeViewSet(AbstractModelViewSet):
         instrument_type = self.get_object()
         instruments = Instrument.objects.filter(instrument_type=instrument_type)
 
-        _l.info(
-            f"update_pricing request.data={request.data} "
-            f"instruments affected={len(instruments)}"
-        )
+        _l.info(f"update_pricing request.data={request.data} instruments affected={len(instruments)}")
 
         self._apply_pricing_to_instruments(instrument_type, instruments, "fill")
 
@@ -663,11 +645,9 @@ class InstrumentTypeViewSet(AbstractModelViewSet):
             try:
                 instance = queryset.get(pk=pk)
 
-            except ObjectDoesNotExist:
-                err_msg = {
-                    api_settings.NON_FIELD_ERRORS_KEY: f"object with id={pk} not found"
-                }
-                raise ValidationError(err_msg)
+            except ObjectDoesNotExist as e:
+                err_msg = {api_settings.NON_FIELD_ERRORS_KEY: f"object with id={pk} not found"}
+                raise ValidationError(err_msg) from e
 
             try:
                 self.check_object_permissions(request, instance)
@@ -716,25 +696,19 @@ class InstrumentFilterSet(FilterSet):
     public_name = CharFilter()
     short_name = CharFilter()
     identifier = IdentifierKeysValuesFilter()
-    instrument_type__instrument_class = django_filters.ModelMultipleChoiceFilter(
-        queryset=InstrumentClass.objects
-    )
+    instrument_type__instrument_class = django_filters.ModelMultipleChoiceFilter(queryset=InstrumentClass.objects)
     pricing_currency = ModelExtMultipleChoiceFilter(model=Currency)
     price_multiplier = django_filters.RangeFilter()
     accrued_currency = ModelExtMultipleChoiceFilter(model=Currency)
     accrued_multiplier = django_filters.RangeFilter()
-    payment_size_detail = django_filters.ModelMultipleChoiceFilter(
-        queryset=PaymentSizeDetail.objects
-    )
+    payment_size_detail = django_filters.ModelMultipleChoiceFilter(queryset=PaymentSizeDetail.objects)
     default_price = django_filters.RangeFilter()
     default_accrued = django_filters.RangeFilter()
     user_text_1 = CharFilter()
     user_text_2 = CharFilter()
     user_text_3 = CharFilter()
     reference_for_pricing = CharFilter()
-    daily_pricing_model = django_filters.ModelMultipleChoiceFilter(
-        queryset=DailyPricingModel.objects
-    )
+    daily_pricing_model = django_filters.ModelMultipleChoiceFilter(queryset=DailyPricingModel.objects)
     maturity_date = django_filters.DateFromToRangeFilter()
 
     class Meta:
@@ -757,9 +731,7 @@ class InstrumentViewSet(AbstractModelViewSet):
         ),
         Prefetch(
             "accrual_calculation_schedules",
-            queryset=AccrualCalculationSchedule.objects.select_related(
-                "accrual_calculation_model", "periodicity"
-            ),
+            queryset=AccrualCalculationSchedule.objects.select_related("accrual_calculation_model", "periodicity"),
         ),
         "factor_schedules",
         Prefetch(
@@ -1052,9 +1024,7 @@ class InstrumentViewSet(AbstractModelViewSet):
                     "name": instrument.name,
                     "items": instrument_items,  # SQL results filtered by instrument ID
                     "is_on_balance": is_on_balance,  # True if at least one item has a non-zero position
-                    "instrument_type": instrument.instrument_type.user_code
-                    if instrument.instrument_type
-                    else None,
+                    "instrument_type": instrument.instrument_type.user_code if instrument.instrument_type else None,
                 }
             )
 
@@ -1153,10 +1123,7 @@ class InstrumentViewSet(AbstractModelViewSet):
         date_from = datetime.datetime.strptime(date_from_string, DATE_FORMAT).date()
         date_to = datetime.datetime.strptime(date_to_string, DATE_FORMAT).date()
 
-        dates = [
-            date_from + datetime.timedelta(days=i)
-            for i in range((date_to - date_from).days + 1)
-        ]
+        dates = [date_from + datetime.timedelta(days=i) for i in range((date_to - date_from).days + 1)]
 
         tasks_ids = []
 
@@ -1199,17 +1166,12 @@ class InstrumentViewSet(AbstractModelViewSet):
         date_to = datetime.datetime.strptime(date_to_string, DATE_FORMAT).date()
 
         try:
-            instrument = Instrument.objects.get(
-                master_user=request.user.master_user, id=instrument_id
-            )
+            instrument = Instrument.objects.get(master_user=request.user.master_user, id=instrument_id)
 
         except Instrument.DoesNotExist as e:
             raise ValidationError("Instrument is not found") from e
 
-        dates = [
-            date_from + datetime.timedelta(days=i)
-            for i in range((date_to - date_from).days + 1)
-        ]
+        dates = [date_from + datetime.timedelta(days=i) for i in range((date_to - date_from).days + 1)]
         tasks_ids = []
         for dte in dates:
             res = only_generate_events_at_date_for_single_instrument.apply_async(
@@ -1302,12 +1264,8 @@ class InstrumentExternalAPIViewSet(APIView):
 
         context = {"request": request, "master_user": master_user}
 
-        ecosystem_defaults = EcosystemDefault.cache.get_cache(
-            master_user_pk=master_user.pk
-        )
-        content_type = ContentType.objects.get(
-            model="instrument", app_label="instruments"
-        )
+        ecosystem_defaults = EcosystemDefault.cache.get_cache(master_user_pk=master_user.pk)
+        content_type = ContentType.objects.get(model="instrument", app_label="instruments")
 
         _l.info(f"request.data {request.data}")
 
@@ -1321,9 +1279,7 @@ class InstrumentExternalAPIViewSet(APIView):
             else:
                 instrument_data[key] = value
 
-        attribute_types = GenericAttributeType.objects.filter(
-            master_user=master_user, content_type=content_type
-        )
+        attribute_types = GenericAttributeType.objects.filter(master_user=master_user, content_type=content_type)
 
         try:
             instrument_type = InstrumentType.objects.get(
@@ -1332,9 +1288,7 @@ class InstrumentExternalAPIViewSet(APIView):
             )
 
         except InstrumentType.DoesNotExist as e:
-            err_msg = (
-                f"Unknown InstrumentType.user_code={instrument_data['instrument_type']}"
-            )
+            err_msg = f"Unknown InstrumentType.user_code={instrument_data['instrument_type']}"
             _l.error(err_msg)
             raise ValidationError(err_msg) from e
 
@@ -1353,9 +1307,7 @@ class InstrumentExternalAPIViewSet(APIView):
         if is_valid:
             serializer.save()
         else:
-            err_msg = (
-                f"InstrumentExternalAPIViewSet serializer.errors={serializer.errors}"
-            )
+            err_msg = f"InstrumentExternalAPIViewSet serializer.errors={serializer.errors}"
             _l.error(err_msg)
             raise ValidationError(err_msg)
 
@@ -1382,8 +1334,7 @@ class InstrumentFDBCreateFromCallbackViewSet(APIView):
 
         try:
             _l.info(
-                f"InstrumentFDBCreateFromCallbackViewSet.data {request.data} "
-                f"request_id {request.data['request_id']}"
+                f"InstrumentFDBCreateFromCallbackViewSet.data {request.data} request_id {request.data['request_id']}"
             )
 
             task = CeleryTask.objects.get(id=request.data["request_id"])
@@ -1394,9 +1345,7 @@ class InstrumentFDBCreateFromCallbackViewSet(APIView):
                 if "currencies" in data:
                     for item in data["currencies"]:
                         if item:
-                            create_currency_from_callback_data(
-                                item, task.master_user, task.member
-                            )
+                            create_currency_from_callback_data(item, task.master_user, task.member)
 
                 for item in data["instruments"]:
                     create_instrument_cbond(item, task.master_user, task.member)
@@ -1447,11 +1396,7 @@ class InstrumentForSelectFilterSet(FilterSet):
 
     @staticmethod
     def filter_instrument_type(queryset, _, value):
-        return (
-            queryset.filter(instrument_type__user_code__endswith=value)
-            if value
-            else queryset
-        )
+        return queryset.filter(instrument_type__user_code__endswith=value) if value else queryset
 
     @staticmethod
     def filter_query(queryset, _, value):
@@ -1462,11 +1407,7 @@ class InstrumentForSelectFilterSet(FilterSet):
             # Create an OR condition to search across multiple fields
             conditions = Q()
             for term in search_terms:
-                conditions |= (
-                    Q(name__icontains=term)
-                    | Q(short_name__icontains=term)
-                    | Q(user_code__icontains=term)
-                )
+                conditions |= Q(name__icontains=term) | Q(short_name__icontains=term) | Q(user_code__icontains=term)
             queryset = queryset.filter(conditions)
 
         return queryset
@@ -1515,10 +1456,7 @@ class InstrumentDatabaseSearchViewSet(APIView):
 
             _l.info(f"headers {headers}")
 
-            url = str(settings.CBONDS_BROKER_URL) + "instr/find/name/%s?page=%s" % (
-                name,
-                page,
-            )
+            url = str(settings.CBONDS_BROKER_URL) + f"instr/find/name/{name}?page={page}"
 
             if instrument_type:
                 url = f"{url}&instrument_type={str(instrument_type)}"
@@ -1528,9 +1466,7 @@ class InstrumentDatabaseSearchViewSet(APIView):
             response = None
 
             try:
-                response = requests.get(
-                    url=url, headers=headers, verify=settings.VERIFY_SSL
-                )
+                response = requests.get(url=url, headers=headers, verify=settings.VERIFY_SSL)
             except Exception as e:
                 _l.info(f"Request error {repr(e)}")
 
@@ -1572,17 +1508,13 @@ class InstrumentDatabaseSearchViewSet(APIView):
 
                 headers["Authorization"] = f"Bearer {get_access_token(request)}"
 
-                _l.info(
-                    f"InstrumentDatabaseSearchViewSet.requesting url {instruments_url}"
-                )
+                _l.info(f"InstrumentDatabaseSearchViewSet.requesting url {instruments_url}")
 
-                response = requests.get(
-                    url=instruments_url, headers=headers, verify=settings.VERIFY_SSL
-                )
+                response = requests.get(url=instruments_url, headers=headers, verify=settings.VERIFY_SSL)
 
                 response_json = response.json()
 
-                _l.info("response_json %s" % response_json)
+                _l.info("response_json %s", response_json)
 
                 mappedItems = []
 
@@ -1619,9 +1551,7 @@ class InstrumentDatabaseSearchViewSet(APIView):
 class PriceHistoryFilterSet(FilterSet):
     id = NoOpFilter()
     instrument = ModelExtMultipleChoiceFilter(model=Instrument, field_name="id")
-    pricing_policy = CharFilter(
-        field_name="pricing_policy__user_code", lookup_expr="icontains"
-    )
+    pricing_policy = CharFilter(field_name="pricing_policy__user_code", lookup_expr="icontains")
     date = django_filters.DateFromToRangeFilter()
     principal_price = django_filters.RangeFilter()
     accrued_price = django_filters.RangeFilter()
@@ -1815,7 +1745,7 @@ class PriceHistoryViewSet(AbstractModelViewSet):
             member=request.user.member,
             verbose_name="Calculate pricehistory",
             type="calculate_pricehistory",
-            options_object=validated_data
+            options_object=validated_data,
         )
 
         calculate_pricehistory.apply_async(
@@ -1923,7 +1853,7 @@ class GeneratedEventViewSet(UpdateModelMixinExt, AbstractReadOnlyModelViewSet):
     ]
 
     def get_queryset(self):
-        qs = super(GeneratedEventViewSet, self).get_queryset()
+        qs = super().get_queryset()
         now = date_now()
         qs = qs.annotate(
             is_need_reaction=Case(
@@ -2102,9 +2032,7 @@ class EventScheduleConfigViewSet(AbstractModelViewSet):
         try:
             return self.request.user.master_user.instrument_event_schedule_config
         except ObjectDoesNotExist:
-            return EventScheduleConfig.create_default(
-                master_user=self.request.user.master_user
-            )
+            return EventScheduleConfig.create_default(master_user=self.request.user.master_user)
 
     def destroy(self, request, *args, **kwargs):
         raise MethodNotAllowed(method=request.method)

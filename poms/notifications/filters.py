@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import Q
 from django_filters import MultipleChoiceFilter
@@ -21,7 +19,7 @@ def notification_content_type_choices():
     queryset = ContentType.objects.all().order_by("app_label", "model")
     for c in queryset:
         if c.model_class():
-            yield "%s.%s" % (c.app_label, c.model), c.model_class()._meta.verbose_name
+            yield f"{c.app_label}.{c.model}", c.model_class()._meta.verbose_name
 
 
 class NotificationContentTypeMultipleChoiceFilter(MultipleChoiceFilter):
@@ -31,9 +29,7 @@ class NotificationContentTypeMultipleChoiceFilter(MultipleChoiceFilter):
         # kwargs['choices'] = lambda: [('%s.%s' % (c.app_label, c.model), c.model_class()._meta.verbose_name)
         #                      for c in queryset]
         kwargs["choices"] = notification_content_type_choices
-        super(NotificationContentTypeMultipleChoiceFilter, self).__init__(
-            *args, **kwargs
-        )
+        super().__init__(*args, **kwargs)
 
     def filter(self, qs, value):
         value = value or tuple()
@@ -42,6 +38,4 @@ class NotificationContentTypeMultipleChoiceFilter(MultipleChoiceFilter):
             ctype = v.split(".")
             ctype = ContentType.objects.get_by_natural_key(*ctype)
             cvalue.append(ctype.id)
-        return super(NotificationContentTypeMultipleChoiceFilter, self).filter(
-            qs, cvalue
-        )
+        return super().filter(qs, cvalue)

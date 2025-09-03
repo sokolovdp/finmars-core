@@ -30,9 +30,7 @@ class ResourceGroupAssignmentViewTest(BaseTestCase):
         object_id: int = -1,
     ) -> ResourceGroupAssignment:
         resource_group = ResourceGroup.objects.get(name=group_name)
-        content_type = ContentType.objects.get_by_natural_key(
-            app_label="iam", model=model_name.lower()
-        )
+        content_type = ContentType.objects.get_by_natural_key(app_label="iam", model=model_name.lower())
         self.assertIsNotNone(content_type)
         model = content_type.model_class()
         model_object = model.objects.get(id=object_id)
@@ -49,9 +47,7 @@ class ResourceGroupAssignmentViewTest(BaseTestCase):
 
     def test__list(self):
         rg = self.create_group(name="test7")
-        ass = self.create_assignment(
-            group_name="test7", model_name="ResourceGroup", object_id=rg.id
-        )
+        ass = self.create_assignment(group_name="test7", model_name="ResourceGroup", object_id=rg.id)
         self.assertEqual(
             str(ass),
             f"{rg.name} assigned to {ass.content_object}:{ass.object_user_code}",
@@ -71,9 +67,7 @@ class ResourceGroupAssignmentViewTest(BaseTestCase):
 
     def test__retrieve(self):
         rg = self.create_group(name="test7")
-        ass = self.create_assignment(
-            group_name="test7", model_name="ResourceGroup", object_id=rg.id
-        )
+        ass = self.create_assignment(group_name="test7", model_name="ResourceGroup", object_id=rg.id)
         self.assertEqual(
             str(ass),
             f"{rg.name} assigned to {ass.content_object}:{ass.object_user_code}",
@@ -91,21 +85,15 @@ class ResourceGroupAssignmentViewTest(BaseTestCase):
 
     def test__destroy(self):
         rg = self.create_group(name="test7")
-        ass = self.create_assignment(
-            group_name="test7", model_name="ResourceGroup", object_id=rg.id
-        )
+        ass = self.create_assignment(group_name="test7", model_name="ResourceGroup", object_id=rg.id)
         response = self.client.delete(f"{self.url}{ass.id}/")
 
         self.assertEqual(response.status_code, 204, response.content)
 
     def test__patch(self):
         rg = self.create_group(name="test7")
-        ass = self.create_assignment(
-            group_name="test7", model_name="ResourceGroup", object_id=rg.id
-        )
-        response = self.client.patch(
-            f"{self.url}{ass.id}/", data={"object_user_code": "test11"}, format="json"
-        )
+        ass = self.create_assignment(group_name="test7", model_name="ResourceGroup", object_id=rg.id)
+        response = self.client.patch(f"{self.url}{ass.id}/", data={"object_user_code": "test11"}, format="json")
         self.assertEqual(response.status_code, 200, response.content)
 
         ass_data = response.json()
@@ -113,9 +101,7 @@ class ResourceGroupAssignmentViewTest(BaseTestCase):
 
     def test__create(self):
         rg = self.create_group(name="test11")
-        content_type = ContentType.objects.get_by_natural_key(
-            app_label="iam", model="resourcegroup"
-        )
+        content_type = ContentType.objects.get_by_natural_key(app_label="iam", model="resourcegroup")
         ass_data = dict(
             resource_group=rg.id,
             content_type=content_type.id,

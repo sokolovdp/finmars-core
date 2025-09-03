@@ -32,9 +32,9 @@ class TransactionReportCustomFieldField(PrimaryKeyRelatedFilteredField):
 
 class ReportCurrencyField(CurrencyField):
     def to_representation(self, obj):
-        return getattr(obj, "user_code")
+        return obj.user_code
 
 
 class ReportPricingPolicyField(PricingPolicyField):
     def to_representation(self, obj):
-        return getattr(obj, "user_code")
+        return obj.user_code

@@ -31,7 +31,7 @@ class TransactionTypeGroupField(UserCodeOrPrimaryKeyRelatedField):
                 return queryset.get(user_code=value).user_code
             else:
                 return queryset.get(pk=value).user_code
-        except Exception as e:
+        except Exception:
             return value
         # except ObjectDoesNotExist:
         #     self.fail("does_not_exist", value=str(data))
@@ -58,9 +58,7 @@ class TransactionTypeField(UserCodeOrPrimaryKeyRelatedField):
 
 class TransactionTypeInputField(RelatedField):
     default_error_messages = {
-        "does_not_exist": _(
-            "Object with user_code or id that equals {value} does not exist."
-        ),
+        "does_not_exist": _("Object with user_code or id that equals {value} does not exist."),
         "invalid": _("Invalid value."),
     }
 
@@ -82,7 +80,7 @@ class TransactionTypeInputField(RelatedField):
             self.fail("invalid")
 
     def to_representation(self, obj):
-        return getattr(obj, "id")
+        return obj.id
 
 
 class TransactionTypeInputContentTypeField(SlugRelatedFilteredField):
@@ -100,9 +98,7 @@ class TransactionTypeInputContentTypeField(SlugRelatedFilteredField):
             return ContentType.objects.all().get(app_label=app_label, model=model)
 
         except ObjectDoesNotExist:
-            self.fail(
-                "does_not_exist", slug_name=self.slug_field, value=force_str(data)
-            )
+            self.fail("does_not_exist", slug_name=self.slug_field, value=force_str(data))
         except (TypeError, ValueError):
             self.fail("invalid")
 
@@ -112,7 +108,7 @@ class TransactionTypeInputContentTypeField(SlugRelatedFilteredField):
 
 class ReadOnlyContentTypeField(ReadOnlyField):
     def __init__(self, **kwargs):
-        super(ReadOnlyContentTypeField, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
     def to_representation(self, obj):
         return f"{obj.app_label}.{obj.model}"

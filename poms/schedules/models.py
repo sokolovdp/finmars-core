@@ -1,10 +1,8 @@
 import json
 import logging
 from datetime import datetime
-from typing import Optional
 
 from croniter import croniter
-
 from django.core.exceptions import ValidationError
 from django.core.serializers.json import DjangoJSONEncoder
 from django.db import models
@@ -24,9 +22,7 @@ def validate_crontab(value: str) -> None:
         croniter(value, timezone.now())
 
     except Exception as e:
-        raise ValidationError(
-            gettext_lazy(f"Invalid cron string {value} resulted in {repr(e)}")
-        ) from e
+        raise ValidationError(gettext_lazy(f"Invalid cron string {value} resulted in {repr(e)}")) from e
 
 
 class Schedule(NamedModel, ConfigurationModel):
@@ -61,9 +57,7 @@ class Schedule(NamedModel, ConfigurationModel):
         default="",
         validators=[validate_crontab],
         verbose_name=gettext_lazy("cron expr"),
-        help_text=gettext_lazy(
-            'Format is "* * * * *" (minute / hour / day_month / month / day_week)'
-        ),
+        help_text=gettext_lazy('Format is "* * * * *" (minute / hour / day_month / month / day_week)'),
     )
     last_run_at = models.DateTimeField(
         default=timezone.now,
@@ -111,9 +105,7 @@ class Schedule(NamedModel, ConfigurationModel):
     def __str__(self):
         return self.user_code
 
-    def save(
-        self, force_insert=False, force_update=False, using=None, update_fields=None
-    ):
+    def save(self, force_insert=False, force_update=False, using=None, update_fields=None):
         from poms.schedules.utils import sync_schedules
 
         if self.is_enabled:
@@ -128,7 +120,7 @@ class Schedule(NamedModel, ConfigurationModel):
 
         sync_schedules()
 
-    def schedule(self, save=False) -> Optional[datetime]:
+    def schedule(self, save=False) -> datetime | None:
         """Schedule the next run of the schedule based on the cron expression."""
         start_time = timezone.now()
         try:
@@ -247,15 +239,13 @@ class ScheduleInstance(TimeStampedModel):
         self.current_processing_procedure_number += 1
 
         _l.debug(
-            f"run_next_procedure schedule {self.schedule} "
-            f"procedure number {self.current_processing_procedure_number}"
+            f"run_next_procedure schedule {self.schedule} procedure number {self.current_processing_procedure_number}"
         )
 
         for procedure in self.schedule.procedures.all():
             try:
                 if (
-                    self.status != ScheduleInstance.STATUS_ERROR
-                    or self.schedule.error_handler == "continue"
+                    self.status != ScheduleInstance.STATUS_ERROR or self.schedule.error_handler == "continue"
                 ) and procedure.order == self.current_processing_procedure_number:
                     self.save()
 

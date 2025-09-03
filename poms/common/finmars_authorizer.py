@@ -18,8 +18,7 @@ class AuthorizerService:
     def create_jwt_token():
         payload = {
             "some": "payload",
-            "exp": datetime.datetime.utcnow()
-            + datetime.timedelta(days=1),  # Expires in 1 day
+            "exp": datetime.datetime.utcnow() + datetime.timedelta(days=1),  # Expires in 1 day
         }
         secret_key = settings.SECRET_KEY
         token = jwt.encode(payload, secret_key, algorithm="HS256")
@@ -54,20 +53,14 @@ class AuthorizerService:
             "is_admin": member.is_admin,
             "from_user_username": from_user.username,
         }
-        url = (
-            f"{settings.AUTHORIZER_URL}/api/v1/internal/invite-member/"
-            f"?space_code={space_code}"
-        )
+        url = f"{settings.AUTHORIZER_URL}/api/v1/internal/invite-member/?space_code={space_code}"
 
         _l.info(f"invite_member url={url} data={data}")
 
-        response = requests.post(
-            url=url, data=json.dumps(data), headers=headers, verify=settings.VERIFY_SSL
-        )
+        response = requests.post(url=url, data=json.dumps(data), headers=headers, verify=settings.VERIFY_SSL)
         if response.status_code != 200:
             raise RuntimeError(
-                f"Authorizer API error, data={data} code={response.status_code} "
-                f"details={response.text}"
+                f"Authorizer API error, data={data} code={response.status_code} details={response.text}"
             )
 
     def kick_member(self, member, realm_code, space_code):
@@ -78,16 +71,11 @@ class AuthorizerService:
             "base_api_url": space_code,  # deprecated, but, be sure that authorizer not using it
             "username": member.username,
         }
-        url = (
-            f"{settings.AUTHORIZER_URL}/api/v1/internal/kick-member/"
-            f"?space_code={space_code}"
-        )
+        url = f"{settings.AUTHORIZER_URL}/api/v1/internal/kick-member/?space_code={space_code}"
 
         _l.info(f"kick_member url={url} data={data}")
 
-        response = requests.post(
-            url=url, data=json.dumps(data), headers=headers, verify=settings.VERIFY_SSL
-        )
+        response = requests.post(url=url, data=json.dumps(data), headers=headers, verify=settings.VERIFY_SSL)
         if response.status_code != 200:
             raise RuntimeError(f"Error kicking member {response.text}")
 
@@ -103,9 +91,7 @@ class AuthorizerService:
 
         _l.info(f"update_member url={url} data={data}")
 
-        response = requests.post(
-            url=url, data=json.dumps(data), headers=headers, verify=settings.VERIFY_SSL
-        )
+        response = requests.post(url=url, data=json.dumps(data), headers=headers, verify=settings.VERIFY_SSL)
         if response.status_code != 200:
             raise RuntimeError(f"Error updating member {response.text}")
 
@@ -181,8 +167,6 @@ class AuthorizerService:
         }
         url = f"{settings.AUTHORIZER_URL}/api/v1/internal/create-worker/"
 
-        response = requests.post(
-            url=url, data=json.dumps(data), headers=headers, verify=settings.VERIFY_SSL
-        )
+        response = requests.post(url=url, data=json.dumps(data), headers=headers, verify=settings.VERIFY_SSL)
         if response.status_code != 200:
             raise RuntimeError(f"Error creating worker {response.text}")

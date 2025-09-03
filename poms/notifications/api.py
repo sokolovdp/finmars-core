@@ -49,9 +49,7 @@ def send(
     return ret
 
 
-def _send_instance_action_message(
-    master_user, member, instance, verb, check_perms=False
-):
+def _send_instance_action_message(master_user, member, instance, verb, check_perms=False):
     recipients = []
     for m in master_user.members.all():
         if m.is_deleted or m.user_id is None:
@@ -62,18 +60,12 @@ def _send_instance_action_message(
 
 
 def send_instance_created(master_user, member, instance, check_perms=False):
-    _send_instance_action_message(
-        master_user, member, instance, "created", check_perms=check_perms
-    )
+    _send_instance_action_message(master_user, member, instance, "created", check_perms=check_perms)
 
 
 def send_instance_changed(master_user, member, instance, check_perms=False):
-    _send_instance_action_message(
-        master_user, member, instance, "changed", check_perms=check_perms
-    )
+    _send_instance_action_message(master_user, member, instance, "changed", check_perms=check_perms)
 
 
 def send_instance_deleted(master_user, member, instance, check_perms=False):
-    _send_instance_action_message(
-        master_user, member, instance, "deleted", check_perms=check_perms
-    )
+    _send_instance_action_message(master_user, member, instance, "deleted", check_perms=check_perms)

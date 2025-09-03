@@ -1,47 +1,43 @@
-from __future__ import unicode_literals
-
 import django_filters
 from django_filters.rest_framework import FilterSet
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from rest_framework.settings import api_settings
-from rest_framework.decorators import action
+
 from poms.common.filters import (
-    CharFilter,
-    NoOpFilter,
     AttributeFilter,
-    GroupsAttributeFilter,
+    CharFilter,
     EntitySpecificFilter,
+    GroupsAttributeFilter,
+    NoOpFilter,
 )
-from poms.common.pagination import CustomPaginationMixin
 from poms.common.utils import get_list_of_entity_attributes
 from poms.common.views import AbstractModelViewSet
 from poms.obj_attrs.utils import get_attributes_prefetch
 from poms.obj_attrs.views import GenericAttributeTypeViewSet
 from poms.strategies.models import (
+    Strategy1,
     Strategy1Group,
     Strategy1Subgroup,
-    Strategy1,
+    Strategy2,
     Strategy2Group,
     Strategy2Subgroup,
-    Strategy2,
+    Strategy3,
     Strategy3Group,
     Strategy3Subgroup,
-    Strategy3,
 )
 from poms.strategies.serializers import (
     Strategy1GroupSerializer,
-    Strategy1Serializer,
-    Strategy2GroupSerializer,
-    Strategy2SubgroupSerializer,
-    Strategy2Serializer,
-    Strategy1SubgroupSerializer,
-    Strategy3GroupSerializer,
-    Strategy3SubgroupSerializer,
-    Strategy3Serializer,
     Strategy1LightSerializer,
+    Strategy1Serializer,
+    Strategy1SubgroupSerializer,
+    Strategy2GroupSerializer,
     Strategy2LightSerializer,
+    Strategy2Serializer,
+    Strategy2SubgroupSerializer,
+    Strategy3GroupSerializer,
     Strategy3LightSerializer,
+    Strategy3Serializer,
+    Strategy3SubgroupSerializer,
 )
 from poms.users.filters import OwnerByMasterUserFilter
 
@@ -135,9 +131,9 @@ class Strategy1AttributeTypeViewSet(GenericAttributeTypeViewSet):
 
 
 class Strategy1ViewSet(AbstractModelViewSet):
-    queryset = Strategy1.objects.select_related(
-        "master_user", "subgroup", "subgroup__group"
-    ).prefetch_related(get_attributes_prefetch())
+    queryset = Strategy1.objects.select_related("master_user", "subgroup", "subgroup__group").prefetch_related(
+        get_attributes_prefetch()
+    )
     # prefetch_permissions_for = [
     #     'subgroup', 'subgroup__group'
     # ]
@@ -257,9 +253,9 @@ class Strategy2FilterSet(Strategy1FilterSet):
 
 
 class Strategy2ViewSet(Strategy1ViewSet):
-    queryset = Strategy2.objects.select_related(
-        "master_user", "subgroup", "subgroup__group"
-    ).prefetch_related(get_attributes_prefetch())
+    queryset = Strategy2.objects.select_related("master_user", "subgroup", "subgroup__group").prefetch_related(
+        get_attributes_prefetch()
+    )
     filter_backends = AbstractModelViewSet.filter_backends + [
         OwnerByMasterUserFilter,
         AttributeFilter,
@@ -362,9 +358,9 @@ class Strategy3FilterSet(Strategy1FilterSet):
 
 
 class Strategy3ViewSet(Strategy1ViewSet):
-    queryset = Strategy3.objects.select_related(
-        "master_user", "subgroup", "subgroup__group"
-    ).prefetch_related(get_attributes_prefetch())
+    queryset = Strategy3.objects.select_related("master_user", "subgroup", "subgroup__group").prefetch_related(
+        get_attributes_prefetch()
+    )
     filter_backends = AbstractModelViewSet.filter_backends + [
         OwnerByMasterUserFilter,
         AttributeFilter,

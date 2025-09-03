@@ -9,7 +9,6 @@ from rest_framework.response import Response
 from rest_framework.viewsets import ViewSet
 
 from poms.common.filters import CharFilter
-
 from poms.common.views import AbstractModelViewSet
 from poms.system_messages.filters import (
     OwnerBySystemMessageMember,
@@ -52,9 +51,9 @@ class SystemMessageFilterSet(FilterSet):
 
 
 class SystemMessageViewSet(AbstractModelViewSet):
-    queryset = SystemMessage.objects.select_related(
-        "master_user", "linked_event"
-    ).prefetch_related("comments", "attachments", "members")
+    queryset = SystemMessage.objects.select_related("master_user", "linked_event").prefetch_related(
+        "comments", "attachments", "members"
+    )
     serializer_class = SystemMessageSerializer
 
     filter_class = SystemMessageFilterSet
@@ -73,7 +72,7 @@ class SystemMessageViewSet(AbstractModelViewSet):
         "title",
     ]
 
-    def list(self, request, *args, **kwargs):
+    def list(self, request, *args, **kwargs):  # noqa: PLR0912
         if not hasattr(request.user, "master_user"):
             return Response([])
 
@@ -92,13 +91,9 @@ class SystemMessageViewSet(AbstractModelViewSet):
             queryset = queryset.exclude(title__icontains="Workflow")
 
         if only_new == "true":
-            queryset = queryset.filter(
-                members__is_read=False, members__member=request.user.member
-            )
+            queryset = queryset.filter(members__is_read=False, members__member=request.user.member)
 
-        queryset = queryset.filter(
-            members__is_pinned=False, members__member=request.user.member
-        )
+        queryset = queryset.filter(members__is_pinned=False, members__member=request.user.member)
 
         if msg_type:
             msg_type = msg_type.split(",")
@@ -113,9 +108,7 @@ class SystemMessageViewSet(AbstractModelViewSet):
             queryset = queryset.filter(action_status__in=action_status)
 
         if query:
-            queryset = queryset.filter(
-                Q(title__icontains=query) | Q(description__icontains=query)
-            )
+            queryset = queryset.filter(Q(title__icontains=query) | Q(description__icontains=query))
 
         if ordering:
             queryset = queryset.order_by(ordering)
@@ -136,9 +129,7 @@ class SystemMessageViewSet(AbstractModelViewSet):
                 pinned_queryset = pinned_queryset.filter(section__in=section)
 
             if query:
-                pinned_queryset = pinned_queryset.filter(
-                    Q(title__icontains=query) | Q(description__icontains=query)
-                )
+                pinned_queryset = pinned_queryset.filter(Q(title__icontains=query) | Q(description__icontains=query))
 
             if len(pinned_queryset):
                 _l.info(f"Inject {len(pinned_queryset)} pinned messages ")
@@ -193,14 +184,10 @@ class SystemMessageViewSet(AbstractModelViewSet):
                 )
 
             if is_pinned:
-                queryset = queryset.filter(
-                    members__is_pinned=True, members__member=member
-                )
+                queryset = queryset.filter(members__is_pinned=True, members__member=member)
 
             if query:
-                queryset = queryset.filter(
-                    Q(title__icontains=query) | Q(description__icontains=query)
-                )
+                queryset = queryset.filter(Q(title__icontains=query) | Q(description__icontains=query))
 
             if created_before:
                 queryset = queryset.filter(created_at__lte=created_before)
@@ -216,14 +203,11 @@ class SystemMessageViewSet(AbstractModelViewSet):
         stats = {
             "id": section,
             "name": section_mapping[section],
-            "errors": get_count(SystemMessage.TYPE_ERROR)
-            + get_count(SystemMessage.TYPE_ERROR, is_pinned=True),
-            "warning": get_count(SystemMessage.TYPE_WARNING)
-            + get_count(SystemMessage.TYPE_WARNING, is_pinned=True),
+            "errors": get_count(SystemMessage.TYPE_ERROR) + get_count(SystemMessage.TYPE_ERROR, is_pinned=True),
+            "warning": get_count(SystemMessage.TYPE_WARNING) + get_count(SystemMessage.TYPE_WARNING, is_pinned=True),
             "information": get_count(SystemMessage.TYPE_INFORMATION)
             + get_count(SystemMessage.TYPE_INFORMATION, is_pinned=True),
-            "success": get_count(SystemMessage.TYPE_SUCCESS)
-            + get_count(SystemMessage.TYPE_SUCCESS, is_pinned=True),
+            "success": get_count(SystemMessage.TYPE_SUCCESS) + get_count(SystemMessage.TYPE_SUCCESS, is_pinned=True),
         }
 
         return stats
@@ -533,9 +517,7 @@ class NotificationViewSet(ViewSet):
             )
 
         payload = request.data
-        response = forward_partial_update_notification_to_service(
-            user_code, payload, request
-        )
+        response = forward_partial_update_notification_to_service(user_code, payload, request)
         return Response(response, status=status.HTTP_200_OK)
 
 

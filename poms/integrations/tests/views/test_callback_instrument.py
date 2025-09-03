@@ -4,7 +4,7 @@ from poms.celery_tasks.models import CeleryTask
 from poms.common.common_base_test import BaseTestCase
 from poms.csv_import.handlers import PERIODICITY_MAP
 from poms.currencies.models import Currency
-from poms.instruments.models import AccrualEvent, AccrualCalculationSchedule, Instrument
+from poms.instruments.models import AccrualCalculationSchedule, AccrualEvent, Instrument
 from poms.integrations.database_client import get_backend_callback_urls
 from poms.integrations.tests.common_callback_test import CallbackSetTestMixin
 
@@ -197,9 +197,7 @@ class CallbackInstrumentViewSetTest(CallbackSetTestMixin, BaseTestCase):
         self.assertEqual(len(instrument.factor_schedules.all()), 3)
         self.assertEqual(len(instrument.accrual_calculation_schedules.all()), 2)
 
-        accruals = AccrualCalculationSchedule.objects.filter(
-            instrument=instrument
-        ).order_by("accrual_start_date")
+        accruals = AccrualCalculationSchedule.objects.filter(instrument=instrument).order_by("accrual_start_date")
         accrual_1 = accruals[0]
         self.assertIsNotNone(accrual_1)
         self.assertEqual(
@@ -288,9 +286,7 @@ class CallbackInstrumentViewSetTest(CallbackSetTestMixin, BaseTestCase):
         self.assertEqual(len(instrument.factor_schedules.all()), 3)
         self.assertEqual(len(instrument.accrual_calculation_schedules.all()), 1)
 
-        accrual = AccrualCalculationSchedule.objects.filter(
-            instrument=instrument
-        ).first()
+        accrual = AccrualCalculationSchedule.objects.filter(instrument=instrument).first()
         self.assertIsNotNone(accrual)
         self.assertEqual(
             accrual.accrual_calculation_model.user_code,

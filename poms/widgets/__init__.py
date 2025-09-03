@@ -6,6 +6,4 @@ Whole this application (poms.widgets) should be deleted as soon it would be move
 
 """
 
-from __future__ import unicode_literals
-
 default_app_config = "poms.widgets.apps.WidgetsConfig"

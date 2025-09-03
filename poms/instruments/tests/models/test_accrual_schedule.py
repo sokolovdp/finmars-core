@@ -1,12 +1,12 @@
 from datetime import date
 
 from poms.common.common_base_test import BaseTestCase
+from poms.common.factories import ACCRUAL_MODELS_IDS
 from poms.instruments.models import (
     DATE_FORMAT,
     AccrualCalculationSchedule,
     Instrument,
 )
-from poms.common.factories import ACCRUAL_MODELS_IDS
 
 
 class AccrualCalculationScheduleModelTest(BaseTestCase):
@@ -37,7 +37,7 @@ class AccrualCalculationScheduleModelTest(BaseTestCase):
         ("str", "18736"),
     )
     def test_error_invalid_start_date(self, accrual_start_date):
-        with self.assertRaises(Exception):
+        with self.assertRaises(Exception):  # noqa: B017
             AccrualCalculationSchedule.objects.create(
                 instrument=self.instrument,
                 accrual_calculation_model_id=self.accrual_model_id,
@@ -50,7 +50,7 @@ class AccrualCalculationScheduleModelTest(BaseTestCase):
         ("str", "827634"),
     )
     def test_error_invalid_first_payment_date(self, first_payment_date):
-        with self.assertRaises(Exception):
+        with self.assertRaises(Exception):  # noqa: B017
             AccrualCalculationSchedule.objects.create(
                 instrument=self.instrument,
                 accrual_calculation_model_id=self.accrual_model_id,
@@ -80,9 +80,7 @@ class AccrualCalculationScheduleModelTest(BaseTestCase):
 
         self.assertEqual(old_accrual.id, new_accrual.id)
         self.assertNotEqual(old_accrual.notes, new_accrual.notes)
-        self.assertNotEqual(
-            old_accrual.first_payment_date, new_accrual.first_payment_date
-        )
+        self.assertNotEqual(old_accrual.first_payment_date, new_accrual.first_payment_date)
 
     @BaseTestCase.cases(
         ("date", date.today()),
@@ -107,6 +105,4 @@ class AccrualCalculationScheduleModelTest(BaseTestCase):
 
         old_accrual.refresh_from_db()
 
-        self.assertEqual(
-            old_accrual.first_payment_date, new_first_date.strftime(DATE_FORMAT)
-        )
+        self.assertEqual(old_accrual.first_payment_date, new_first_date.strftime(DATE_FORMAT))

@@ -1,7 +1,8 @@
 class CreateUserMemberMixin:
     def create_user_member(self):
-        from poms.users.models import Member
         from django.contrib.auth.models import User
+
+        from poms.users.models import Member
 
         user = User.objects.create_user(username="testuser")
         member, _ = Member.objects.get_or_create(

@@ -1,8 +1,7 @@
 from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.db import IntegrityError
-from rest_framework import serializers
-
 from mptt.utils import get_cached_trees
+from rest_framework import serializers
 
 from poms.common.serializers import (
     ModelMetaSerializer,
@@ -65,9 +64,7 @@ class UserInterfaceAccessModelSerializer(ModelWithUserCodeSerializer):
         ]
 
 
-class ComplexTransactionUserFieldSerializer(
-    ModelWithUserCodeSerializer, ModelMetaSerializer
-):
+class ComplexTransactionUserFieldSerializer(ModelWithUserCodeSerializer, ModelMetaSerializer):
     master_user = MasterUserField()
 
     class Meta:
@@ -131,15 +128,11 @@ class ColorPaletteSerializer(ModelWithUserCodeSerializer, ModelMetaSerializer):
     def save_colors(self, instance, colors):
         for color in colors:
             try:
-                item = ColorPaletteColor.objects.get(
-                    color_palette=instance, order=color["order"]
-                )
+                item = ColorPaletteColor.objects.get(color_palette=instance, order=color["order"])
                 self._save_item_color(color, item)
 
             except ColorPaletteColor.DoesNotExist:
-                item = ColorPaletteColor.objects.create(
-                    color_palette=instance, order=color["order"]
-                )
+                item = ColorPaletteColor.objects.create(color_palette=instance, order=color["order"])
                 self._save_item_color(color, item)
 
     @staticmethod
@@ -256,9 +249,7 @@ class TemplateLayoutSerializer(ModelWithUserCodeSerializer):
         ]
 
 
-class ContextMenuLayoutSerializer(
-    ModelWithTimeStampSerializer, ModelWithUserCodeSerializer
-):
+class ContextMenuLayoutSerializer(ModelWithTimeStampSerializer, ModelWithUserCodeSerializer):
     member = HiddenMemberField()
     data = serializers.JSONField(allow_null=False)
 
@@ -300,12 +291,10 @@ class ListLayoutSerializer(ModelWithTimeStampSerializer, ModelWithUserCodeSerial
         ]
 
     def to_representation(self, instance):
-        return super(ListLayoutSerializer, self).to_representation(instance)
+        return super().to_representation(instance)
 
 
-class ListLayoutLightSerializer(
-    ModelWithTimeStampSerializer, ModelWithUserCodeSerializer
-):
+class ListLayoutLightSerializer(ModelWithTimeStampSerializer, ModelWithUserCodeSerializer):
     member = HiddenMemberField()
     content_type = LayoutContentTypeField()
 
@@ -326,9 +315,7 @@ class ListLayoutLightSerializer(
         ]
 
 
-class DashboardLayoutSerializer(
-    ModelWithTimeStampSerializer, ModelWithUserCodeSerializer
-):
+class DashboardLayoutSerializer(ModelWithTimeStampSerializer, ModelWithUserCodeSerializer):
     member = HiddenMemberField()
     data = serializers.JSONField(allow_null=False)
 
@@ -348,9 +335,7 @@ class DashboardLayoutSerializer(
         ]
 
 
-class DashboardLayoutLightSerializer(
-    ModelWithTimeStampSerializer, ModelWithUserCodeSerializer
-):
+class DashboardLayoutLightSerializer(ModelWithTimeStampSerializer, ModelWithUserCodeSerializer):
     member = HiddenMemberField()
 
     class Meta:
@@ -474,9 +459,7 @@ class BookmarkSerializer(serializers.ModelSerializer):
     list_layout = ListLayoutField(required=False, allow_null=True)
     data = serializers.JSONField(required=False, allow_null=True)
 
-    children = BookmarkRecursiveField(
-        source="get_children", many=True, required=False, allow_null=True
-    )
+    children = BookmarkRecursiveField(source="get_children", many=True, required=False, allow_null=True)
 
     class Meta:
         list_serializer_class = BookmarkListSerializer
@@ -492,19 +475,15 @@ class BookmarkSerializer(serializers.ModelSerializer):
         ]
 
     def create(self, validated_data):
-        children = validated_data.pop(
-            "get_children", validated_data.pop("children", serializers.empty)
-        )
-        instance = super(BookmarkSerializer, self).create(validated_data)
+        children = validated_data.pop("get_children", validated_data.pop("children", serializers.empty))
+        instance = super().create(validated_data)
         if children is not serializers.empty:
             self.save_children(instance, children)
         return instance
 
     def update(self, instance, validated_data):
-        children = validated_data.pop(
-            "get_children", validated_data.pop("children", serializers.empty)
-        )
-        instance = super(BookmarkSerializer, self).update(instance, validated_data)
+        children = validated_data.pop("get_children", validated_data.pop("children", serializers.empty))
+        instance = super().update(instance, validated_data)
         if children is not serializers.empty:
             self.save_children(instance, children)
         return instance
@@ -525,9 +504,7 @@ class BookmarkSerializer(serializers.ModelSerializer):
     def save_child(self, instance, node, parent, processed):
         if "id" in node:
             try:
-                o = Bookmark.objects.get(
-                    member=instance.member, tree_id=parent.tree_id, pk=node.pop("id")
-                )
+                o = Bookmark.objects.get(member=instance.member, tree_id=parent.tree_id, pk=node.pop("id"))
             except ObjectDoesNotExist:
                 o = Bookmark()
         else:

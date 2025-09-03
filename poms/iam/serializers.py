@@ -23,11 +23,7 @@ class IamModelWithTimeStampSerializer(serializers.ModelSerializer):
         super().__init__(*args, **kwargs)
 
     def validate(self, data):
-        if (
-            self.instance
-            and "modified_at" in data
-            and data["modified_at"] != self.instance.modified_at
-        ):
+        if self.instance and "modified_at" in data and data["modified_at"] != self.instance.modified_at:
             raise serializers.ValidationError("Synchronization error")
 
         return data
@@ -69,9 +65,7 @@ class IamProtectedSerializer(serializers.ModelSerializer):
                 resource_group_code = user_code
                 try:
                     # Fetch the ResourceGroup and its assignments
-                    resource_group = ResourceGroup.objects.get(
-                        user_code=resource_group_code
-                    )
+                    resource_group = ResourceGroup.objects.get(user_code=resource_group_code)
                     assignments = resource_group.assignments.all()
 
                     # Add each assigned object's user_code as an expanded resource
@@ -81,18 +75,14 @@ class IamProtectedSerializer(serializers.ModelSerializer):
                         if assignment.object_user_code
                     )
                 except ResourceGroup.DoesNotExist:
-                    _l.warning(
-                        f"ResourceGroup with user_code {resource_group_code} does not exist."
-                    )
+                    _l.warning(f"ResourceGroup with user_code {resource_group_code} does not exist.")
                     continue
             else:
                 expanded_resources.add(resource)
 
         # Check permission against expanded resources
         has_permission = False
-        model_content_type = (
-            f"{self.Meta.model._meta.app_label}:{self.Meta.model.__name__.lower()}"
-        )
+        model_content_type = f"{self.Meta.model._meta.app_label}:{self.Meta.model.__name__.lower()}"
         instance_identifier = f"frn:finmars:{model_content_type}:{instance.user_code}"
 
         if instance_identifier in expanded_resources:
@@ -131,7 +121,7 @@ class IamModelOwnerSerializer(serializers.ModelSerializer):
         elif request and hasattr(request, "user"):
             validated_data["owner"] = Member.objects.get(user=request.user)
 
-        return super(IamModelOwnerSerializer, self).create(validated_data)
+        return super().create(validated_data)
 
 
 class IamModelMetaSerializer(IamModelOwnerSerializer):
@@ -143,9 +133,7 @@ class IamModelMetaSerializer(IamModelOwnerSerializer):
         space_code = get_space_code_from_context(self.context)
 
         representation["meta"] = {
-            "content_type": self.Meta.model._meta.app_label
-            + "."
-            + self.Meta.model._meta.model_name,
+            "content_type": self.Meta.model._meta.app_label + "." + self.Meta.model._meta.model_name,
             "app_label": self.Meta.model._meta.app_label,
             "model_name": self.Meta.model._meta.model_name,
             "space_code": space_code,
@@ -186,9 +174,7 @@ class RoleUserCodeField(serializers.RelatedField):
         try:
             return Role.objects.get(user_code=data)
         except Role.DoesNotExist as e:
-            raise serializers.ValidationError(
-                f"Role with user_code {data} does not exist."
-            ) from e
+            raise serializers.ValidationError(f"Role with user_code {data} does not exist.") from e
 
 
 class GroupUserCodeField(serializers.RelatedField):
@@ -199,9 +185,7 @@ class GroupUserCodeField(serializers.RelatedField):
         try:
             return Group.objects.get(user_code=data)
         except Group.DoesNotExist as e:
-            raise serializers.ValidationError(
-                f"Group with user_code {data} does not exist."
-            ) from e
+            raise serializers.ValidationError(f"Group with user_code {data} does not exist.") from e
 
 
 class AccessPolicyUserCodeField(serializers.RelatedField):
@@ -212,28 +196,18 @@ class AccessPolicyUserCodeField(serializers.RelatedField):
         try:
             return AccessPolicy.objects.get(user_code=data)
         except AccessPolicy.DoesNotExist as e:
-            raise serializers.ValidationError(
-                f"AccessPolicy with user_code {data} does not exist."
-            ) from e
+            raise serializers.ValidationError(f"AccessPolicy with user_code {data} does not exist.") from e
 
 
 class RoleSerializer(IamModelMetaSerializer, IamModelWithTimeStampSerializer):
-    members = serializers.PrimaryKeyRelatedField(
-        queryset=Member.objects.all(), many=True, required=False
-    )
+    members = serializers.PrimaryKeyRelatedField(queryset=Member.objects.all(), many=True, required=False)
     members_object = IamMemberSerializer(source="members", many=True, read_only=True)
 
-    groups = GroupUserCodeField(
-        queryset=Group.objects.all(), source="iam_groups", many=True, required=False
-    )
+    groups = GroupUserCodeField(queryset=Group.objects.all(), source="iam_groups", many=True, required=False)
     groups_object = IamGroupSerializer(source="iam_groups", many=True, read_only=True)
 
-    access_policies = AccessPolicyUserCodeField(
-        queryset=AccessPolicy.objects.all(), many=True, required=False
-    )
-    access_policies_object = IamAccessPolicySerializer(
-        source="access_policies", many=True, read_only=True
-    )
+    access_policies = AccessPolicyUserCodeField(queryset=AccessPolicy.objects.all(), many=True, required=False)
+    access_policies_object = IamAccessPolicySerializer(source="access_policies", many=True, read_only=True)
 
     created_at = serializers.DateTimeField(format="iso-8601", read_only=True)
     modified_at = serializers.DateTimeField(format="iso-8601", read_only=True)
@@ -301,20 +275,14 @@ class RoleSerializer(IamModelMetaSerializer, IamModelWithTimeStampSerializer):
 
 
 class GroupSerializer(IamModelMetaSerializer, IamModelWithTimeStampSerializer):
-    members = serializers.PrimaryKeyRelatedField(
-        queryset=Member.objects.all(), many=True, required=False
-    )
+    members = serializers.PrimaryKeyRelatedField(queryset=Member.objects.all(), many=True, required=False)
     members_object = IamMemberSerializer(source="members", many=True, read_only=True)
 
     roles = RoleUserCodeField(queryset=Role.objects.all(), many=True, required=False)
     roles_object = IamRoleSerializer(source="roles", many=True, read_only=True)
 
-    access_policies = AccessPolicyUserCodeField(
-        queryset=AccessPolicy.objects.all(), many=True, required=False
-    )
-    access_policies_object = IamAccessPolicySerializer(
-        source="access_policies", many=True, read_only=True
-    )
+    access_policies = AccessPolicyUserCodeField(queryset=AccessPolicy.objects.all(), many=True, required=False)
+    access_policies_object = IamAccessPolicySerializer(source="access_policies", many=True, read_only=True)
 
     created_at = serializers.DateTimeField(format="iso-8601", read_only=True)
     modified_at = serializers.DateTimeField(format="iso-8601", read_only=True)
@@ -339,7 +307,7 @@ class GroupSerializer(IamModelMetaSerializer, IamModelWithTimeStampSerializer):
         ]
 
     def __init__(self, *args, **kwargs):
-        super(GroupSerializer, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
     def create(self, validated_data):
         # access_policies_data = self.context['request'].data.get('access_policies', [])
@@ -421,9 +389,7 @@ class ResourceGroupSerializer(IamModelMetaSerializer):
     created_at = serializers.DateTimeField(format="iso-8601", read_only=True)
     modified_at = serializers.DateTimeField(format="iso-8601", read_only=True)
 
-    members = serializers.PrimaryKeyRelatedField(
-        queryset=Member.objects.all(), many=True, required=False
-    )
+    members = serializers.PrimaryKeyRelatedField(queryset=Member.objects.all(), many=True, required=False)
     members_object = IamMemberSerializer(source="members", many=True, read_only=True)
 
     class Meta:
@@ -464,13 +430,9 @@ class ResourceGroupSerializer(IamModelMetaSerializer):
 
         if received_assignments is not None:
             received_ids = {
-                assignment["id"]: assignment
-                for assignment in received_assignments
-                if assignment.get("id")
+                assignment["id"]: assignment for assignment in received_assignments if assignment.get("id")
             }
-            existing_ids = {
-                assignment.id: assignment for assignment in instance.assignments.all()
-            }
+            existing_ids = {assignment.id: assignment for assignment in instance.assignments.all()}
 
             ids_to_remove = set(existing_ids.keys()) - set(received_ids.keys())
 
@@ -510,18 +472,14 @@ class ModelWithResourceGroupSerializer(serializers.ModelSerializer):
 
     @staticmethod
     def get_resource_groups_object(obj: Portfolio) -> list:
-        resource_groups = ResourceGroup.objects.filter(
-            user_code__in=obj.resource_groups
-        )
+        resource_groups = ResourceGroup.objects.filter(user_code__in=obj.resource_groups)
         return ResourceGroupShortSerializer(resource_groups, many=True).data
 
     @staticmethod
     def validate_resource_groups(group_list):
         for gr_user_code in group_list:
             if not ResourceGroup.objects.filter(user_code=gr_user_code).exists():
-                raise serializers.ValidationError(
-                    f"No such ResourceGroup {gr_user_code}"
-                )
+                raise serializers.ValidationError(f"No such ResourceGroup {gr_user_code}")
         return group_list
 
     def create(self, validated_data: dict) -> object:
@@ -540,9 +498,7 @@ class ModelWithResourceGroupSerializer(serializers.ModelSerializer):
         new_resource_groups = validated_data.pop("resource_groups", [])
         instance = super().update(instance, validated_data)
 
-        resource_group_to_remove = set(instance.resource_groups) - set(
-            new_resource_groups
-        )
+        resource_group_to_remove = set(instance.resource_groups) - set(new_resource_groups)
         for rg_user_code in resource_group_to_remove:
             ResourceGroup.objects.del_object(
                 group_user_code=rg_user_code,

@@ -1,9 +1,6 @@
 import json
-import time
-
-from django.core.management.base import BaseCommand
-
 import logging
+import time
 
 from django.core.management.base import BaseCommand
 
@@ -30,7 +27,7 @@ class Command(BaseCommand):
             try:
                 try:
                     default_worker = CeleryWorker.objects.get(worker_name="worker00")
-                except Exception as e:
+                except Exception:
                     default_worker = CeleryWorker.objects.create(
                         worker_name="worker00",
                         worker_type="worker",
@@ -44,13 +41,11 @@ class Command(BaseCommand):
 
                 status_detail = json.loads(default_worker.status)
 
-                _l.info("deploy_default_worker: status_detail %s" % status_detail)
+                _l.info("deploy_default_worker: status_detail %s", status_detail)
 
                 if status_detail:
                     if status_detail["status"] == "deployed":
-                        _l.info(
-                            "deploy_default_worker: Default worker already deployed"
-                        )
+                        _l.info("deploy_default_worker: Default worker already deployed")
                         return
                     elif status_detail["status"] == "not_found":
                         default_worker.deploy(realm_code)
@@ -58,7 +53,7 @@ class Command(BaseCommand):
                         default_worker.start(realm_code)
 
             except Exception as e:
-                _l.error("deploy_default_worker: Could not deploy worker %s" % e)
+                _l.error("deploy_default_worker: Could not deploy worker %s", e)
 
         except Exception as e:
-            _l.info("deploy_default_worker: error %s" % e)
+            _l.info("deploy_default_worker: error %s", e)

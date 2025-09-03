@@ -41,12 +41,12 @@ class AbstractModelAdmin(admin.ModelAdmin):
         return PomsChangeList
 
     def get_queryset(self, request):
-        qs = super(AbstractModelAdmin, self).get_queryset(request)
+        qs = super().get_queryset(request)
 
         if self.master_user_path:
             master_user_id = self.get_active_master_user(request)
             if master_user_id is not None:
-                if isinstance(self.master_user_path, (list, tuple)):
+                if isinstance(self.master_user_path, list | tuple):
                     if self.master_user_path:
                         f = Q()
                         for p in self.master_user_path:
@@ -63,7 +63,7 @@ class AbstractModelAdmin(admin.ModelAdmin):
             del request.session["admin_master_user_id"]
             master_user_id = None
         else:
-            if isinstance(master_user, (str, int, float)):
+            if isinstance(master_user, str | int | float):
                 master_user_id = int(master_user)
             else:
                 master_user_id = master_user.id

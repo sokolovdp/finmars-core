@@ -1,9 +1,7 @@
-from django.conf import settings
-from poms.currencies.constants import DASH
 from poms.common.common_base_test import BaseTestCase
 from poms.counterparties.models import Responsible
-from poms.users.models import Member
-from poms.users.models import MasterUser
+from poms.currencies.constants import DASH
+from poms.users.models import MasterUser, Member
 
 
 class ResponsibleDeleteViewSetTest(BaseTestCase):
@@ -12,9 +10,7 @@ class ResponsibleDeleteViewSetTest(BaseTestCase):
         self.init_test_case()
         self.realm_code = "realm00000"
         self.space_code = "space00000"
-        self.url = (
-            f"/{self.realm_code}/{self.space_code}/api/v1/counterparties/responsible"
-        )
+        self.url = f"/{self.realm_code}/{self.space_code}/api/v1/counterparties/responsible"
 
     def test_detail_delete_main_responsibles(self):
         for responsible in Responsible.objects.filter(user_code__in=DASH):

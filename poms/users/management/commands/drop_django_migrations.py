@@ -2,8 +2,6 @@ from django.core.management import BaseCommand
 
 __author__ = "szhitenev"
 
-import os
-
 
 class Command(BaseCommand):
     help = "Drop Django Migrations"

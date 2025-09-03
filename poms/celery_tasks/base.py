@@ -85,9 +85,7 @@ class BaseTask(_Task):
 
         self.finmars_task.status = CeleryTask.STATUS_DONE
         if not retval:
-            result_object = {
-                "message": f"Task {task_id} finished successfully. No results"
-            }
+            result_object = {"message": f"Task {task_id} finished successfully. No results"}
             self.finmars_task.result_object = result_object
         else:
             try:
@@ -96,9 +94,7 @@ class BaseTask(_Task):
                         retval
                     )  ## TODO strange logic, probably refactor # but we can pass only string in celery
                 else:
-                    result_object = {
-                        "message": f"Task {task_id} returned result is not JSON"
-                    }
+                    result_object = {"message": f"Task {task_id} returned result is not JSON"}
                 self.finmars_task.result_object = result_object
             except Exception as err:
                 logger.error(f"update task error {repr(err)} {traceback.format_exc()}")

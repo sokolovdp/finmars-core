@@ -11,6 +11,6 @@ class Command(BaseCommand):
 
         count = CurrencyHistory.objects.filter(fx_rate=0).count()
 
-        print("%s items will be deleted " % count)
+        print(f"{count} items will be deleted ")
 
         CurrencyHistory.objects.filter(fx_rate=0).delete()

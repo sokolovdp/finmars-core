@@ -1,13 +1,13 @@
 from django.contrib import admin
 
 from poms.procedures.models import (
-    RequestDataFileProcedure,
-    RequestDataFileProcedureInstance,
-    PricingProcedure,
-    PricingParentProcedureInstance,
-    PricingProcedureInstance,
     ExpressionProcedure,
     ExpressionProcedureContextVariable,
+    PricingParentProcedureInstance,
+    PricingProcedure,
+    PricingProcedureInstance,
+    RequestDataFileProcedure,
+    RequestDataFileProcedureInstance,
 )
 
 
@@ -79,9 +79,7 @@ class RequestDataFileProcedureInstanceAdmin(admin.ModelAdmin):
     raw_id_fields = ["master_user"]
 
 
-admin.site.register(
-    RequestDataFileProcedureInstance, RequestDataFileProcedureInstanceAdmin
-)
+admin.site.register(RequestDataFileProcedureInstance, RequestDataFileProcedureInstanceAdmin)
 
 
 class ExpressionProcedureContextVariableInline(admin.TabularInline):

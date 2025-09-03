@@ -1,6 +1,5 @@
 import contextlib
 import ipaddress
-import json
 import logging
 import re
 import socket
@@ -16,6 +15,9 @@ from django.utils.cache import add_never_cache_headers, get_max_age, patch_cache
 from django.utils.deprecation import MiddlewareMixin
 from django.utils.functional import SimpleLazyObject
 from django.utils.translation import gettext_lazy as _
+from geoip2.errors import AddressNotFoundError
+from memory_profiler import profile
+from pympler.muppy import get_objects, summary
 from rest_framework import exceptions
 from rest_framework.exceptions import (
     AuthenticationFailed,
@@ -23,23 +25,19 @@ from rest_framework.exceptions import (
     PermissionDenied,
 )
 
-from geoip2.errors import AddressNotFoundError
-from memory_profiler import profile
-from pympler.muppy import get_objects, summary
-
 from .keycloak import KeycloakConnect
 
 _l = logging.getLogger("poms.common")
 
 
-def get_ip(request):
+def get_ip(request):  # noqa: PLR0912
     user_ip = None
 
     ips = request.META.get("HTTP_X_FORWARDED_FOR", "")
     if ips:
         for ip in [ip.strip() for ip in ips.split(",")]:
             try:
-                ip = ipaddress.ip_address(ip)
+                ip = ipaddress.ip_address(ip)  # noqa: PLW2901
             except ValueError:
                 pass
             else:
@@ -159,29 +157,19 @@ class KeycloakMiddleware:
             self.client_id = self.config["KEYCLOAK_CLIENT_ID"]
             self.client_secret_key = self.config["KEYCLOAK_CLIENT_SECRET_KEY"]
         except KeyError as e:
-            raise Exception(
-                "The mandatory KEYCLOAK configuration variables has not defined."
-            ) from e
+            raise Exception("The mandatory KEYCLOAK configuration variables has not defined.") from e
 
         if self.config["KEYCLOAK_SERVER_URL"] is None:
-            raise Exception(
-                "The mandatory KEYCLOAK_SERVER_URL configuration variables has not defined."
-            )
+            raise Exception("The mandatory KEYCLOAK_SERVER_URL configuration variables has not defined.")
 
         if self.config["KEYCLOAK_REALM"] is None:
-            raise Exception(
-                "The mandatory KEYCLOAK_REALM configuration variables has not defined."
-            )
+            raise Exception("The mandatory KEYCLOAK_REALM configuration variables has not defined.")
 
         if self.config["KEYCLOAK_CLIENT_ID"] is None:
-            raise Exception(
-                "The mandatory KEYCLOAK_CLIENT_ID configuration variables has not defined."
-            )
+            raise Exception("The mandatory KEYCLOAK_CLIENT_ID configuration variables has not defined.")
 
         if self.config["KEYCLOAK_CLIENT_SECRET_KEY"] is None:
-            raise Exception(
-                "The mandatory KEYCLOAK_CLIENT_SECRET_KEY configuration variables has not defined."
-            )
+            raise Exception("The mandatory KEYCLOAK_CLIENT_SECRET_KEY configuration variables has not defined.")
 
         # Create Keycloak instance
         self.keycloak = KeycloakConnect(
@@ -218,7 +206,7 @@ class KeycloakMiddleware:
         # Whether View hasn't this attribute, it means all request method routes will be permitted.
         try:
             view_roles = view_func.cls.keycloak_roles
-        except AttributeError as e:
+        except AttributeError:
             return None
 
         # Select actual role from 'keycloak_roles' according http request method (GET, POST, PUT or DELETE)
@@ -267,7 +255,7 @@ class KeycloakMiddleware:
         # Record authentication time
         request.keycloak_auth_time = int((time.perf_counter() - auth_start_time) * 1000)
 
-        print("keycloak_auth_time %s" % request.keycloak_auth_time)
+        print(f"keycloak_auth_time {request.keycloak_auth_time}")
 
 
 class LogRequestsMiddleware:
@@ -283,21 +271,18 @@ class LogRequestsMiddleware:
         response = self.get_response(request)
         end = time.perf_counter()
 
-        elapsed = float("{:3.3f}".format(end - start))
+        elapsed = float(f"{end - start:3.3f}")
 
         # for line in traceback.format_stack():
         #     print(line.strip())
 
         # _l.info("Worker pid %s" % os.getpid())
-        _l.info(
-            f"Finish to handle {request.build_absolute_uri()} "
-            f"LogRequestsMiddleware. response time {elapsed}"
-        )
+        _l.info(f"Finish to handle {request.build_absolute_uri()} LogRequestsMiddleware. response time {elapsed}")
 
         return response
 
 
-class MemoryMiddleware(object):
+class MemoryMiddleware:
     def __init__(self, get_response):
         self.get_response = get_response
 
@@ -408,13 +393,9 @@ class RealmAndSpaceMiddleware:
         response = self.get_response(request)
 
         if not response.streaming and "/admin/" in request.path_info:
-            response.content = response.content.replace(
-                b"spacexxxxx", request.space_code.encode()
-            )
+            response.content = response.content.replace(b"spacexxxxx", request.space_code.encode())
             if "location" in response:
-                response["location"] = response["location"].replace(
-                    "spacexxxxx", request.space_code
-                )
+                response["location"] = response["location"].replace("spacexxxxx", request.space_code)
 
         # Optionally, reset the search path to default after the request is processed
         # This can be important in preventing "leakage" of the schema setting across requests

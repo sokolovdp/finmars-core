@@ -1,49 +1,17 @@
 import logging
-import os
 import time
-from datetime import timedelta
-
-from django.conf import settings
-from django.db import connection
 
 from celery import group
 
-from poms.accounts.models import Account, AccountType
-from poms.celery_tasks import finmars_task
+from poms.accounts.models import Account
 from poms.celery_tasks.models import CeleryTask
-from poms.common.utils import get_last_business_day
-from poms.currencies.models import Currency
 from poms.iam.utils import get_allowed_queryset
-from poms.instruments.models import (
-    Country,
-    ExposureCalculationModel,
-    Instrument,
-    InstrumentType,
-    LongUnderlyingExposure,
-    ShortUnderlyingExposure,
-)
 from poms.portfolios.models import Portfolio
 from poms.reports.common import Report
-from poms.reports.models import BalanceReportCustomField, ReportInstanceModel
-from poms.reports.sql_builders.helpers import (
-    dictfetchall,
-    get_cash_as_position_consolidation_for_select,
-    get_cash_consolidation_for_select,
-    get_fx_trades_and_fx_variations_transaction_filter_sql_string,
-    get_pl_left_join_consolidation,
-    get_position_consolidation_for_select,
-    get_report_fx_rate,
-    get_transaction_date_filter_for_initial_position_sql_string,
-    get_transaction_filter_sql_string,
-    get_where_expression_for_position_consolidation,
-)
-from poms.reports.sql_builders.pl import PLReportBuilderSql
-from poms.strategies.models import Strategy1, Strategy2, Strategy3
+from poms.reports.sql_builders.balance import build
 from poms.users.models import EcosystemDefault
 
 _l = logging.getLogger("poms.reports")
-
-from poms.reports.sql_builders.balance import build
 
 
 class BalanceReportLightBuilderSql:
@@ -54,14 +22,9 @@ class BalanceReportLightBuilderSql:
 
         self.instance.allocation_mode = Report.MODE_IGNORE
 
-        self.ecosystem_defaults = EcosystemDefault.cache.get_cache(
-            master_user_pk=self.instance.master_user.pk
-        )
+        self.ecosystem_defaults = EcosystemDefault.cache.get_cache(master_user_pk=self.instance.master_user.pk)
 
-        _l.debug(
-            f"self.instance master_user {self.instance.master_user} "
-            f"report_date {self.instance.report_date}"
-        )
+        _l.debug(f"self.instance master_user {self.instance.master_user} report_date {self.instance.report_date}")
 
         """
         TODO IAM_SECURITY_VERIFY need to check, if user somehow passes 
@@ -74,15 +37,11 @@ class BalanceReportLightBuilderSql:
 
     def transform_to_allowed_portfolios(self):
         if not len(self.instance.portfolios):
-            self.instance.portfolios = get_allowed_queryset(
-                self.instance.member, Portfolio.objects.all()
-            )
+            self.instance.portfolios = get_allowed_queryset(self.instance.member, Portfolio.objects.all())
 
     def transform_to_allowed_accounts(self):
         if not len(self.instance.accounts):
-            self.instance.accounts = get_allowed_queryset(
-                self.instance.member, Account.objects.all()
-            )
+            self.instance.accounts = get_allowed_queryset(self.instance.member, Account.objects.all())
 
     def build_balance(self):
         st = time.perf_counter()
@@ -91,15 +50,13 @@ class BalanceReportLightBuilderSql:
 
         self.parallel_build()
 
-        self.instance.execution_time = float("{:3.3f}".format(time.perf_counter() - st))
+        self.instance.execution_time = float(f"{time.perf_counter() - st:3.3f}")
 
         _l.debug(f"items total {len(self.instance.items)}")
 
         relation_prefetch_st = time.perf_counter()
 
-        self.instance.relation_prefetch_time = float(
-            "{:3.3f}".format(time.perf_counter() - relation_prefetch_st)
-        )
+        self.instance.relation_prefetch_time = float(f"{time.perf_counter() - relation_prefetch_st:3.3f}")
 
         _l.debug(f"build_st done: {self.instance.execution_time}")
 
@@ -120,18 +77,10 @@ class BalanceReportLightBuilderSql:
                     options_object={
                         "report_date": self.instance.report_date,
                         "portfolios_ids": [portfolio.id],
-                        "accounts_ids": [
-                            instance.id for instance in self.instance.accounts
-                        ],
-                        "strategies1_ids": [
-                            instance.id for instance in self.instance.strategies1
-                        ],
-                        "strategies2_ids": [
-                            instance.id for instance in self.instance.strategies2
-                        ],
-                        "strategies3_ids": [
-                            instance.id for instance in self.instance.strategies3
-                        ],
+                        "accounts_ids": [instance.id for instance in self.instance.accounts],
+                        "strategies1_ids": [instance.id for instance in self.instance.strategies1],
+                        "strategies2_ids": [instance.id for instance in self.instance.strategies2],
+                        "strategies3_ids": [instance.id for instance in self.instance.strategies3],
                         "report_currency_id": self.instance.report_currency.id,
                         "pricing_policy_id": self.instance.pricing_policy.id,
                         "cost_method_id": self.instance.cost_method.id,
@@ -155,21 +104,11 @@ class BalanceReportLightBuilderSql:
                 type="calculate_balance_report",
                 options_object={
                     "report_date": self.instance.report_date,
-                    "portfolios_ids": [
-                        instance.id for instance in self.instance.portfolios
-                    ],
-                    "accounts_ids": [
-                        instance.id for instance in self.instance.accounts
-                    ],
-                    "strategies1_ids": [
-                        instance.id for instance in self.instance.strategies1
-                    ],
-                    "strategies2_ids": [
-                        instance.id for instance in self.instance.strategies2
-                    ],
-                    "strategies3_ids": [
-                        instance.id for instance in self.instance.strategies3
-                    ],
+                    "portfolios_ids": [instance.id for instance in self.instance.portfolios],
+                    "accounts_ids": [instance.id for instance in self.instance.accounts],
+                    "strategies1_ids": [instance.id for instance in self.instance.strategies1],
+                    "strategies2_ids": [instance.id for instance in self.instance.strategies2],
+                    "strategies3_ids": [instance.id for instance in self.instance.strategies3],
                     "report_currency_id": self.instance.report_currency.id,
                     "pricing_policy_id": self.instance.pricing_policy.id,
                     "cost_method_id": self.instance.cost_method.id,
@@ -185,7 +124,7 @@ class BalanceReportLightBuilderSql:
 
             tasks.append(task)
 
-        _l.debug("Going to run %s tasks" % len(tasks))
+        _l.debug("Going to run %s tasks", len(tasks))
 
         # Run the group of tasks
         job = group(
@@ -220,4 +159,4 @@ class BalanceReportLightBuilderSql:
         # 'all_dicts' is now a list of all dicts returned by the tasks
         self.instance.items = all_dicts
 
-        _l.debug("parallel_build done: %s", "{:3.3f}".format(time.perf_counter() - st))
+        _l.debug("parallel_build done: %s", f"{time.perf_counter() - st:3.3f}")

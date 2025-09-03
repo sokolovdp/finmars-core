@@ -2,7 +2,7 @@ from rest_framework.filters import BaseFilterBackend
 
 from poms.accounts.models import Account, AccountType
 from poms.counterparties.models import Counterparty, Responsible
-from poms.instruments.models import InstrumentType, Instrument
+from poms.instruments.models import Instrument, InstrumentType
 from poms.obj_attrs.models import GenericAttributeType
 from poms.portfolios.models import Portfolio
 from poms.strategies.models import Strategy1, Strategy2, Strategy3
@@ -27,9 +27,7 @@ class AbstractMappingObjectPermissionFilter(BaseFilterBackend):
         return queryset
 
 
-class InstrumentTypeMappingObjectPermissionFilter(
-    AbstractMappingObjectPermissionFilter
-):
+class InstrumentTypeMappingObjectPermissionFilter(AbstractMappingObjectPermissionFilter):
     content_object_model = InstrumentType
 
 
@@ -37,9 +35,7 @@ class AccountTypeMappingObjectPermissionFilter(AbstractMappingObjectPermissionFi
     content_object_model = AccountType
 
 
-class InstrumentAttributeValueMappingObjectPermissionFilter(
-    AbstractMappingObjectPermissionFilter
-):
+class InstrumentAttributeValueMappingObjectPermissionFilter(AbstractMappingObjectPermissionFilter):
     content_object_model = GenericAttributeType
 
 

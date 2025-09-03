@@ -1,5 +1,4 @@
 from celery.result import AsyncResult
-
 from django.core.signing import TimestampSigner
 from django_filters.rest_framework import FilterSet, ModelChoiceFilter
 from rest_framework import status
@@ -8,7 +7,6 @@ from rest_framework.response import Response
 
 from poms.celery_tasks.models import CeleryTask
 from poms.common.filters import CharFilter
-
 from poms.common.utils import datetime_now
 from poms.common.views import AbstractAsyncViewSet, AbstractModelViewSet
 from poms.reconciliation.models import (
@@ -46,9 +44,7 @@ class ReconciliationComplexTransactionFieldViewSet(AbstractModelViewSet):
 
 class ReconciliationBankFileFieldFilterSet(FilterSet):
     reference_name = CharFilter()
-    linked_complex_transaction_field = ModelChoiceFilter(
-        queryset=ReconciliationComplexTransactionField.objects.all()
-    )
+    linked_complex_transaction_field = ModelChoiceFilter(queryset=ReconciliationComplexTransactionField.objects.all())
 
     class Meta:
         model = ReconciliationBankFileField
@@ -108,9 +104,7 @@ class ProcessBankFileForReconcileViewSet(AbstractAsyncViewSet):
             res = AsyncResult(signer.unsign(task_id))
 
             try:
-                celery_task = CeleryTask.objects.get(
-                    master_user=request.user.master_user, task_id=task_id
-                )
+                celery_task = CeleryTask.objects.get(master_user=request.user.master_user, task_id=task_id)
             except CeleryTask.DoesNotExist:
                 celery_task = None
                 print("Cant create Celery Task")

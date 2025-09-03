@@ -1,35 +1,33 @@
-from __future__ import unicode_literals
-
 from poms.common.serializers import (
-    ModelWithUserCodeSerializer,
-    ModelWithTimeStampSerializer,
     ModelWithObjectStateSerializer,
+    ModelWithTimeStampSerializer,
+    ModelWithUserCodeSerializer,
 )
 from poms.obj_attrs.serializers import ModelWithAttributesSerializer
 from poms.strategies.fields import (
-    Strategy1GroupField,
-    Strategy1SubgroupField,
-    Strategy2GroupField,
-    Strategy2SubgroupField,
-    Strategy3GroupField,
-    Strategy3SubgroupField,
     Strategy1GroupDefault,
+    Strategy1GroupField,
     Strategy1SubgroupDefault,
+    Strategy1SubgroupField,
     Strategy2GroupDefault,
+    Strategy2GroupField,
     Strategy2SubgroupDefault,
+    Strategy2SubgroupField,
     Strategy3GroupDefault,
+    Strategy3GroupField,
     Strategy3SubgroupDefault,
+    Strategy3SubgroupField,
 )
 from poms.strategies.models import (
+    Strategy1,
     Strategy1Group,
     Strategy1Subgroup,
-    Strategy1,
+    Strategy2,
     Strategy2Group,
     Strategy2Subgroup,
-    Strategy2,
+    Strategy3,
     Strategy3Group,
     Strategy3Subgroup,
-    Strategy3,
 )
 from poms.users.fields import MasterUserField
 
@@ -169,7 +167,7 @@ class Strategy1ViewSerializer(ModelWithUserCodeSerializer):
         ]
 
 
-# 2 --------------------------------------------------------------------------------------------------------------------
+# 2 -------------------------------------------------------------------------------------------------------------------
 
 
 class Strategy2GroupSerializer(Strategy1GroupSerializer):
@@ -218,7 +216,7 @@ class Strategy2ViewSerializer(Strategy1ViewSerializer, ModelWithAttributesSerial
         model = Strategy2
 
 
-# 3 --------------------------------------------------------------------------------------------------------------------
+# 3 -------------------------------------------------------------------------------------------------------------------
 
 
 class Strategy3GroupSerializer(Strategy1GroupSerializer):
@@ -267,9 +265,7 @@ class Strategy3ViewSerializer(Strategy1ViewSerializer):
         model = Strategy3
 
 
-class Strategy1EvalSerializer(
-    ModelWithUserCodeSerializer, ModelWithTimeStampSerializer
-):
+class Strategy1EvalSerializer(ModelWithUserCodeSerializer, ModelWithTimeStampSerializer):
     master_user = MasterUserField()
 
     class Meta:
@@ -289,9 +285,7 @@ class Strategy1EvalSerializer(
         read_only_fields = fields
 
 
-class Strategy2EvalSerializer(
-    ModelWithUserCodeSerializer, ModelWithTimeStampSerializer
-):
+class Strategy2EvalSerializer(ModelWithUserCodeSerializer, ModelWithTimeStampSerializer):
     master_user = MasterUserField()
 
     class Meta:
@@ -311,9 +305,7 @@ class Strategy2EvalSerializer(
         read_only_fields = fields
 
 
-class Strategy3EvalSerializer(
-    ModelWithUserCodeSerializer, ModelWithTimeStampSerializer
-):
+class Strategy3EvalSerializer(ModelWithUserCodeSerializer, ModelWithTimeStampSerializer):
     master_user = MasterUserField()
 
     class Meta:

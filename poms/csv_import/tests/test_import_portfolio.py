@@ -13,14 +13,13 @@ from poms.csv_import.models import CsvField, CsvImportScheme, EntityField
 from poms.csv_import.tasks import simple_import
 from poms.csv_import.tests.common_test_data import (
     EXPECTED_RESULT_PORTFOLIO,
+    PORTFOLIO,
+    PORTFOLIO_ITEM,
     SCHEME_20,
     SCHEME_PORTFOLIO_ENTITIES,
     SCHEME_PORTFOLIO_FIELDS,
-    PORTFOLIO,
-    PORTFOLIO_ITEM,
 )
-from poms.portfolios.models import PortfolioType, Portfolio, PortfolioClass
-
+from poms.portfolios.models import Portfolio, PortfolioClass, PortfolioType
 
 FILE_CONTENT = json.dumps(PORTFOLIO).encode("utf-8")
 FILE_NAME = "portfolio.json"
@@ -65,9 +64,7 @@ class ImportPortfolioTypeTest(BaseTestCase):
                 "short_name": "STD - Portfolios (from File)",
             }
         )
-        scheme = CsvImportScheme.objects.using(settings.DB_DEFAULT).create(
-            **scheme_data
-        )
+        scheme = CsvImportScheme.objects.using(settings.DB_DEFAULT).create(**scheme_data)
 
         for field_data in SCHEME_PORTFOLIO_FIELDS:
             field_data["scheme"] = scheme
@@ -167,9 +164,7 @@ class ImportPortfolioTypeTest(BaseTestCase):
 
         import_process.process()
         result = import_process.task.result_object["items"][0]
-        self.assertEqual(
-            result["final_inputs"], EXPECTED_RESULT_PORTFOLIO["final_inputs"]
-        )
+        self.assertEqual(result["final_inputs"], EXPECTED_RESULT_PORTFOLIO["final_inputs"])
 
         portfolio = Portfolio.objects.get(user_code="Test")
         self.assertEqual(portfolio.portfolio_type.user_code, "com.finmars.test_01")

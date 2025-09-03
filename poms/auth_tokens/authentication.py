@@ -1,7 +1,6 @@
 import logging
 
 import pytz
-
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from rest_framework import exceptions
@@ -25,10 +24,8 @@ class ExpiringTokenAuthentication(TokenAuthentication):
     def try_token(self, tokens, index):
         if index < len(tokens):
             try:
-                self.result_token_user, self.result_token = (
-                    self.authenticate_credentials(tokens[index])
-                )
-            except Exception as e:
+                self.result_token_user, self.result_token = self.authenticate_credentials(tokens[index])
+            except Exception:
                 index = index + 1
 
                 self.try_token(tokens, index)
@@ -45,10 +42,10 @@ class ExpiringTokenAuthentication(TokenAuthentication):
             tokens = []
 
             for key, value in request.COOKIES.items():
-                if "authtoken" == key:
+                if key == "authtoken":
                     tokens.append(value)
 
-            if len(tokens):
+            if tokens:
                 _l.info(f"Multiple tokens detected {len(tokens)} ")
 
                 index = 0
@@ -67,11 +64,9 @@ class ExpiringTokenAuthentication(TokenAuthentication):
 
         try:
             token = auth[1].decode()
-        except UnicodeError:
-            msg = _(
-                "Invalid token header. Token string should not contain invalid characters."
-            )
-            raise exceptions.AuthenticationFailed(msg)
+        except UnicodeError as e:
+            msg = _("Invalid token header. Token string should not contain invalid characters.")
+            raise exceptions.AuthenticationFailed(msg) from e
 
         return self.authenticate_credentials(token)
 
@@ -80,15 +75,11 @@ class ExpiringTokenAuthentication(TokenAuthentication):
 
         try:
             token = models.objects.select_related("user").get(key=key)
-        except models.DoesNotExist:
-            raise AuthenticationFailed(
-                {"error": "Invalid or Inactive Token", "is_authenticated": False}
-            )
+        except models.DoesNotExist as e:
+            raise AuthenticationFailed({"error": "Invalid or Inactive Token", "is_authenticated": False}) from e
 
         if not token.user.is_active:
-            raise AuthenticationFailed(
-                {"error": "Invalid user", "is_authenticated": False}
-            )
+            raise AuthenticationFailed({"error": "Invalid user", "is_authenticated": False})
 
         utc_now = timezone.now()
         utc_now = utc_now.replace(tzinfo=pytz.utc)

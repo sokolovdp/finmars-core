@@ -5,7 +5,6 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 
 from poms.common.filters import CharFilter
-
 from poms.common.views import AbstractModelViewSet
 from poms.schedules.models import Schedule
 from poms.schedules.serializers import ScheduleSerializer

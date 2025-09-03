@@ -1,7 +1,6 @@
 import logging
 import traceback
 
-from celery import shared_task
 from celery.utils.log import get_task_logger
 
 from poms.celery_tasks import finmars_task
@@ -27,15 +26,9 @@ def get_transaction_access_type(
 ):
     result = None
 
-    has_portfolio_access = (
-        transaction["portfolio_id"] in portfolios_permissions_grouped[group]
-    )
-    has_account_position_access = (
-        transaction["account_position_id"] in accounts_permissions_grouped[group]
-    )
-    has_account_cash_access = (
-        transaction["account_cash_id"] in accounts_permissions_grouped[group]
-    )
+    has_portfolio_access = transaction["portfolio_id"] in portfolios_permissions_grouped[group]
+    has_account_position_access = transaction["account_position_id"] in accounts_permissions_grouped[group]
+    has_account_cash_access = transaction["account_cash_id"] in accounts_permissions_grouped[group]
     if not has_portfolio_access:
         return result  # If we dont have access to portfolio, then we dont have access to transaction
 
@@ -82,8 +75,8 @@ def recalculate_permissions_transaction(self, instance, *args, **kwargs):
     #
     # account_ctype = ContentType.objects.get_for_model(Account)
     # accounts_permissions = GenericObjectPermission.objects.filter(group__in=groups, content_type=account_ctype,
-    #                                                               permission__codename='view_account').values('group',
-    #                                                                                                           'object_id')
+    #                                                               permission__codename='view_account').values('group', # noqa: E501
+    #                                                                                                           'object_id') # noqa: E501
     #
     # _l.debug('_recalculate_transactions data load done: %s', (time.perf_counter() - data_st))
     #
@@ -161,9 +154,7 @@ def recalculate_permissions_transaction(self, instance, *args, **kwargs):
     # return instance
 
 
-@finmars_task(
-    name="transactions.recalculate_permissions_complex_transaction", bind=True
-)
+@finmars_task(name="transactions.recalculate_permissions_complex_transaction", bind=True)
 def recalculate_permissions_complex_transaction(self, instance, *args, **kwargs):
     # DEPRECATED, NEED REFACTOR
     pass
@@ -173,23 +164,23 @@ def recalculate_permissions_complex_transaction(self, instance, *args, **kwargs)
     # groups = list(Group.objects.filter(master_user_id=instance.master_user.id).values_list('id', flat=True))
     # complex_transactions = ComplexTransaction.objects.filter(master_user_id=instance.master_user.id).values('id',
     #                                                                                                         'status',
-    #                                                                                                         'visibility_status',
-    #                                                                                                         'transaction_type_id')
+    #                                                                                                         'visibility_status', # noqa: E501
+    #                                                                                                         'transaction_type_id') # noqa: E501
     #
     # transactions = Transaction.objects.filter(master_user_id=instance.master_user.id).values('id',
-    #                                                                                          'complex_transaction_id')
+    #                                                                                          'complex_transaction_id') # noqa: E501
     # transaction_ctype = ContentType.objects.get_for_model(Transaction)
     # transaction_permissions = GenericObjectPermission.objects.filter(group__in=groups,
     #                                                                  content_type=transaction_ctype,
     #                                                                  permission__codename__in=['view_transaction',
-    #                                                                                            'partial_view_transaction']).values(
+    #                                                                                            'partial_view_transaction']).values( # noqa: E501
     #     'id',
     #     'group_id',
     #     'object_id')
     #
     # transaction_type_ctype = ContentType.objects.get_for_model(TransactionType)
     # transaction_type_permissions = GenericObjectPermission.objects.filter(group__in=groups,
-    #                                                                       content_type=transaction_type_ctype).values(
+    #                                                                       content_type=transaction_type_ctype).values( # noqa: E501
     #     'id',
     #     'group_id',
     #     'object_id')
@@ -286,11 +277,7 @@ def get_values(complex_transaction):
     values = {}
 
     # if complex transaction already exists
-    if (
-        complex_transaction
-        and complex_transaction.id is not None
-        and complex_transaction.id > 0
-    ):
+    if complex_transaction and complex_transaction.id is not None and complex_transaction.id > 0:
         # load previous values if need
         ci_qs = complex_transaction.inputs.all().select_related(
             "transaction_type_input", "transaction_type_input__content_type"
@@ -389,9 +376,7 @@ def execute_user_fields_expressions(complex_transaction, values, context, target
     ]
 
     for field_key in fields:
-        if (target_key == field_key or not target_key) and getattr(
-            complex_transaction.transaction_type, field_key
-        ):
+        if (target_key == field_key or not target_key) and getattr(complex_transaction.transaction_type, field_key):
             try:
                 val = formula.safe_eval(
                     getattr(complex_transaction.transaction_type, field_key),
@@ -422,9 +407,7 @@ def recalculate_user_fields(self, task_id, *args, **kwargs):
             master_user=task.master_user,
         )
 
-        complex_transactions = ComplexTransaction.objects.filter(
-            transaction_type=transaction_type
-        )
+        complex_transactions = ComplexTransaction.objects.filter(transaction_type=transaction_type)
 
         _l.info(
             f"recalculate_user_fields: pk={task.options_object['transaction_type_id']} "
@@ -473,9 +456,7 @@ def recalculate_user_fields(self, task_id, *args, **kwargs):
             }
         )
 
-        task.verbose_result = (
-            f"Recalculated {len(complex_transactions)} complex transactions"
-        )
+        task.verbose_result = f"Recalculated {len(complex_transactions)} complex transactions"
 
         task.status = CeleryTask.STATUS_DONE
         task.save()

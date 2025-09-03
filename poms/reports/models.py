@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 from django.db import models
 from django.utils.translation import gettext_lazy
 
-from poms.common.models import EXPRESSION_FIELD_LENGTH, TimeStampedModel, NamedModel
+from poms.common.models import EXPRESSION_FIELD_LENGTH, NamedModel, TimeStampedModel
 from poms.common.utils import get_last_business_day
 from poms.configuration.models import ConfigurationModel
 from poms.instruments.models import CostMethod, PricingPolicy
@@ -809,9 +809,7 @@ class BalanceReportInstance(TimeStampedModel, NamedModel):
         unique=True,
         db_index=True,  # Adds an explicit index for faster lookup
         verbose_name=gettext_lazy("unique key"),
-        help_text=gettext_lazy(
-            "Unique Key. Used for getting Report by its Report Settings"
-        ),
+        help_text=gettext_lazy("Unique Key. Used for getting Report by its Report Settings"),
     )
 
     settings = models.TextField(
@@ -830,9 +828,7 @@ class BalanceReportInstance(TimeStampedModel, NamedModel):
         on_delete=models.CASCADE,
         related_name="balance_report_instances_as_member",
     )
-    report_date = models.DateField(
-        db_index=True, verbose_name=gettext_lazy("report date")
-    )
+    report_date = models.DateField(db_index=True, verbose_name=gettext_lazy("report date"))
     report_currency = models.ForeignKey(
         "currencies.Currency",
         on_delete=models.CASCADE,
@@ -874,10 +870,7 @@ class BalanceReportInstance(TimeStampedModel, NamedModel):
         super().save(*args, **kwargs)
 
         if BalanceReportInstance.objects.all().count() > 512:
-            _l.warning(
-                "BalanceReportInstance amount > 512, "
-                "delete oldest BalanceReportInstance"
-            )
+            _l.warning("BalanceReportInstance amount > 512, delete oldest BalanceReportInstance")
             BalanceReportInstance.objects.all().order_by("id")[0].delete()
 
 
@@ -887,9 +880,7 @@ class PLReportInstance(TimeStampedModel, NamedModel):
         unique=True,
         db_index=True,  # Adds an explicit index for faster lookup
         verbose_name=gettext_lazy("unique key"),
-        help_text=gettext_lazy(
-            "Unique Key. Used for getting Report by its Report Settings"
-        ),
+        help_text=gettext_lazy("Unique Key. Used for getting Report by its Report Settings"),
     )
 
     settings = models.TextField(
@@ -1003,10 +994,7 @@ class TransactionReportInstance(TimeStampedModel, NamedModel):
         super().save(*args, **kwargs)
 
         if TransactionReportInstance.objects.all().count() > 512:
-            _l.warning(
-                "TransactionReportInstance amount > 512, "
-                "delete oldest TransactionReportInstance"
-            )
+            _l.warning("TransactionReportInstance amount > 512, delete oldest TransactionReportInstance")
             TransactionReportInstance.objects.all().order_by("id")[0].delete()
 
 
@@ -1022,9 +1010,7 @@ class PerformanceReportInstance(TimeStampedModel, NamedModel):
         on_delete=models.CASCADE,
         related_name="performance_report_instances_as_member",
     )
-    begin_date = models.DateField(
-        db_index=True, verbose_name=gettext_lazy("begin date")
-    )
+    begin_date = models.DateField(db_index=True, verbose_name=gettext_lazy("begin date"))
     end_date = models.DateField(
         db_index=True,
         verbose_name=gettext_lazy("end date"),
@@ -1256,9 +1242,7 @@ class ReportSummary:
         member,
         context,
     ):
-        self.ecosystem_defaults = EcosystemDefault.cache.get_cache(
-            master_user_pk=master_user.pk
-        )
+        self.ecosystem_defaults = EcosystemDefault.cache.get_cache(master_user_pk=master_user.pk)
 
         self.context = context
         self.master_user = master_user
@@ -1277,9 +1261,7 @@ class ReportSummary:
         self.portfolio_user_codes = []
 
         self.portfolio_ids.extend(portfolio.id for portfolio in self.portfolios)
-        self.portfolio_user_codes.extend(
-            portfolio.user_code for portfolio in self.portfolios
-        )
+        self.portfolio_user_codes.extend(portfolio.user_code for portfolio in self.portfolios)
 
     def build_balance(self):
         st = time.perf_counter()
@@ -1305,10 +1287,7 @@ class ReportSummary:
 
         self.balance_report = BalanceReportBuilderSql(instance=instance).build_balance()
 
-        _l.debug(
-            "ReportSummary.build_balance done: %s"
-            % "{:3.3f}".format(time.perf_counter() - st)
-        )
+        _l.debug("ReportSummary.build_balance done: %s", f"{time.perf_counter() - st:3.3f}")
 
     def build_pl_range(self):
         st = time.perf_counter()
@@ -1335,10 +1314,7 @@ class ReportSummary:
 
         self.pl_report_range = PLReportBuilderSql(instance=instance).build_report()
 
-        _l.debug(
-            "ReportSummary.build_pl_daily done: %s"
-            % "{:3.3f}".format(time.perf_counter() - st)
-        )
+        _l.debug("ReportSummary.build_pl_daily done: %s", f"{time.perf_counter() - st:3.3f}")
 
     def build_pl_daily(self):
         st = time.perf_counter()
@@ -1347,7 +1323,7 @@ class ReportSummary:
 
         pl_first_date = get_last_business_day(self.date_to - timedelta(days=1))
 
-        _l.debug("build_pl_daily %s" % pl_first_date)
+        _l.debug("build_pl_daily %s", pl_first_date)
 
         serializer = PLReportSerializer(
             data={
@@ -1369,10 +1345,7 @@ class ReportSummary:
 
         self.pl_report_daily = PLReportBuilderSql(instance=instance).build_report()
 
-        _l.debug(
-            "ReportSummary.build_pl_daily done: %s"
-            % "{:3.3f}".format(time.perf_counter() - st)
-        )
+        _l.debug("ReportSummary.build_pl_daily done: %s", f"{time.perf_counter() - st:3.3f}")
 
     @property
     def pl_first_date_for_mtd(self):
@@ -1382,14 +1355,10 @@ class ReportSummary:
             last_day_of_prev_month = self.date_to - timedelta(days=1)
         else:
             # Subtract enough days to get to the first day of the current month and then subtract one more day
-            last_day_of_prev_month = (
-                self.date_to - timedelta(days=self.date_to.day - 1) - timedelta(days=1)
-            )
+            last_day_of_prev_month = self.date_to - timedelta(days=self.date_to.day - 1) - timedelta(days=1)
 
         # Check if it's a weekend and adjust accordingly
-        while (
-            last_day_of_prev_month.weekday() > 4
-        ):  # 0 = Monday, 1 = Tuesday, ..., 6 = Sunday
+        while last_day_of_prev_month.weekday() > 4:  # 0 = Monday, 1 = Tuesday, ..., 6 = Sunday
             last_day_of_prev_month -= timedelta(days=1)
 
         return last_day_of_prev_month.strftime("%Y-%m-%d")
@@ -1399,7 +1368,7 @@ class ReportSummary:
 
         from poms.reports.serializers import PLReportSerializer
 
-        _l.debug("pl_first_date_for_mtd %s" % self.pl_first_date_for_mtd)
+        _l.debug("pl_first_date_for_mtd %s", self.pl_first_date_for_mtd)
 
         serializer = PLReportSerializer(
             data={
@@ -1417,19 +1386,13 @@ class ReportSummary:
         serializer.is_valid(raise_exception=True)
         instance = serializer.save()
 
-        _l.debug(
-            f"build_pl_mtd.instance.pl_first_date {instance.pl_first_date} "
-            f"report_date {instance.report_date}"
-        )
+        _l.debug(f"build_pl_mtd.instance.pl_first_date {instance.pl_first_date} report_date {instance.report_date}")
 
         from poms.reports.sql_builders.pl import PLReportBuilderSql
 
         self.pl_report_mtd = PLReportBuilderSql(instance=instance).build_report()
 
-        _l.debug(
-            "ReportSummary.build_pl_mtd done: %s"
-            % "{:3.3f}".format(time.perf_counter() - st)
-        )
+        _l.debug("ReportSummary.build_pl_mtd done: %s", f"{time.perf_counter() - st:3.3f}")
 
     @property
     def pl_first_date_for_ytd(self):
@@ -1438,14 +1401,10 @@ class ReportSummary:
         if self.date_to.month == 1 and self.date_to.day == 1:
             last_day_of_prev_year = self.date_to - timedelta(days=1)
         else:
-            last_day_of_prev_year = self.date_to.replace(
-                year=self.date_to.year - 1, month=12, day=31
-            )
+            last_day_of_prev_year = self.date_to.replace(year=self.date_to.year - 1, month=12, day=31)
 
         # Check if it's a weekend or holiday and adjust accordingly
-        while (
-            last_day_of_prev_year.weekday() > 4
-        ):  # 0 = Monday, 1 = Tuesday, ..., 6 = Sunday
+        while last_day_of_prev_year.weekday() > 4:  # 0 = Monday, 1 = Tuesday, ..., 6 = Sunday
             last_day_of_prev_year -= timedelta(days=1)
 
         return last_day_of_prev_year.strftime("%Y-%m-%d")
@@ -1455,7 +1414,7 @@ class ReportSummary:
 
         from poms.reports.serializers import PLReportSerializer
 
-        _l.debug("pl_first_date_for_ytd %s" % self.pl_first_date_for_ytd)
+        _l.debug("pl_first_date_for_ytd %s", self.pl_first_date_for_ytd)
 
         serializer = PLReportSerializer(
             data={
@@ -1477,10 +1436,7 @@ class ReportSummary:
 
         self.pl_report_ytd = PLReportBuilderSql(instance=instance).build_report()
 
-        _l.debug(
-            "ReportSummary.build_pl_ytd done: %s"
-            % "{:3.3f}".format(time.perf_counter() - st)
-        )
+        _l.debug("ReportSummary.build_pl_ytd done: %s", f"{time.perf_counter() - st:3.3f}")
 
     def build_pl_inception_to_date(self):
         from poms.reports.sql_builders.pl import PLReportBuilderSql
@@ -1504,14 +1460,9 @@ class ReportSummary:
         serializer.is_valid(raise_exception=True)
         instance = serializer.save()
 
-        self.pl_report_inception_to_date = PLReportBuilderSql(
-            instance=instance
-        ).build_report()
+        self.pl_report_inception_to_date = PLReportBuilderSql(instance=instance).build_report()
 
-        _l.debug(
-            "ReportSummary.build_pl_inception_to_date done: %s"
-            % "{:3.3f}".format(time.perf_counter() - st)
-        )
+        _l.debug("ReportSummary.build_pl_inception_to_date done: %s", f"{time.perf_counter() - st:3.3f}")
 
     def get_nav(self, portfolio_id=None):
         nav = 0
@@ -1622,11 +1573,7 @@ class ReportSummary:
         market_value = 0
 
         for item in self.pl_report_mtd.items:
-            if (
-                portfolio_id
-                and item["portfolio_id"] == portfolio_id
-                or not portfolio_id
-            ):
+            if portfolio_id and item["portfolio_id"] == portfolio_id or not portfolio_id:
                 if item["total"]:
                     total = total + item["total"]
 
@@ -1655,11 +1602,7 @@ class ReportSummary:
         market_value = 0
 
         for item in self.pl_report_ytd.items:
-            if (
-                portfolio_id
-                and item["portfolio_id"] == portfolio_id
-                or not portfolio_id
-            ):
+            if portfolio_id and item["portfolio_id"] == portfolio_id or not portfolio_id:
                 if item["total"]:
                     total = total + item["total"]
 
@@ -1726,10 +1669,7 @@ class ReportSummary:
     def get_mtd_performance(self):
         from poms.reports.serializers import PerformanceReportSerializer
 
-        _l.debug(
-            "get_mtd_performance self.pl_first_date_for_mtd %s"
-            % self.pl_first_date_for_mtd
-        )
+        _l.debug("get_mtd_performance self.pl_first_date_for_mtd %s", self.pl_first_date_for_mtd)
 
         serializer = PerformanceReportSerializer(
             data={
@@ -1790,13 +1730,11 @@ class ReportInstanceModel:
 
         self.report_date = datetime.strptime(kwargs["report_date"], "%Y-%m-%d")
 
-        if kwargs.get("pl_first_date", None):
+        if kwargs.get("pl_first_date"):
             self.pl_first_date = datetime.strptime(kwargs["pl_first_date"], "%Y-%m-%d")
 
-        if kwargs.get("bday_yesterday_of_report_date", None):
-            self.bday_yesterday_of_report_date = datetime.strptime(
-                kwargs["bday_yesterday_of_report_date"], "%Y-%m-%d"
-            )
+        if kwargs.get("bday_yesterday_of_report_date"):
+            self.bday_yesterday_of_report_date = datetime.strptime(kwargs["bday_yesterday_of_report_date"], "%Y-%m-%d")
 
         self.report_currency = Currency.objects.get(id=kwargs["report_currency_id"])
         self.pricing_policy = PricingPolicy.objects.get(id=kwargs["pricing_policy_id"])
@@ -1835,9 +1773,7 @@ class ReportSummaryInstance(TimeStampedModel, NamedModel):
         on_delete=models.CASCADE,
         related_name="report_summary_instances_as_member",
     )
-    date_from = models.DateField(
-        null=True, db_index=True, verbose_name=gettext_lazy("date from")
-    )
+    date_from = models.DateField(null=True, db_index=True, verbose_name=gettext_lazy("date from"))
     date_to = models.DateField(
         null=True,
         db_index=True,
@@ -1879,8 +1815,5 @@ class ReportSummaryInstance(TimeStampedModel, NamedModel):
         super().save(*args, **kwargs)
 
         if ReportSummaryInstance.objects.all().count() > 512:
-            _l.warning(
-                "BalanceReportInstance amount > 512, "
-                "delete oldest BalanceReportInstance"
-            )
+            _l.warning("BalanceReportInstance amount > 512, delete oldest BalanceReportInstance")
             ReportSummaryInstance.objects.all().order_by("id")[0].delete()

@@ -5,7 +5,7 @@ from django.core.serializers.json import DjangoJSONEncoder
 from django.db import models
 from django.utils.translation import gettext_lazy
 
-from poms.common.models import EXPRESSION_FIELD_LENGTH, TimeStampedModel, NamedModel
+from poms.common.models import EXPRESSION_FIELD_LENGTH, NamedModel, TimeStampedModel
 from poms.common.utils import date_now
 from poms.configuration.models import ConfigurationModel
 from poms.integrations.models import DataProvider
@@ -88,12 +88,8 @@ class BaseProcedureInstance(TimeStampedModel):
         verbose_name=gettext_lazy("schedule instance"),
         on_delete=models.SET_NULL,
     )
-    error_code = models.PositiveSmallIntegerField(
-        null=True, blank=True, verbose_name=gettext_lazy("error code")
-    )
-    error_message = models.TextField(
-        null=True, blank=True, verbose_name=gettext_lazy("error message")
-    )
+    error_code = models.PositiveSmallIntegerField(null=True, blank=True, verbose_name=gettext_lazy("error code"))
+    error_message = models.TextField(null=True, blank=True, verbose_name=gettext_lazy("error message"))
     action = models.CharField(
         max_length=255,
         null=True,
@@ -252,9 +248,7 @@ class PricingProcedure(BaseProcedure):
 
                 print(f"save procedure {user_code}")
 
-                instrument = Instrument.objects.get(
-                    master_user=self.master_user, user_code=user_code
-                )
+                instrument = Instrument.objects.get(master_user=self.master_user, user_code=user_code)
 
                 self.user_code = formula.safe_eval(
                     'generate_user_code("proc", "", 0)',
@@ -290,12 +284,8 @@ class PricingProcedure(BaseProcedure):
 
                 print(f"save procedure {user_code}")
 
-                instrument = Instrument.objects.get(
-                    master_user=self.master_user, user_code=user_code
-                )
-                currency = Currency.objects.get(
-                    master_user=self.master_user, user_code=user_code
-                )
+                instrument = Instrument.objects.get(master_user=self.master_user, user_code=user_code)
+                currency = Currency.objects.get(master_user=self.master_user, user_code=user_code)
 
                 self.user_code = formula.safe_eval(
                     'generate_user_code("proc", "", 0)',
@@ -367,19 +357,11 @@ class PricingProcedureInstance(BaseProcedureInstance):
         blank=True,
     )
 
-    successful_prices_count = models.IntegerField(
-        default=0, verbose_name=gettext_lazy("successful prices count")
-    )
-    error_prices_count = models.IntegerField(
-        default=0, verbose_name=gettext_lazy("error prices count")
-    )
+    successful_prices_count = models.IntegerField(default=0, verbose_name=gettext_lazy("successful prices count"))
+    error_prices_count = models.IntegerField(default=0, verbose_name=gettext_lazy("error prices count"))
 
-    json_request_data = models.TextField(
-        null=True, blank=True, verbose_name=gettext_lazy("json request data")
-    )
-    json_response_data = models.TextField(
-        null=True, blank=True, verbose_name=gettext_lazy("response data")
-    )
+    json_request_data = models.TextField(null=True, blank=True, verbose_name=gettext_lazy("json request data"))
+    json_response_data = models.TextField(null=True, blank=True, verbose_name=gettext_lazy("response data"))
 
     @property
     def request_data(self):
@@ -394,9 +376,7 @@ class PricingProcedureInstance(BaseProcedureInstance):
     @request_data.setter
     def request_data(self, val):
         if val:
-            self.json_request_data = json.dumps(
-                val, cls=DjangoJSONEncoder, sort_keys=True
-            )
+            self.json_request_data = json.dumps(val, cls=DjangoJSONEncoder, sort_keys=True)
         else:
             self.json_request_data = None
 
@@ -414,10 +394,8 @@ class PricingProcedureInstance(BaseProcedureInstance):
     def response_data(self, val):
         if val:
             try:
-                self.json_response_data = json.dumps(
-                    val, cls=DjangoJSONEncoder, sort_keys=True
-                )
-            except Exception as e:
+                self.json_response_data = json.dumps(val, cls=DjangoJSONEncoder, sort_keys=True)
+            except Exception:
                 self.json_response_data = val
         else:
             self.json_response_data = None
@@ -429,7 +407,7 @@ class PricingProcedureInstance(BaseProcedureInstance):
             f"error_prices_count {self.error_prices_count}"
         )
 
-        super(PricingProcedureInstance, self).save(*args, **kwargs)
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.procedure} [{self.id}] by {self.member}"
@@ -442,19 +420,13 @@ SCHEME_TYPE_CHOICES = [
 
 
 class RequestDataFileProcedure(BaseProcedure):
-    provider = models.ForeignKey(
-        DataProvider, verbose_name=gettext_lazy("provider"), on_delete=models.CASCADE
-    )
+    provider = models.ForeignKey(DataProvider, verbose_name=gettext_lazy("provider"), on_delete=models.CASCADE)
 
-    scheme_type = models.CharField(
-        max_length=255, choices=SCHEME_TYPE_CHOICES, default="transaction_import"
-    )
+    scheme_type = models.CharField(max_length=255, choices=SCHEME_TYPE_CHOICES, default="transaction_import")
 
     scheme_user_code = models.CharField(max_length=1024)
 
-    date_from = models.DateField(
-        null=True, blank=True, verbose_name=gettext_lazy("price date from")
-    )
+    date_from = models.DateField(null=True, blank=True, verbose_name=gettext_lazy("price date from"))
 
     date_from_expr = models.CharField(
         null=True,
@@ -464,9 +436,7 @@ class RequestDataFileProcedure(BaseProcedure):
         verbose_name=gettext_lazy("price date from expr"),
     )
 
-    date_to = models.DateField(
-        null=True, blank=True, verbose_name=gettext_lazy("price date to")
-    )
+    date_to = models.DateField(null=True, blank=True, verbose_name=gettext_lazy("price date to"))
 
     date_to_expr = models.CharField(
         null=True,
@@ -476,9 +446,7 @@ class RequestDataFileProcedure(BaseProcedure):
         verbose_name=gettext_lazy("price date to expr"),
     )
 
-    json_data = models.TextField(
-        null=True, blank=True, verbose_name=gettext_lazy("json data")
-    )
+    json_data = models.TextField(null=True, blank=True, verbose_name=gettext_lazy("json data"))
 
     @property
     def data(self):
@@ -505,29 +473,15 @@ class RequestDataFileProcedureInstance(BaseProcedureInstance):
         verbose_name=gettext_lazy("procedure"),
     )
 
-    private_key = models.TextField(
-        null=True, blank=True, verbose_name=gettext_lazy("private key")
-    )
-    public_key = models.TextField(
-        null=True, blank=True, verbose_name=gettext_lazy("public key")
-    )
-    symmetric_key = models.TextField(
-        null=True, blank=True, verbose_name=gettext_lazy("symmetric key")
-    )
+    private_key = models.TextField(null=True, blank=True, verbose_name=gettext_lazy("private key"))
+    public_key = models.TextField(null=True, blank=True, verbose_name=gettext_lazy("public key"))
+    symmetric_key = models.TextField(null=True, blank=True, verbose_name=gettext_lazy("symmetric key"))
 
-    date_from = models.DateField(
-        null=True, blank=True, verbose_name=gettext_lazy("date from")
-    )
-    date_to = models.DateField(
-        null=True, blank=True, verbose_name=gettext_lazy("date to")
-    )
+    date_from = models.DateField(null=True, blank=True, verbose_name=gettext_lazy("date from"))
+    date_to = models.DateField(null=True, blank=True, verbose_name=gettext_lazy("date to"))
 
-    json_request_data = models.TextField(
-        null=True, blank=True, verbose_name=gettext_lazy("json data")
-    )
-    response_data = models.TextField(
-        null=True, blank=True, verbose_name=gettext_lazy("response data")
-    )
+    json_request_data = models.TextField(null=True, blank=True, verbose_name=gettext_lazy("json data"))
+    response_data = models.TextField(null=True, blank=True, verbose_name=gettext_lazy("response data"))
 
     linked_import_task = models.ForeignKey(
         "celery_tasks.CeleryTask",
@@ -553,9 +507,7 @@ class RequestDataFileProcedureInstance(BaseProcedureInstance):
     @request_data.setter
     def request_data(self, val):
         if val:
-            self.json_request_data = json.dumps(
-                val, cls=DjangoJSONEncoder, sort_keys=True
-            )
+            self.json_request_data = json.dumps(val, cls=DjangoJSONEncoder, sort_keys=True)
         else:
             self.json_request_data = None
 
@@ -563,7 +515,7 @@ class RequestDataFileProcedureInstance(BaseProcedureInstance):
         return f"{self.procedure} [{self.id}] by {self.member}"
 
     def save(self, *args, **kwargs):
-        super(RequestDataFileProcedureInstance, self).save(*args, **kwargs)
+        super().save(*args, **kwargs)
 
         count = RequestDataFileProcedureInstance.objects.all().count()
 
@@ -574,9 +526,7 @@ class RequestDataFileProcedureInstance(BaseProcedureInstance):
 class ExpressionProcedure(BaseProcedure):
     code = models.TextField(null=True, blank=True, verbose_name=gettext_lazy("code"))
 
-    json_data = models.TextField(
-        null=True, blank=True, verbose_name=gettext_lazy("json data")
-    )
+    json_data = models.TextField(null=True, blank=True, verbose_name=gettext_lazy("json data"))
 
     @property
     def data(self):

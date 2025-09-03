@@ -1,6 +1,6 @@
-from poms.common.common_base_test import BaseTestCase
-
 from django.core.validators import ValidationError
+
+from poms.common.common_base_test import BaseTestCase
 from poms.common.fields import name_validator
 
 

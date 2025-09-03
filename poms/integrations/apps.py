@@ -15,9 +15,7 @@ class IntegrationsConfig(AppConfig):
         # noinspection PyUnresolvedReferences
         # import poms.integrations.handlers
 
-    def update_transaction_classes(
-        self, app_config, verbosity=2, using=DEFAULT_DB_ALIAS, **kwargs
-    ):
+    def update_transaction_classes(self, app_config, verbosity=2, using=DEFAULT_DB_ALIAS, **kwargs):
         from poms.common.utils import db_class_check_data
 
         from .models import (
@@ -33,9 +31,7 @@ class IntegrationsConfig(AppConfig):
         db_class_check_data(FactorScheduleDownloadMethod, verbosity, using)
         db_class_check_data(AccrualScheduleDownloadMethod, verbosity, using)
 
-    def update_data_providers(
-        self, app_config, verbosity=2, using=DEFAULT_DB_ALIAS, **kwargs
-    ):
+    def update_data_providers(self, app_config, verbosity=2, using=DEFAULT_DB_ALIAS, **kwargs):
         from .models import DataProvider
 
         provider_types = [
@@ -71,9 +67,7 @@ class IntegrationsConfig(AppConfig):
             },
         ]
 
-        providers_exists = DataProvider.objects.using(using).values_list(
-            "pk", flat=True
-        )
+        providers_exists = DataProvider.objects.using(using).values_list("pk", flat=True)
 
         for type_ in provider_types:
             if type_["id"] in providers_exists:

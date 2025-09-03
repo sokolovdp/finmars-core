@@ -1,7 +1,7 @@
 from django.conf import settings
 from django.contrib.auth.models import User
 
-from poms.bootstrap.apps import FINMARS_BOT, BootstrapConfig, BootstrapError
+from poms.bootstrap.apps import FINMARS_BOT, BootstrapConfig
 from poms.common.common_base_test import BaseTestCase
 from poms.users.models import MasterUser, Member
 
@@ -20,18 +20,14 @@ class CreateFinmarsBotTestCase(BaseTestCase):
 
     def test__finmars_user_created(self):
         self.assertEqual(
-            User.objects.using(settings.DB_DEFAULT)
-            .filter(username=FINMARS_BOT)
-            .count(),
+            User.objects.using(settings.DB_DEFAULT).filter(username=FINMARS_BOT).count(),
             0,
         )
 
         BootstrapConfig.create_finmars_bot()
 
         self.assertEqual(
-            User.objects.using(settings.DB_DEFAULT)
-            .filter(username=FINMARS_BOT)
-            .count(),
+            User.objects.using(settings.DB_DEFAULT).filter(username=FINMARS_BOT).count(),
             1,
         )
 
@@ -48,16 +44,12 @@ class CreateFinmarsBotTestCase(BaseTestCase):
 
     def test__finmars_bot_member_created(self):
         # rename member created during test initialization
-        Member.objects.using(settings.DB_DEFAULT).filter(username=FINMARS_BOT).update(
-            username="test_user"
-        )
+        Member.objects.using(settings.DB_DEFAULT).filter(username=FINMARS_BOT).update(username="test_user")
 
         BootstrapConfig.create_finmars_bot()
 
         member = Member.objects.using(settings.DB_DEFAULT).get(username=FINMARS_BOT)
-        master_user = MasterUser.objects.using(settings.DB_DEFAULT).get(
-            space_code="space00000"
-        )
+        master_user = MasterUser.objects.using(settings.DB_DEFAULT).get(space_code="space00000")
         user = User.objects.using(settings.DB_DEFAULT).get(username=FINMARS_BOT)
 
         self.assertTrue(member.is_admin)

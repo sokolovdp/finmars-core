@@ -40,20 +40,22 @@ from poms.strategies.fields import (
 from poms.transactions.fields import TransactionTypeField
 from poms.users.fields import (
     AccessPolicyField,
+    Base64BinaryField,
     GroupField,
     HiddenMemberField,
     MasterUserField,
     MemberField,
-    RoleField, Base64BinaryField,
+    RoleField,
 )
 from poms.users.models import (
     TIMEZONE_CHOICES,
     EcosystemDefault,
     MasterUser,
+    MasterUserSymmetricKey,
     Member,
     OtpToken,
     UsercodePrefix,
-    UserProfile, MasterUserSymmetricKey,
+    UserProfile,
 )
 from poms.users.utils import (
     get_master_user_from_context,
@@ -83,9 +85,7 @@ class EmailSerializer(serializers.Serializer):
 
 
 class PasswordTokenSerializer(serializers.Serializer):
-    password = serializers.CharField(
-        label=gettext_lazy("Password"), style={"input_type": "password"}
-    )
+    password = serializers.CharField(label=gettext_lazy("Password"), style={"input_type": "password"})
     token = serializers.CharField()
 
 
@@ -154,9 +154,7 @@ class MasterUserCopySerializer(serializers.Serializer):
 
 class UserRegisterSerializer(serializers.Serializer):
     username = serializers.CharField(max_length=30, required=True)
-    password = serializers.CharField(
-        max_length=128, required=True, style={"input_type": "password"}
-    )
+    password = serializers.CharField(max_length=128, required=True, style={"input_type": "password"})
     email = serializers.CharField(max_length=255, required=False, allow_blank=True)
     access_key = serializers.CharField(max_length=8, required=False, allow_blank=True)
 
@@ -165,7 +163,7 @@ class UserRegisterSerializer(serializers.Serializer):
         password = validated_data.get("password")
         email = validated_data.get("email")
         account_type = validated_data.get("account_type")
-        access_key = validated_data.get("access_key")
+        access_key = validated_data.get("access_key")  # noqa: F841
 
         user_model = get_user_model()
 
@@ -177,14 +175,10 @@ class UserRegisterSerializer(serializers.Serializer):
             error = {"email": [gettext_lazy("Email already exist.")]}
             raise serializers.ValidationError(error)
 
-        user = user_model.objects.create_user(
-            username=username, password=password, email=email
-        )
+        user = user_model.objects.create_user(username=username, password=password, email=email)
 
         if account_type == "database":
-            MasterUser.objects.create_master_user(
-                user=user, language=translation.get_language(), name=username
-            )
+            MasterUser.objects.create_master_user(user=user, language=translation.get_language(), name=username)
 
         user = authenticate(username=username, password=password)
 
@@ -193,9 +187,7 @@ class UserRegisterSerializer(serializers.Serializer):
 
 
 class UserProfileSerializer(serializers.ModelSerializer):
-    language = serializers.ChoiceField(
-        choices=settings.LANGUAGES, default=settings.LANGUAGE_CODE
-    )
+    language = serializers.ChoiceField(choices=settings.LANGUAGES, default=settings.LANGUAGE_CODE)
     timezone = serializers.ChoiceField(choices=TIMEZONE_CHOICES)
     two_factor_verification = serializers.BooleanField()
 
@@ -270,9 +262,7 @@ class UserSetPasswordSerializer(serializers.Serializer):
         new_password = attrs["new_password"]
 
         if not user.check_password(password):
-            raise serializers.ValidationError(
-                {"password": gettext_lazy("bad password")}
-            )
+            raise serializers.ValidationError({"password": gettext_lazy("bad password")})
 
         try:
             validate_password(new_password, user)
@@ -293,9 +283,7 @@ class UserSetPasswordSerializer(serializers.Serializer):
 
 
 class UserUnsubscribeSerializer(serializers.Serializer):
-    email = serializers.EmailField(
-        allow_null=False, allow_blank=False, required=True, write_only=True
-    )
+    email = serializers.EmailField(allow_null=False, allow_blank=False, required=True, write_only=True)
 
     def validate(self, attrs):
         user = get_user_from_context(self.context)
@@ -312,9 +300,7 @@ class UserUnsubscribeSerializer(serializers.Serializer):
 
 
 class MasterUserSerializer(serializers.ModelSerializer):
-    language = serializers.ChoiceField(
-        choices=settings.LANGUAGES, default=settings.LANGUAGE_CODE
-    )
+    language = serializers.ChoiceField(choices=settings.LANGUAGES, default=settings.LANGUAGE_CODE)
     timezone = serializers.ChoiceField(choices=TIMEZONE_CHOICES)
 
     class Meta:
@@ -333,18 +319,14 @@ class MasterUserSerializer(serializers.ModelSerializer):
         ]
 
     def __init__(self, *args, **kwargs):
-        super(MasterUserSerializer, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
 
 class MasterUserLightSerializer(serializers.ModelSerializer):
-    language = serializers.ChoiceField(
-        choices=settings.LANGUAGES, default=settings.LANGUAGE_CODE
-    )
+    language = serializers.ChoiceField(choices=settings.LANGUAGES, default=settings.LANGUAGE_CODE)
     timezone = serializers.ChoiceField(choices=TIMEZONE_CHOICES)
     members = MemberField(many=True, required=False)
-    members_object = serializers.PrimaryKeyRelatedField(
-        source="members", read_only=True, many=True
-    )
+    members_object = serializers.PrimaryKeyRelatedField(source="members", read_only=True, many=True)
 
     class Meta:
         model = MasterUser
@@ -359,14 +341,12 @@ class MasterUserLightSerializer(serializers.ModelSerializer):
         ]
 
     def __init__(self, *args, **kwargs):
-        super(MasterUserLightSerializer, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
-        self.fields["members_object"] = MemberViewSerializer(
-            source="members", many=True, read_only=True
-        )
+        self.fields["members_object"] = MemberViewSerializer(source="members", many=True, read_only=True)
 
     def to_representation(self, instance):
-        ret = super(MasterUserLightSerializer, self).to_representation(instance)
+        ret = super().to_representation(instance)
 
         ret["is_current"] = self.get_is_current(instance)
         ret["is_admin"] = self.get_is_admin(ret)
@@ -431,8 +411,7 @@ class EcosystemDefaultSerializer(serializers.ModelSerializer):
     pricing_policy = PricingPolicyField()
     transaction_type = TransactionTypeField()
     periodicity = PeriodicityField()
-    license_key = serializers.CharField(max_length=255, required=False, allow_blank=True )
-
+    license_key = serializers.CharField(max_length=255, required=False, allow_blank=True)
 
     class Meta:
         model = EcosystemDefault
@@ -467,8 +446,7 @@ class EcosystemDefaultSerializer(serializers.ModelSerializer):
             "pricing_condition",
             "payment_size_detail",
             "periodicity",
-
-            "license_key"
+            "license_key",
         ]
 
     def __init__(self, *args, **kwargs):
@@ -509,10 +487,8 @@ class EcosystemDefaultSerializer(serializers.ModelSerializer):
 
         super().__init__(*args, **kwargs)
 
-        self.fields["accrual_calculation_model_object"] = (
-            AccrualCalculationModelViewSerializer(
-                source="accrual_calculation_model", read_only=True
-            )
+        self.fields["accrual_calculation_model_object"] = AccrualCalculationModelViewSerializer(
+            source="accrual_calculation_model", read_only=True
         )
 
         self.fields["pricing_condition_object"] = PricingConditionViewSerializer(
@@ -523,92 +499,56 @@ class EcosystemDefaultSerializer(serializers.ModelSerializer):
             source="payment_size_detail", read_only=True
         )
 
-        self.fields["periodicity_object"] = PeriodicityViewSerializer(
-            source="periodicity", read_only=True
-        )
+        self.fields["periodicity_object"] = PeriodicityViewSerializer(source="periodicity", read_only=True)
 
         self.fields["instrument_class_object"] = InstrumentClassViewSerializer(
             source="instrument_class", read_only=True
         )
 
-        self.fields["currency_object"] = CurrencyViewSerializer(
-            source="currency", read_only=True
-        )
+        self.fields["currency_object"] = CurrencyViewSerializer(source="currency", read_only=True)
 
-        self.fields["account_type_object"] = AccountTypeViewSerializer(
-            source="account_type", read_only=True
-        )
-        self.fields["account_object"] = AccountViewSerializer(
-            source="account", read_only=True
-        )
+        self.fields["account_type_object"] = AccountTypeViewSerializer(source="account_type", read_only=True)
+        self.fields["account_object"] = AccountViewSerializer(source="account", read_only=True)
 
         self.fields["counterparty_group_object"] = CounterpartyGroupViewSerializer(
             source="counterparty_group", read_only=True
         )
-        self.fields["counterparty_object"] = CounterpartyViewSerializer(
-            source="counterparty", read_only=True
-        )
+        self.fields["counterparty_object"] = CounterpartyViewSerializer(source="counterparty", read_only=True)
         self.fields["responsible_group_object"] = ResponsibleGroupViewSerializer(
             source="responsible_group", read_only=True
         )
-        self.fields["responsible_object"] = ResponsibleViewSerializer(
-            source="responsible", read_only=True
-        )
+        self.fields["responsible_object"] = ResponsibleViewSerializer(source="responsible", read_only=True)
 
-        self.fields["instrument_object"] = InstrumentViewSerializer(
-            source="instrument", read_only=True
-        )
-        self.fields["instrument_type_object"] = InstrumentTypeViewSerializer(
-            source="instrument_type", read_only=True
-        )
+        self.fields["instrument_object"] = InstrumentViewSerializer(source="instrument", read_only=True)
+        self.fields["instrument_type_object"] = InstrumentTypeViewSerializer(source="instrument_type", read_only=True)
 
-        self.fields["portfolio_object"] = PortfolioViewSerializer(
-            source="portfolio", read_only=True
-        )
+        self.fields["portfolio_object"] = PortfolioViewSerializer(source="portfolio", read_only=True)
 
-        self.fields["strategy1_group_object"] = Strategy1GroupViewSerializer(
-            source="strategy1_group", read_only=True
-        )
+        self.fields["strategy1_group_object"] = Strategy1GroupViewSerializer(source="strategy1_group", read_only=True)
         self.fields["strategy1_subgroup_object"] = Strategy1SubgroupViewSerializer(
             source="strategy1_subgroup", read_only=True
         )
-        self.fields["strategy1_object"] = Strategy1ViewSerializer(
-            source="strategy1", read_only=True
-        )
+        self.fields["strategy1_object"] = Strategy1ViewSerializer(source="strategy1", read_only=True)
 
-        self.fields["strategy2_group_object"] = Strategy2GroupViewSerializer(
-            source="strategy2_group", read_only=True
-        )
+        self.fields["strategy2_group_object"] = Strategy2GroupViewSerializer(source="strategy2_group", read_only=True)
         self.fields["strategy2_subgroup_object"] = Strategy2SubgroupViewSerializer(
             source="strategy2_subgroup", read_only=True
         )
-        self.fields["strategy2_object"] = Strategy2ViewSerializer(
-            source="strategy2", read_only=True
-        )
+        self.fields["strategy2_object"] = Strategy2ViewSerializer(source="strategy2", read_only=True)
 
-        self.fields["strategy3_group_object"] = Strategy3GroupViewSerializer(
-            source="strategy3_group", read_only=True
-        )
+        self.fields["strategy3_group_object"] = Strategy3GroupViewSerializer(source="strategy3_group", read_only=True)
         self.fields["strategy3_subgroup_object"] = Strategy3SubgroupViewSerializer(
             source="strategy3_subgroup", read_only=True
         )
-        self.fields["strategy3_object"] = Strategy3ViewSerializer(
-            source="strategy3", read_only=True
-        )
+        self.fields["strategy3_object"] = Strategy3ViewSerializer(source="strategy3", read_only=True)
 
-        self.fields["pricing_policy_object"] = PricingPolicyViewSerializer(
-            source="pricing_policy", read_only=True
-        )
+        self.fields["pricing_policy_object"] = PricingPolicyViewSerializer(source="pricing_policy", read_only=True)
         self.fields["transaction_type_object"] = TransactionTypeViewSerializer(
             source="transaction_type", read_only=True
         )
 
-        self.fields["mismatch_portfolio_object"] = PortfolioViewSerializer(
-            source="mismatch_portfolio", read_only=True
-        )
-        self.fields["mismatch_account_object"] = AccountViewSerializer(
-            source="mismatch_account", read_only=True
-        )
+        self.fields["mismatch_portfolio_object"] = PortfolioViewSerializer(source="mismatch_portfolio", read_only=True)
+        self.fields["mismatch_account_object"] = AccountViewSerializer(source="mismatch_account", read_only=True)
 
 
 class MasterUserSetCurrentSerializer(serializers.Serializer):
@@ -645,18 +585,12 @@ class MemberSerializer(serializers.ModelSerializer):
     join_date = DateTimeTzAwareField(read_only=True)
 
     groups = GroupField(source="iam_groups", many=True, required=False)
-    groups_object = serializers.PrimaryKeyRelatedField(
-        source="iam_groups", read_only=True, many=True
-    )
+    groups_object = serializers.PrimaryKeyRelatedField(source="iam_groups", read_only=True, many=True)
 
     roles = RoleField(source="iam_roles", many=True, required=False)
-    roles_object = serializers.PrimaryKeyRelatedField(
-        source="iam_roles", read_only=True, many=True
-    )
+    roles_object = serializers.PrimaryKeyRelatedField(source="iam_roles", read_only=True, many=True)
 
-    access_policies = AccessPolicyField(
-        source="iam_access_policies", many=True, required=False
-    )
+    access_policies = AccessPolicyField(source="iam_access_policies", many=True, required=False)
     access_policies_object = serializers.PrimaryKeyRelatedField(
         source="iam_access_policies", read_only=True, many=True
     )
@@ -706,15 +640,11 @@ class MemberSerializer(serializers.ModelSerializer):
         )
 
         super().__init__(*args, **kwargs)
-        self.fields["groups_object"] = IamGroupSerializer(
-            source="iam_groups", many=True, read_only=True
-        )
+        self.fields["groups_object"] = IamGroupSerializer(source="iam_groups", many=True, read_only=True)
         self.fields["access_policies_object"] = IamAccessPolicySerializer(
             source="iam_access_policies", many=True, read_only=True
         )
-        self.fields["roles_object"] = IamRoleSerializer(
-            source="iam_roles", many=True, read_only=True
-        )
+        self.fields["roles_object"] = IamRoleSerializer(source="iam_roles", many=True, read_only=True)
 
     def create(self, validated_data):
         _l.info(f"member create {validated_data}")
@@ -735,15 +665,14 @@ class MemberSerializer(serializers.ModelSerializer):
 
 
 class MasterUserSymmetricKeySerializer(serializers.ModelSerializer):
-
     member_object = MemberSerializer(many=True, read_only=True, source="member")
 
     encrypted_key = Base64BinaryField()
 
     class Meta:
         model = MasterUserSymmetricKey
-        fields = ['id', 'master_user', 'member', 'encrypted_key', 'member_object']
-        read_only_fields = ['id']
+        fields = ["id", "master_user", "member", "encrypted_key", "member_object"]
+        read_only_fields = ["id"]
 
 
 class MemberViewSerializer(serializers.ModelSerializer):

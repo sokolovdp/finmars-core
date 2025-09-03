@@ -7,20 +7,18 @@ import random
 import re
 import traceback
 import uuid
-from typing import Optional
 
+from dateutil import relativedelta
 from django.contrib.contenttypes.models import ContentType
 from django.forms.models import model_to_dict
 from django.utils import numberformat
-
-from dateutil import relativedelta
 from pandas.tseries.offsets import BDay, BMonthEnd, BQuarterEnd, BYearEnd
 
 from poms.common.utils import (
+    calculate_period_date,
     date_now,
     get_list_of_dates_between_two_dates,
     isclose,
-    calculate_period_date,
 )
 from poms.expressions_engine.exceptions import ExpressionEvalError, InvalidExpression
 
@@ -287,11 +285,11 @@ def _calculate_performance_report(
 
         currency = _safe_get_currency(evaluator, report_currency)
 
-        _l.info("_calculate_performance_report master_user %s" % master_user)
-        _l.info("_calculate_performance_report member %s" % member)
-        _l.info("_calculate_performance_report date_from  %s" % date_from)
-        _l.info("_calculate_performance_report date_to %s" % date_to)
-        _l.info("_calculate_performance_report currency %s" % currency)
+        _l.info("_calculate_performance_report master_user %s", master_user)
+        _l.info("_calculate_performance_report member %s", member)
+        _l.info("_calculate_performance_report date_from  %s", date_from)
+        _l.info("_calculate_performance_report date_to %s", date_to)
+        _l.info("_calculate_performance_report currency %s", currency)
 
         d_from = datetime.datetime.strptime(date_from, "%Y-%m-%d").date()
         d_to = datetime.datetime.strptime(date_to, "%Y-%m-%d").date()
@@ -299,9 +297,7 @@ def _calculate_performance_report(
         registers_instances = []
 
         for register in registers:
-            registers_instances.append(
-                Instrument.objects.get(master_user=master_user, user_code=register)
-            )
+            registers_instances.append(Instrument.objects.get(master_user=master_user, user_code=register))
 
         instance = PerformanceReport(
             report_instance_name=name,
@@ -324,8 +320,8 @@ def _calculate_performance_report(
         serializer.to_representation(instance)
 
     except Exception as e:
-        _l.error("_calculate_performance_report.Exception %s" % e)
-        _l.error("_calculate_performance_report.Trace %s" % traceback.format_exc())
+        _l.error("_calculate_performance_report.Exception %s", e)
+        _l.error("_calculate_performance_report.Trace %s", traceback.format_exc())
 
 
 _calculate_performance_report.evaluator = True
@@ -338,7 +334,7 @@ def _calculate_balance_report(
     report_currency,
     pricing_policy=None,
     cost_method="AVCO",
-    portfolios=[],
+    portfolios=None,
 ):
     from poms.instruments.models import CostMethod
     from poms.portfolios.models import Portfolio
@@ -348,15 +344,16 @@ def _calculate_balance_report(
     from poms.users.models import EcosystemDefault
     from poms.users.utils import get_master_user_from_context, get_member_from_context
 
+    if portfolios is None:
+        portfolios = []
+
     try:
         context = evaluator.context
 
         master_user = get_master_user_from_context(context)
         member = get_member_from_context(context)
 
-        ecosystem_default = EcosystemDefault.cache.get_cache(
-            master_user_pk=master_user.pk
-        )
+        ecosystem_default = EcosystemDefault.cache.get_cache(master_user_pk=master_user.pk)
 
         currency = _safe_get_currency(evaluator, report_currency)
         if pricing_policy:
@@ -377,9 +374,7 @@ def _calculate_balance_report(
 
         if portfolios:
             for portfolio in portfolios:
-                portfolios_instances.append(
-                    Portfolio.objects.get(master_user=master_user, user_code=portfolio)
-                )
+                portfolios_instances.append(Portfolio.objects.get(master_user=master_user, user_code=portfolio))
 
         instance = Report(
             report_instance_name=name,
@@ -417,7 +412,7 @@ def _calculate_pl_report(
     report_currency,
     pricing_policy=None,
     cost_method="AVCO",
-    portfolios=[],
+    portfolios=None,
 ):
     from poms.instruments.models import CostMethod
     from poms.portfolios.models import Portfolio
@@ -426,15 +421,16 @@ def _calculate_pl_report(
     from poms.users.models import EcosystemDefault
     from poms.users.utils import get_master_user_from_context, get_member_from_context
 
+    if portfolios is None:
+        portfolios = []
+
     try:
         context = evaluator.context
 
         master_user = get_master_user_from_context(context)
         member = get_member_from_context(context)
 
-        ecosystem_default = EcosystemDefault.cache.get_cache(
-            master_user_pk=master_user.pk
-        )
+        ecosystem_default = EcosystemDefault.cache.get_cache(master_user_pk=master_user.pk)
 
         currency = _safe_get_currency(evaluator, report_currency)
         if pricing_policy:
@@ -444,11 +440,11 @@ def _calculate_pl_report(
 
         cost_method = CostMethod.objects.get(user_code=cost_method)
 
-        _l.info("_calculate_pl_report master_user %s" % master_user)
-        _l.info("_calculate_pl_report member %s" % member)
-        _l.info("_calculate_pl_report report_date  %s" % report_date)
-        _l.info("_calculate_pl_report pl_first_date  %s" % pl_first_date)
-        _l.info("_calculate_pl_report currency %s" % currency)
+        _l.info("_calculate_pl_report master_user %s", master_user)
+        _l.info("_calculate_pl_report member %s", member)
+        _l.info("_calculate_pl_report report_date  %s", report_date)
+        _l.info("_calculate_pl_report pl_first_date  %s", pl_first_date)
+        _l.info("_calculate_pl_report currency %s", currency)
 
         report_date_d = datetime.datetime.strptime(report_date, "%Y-%m-%d").date()
         pl_first_date_d = datetime.datetime.strptime(pl_first_date, "%Y-%m-%d").date()
@@ -457,9 +453,7 @@ def _calculate_pl_report(
 
         if portfolios:
             for portfolio in portfolios:
-                portfolios_instances.append(
-                    Portfolio.objects.get(master_user=master_user, user_code=portfolio)
-                )
+                portfolios_instances.append(Portfolio.objects.get(master_user=master_user, user_code=portfolio))
 
         instance = Report(
             report_instance_name=name,
@@ -485,8 +479,8 @@ def _calculate_pl_report(
         serializer.to_representation(instance)
 
     except Exception as e:
-        _l.error("_calculate_pl_report.Exception %s" % e)
-        _l.error("_calculate_pl_report.Trace %s" % traceback.format_exc())
+        _l.error("_calculate_pl_report.Exception %s", e)
+        _l.error("_calculate_pl_report.Trace %s", traceback.format_exc())
 
 
 _calculate_pl_report.evaluator = True
@@ -506,7 +500,7 @@ _get_current_member.evaluator = True
 
 
 def _transaction_import__find_row(evaluator, **kwargs):
-    context = evaluator.context
+    context = evaluator.context  # noqa: F841
 
     result = {}
 
@@ -543,9 +537,9 @@ def _parse_date(date_string, format=None):
                 result = datetime.datetime.strptime(date_string, f).date()
                 break
             except Exception as e:
-                print("_parse_date date_string %s " % date_string)
-                print("_parse_date format %s " % f)
-                print("_parse_date error %s " % e)
+                print(f"_parse_date date_string {date_string}")
+                print(f"_parse_date format {f}")
+                print(f"_parse_date error {e}")
     else:
         if not format:
             format = "%Y-%m-%d"
@@ -701,8 +695,8 @@ def _format_date2(date, format_=None, locale=None):
     from babel import Locale
     from babel.dates import LC_TIME, format_date
 
-    l = Locale.parse(locale or LC_TIME)
-    return format_date(date, format=format_, locale=l)
+    l = Locale.parse(locale or LC_TIME)  # noqa: E741
+    return format_date(date, format=format_, locale=l)  # noqa: E741
 
 
 def _parse_date2(date_string, format=None, locale=None):
@@ -717,7 +711,7 @@ def _parse_date2(date_string, format=None, locale=None):
 
     date_string = str(date_string)
     format = str(format) if format else "yyyy-MM-dd"
-    l = Locale.parse(locale or LC_TIME)
+    l = Locale.parse(locale or LC_TIME)  # noqa: E741
     p = parse_pattern(format)
     return p.apply(date_string, l)
 
@@ -747,7 +741,7 @@ def _format_number(
 
 
 def _parse_number(a):
-    return a if isinstance(a, (float, int)) else float(a)
+    return a if isinstance(a, float | int) else float(a)
 
 
 def _join(data, separator):
@@ -842,8 +836,8 @@ def _get_ttype_default_input(evaluator, input):
 
     try:
         transaction_type = context["transaction_type"]
-    except ValueError:
-        raise ExpressionEvalError("Missing context: Transacion Type")
+    except ValueError as e:
+        raise ExpressionEvalError("Missing context: Transacion Type") from e
 
     inputs = list(transaction_type.inputs.all())
 
@@ -853,17 +847,17 @@ def _get_ttype_default_input(evaluator, input):
         if input == tt_input.name:
             input_obj = tt_input
 
-    print("input_obj %s" % input_obj)
+    print(f"input_obj {input_obj}")
 
     if input_obj is None:
         raise ExpressionEvalError("Input is not found")
 
-    print("input_obj.value_type %s" % input_obj.value_type)
-    print("input_obj.value %s" % input_obj.value)
+    print(f"input_obj.value_type {input_obj.value_type}")
+    print(f"input_obj.value {input_obj.value}")
 
     if input_obj.value_type == TransactionTypeInput.RELATION:
 
-        def _get_val_by_model_cls(obj, model_class):
+        def _get_val_by_model_cls(obj, model_class):  # noqa: PLR0911, PLR0912
             if issubclass(model_class, Account):
                 return obj.account
             elif issubclass(model_class, Currency):
@@ -904,12 +898,12 @@ def _get_ttype_default_input(evaluator, input):
 
         model_class = input_obj.content_type.model_class()
 
-        print("model_class %s" % model_class)
+        print(f"model_class {model_class}")
 
         result = _get_val_by_model_cls(input_obj, model_class).__dict__
 
         # print('result relation.name %s' % result.name)
-        print("result relation[name] %s" % result["name"])
+        print(f"result relation[name] {result['name']}")
 
     else:
         result = input_obj.value
@@ -928,8 +922,8 @@ def _set_complex_transaction_input(evaluator, input, value):
 
         try:
             complex_transaction = context["complex_transaction"]
-        except ValueError:
-            raise ExpressionEvalError("Missing context: Complex Transaction")
+        except ValueError as e:
+            raise ExpressionEvalError("Missing context: Complex Transaction") from e
 
         inputs = list(complex_transaction.inputs.all())
 
@@ -939,48 +933,31 @@ def _set_complex_transaction_input(evaluator, input, value):
             if input == ct_input.transaction_type_input.name:
                 input_obj = ct_input
 
-        print("input_obj %s" % input_obj)
+        print(f"input_obj {input_obj}")
 
         if input_obj is None:
             raise ExpressionEvalError("Input is not found")
 
-        print(
-            "input_obj.transaction_type_input.value_type  %s"
-            % input_obj.transaction_type_input.value_type
-        )
-        print("value %s" % value)
+        print(f"input_obj.transaction_type_input.value_type  {input_obj.transaction_type_input.value_type}")
+        print(f"value {value}")
 
         if value:
-            if (
-                input_obj.transaction_type_input.value_type
-                == TransactionTypeInput.RELATION
-            ):
+            if input_obj.transaction_type_input.value_type == TransactionTypeInput.RELATION:
                 input_obj.value_relation = value
-            elif (
-                input_obj.transaction_type_input.value_type
-                == TransactionTypeInput.STRING
-            ):
+            elif input_obj.transaction_type_input.value_type == TransactionTypeInput.STRING:
                 input_obj.value_string = value
-            elif (
-                input_obj.transaction_type_input.value_type
-                == TransactionTypeInput.NUMBER
-            ):
+            elif input_obj.transaction_type_input.value_type == TransactionTypeInput.NUMBER:
                 input_obj.value_float = value
-            elif (
-                input_obj.transaction_type_input.value_type == TransactionTypeInput.DATE
-            ):
+            elif input_obj.transaction_type_input.value_type == TransactionTypeInput.DATE:
                 input_obj.value_date = value
-            elif (
-                input_obj.transaction_type_input.value_type
-                == TransactionTypeInput.SELECTOR
-            ):
+            elif input_obj.transaction_type_input.value_type == TransactionTypeInput.SELECTOR:
                 input_obj.value_string = value
 
             input_obj.save()
 
         return True
     except Exception as e:
-        _l.info("_set_complex_transaction_input exception %s " % e)
+        _l.info("_set_complex_transaction_input exception %s", e)
         return False
 
 
@@ -989,20 +966,18 @@ _set_complex_transaction_input.evaluator = True
 
 def _set_complex_transaction_form_data(evaluator, key, value):
     try:
-        from poms.transactions.models import TransactionTypeInput
-
         context = evaluator.context
 
         try:
             values = context["values"]
-        except ValueError:
-            raise ExpressionEvalError("Missing context: Complex Transaction")
+        except ValueError as e:
+            raise ExpressionEvalError("Missing context: Complex Transaction") from e
 
         values[key] = value
 
         return True
     except Exception as e:
-        _l.info("_set_complex_transaction_form_data exception %s " % e)
+        _l.info("_set_complex_transaction_form_data exception %s", e)
         return False
 
 
@@ -1011,20 +986,18 @@ _set_complex_transaction_form_data.evaluator = True
 
 def _set_complex_transaction_user_field(evaluator, field, value):
     try:
-        from poms.transactions.models import TransactionTypeInput
-
         context = evaluator.context
 
         try:
             complex_transaction = context["complex_transaction"]
-        except ValueError:
-            raise ExpressionEvalError("Missing context: Complex Transaction")
+        except ValueError as e:
+            raise ExpressionEvalError("Missing context: Complex Transaction") from e
 
         setattr(complex_transaction, field, value)
 
         return True
     except Exception as e:
-        _l.info("_set_complex_transaction_user_field exception %s " % e)
+        _l.info("_set_complex_transaction_user_field exception %s", e)
         return False
 
 
@@ -1032,12 +1005,12 @@ _set_complex_transaction_user_field.evaluator = True
 
 
 def _get_complex_transaction(evaluator, identifier):
-    context = evaluator.context
+    context = evaluator.context  # noqa: F841
     from poms.transactions.models import ComplexTransaction
 
     try:
         result = ComplexTransaction.objects.get(transaction_unique_code=identifier)
-    except Exception as e:
+    except Exception:
         result = ComplexTransaction.objects.get(code=identifier)
 
     return result
@@ -1060,13 +1033,11 @@ def _get_relation_by_user_code(evaluator, content_type, user_code):
             Periodicity,
             PricingPolicy,
         )
-        from poms.integrations.models import PriceDownloadScheme
         from poms.portfolios.models import Portfolio
         from poms.strategies.models import Strategy1, Strategy2, Strategy3
         from poms.transactions.models import (
             EventClass,
             NotificationClass,
-            TransactionTypeInput,
         )
 
         context = evaluator.context
@@ -1074,53 +1045,33 @@ def _get_relation_by_user_code(evaluator, content_type, user_code):
 
         master_user = get_master_user_from_context(context)
 
-        def _get_val_by_model_cls(model_class, user_code):
+        def _get_val_by_model_cls(model_class, user_code):  # noqa: PLR0911, PLR0912
             if issubclass(model_class, Account):
                 return Account.objects.get(master_user=master_user, user_code=user_code)
             elif issubclass(model_class, Currency):
-                return Currency.objects.get(
-                    master_user=master_user, user_code=user_code
-                )
+                return Currency.objects.get(master_user=master_user, user_code=user_code)
             elif issubclass(model_class, Instrument):
-                return Instrument.objects.get(
-                    master_user=master_user, user_code=user_code
-                )
+                return Instrument.objects.get(master_user=master_user, user_code=user_code)
             elif issubclass(model_class, InstrumentType):
-                return InstrumentType.objects.get(
-                    master_user=master_user, user_code=user_code
-                )
+                return InstrumentType.objects.get(master_user=master_user, user_code=user_code)
             elif issubclass(model_class, Counterparty):
-                return Counterparty.objects.get(
-                    master_user=master_user, user_code=user_code
-                )
+                return Counterparty.objects.get(master_user=master_user, user_code=user_code)
             elif issubclass(model_class, Responsible):
-                return Responsible.objects.get(
-                    master_user=master_user, user_code=user_code
-                )
+                return Responsible.objects.get(master_user=master_user, user_code=user_code)
             elif issubclass(model_class, Strategy1):
-                return Strategy1.objects.get(
-                    master_user=master_user, user_code=user_code
-                )
+                return Strategy1.objects.get(master_user=master_user, user_code=user_code)
             elif issubclass(model_class, Strategy2):
-                return Strategy2.objects.get(
-                    master_user=master_user, user_code=user_code
-                )
+                return Strategy2.objects.get(master_user=master_user, user_code=user_code)
             elif issubclass(model_class, Strategy3):
-                return Strategy3.objects.get(
-                    master_user=master_user, user_code=user_code
-                )
+                return Strategy3.objects.get(master_user=master_user, user_code=user_code)
             elif issubclass(model_class, DailyPricingModel):
                 return DailyPricingModel.objects.get(user_code=user_code)
             elif issubclass(model_class, PaymentSizeDetail):
                 return PaymentSizeDetail.objects.get(user_code=user_code)
             elif issubclass(model_class, Portfolio):
-                return Portfolio.objects.get(
-                    master_user=master_user, user_code=user_code
-                )
+                return Portfolio.objects.get(master_user=master_user, user_code=user_code)
             elif issubclass(model_class, PricingPolicy):
-                return PricingPolicy.objects.get(
-                    master_user=master_user, user_code=user_code
-                )
+                return PricingPolicy.objects.get(master_user=master_user, user_code=user_code)
             elif issubclass(model_class, Periodicity):
                 return Periodicity.objects.get(user_code=user_code)
             elif issubclass(model_class, AccrualCalculationModel):
@@ -1132,16 +1083,14 @@ def _get_relation_by_user_code(evaluator, content_type, user_code):
             return None
 
         app_label, model = content_type.split(".")
-        model_class = ContentType.objects.get_by_natural_key(
-            app_label, model
-        ).model_class()
+        model_class = ContentType.objects.get_by_natural_key(app_label, model).model_class()
 
-        _l.info("model_class %s" % model_class)
+        _l.info("model_class %s", model_class)
 
         result = model_to_dict(_get_val_by_model_cls(model_class, user_code))
 
         return result
-    except Exception as e:
+    except Exception:
         return None
 
 
@@ -1150,25 +1099,8 @@ _get_relation_by_user_code.evaluator = True
 
 def _get_instruments(evaluator, **kwargs):
     try:
-        from poms.accounts.models import Account
-        from poms.counterparties.models import Counterparty, Responsible
-        from poms.currencies.models import Currency
         from poms.instruments.models import (
-            AccrualCalculationModel,
-            DailyPricingModel,
             Instrument,
-            InstrumentType,
-            PaymentSizeDetail,
-            Periodicity,
-            PricingPolicy,
-        )
-        from poms.integrations.models import PriceDownloadScheme
-        from poms.portfolios.models import Portfolio
-        from poms.strategies.models import Strategy1, Strategy2, Strategy3
-        from poms.transactions.models import (
-            EventClass,
-            NotificationClass,
-            TransactionTypeInput,
         )
 
         context = evaluator.context
@@ -1176,9 +1108,7 @@ def _get_instruments(evaluator, **kwargs):
 
         master_user = get_master_user_from_context(context)
 
-        items = Instrument.objects.filter(
-            master_user=master_user, is_deleted=False, **kwargs
-        )
+        items = Instrument.objects.filter(master_user=master_user, is_deleted=False, **kwargs)
         result = []
 
         for item in items:
@@ -1186,7 +1116,7 @@ def _get_instruments(evaluator, **kwargs):
 
         return result
     except Exception as e:
-        _l.error("_get_instruments.exception %s" % e)
+        _l.error("_get_instruments.exception %s", e)
         return None
 
 
@@ -1202,9 +1132,7 @@ def _get_currencies(evaluator, **kwargs):
 
         master_user = get_master_user_from_context(context)
 
-        items = Currency.objects.filter(
-            master_user=master_user, is_deleted=False, **kwargs
-        )
+        items = Currency.objects.filter(master_user=master_user, is_deleted=False, **kwargs)
 
         result = []
 
@@ -1213,7 +1141,7 @@ def _get_currencies(evaluator, **kwargs):
 
         return result
     except Exception as e:
-        _l.error("_get_currencies.exception %s" % e)
+        _l.error("_get_currencies.exception %s", e)
         return None
 
 
@@ -1229,9 +1157,7 @@ def _get_mapping_key_by_value(evaluator, user_code, value, **kwargs):
 
         from poms.integrations.models import MappingTable
 
-        mapping_table = MappingTable.objects.get(
-            master_user=master_user, user_code=user_code
-        )
+        mapping_table = MappingTable.objects.get(master_user=master_user, user_code=user_code)
 
         result = None
 
@@ -1242,7 +1168,7 @@ def _get_mapping_key_by_value(evaluator, user_code, value, **kwargs):
 
         return result
     except Exception as e:
-        _l.error("_get_mapping_key_by_value.exception %s" % e)
+        _l.error("_get_mapping_key_by_value.exception %s", e)
         return None
 
 
@@ -1258,9 +1184,7 @@ def _get_mapping_value_by_key(evaluator, user_code, key, **kwargs):
 
         from poms.integrations.models import MappingTable
 
-        mapping_table = MappingTable.objects.get(
-            master_user=master_user, user_code=user_code
-        )
+        mapping_table = MappingTable.objects.get(master_user=master_user, user_code=user_code)
 
         result = None
 
@@ -1271,7 +1195,7 @@ def _get_mapping_value_by_key(evaluator, user_code, key, **kwargs):
 
         return result
     except Exception as e:
-        _l.error("_get_mapping_value_by_key.exception %s" % e)
+        _l.error("_get_mapping_value_by_key.exception %s", e)
         return None
 
 
@@ -1287,9 +1211,7 @@ def _get_mapping_keys(evaluator, user_code, **kwargs):
 
         from poms.integrations.models import MappingTable
 
-        mapping_table = MappingTable.objects.get(
-            master_user=master_user, user_code=user_code
-        )
+        mapping_table = MappingTable.objects.get(master_user=master_user, user_code=user_code)
 
         result = []
 
@@ -1298,7 +1220,7 @@ def _get_mapping_keys(evaluator, user_code, **kwargs):
 
         return result
     except Exception as e:
-        _l.error("_get_mapping_keys.exception %s" % e)
+        _l.error("_get_mapping_keys.exception %s", e)
         return None
 
 
@@ -1314,9 +1236,7 @@ def _get_mapping_key_values(evaluator, user_code, key, **kwargs):
 
         from poms.integrations.models import MappingTable
 
-        mapping_table = MappingTable.objects.get(
-            master_user=master_user, user_code=user_code
-        )
+        mapping_table = MappingTable.objects.get(master_user=master_user, user_code=user_code)
 
         result = []
 
@@ -1326,7 +1246,7 @@ def _get_mapping_key_values(evaluator, user_code, key, **kwargs):
 
         return result
     except Exception as e:
-        _l.error("_get_mapping_key_values.exception %s" % e)
+        _l.error("_get_mapping_key_values.exception %s", e)
         return None
 
 
@@ -1402,9 +1322,7 @@ def _generate_user_code(evaluator, prefix="", suffix="", counter=0):
     if counter > 10:
         raise InvalidExpression("Counter is greater than 10")
 
-    master_user.user_code_counters[counter] = (
-        master_user.user_code_counters[counter] + 1
-    )
+    master_user.user_code_counters[counter] = master_user.user_code_counters[counter] + 1
     master_user.save()
 
     result = prefix + str(master_user.user_code_counters[counter]).zfill(17) + suffix
@@ -1423,7 +1341,7 @@ def _get_fx_rate(evaluator, date, currency, pricing_policy, default_value=0):
     from poms.users.utils import get_master_user_from_context
 
     context = evaluator.context
-    master_user = get_master_user_from_context(context)
+    master_user = get_master_user_from_context(context)  # noqa: F841
 
     date = _parse_date(date)
     currency = _safe_get_currency(evaluator, currency)
@@ -1432,9 +1350,7 @@ def _get_fx_rate(evaluator, date, currency, pricing_policy, default_value=0):
     # TODO need master user check, security hole
 
     try:
-        result = CurrencyHistory.objects.get(
-            date=date, currency=currency, pricing_policy=pricing_policy
-        )
+        result = CurrencyHistory.objects.get(date=date, currency=currency, pricing_policy=pricing_policy)
     except (CurrencyHistory.DoesNotExist, KeyError):
         result = None
 
@@ -1452,7 +1368,7 @@ def _add_fx_rate(evaluator, date, currency, pricing_policy, fx_rate=0, overwrite
     from poms.users.utils import get_master_user_from_context
 
     context = evaluator.context
-    master_user = get_master_user_from_context(context)
+    master_user = get_master_user_from_context(context)  # noqa: F841
 
     date = _parse_date(date)
     pricing_policy = _safe_get_pricing_policy(evaluator, pricing_policy)
@@ -1461,9 +1377,7 @@ def _add_fx_rate(evaluator, date, currency, pricing_policy, fx_rate=0, overwrite
     # TODO need master user check, security hole
 
     try:
-        result = CurrencyHistory.objects.get(
-            date=date, currency=currency, pricing_policy=pricing_policy
-        )
+        result = CurrencyHistory.objects.get(date=date, currency=currency, pricing_policy=pricing_policy)
 
         if overwrite:
             result.fx_rate = fx_rate
@@ -1526,9 +1440,7 @@ def _add_price_history(
         accrued_price = instrument.get_accrued_price(date)
 
     try:
-        result = PriceHistory.objects.get(
-            date=date, instrument=instrument, pricing_policy=pricing_policy
-        )
+        result = PriceHistory.objects.get(date=date, instrument=instrument, pricing_policy=pricing_policy)
 
         if principal_price is not None:
             result.principal_price = principal_price
@@ -1556,23 +1468,21 @@ def _add_price_history(
 _add_price_history.evaluator = True
 
 
-def _get_latest_principal_price(
-    evaluator, date_from, date_to, instrument, pricing_policy, default_value=None
-):
+def _get_latest_principal_price(evaluator, date_from, date_to, instrument, pricing_policy, default_value=None):
     try:
         from poms.instruments.models import PriceHistory
         from poms.users.utils import get_master_user_from_context
 
         context = evaluator.context
-        master_user = get_master_user_from_context(context)
+        master_user = get_master_user_from_context(context)  # noqa: F841
 
         date_from = _parse_date(date_from)
         date_to = _parse_date(date_to)
         instrument = _safe_get_instrument(evaluator, instrument)
         pricing_policy = _safe_get_pricing_policy(evaluator, pricing_policy)
 
-        _l.info("_get_latest_principal_price instrument %s " % instrument)
-        _l.info("_get_latest_principal_price  pricing_policy %s " % pricing_policy)
+        _l.info("_get_latest_principal_price instrument %s", instrument)
+        _l.info("_get_latest_principal_price  pricing_policy %s", pricing_policy)
 
         results = (
             PriceHistory.objects.exclude(principal_price=0)
@@ -1585,29 +1495,27 @@ def _get_latest_principal_price(
             .order_by("-date")
         )
 
-        _l.info("_get_latest_principal_price results %s " % results)
+        _l.info("_get_latest_principal_price results %s", results)
 
-        if len(list(results)):
+        if list(results):
             return results[0].principal_price
 
         return default_value
     except Exception as e:
-        _l.info("_get_latest_principal_price exception %s " % e)
+        _l.info("_get_latest_principal_price exception %s", e)
         return default_value
 
 
 _get_latest_principal_price.evaluator = True
 
 
-def _get_latest_principal_price_date(
-    evaluator, instrument, pricing_policy, default_value=None
-):
+def _get_latest_principal_price_date(evaluator, instrument, pricing_policy, default_value=None):
     try:
         from poms.instruments.models import PriceHistory
         from poms.users.utils import get_master_user_from_context
 
         context = evaluator.context
-        master_user = get_master_user_from_context(context)
+        master_user = get_master_user_from_context(context)  # noqa: F841
 
         instrument = _safe_get_instrument(evaluator, instrument)
         pricing_policy = _safe_get_pricing_policy(evaluator, pricing_policy)
@@ -1623,11 +1531,11 @@ def _get_latest_principal_price_date(
 
         # _l.info("_get_latest_principal_price_date results %s " % results)
 
-        if len(list(results)):
+        if list(results):
             return results[0].date
 
         return default_value
-    except Exception as e:
+    except Exception:
         # _l.error("_get_latest_principal_price_date exception %s " % str(e))
         # _l.error("_get_latest_principal_price_date exception %s " % traceback.format_exc())
         return default_value
@@ -1636,23 +1544,21 @@ def _get_latest_principal_price_date(
 _get_latest_principal_price_date.evaluator = True
 
 
-def _get_latest_fx_rate(
-    evaluator, date_from, date_to, currency, pricing_policy, default_value=None
-):
+def _get_latest_fx_rate(evaluator, date_from, date_to, currency, pricing_policy, default_value=None):
     try:
         from poms.currencies.models import CurrencyHistory
         from poms.users.utils import get_master_user_from_context
 
         context = evaluator.context
-        master_user = get_master_user_from_context(context)
+        master_user = get_master_user_from_context(context)  # noqa: F841
 
         date_from = _parse_date(date_from)
         date_to = _parse_date(date_to)
         currency = _safe_get_currency(evaluator, currency)
         pricing_policy = _safe_get_pricing_policy(evaluator, pricing_policy)
 
-        _l.info("_get_latest_fx_rate instrument %s " % currency)
-        _l.info("_get_latest_fx_rate  pricing_policy %s " % pricing_policy)
+        _l.info("_get_latest_fx_rate instrument %s", currency)
+        _l.info("_get_latest_fx_rate  pricing_policy %s", pricing_policy)
 
         results = CurrencyHistory.objects.filter(
             date__gte=date_from,
@@ -1661,26 +1567,24 @@ def _get_latest_fx_rate(
             pricing_policy=pricing_policy,
         ).order_by("-date")
 
-        _l.info("_get_latest_fx_rate results %s " % results)
+        _l.info("_get_latest_fx_rate results %s", results)
 
-        return results[0].fx_rate if len(list(results)) else default_value
+        return results[0].fx_rate if list(results) else default_value
 
     except Exception as e:
-        _l.info("_get_latest_fx_rate exception %s " % e)
+        _l.info("_get_latest_fx_rate exception %s", e)
         return default_value
 
 
 _get_latest_fx_rate.evaluator = True
 
 
-def _get_price_history_principal_price(
-    evaluator, date, instrument, pricing_policy, default_value=0
-):
+def _get_price_history_principal_price(evaluator, date, instrument, pricing_policy, default_value=0):
     from poms.instruments.models import PriceHistory
     from poms.users.utils import get_master_user_from_context
 
     context = evaluator.context
-    master_user = get_master_user_from_context(context)
+    master_user = get_master_user_from_context(context)  # noqa: F841
 
     # TODO need master user check, security hole
 
@@ -1689,9 +1593,7 @@ def _get_price_history_principal_price(
     pricing_policy = _safe_get_pricing_policy(evaluator, pricing_policy)
 
     try:
-        result = PriceHistory.objects.get(
-            date=date, instrument=instrument, pricing_policy=pricing_policy
-        )
+        result = PriceHistory.objects.get(date=date, instrument=instrument, pricing_policy=pricing_policy)
 
         return result.principal_price
 
@@ -1712,8 +1614,8 @@ def _get_price_history_accrued_price(
 
     try:
         days_to_look_back = int(days_to_look_back)
-    except TypeError:
-        raise ExpressionEvalError("Invalid Days To Look Back Value")
+    except TypeError as e:
+        raise ExpressionEvalError("Invalid Days To Look Back Value") from e
 
     context = evaluator.context
     master_user = get_master_user_from_context(context)
@@ -1730,13 +1632,11 @@ def _get_price_history_accrued_price(
     if isinstance(pricing_policy, dict):
         pricing_policy_pk = int(pricing_policy["id"])
 
-    elif isinstance(pricing_policy, (int, float)):
+    elif isinstance(pricing_policy, int | float):
         pricing_policy_pk = int(pricing_policy)
 
     elif isinstance(pricing_policy, str):
-        pricing_policy_pk = PricingPolicy.objects.get(
-            master_user=master_user, user_code=pricing_policy
-        ).id
+        pricing_policy_pk = PricingPolicy.objects.get(master_user=master_user, user_code=pricing_policy).id
 
     # print('formula pk %s' % pk)
 
@@ -1745,9 +1645,7 @@ def _get_price_history_accrued_price(
 
     if days_to_look_back == 0:
         try:
-            result = PriceHistory.objects.get(
-                date=date, instrument=instrument, pricing_policy_id=pricing_policy_pk
-            )
+            result = PriceHistory.objects.get(date=date, instrument=instrument, pricing_policy_id=pricing_policy_pk)
 
             return result.accrued_price
 
@@ -1763,9 +1661,7 @@ def _get_price_history_accrued_price(
             date_from = date
             date_to = date + datetime.timedelta(days=abs(days_to_look_back))
 
-        print(
-            f"_get_price_history_accrued_price date_from {date_from} date_to {date_to}"
-        )
+        print(f"_get_price_history_accrued_price date_from {date_from} date_to {date_to}")
 
         prices = PriceHistory.objects.filter(
             date__gte=date_from,
@@ -1780,16 +1676,14 @@ def _get_price_history_accrued_price(
 _get_price_history_accrued_price.evaluator = True
 
 
-def _get_price_history(
-    evaluator, date, instrument, pricing_policy, default_value=0, days_to_look_back=0
-):
+def _get_price_history(evaluator, date, instrument, pricing_policy, default_value=0, days_to_look_back=0):
     from poms.instruments.models import PriceHistory, PricingPolicy
     from poms.users.utils import get_master_user_from_context
 
     try:
         days_to_look_back = int(days_to_look_back)
-    except TypeError:
-        raise ExpressionEvalError("Invalid Days To Look Back Value")
+    except TypeError as e:
+        raise ExpressionEvalError("Invalid Days To Look Back Value") from e
 
     context = evaluator.context
     master_user = get_master_user_from_context(context)
@@ -1806,13 +1700,11 @@ def _get_price_history(
     if isinstance(pricing_policy, dict):
         pricing_policy_pk = int(pricing_policy["id"])
 
-    elif isinstance(pricing_policy, (int, float)):
+    elif isinstance(pricing_policy, int | float):
         pricing_policy_pk = int(pricing_policy)
 
     elif isinstance(pricing_policy, str):
-        pricing_policy_pk = PricingPolicy.objects.get(
-            master_user=master_user, user_code=pricing_policy
-        ).id
+        pricing_policy_pk = PricingPolicy.objects.get(master_user=master_user, user_code=pricing_policy).id
 
     # print('formula pk %s' % pk)
 
@@ -1839,9 +1731,7 @@ def _get_price_history(
             date_from = date
             date_to = date + datetime.timedelta(days=abs(days_to_look_back))
 
-        print(
-            f"_get_price_history_accrued_price date_from {date_from} date_to {date_to}"
-        )
+        print(f"_get_price_history_accrued_price date_from {date_from} date_to {date_to}")
 
         prices = PriceHistory.objects.filter(
             date__gte=date_from,
@@ -1856,16 +1746,14 @@ def _get_price_history(
 _get_price_history.evaluator = True
 
 
-def _get_factor_from_price(
-    evaluator, date, instrument, pricing_policy, default_value=0, days_to_look_back=0
-):
+def _get_factor_from_price(evaluator, date, instrument, pricing_policy, default_value=0, days_to_look_back=0):
     from poms.instruments.models import PriceHistory, PricingPolicy
     from poms.users.utils import get_master_user_from_context
 
     try:
         days_to_look_back = int(days_to_look_back)
-    except TypeError:
-        raise ExpressionEvalError("Invalid Days To Look Back Value")
+    except TypeError as e:
+        raise ExpressionEvalError("Invalid Days To Look Back Value") from e
 
     context = evaluator.context
     master_user = get_master_user_from_context(context)
@@ -1882,13 +1770,11 @@ def _get_factor_from_price(
     if isinstance(pricing_policy, dict):
         pricing_policy_pk = int(pricing_policy["id"])
 
-    elif isinstance(pricing_policy, (int, float)):
+    elif isinstance(pricing_policy, int | float):
         pricing_policy_pk = int(pricing_policy)
 
     elif isinstance(pricing_policy, str):
-        pricing_policy_pk = PricingPolicy.objects.get(
-            master_user=master_user, user_code=pricing_policy
-        ).id
+        pricing_policy_pk = PricingPolicy.objects.get(master_user=master_user, user_code=pricing_policy).id
 
     # print('formula pk %s' % pk)
 
@@ -1897,9 +1783,7 @@ def _get_factor_from_price(
 
     if days_to_look_back == 0:
         try:
-            result = PriceHistory.objects.get(
-                date=date, instrument=instrument, pricing_policy_id=pricing_policy_pk
-            )
+            result = PriceHistory.objects.get(date=date, instrument=instrument, pricing_policy_id=pricing_policy_pk)
 
             return result.factor
 
@@ -1915,9 +1799,7 @@ def _get_factor_from_price(
             date_from = date
             date_to = date + datetime.timedelta(days=abs(days_to_look_back))
 
-        print(
-            f"_get_price_history_accrued_price date_from {date_from} date_to {date_to}"
-        )
+        print(f"_get_price_history_accrued_price date_from {date_from} date_to {date_to}")
 
         prices = PriceHistory.objects.filter(
             date__gte=date_from,
@@ -1943,7 +1825,7 @@ def _get_next_coupon_date(evaluator, date, instrument):
     date = _parse_date(date)
     instrument = _safe_get_instrument(evaluator, instrument)
 
-    master_user = get_master_user_from_context(context)
+    master_user = get_master_user_from_context(context)  # noqa: F841
 
     items = instrument.get_future_coupons(begin_date=date, with_maturity=False)
 
@@ -1963,25 +1845,23 @@ def _get_factor_schedule(evaluator, date, instrument):
     from poms.users.utils import get_master_user_from_context
 
     context = evaluator.context
-    master_user = get_master_user_from_context(context)
+    master_user = get_master_user_from_context(context)  # noqa: F841
 
     instrument = _safe_get_instrument(evaluator, instrument)
 
     # TODO need master user check, security hole
 
     try:
-        result = InstrumentFactorSchedule.objects.get(
-            effective_date=date, instrument=instrument
-        )
+        result = InstrumentFactorSchedule.objects.get(effective_date=date, instrument=instrument)
     except (InstrumentFactorSchedule.DoesNotExist, KeyError):
         result = None
 
     if result is None:
-        results = InstrumentFactorSchedule.objects.filter(
-            effective_date__lte=date, instrument=instrument
-        ).order_by("-effective_date")
+        results = InstrumentFactorSchedule.objects.filter(effective_date__lte=date, instrument=instrument).order_by(
+            "-effective_date"
+        )
 
-        if len(list(results)):
+        if list(results):
             result = results[0]
         else:
             result = None
@@ -1999,7 +1879,7 @@ def _get_instrument_attribute(evaluator, instrument, attribute_type_user_code):
     from poms.users.utils import get_master_user_from_context
 
     context = evaluator.context
-    master_user = get_master_user_from_context(context)
+    master_user = get_master_user_from_context(context)  # noqa: F841
 
     if not isinstance(instrument, dict):
         instrument = _safe_get_instrument(evaluator, instrument)
@@ -2008,10 +1888,7 @@ def _get_instrument_attribute(evaluator, instrument, attribute_type_user_code):
 
     result = None
     for attribute in attributes:
-        if (
-            attribute.get("attribute_type", {}).get("user_code")
-            == attribute_type_user_code
-        ):
+        if attribute.get("attribute_type", {}).get("user_code") == attribute_type_user_code:
             value_type = attribute.get("attribute_type", {}).get("value_type")
 
             if value_type == 10:
@@ -2037,7 +1914,7 @@ def _get_currency_attribute(evaluator, currency, attribute_type_user_code):
     from poms.users.utils import get_master_user_from_context
 
     context = evaluator.context
-    master_user = get_master_user_from_context(context)
+    master_user = get_master_user_from_context(context)  # noqa: F841
 
     currency = _safe_get_currency(evaluator, currency)
 
@@ -2069,7 +1946,7 @@ def _add_factor_schedule(evaluator, instrument, effective_date, factor_value):
     from poms.users.utils import get_master_user_from_context
 
     context = evaluator.context
-    master_user = get_master_user_from_context(context)
+    master_user = get_master_user_from_context(context)  # noqa: F841
 
     instrument = _safe_get_instrument(evaluator, instrument)
 
@@ -2088,7 +1965,7 @@ def _get_instrument_pricing_scheme(evaluator, instrument, pricing_policy):
     from poms.users.utils import get_master_user_from_context
 
     context = evaluator.context
-    master_user = get_master_user_from_context(context)
+    master_user = get_master_user_from_context(context)  # noqa: F841
 
     instrument = _safe_get_instrument(evaluator, instrument)
     pricing_policy = _safe_get_pricing_policy(evaluator, pricing_policy)
@@ -2110,7 +1987,7 @@ def _get_currency_pricing_scheme(evaluator, currency, pricing_policy):
     from poms.users.utils import get_master_user_from_context
 
     context = evaluator.context
-    master_user = get_master_user_from_context(context)
+    master_user = get_master_user_from_context(context)  # noqa: F841
 
     currency = _safe_get_currency(evaluator, currency)
     pricing_policy = _safe_get_pricing_policy(evaluator, pricing_policy)
@@ -2133,7 +2010,7 @@ def _add_accrual_schedule(evaluator, instrument, data):
     from poms.users.utils import get_master_user_from_context
 
     context = evaluator.context
-    master_user = get_master_user_from_context(context)
+    master_user = get_master_user_from_context(context)  # noqa: F841
 
     instrument = _safe_get_instrument(evaluator, instrument)
 
@@ -2177,7 +2054,7 @@ def _delete_accrual_schedules(evaluator, instrument):
     from poms.users.utils import get_master_user_from_context
 
     context = evaluator.context
-    master_user = get_master_user_from_context(context)
+    master_user = get_master_user_from_context(context)  # noqa: F841
 
     instrument = _safe_get_instrument(evaluator, instrument)
 
@@ -2192,7 +2069,7 @@ def _add_event_schedule(evaluator, instrument, data):
     from poms.users.utils import get_master_user_from_context
 
     context = evaluator.context
-    master_user = get_master_user_from_context(context)
+    master_user = get_master_user_from_context(context)  # noqa: F841
 
     instrument = _safe_get_instrument(evaluator, instrument)
 
@@ -2208,9 +2085,7 @@ def _add_event_schedule(evaluator, instrument, data):
         result.event_class = _safe_get_event_class(evaluator, data["event_class"])
 
     if "notification_class" in data:
-        result.notification_class = _safe_get_notification_class(
-            evaluator, data["notification_class"]
-        )
+        result.notification_class = _safe_get_notification_class(evaluator, data["notification_class"])
 
     if "effective_date" in data:
         result.effective_date = data["effective_date"]
@@ -2242,7 +2117,7 @@ def _delete_event_schedules(evaluator, instrument):
     from poms.users.utils import get_master_user_from_context
 
     context = evaluator.context
-    master_user = get_master_user_from_context(context)
+    master_user = get_master_user_from_context(context)  # noqa: F841
 
     instrument = _safe_get_instrument(evaluator, instrument)
 
@@ -2270,7 +2145,7 @@ def _safe_get_pricing_policy(evaluator, pricing_policy):
     if isinstance(pricing_policy, dict):
         pk = int(pricing_policy["id"])
 
-    elif isinstance(pricing_policy, (int, float)):
+    elif isinstance(pricing_policy, int | float):
         pk = int(pricing_policy)
 
     elif isinstance(pricing_policy, str):
@@ -2280,7 +2155,7 @@ def _safe_get_pricing_policy(evaluator, pricing_policy):
         raise ExpressionEvalError("Invalid pricing policy")
 
     master_user = get_master_user_from_context(context)
-    member = get_member_from_context(context)
+    member = get_member_from_context(context)  # noqa: F841
 
     if master_user is None:
         raise ExpressionEvalError("master user in context does not find")
@@ -2294,8 +2169,8 @@ def _safe_get_pricing_policy(evaluator, pricing_policy):
         elif user_code is not None:
             pricing_policy = pricing_policy_qs.get(user_code=user_code)
 
-    except PricingPolicy.DoesNotExist:
-        raise ExpressionEvalError()
+    except PricingPolicy.DoesNotExist as e:
+        raise ExpressionEvalError() from e
 
     return pricing_policy
 
@@ -2318,7 +2193,7 @@ def _safe_get_currency(evaluator, currency):
     if isinstance(currency, dict):
         pk = int(currency["id"])
 
-    elif isinstance(currency, (int, float)):
+    elif isinstance(currency, int | float):
         pk = int(currency)
 
     elif isinstance(currency, str):
@@ -2328,7 +2203,7 @@ def _safe_get_currency(evaluator, currency):
         raise ExpressionEvalError("Invalid currency")
 
     master_user = get_master_user_from_context(context)
-    member = get_member_from_context(context)
+    member = get_member_from_context(context)  # noqa: F841
 
     if master_user is None:
         raise ExpressionEvalError("master user in context does not find")
@@ -2342,8 +2217,8 @@ def _safe_get_currency(evaluator, currency):
         elif user_code is not None:
             currency = currency_qs.get(user_code=user_code)
 
-    except Currency.DoesNotExist:
-        raise ExpressionEvalError()
+    except Currency.DoesNotExist as e:
+        raise ExpressionEvalError() from e
 
     return currency
 
@@ -2366,7 +2241,7 @@ def _safe_get_account_type(evaluator, account_type):
     if isinstance(account_type, dict):
         pk = int(account_type["id"])
 
-    elif isinstance(account_type, (int, float)):
+    elif isinstance(account_type, int | float):
         pk = int(account_type)
 
     elif isinstance(account_type, str):
@@ -2376,7 +2251,7 @@ def _safe_get_account_type(evaluator, account_type):
         raise ExpressionEvalError("Invalid account type")
 
     master_user = get_master_user_from_context(context)
-    member = get_member_from_context(context)
+    member = get_member_from_context(context)  # noqa: F841
 
     if master_user is None:
         raise ExpressionEvalError("master user in context does not find")
@@ -2390,8 +2265,8 @@ def _safe_get_account_type(evaluator, account_type):
         elif user_code is not None:
             account_type = account_types_qs.get(user_code=user_code)
 
-    except AccountType.DoesNotExist:
-        raise ExpressionEvalError()
+    except AccountType.DoesNotExist as e:
+        raise ExpressionEvalError() from e
 
     return account_type
 
@@ -2413,7 +2288,7 @@ def _safe_get_periodicity(evaluator, periodicity):
     if isinstance(periodicity, dict):
         pk = int(periodicity["id"])
 
-    elif isinstance(periodicity, (int, float)):
+    elif isinstance(periodicity, int | float):
         pk = int(periodicity)
 
     elif isinstance(periodicity, str):
@@ -2429,8 +2304,8 @@ def _safe_get_periodicity(evaluator, periodicity):
         elif user_code is not None:
             periodicity = Periodicity.objects.get(user_code=user_code)
 
-    except Periodicity.DoesNotExist:
-        raise ExpressionEvalError()
+    except Periodicity.DoesNotExist as e:
+        raise ExpressionEvalError() from e
 
     return periodicity
 
@@ -2452,7 +2327,7 @@ def _safe_get_notification_class(evaluator, notification_class):
     if isinstance(notification_class, dict):
         pk = int(notification_class["id"])
 
-    elif isinstance(notification_class, (int, float)):
+    elif isinstance(notification_class, int | float):
         pk = int(notification_class)
 
     elif isinstance(notification_class, str):
@@ -2468,8 +2343,8 @@ def _safe_get_notification_class(evaluator, notification_class):
         elif user_code is not None:
             notification_class = NotificationClass.objects.get(user_code=user_code)
 
-    except NotificationClass.DoesNotExist:
-        raise ExpressionEvalError()
+    except NotificationClass.DoesNotExist as e:
+        raise ExpressionEvalError() from e
 
     return notification_class
 
@@ -2491,7 +2366,7 @@ def _safe_get_event_class(evaluator, event_class):
     if isinstance(event_class, dict):
         pk = int(event_class["id"])
 
-    elif isinstance(event_class, (int, float)):
+    elif isinstance(event_class, int | float):
         pk = int(event_class)
 
     elif isinstance(event_class, str):
@@ -2507,8 +2382,8 @@ def _safe_get_event_class(evaluator, event_class):
         elif user_code is not None:
             event_class = EventClass.objects.get(user_code=user_code)
 
-    except EventClass.DoesNotExist:
-        raise ExpressionEvalError()
+    except EventClass.DoesNotExist as e:
+        raise ExpressionEvalError() from e
 
     return event_class
 
@@ -2530,7 +2405,7 @@ def _safe_get_accrual_calculation_model(evaluator, accrual_calculation_model):
     if isinstance(accrual_calculation_model, dict):
         pk = int(accrual_calculation_model["id"])
 
-    elif isinstance(accrual_calculation_model, (int, float)):
+    elif isinstance(accrual_calculation_model, int | float):
         pk = int(accrual_calculation_model)
 
     elif isinstance(accrual_calculation_model, str):
@@ -2544,12 +2419,10 @@ def _safe_get_accrual_calculation_model(evaluator, accrual_calculation_model):
             accrual_calculation_model = AccrualCalculationModel.objects.get(pk=pk)
 
         elif user_code is not None:
-            accrual_calculation_model = AccrualCalculationModel.objects.get(
-                user_code=user_code
-            )
+            accrual_calculation_model = AccrualCalculationModel.objects.get(user_code=user_code)
 
-    except AccrualCalculationModel.DoesNotExist:
-        raise ExpressionEvalError()
+    except AccrualCalculationModel.DoesNotExist as e:
+        raise ExpressionEvalError() from e
 
     return accrual_calculation_model
 
@@ -2578,7 +2451,7 @@ def _safe_get_instrument(evaluator, instrument, identifier_key=None):
     if isinstance(instrument, dict):
         pk = int(instrument["id"])
 
-    elif isinstance(instrument, (int, float)):
+    elif isinstance(instrument, int | float):
         pk = int(instrument)
 
     elif isinstance(instrument, str):
@@ -2591,9 +2464,7 @@ def _safe_get_instrument(evaluator, instrument, identifier_key=None):
         instrument = context.get(("_instrument_get_accrued_price", pk, None), None)
 
     elif user_code is not None:
-        instrument = context.get(
-            ("_instrument_get_accrued_price", None, user_code), None
-        )
+        instrument = context.get(("_instrument_get_accrued_price", None, user_code), None)
 
     if instrument is None:
         master_user = get_master_user_from_context(context)
@@ -2613,9 +2484,7 @@ def _safe_get_instrument(evaluator, instrument, identifier_key=None):
             raise ExpressionEvalError() from e
 
         context[("_instrument_get_accrued_price", instrument.pk, None)] = instrument
-        context[("_instrument_get_accrued_price", None, instrument.user_code)] = (
-            instrument
-        )
+        context[("_instrument_get_accrued_price", None, instrument.user_code)] = instrument
 
     return instrument
 
@@ -2632,7 +2501,7 @@ def _add_instrument_identifier(evaluator, instrument, identifier_key, value):
 
     instrument = _safe_get_instrument(evaluator, instrument)
 
-    context = evaluator.context
+    context = evaluator.context  # noqa: F841
 
     if instrument.identifier is None:
         instrument.identifier = {}
@@ -2655,7 +2524,7 @@ def _remove_instrument_identifier(evaluator, instrument, identifier_key):
 
     instrument = _safe_get_instrument(evaluator, instrument)
 
-    context = evaluator.context
+    context = evaluator.context  # noqa: F841
 
     if instrument.identifier and identifier_key in instrument.identifier:
         del instrument.identifier[identifier_key]
@@ -2683,7 +2552,7 @@ def _safe_get_account(evaluator, account):
     if isinstance(account, dict):
         pk = int(account["id"])
 
-    elif isinstance(account, (int, float)):
+    elif isinstance(account, int | float):
         pk = int(account)
 
     elif isinstance(account, str):
@@ -2720,14 +2589,14 @@ def _get_currency(evaluator, currency):
         from poms.currencies.serializers import CurrencySerializer
 
         return CurrencySerializer(instance=currency, context=context).data
-    except Exception as e:
+    except Exception:
         return None
 
 
 _get_currency.evaluator = True
 
 
-def _check_currency(evaluator, currency) -> Optional[dict]:
+def _check_currency(evaluator, currency) -> dict | None:
     """
     Check if the given currency is valid and return its serialized data.
 
@@ -2741,9 +2610,7 @@ def _check_currency(evaluator, currency) -> Optional[dict]:
 
     from poms.currencies.serializers import CurrencySerializer
 
-    if isinstance(currency, str) and (
-        len(currency) == 3 and currency.isupper() and currency.isalpha()
-    ):
+    if isinstance(currency, str) and (len(currency) == 3 and currency.isupper() and currency.isalpha()):
         try:
             currency_obj = _safe_get_currency(evaluator, currency)
 
@@ -2780,7 +2647,7 @@ def _get_account_type(evaluator, account_type):
         from poms.accounts.serializers import AccountTypeSerializer
 
         return AccountTypeSerializer(instance=account_type, context=context).data
-    except Exception as e:
+    except Exception:
         return None
 
 
@@ -2803,9 +2670,7 @@ def _set_account_user_attribute(evaluator, account, user_code, value):
                     try:
                         from poms.obj_attrs.models import GenericClassifier
 
-                        classifier = GenericClassifier.objects.get(
-                            attribute_type=attribute.attribute_type, name=value
-                        )
+                        classifier = GenericClassifier.objects.get(attribute_type=attribute.attribute_type, name=value)
 
                         attribute.classifier = classifier
 
@@ -2854,7 +2719,7 @@ def _get_account_user_attribute(evaluator, account, user_code):
         return result
 
     except Exception as e:
-        _l.error("e %s" % e)
+        _l.error("e %s", e)
         return None
 
 
@@ -2865,13 +2730,11 @@ def _get_instrument(evaluator, instrument, identifier_key=None):
     try:
         instrument = _safe_get_instrument(evaluator, instrument, identifier_key)
 
-        context = evaluator.context
-
-        from poms.instruments.serializers import InstrumentSerializer
+        context = evaluator.context  # noqa: F841
 
         return instrument
 
-    except Exception as e:
+    except Exception:
         return None
 
 
@@ -2879,7 +2742,7 @@ _get_instrument.evaluator = True
 
 
 def _set_instrument_field(evaluator, instrument, parameter_name, parameter_value):
-    context = evaluator.context
+    context = evaluator.context  # noqa: F841
 
     instrument = _safe_get_instrument(evaluator, instrument)
 
@@ -2890,15 +2753,15 @@ def _set_instrument_field(evaluator, instrument, parameter_name, parameter_value
 
         setattr(instrument, parameter_name, parameter_value)
         instrument.save()
-    except AttributeError:
-        raise InvalidExpression("Invalid Property")
+    except AttributeError as e:
+        raise InvalidExpression("Invalid Property") from e
 
 
 _set_instrument_field.evaluator = True
 
 
 def _set_instrument_user_attribute(evaluator, instrument, user_code, value):
-    context = evaluator.context
+    context = evaluator.context  # noqa: F841
 
     instrument = _safe_get_instrument(evaluator, instrument)
 
@@ -2915,14 +2778,12 @@ def _set_instrument_user_attribute(evaluator, instrument, user_code, value):
                     try:
                         from poms.obj_attrs.models import GenericClassifier
 
-                        classifier = GenericClassifier.objects.get(
-                            attribute_type=attribute.attribute_type, name=value
-                        )
+                        classifier = GenericClassifier.objects.get(attribute_type=attribute.attribute_type, name=value)
 
                         attribute.classifier = classifier
 
                     except Exception as e:
-                        _l.error("Error setting classifier: %s" % e)
+                        _l.error("Error setting classifier: %s", e)
                         attribute.classifier = None
 
                 elif attribute.attribute_type.value_type == 40:
@@ -2931,8 +2792,8 @@ def _set_instrument_user_attribute(evaluator, instrument, user_code, value):
                 attribute.save()
 
         instrument.save()
-    except AttributeError:
-        raise InvalidExpression("Invalid Property")
+    except AttributeError as e:
+        raise InvalidExpression("Invalid Property") from e
 
 
 _set_instrument_user_attribute.evaluator = True
@@ -2969,7 +2830,7 @@ def _get_instrument_user_attribute(evaluator, instrument, user_code):
 
         return result
 
-    except Exception as e:
+    except Exception:
         return None
 
 
@@ -2977,22 +2838,22 @@ _get_instrument_user_attribute.evaluator = True
 
 
 def _set_currency_field(evaluator, currency, parameter_name, parameter_value):
-    context = evaluator.context
+    context = evaluator.context  # noqa: F841
 
     currency = _safe_get_currency(evaluator, currency)
 
     try:
         setattr(currency, parameter_name, parameter_value)
         currency.save()
-    except AttributeError:
-        raise InvalidExpression("Invalid Property")
+    except AttributeError as e:
+        raise InvalidExpression("Invalid Property") from e
 
 
 _set_currency_field.evaluator = True
 
 
 def _get_instrument_field(evaluator, instrument, parameter_name):
-    context = evaluator.context
+    context = evaluator.context  # noqa: F841
 
     instrument = _safe_get_instrument(evaluator, instrument)
 
@@ -3000,8 +2861,8 @@ def _get_instrument_field(evaluator, instrument, parameter_name):
 
     try:
         result = getattr(instrument, parameter_name, None)
-    except AttributeError:
-        raise InvalidExpression("Invalid Property")
+    except AttributeError as e:
+        raise InvalidExpression("Invalid Property") from e
 
     return result
 
@@ -3010,7 +2871,7 @@ _get_instrument_field.evaluator = True
 
 
 def _get_currency_field(evaluator, currency, parameter_name):
-    context = evaluator.context
+    context = evaluator.context  # noqa: F841
 
     currency = _safe_get_currency(evaluator, currency)
 
@@ -3018,8 +2879,8 @@ def _get_currency_field(evaluator, currency, parameter_name):
 
     try:
         result = getattr(currency, parameter_name, None)
-    except AttributeError:
-        raise InvalidExpression("Invalid Property")
+    except AttributeError as e:
+        raise InvalidExpression("Invalid Property") from e
 
     return result
 
@@ -3055,7 +2916,7 @@ def _get_instrument_user_attribute_value(evaluator, instrument, attribute_user_c
     if isinstance(instrument, dict):
         pk = int(instrument["id"])
 
-    elif isinstance(instrument, (int, float)):
+    elif isinstance(instrument, int | float):
         pk = int(instrument)
 
     elif isinstance(instrument, str):
@@ -3073,12 +2934,10 @@ def _get_instrument_user_attribute_value(evaluator, instrument, attribute_user_c
         attribute_type = GenericAttributeType.objects.get(
             master_user=master_user,
             user_code=attribute_user_code,
-            content_type=ContentType.objects.get(
-                app_label="instruments", model="instrument"
-            ),
+            content_type=ContentType.objects.get(app_label="instruments", model="instrument"),
         )
-    except GenericAttributeType.DoesNotExist:
-        raise ExpressionEvalError("Attribute type is not found")
+    except GenericAttributeType.DoesNotExist as e:
+        raise ExpressionEvalError("Attribute type is not found") from e
 
     # print('formula attribute_type %s ' % attribute_type)
 
@@ -3086,12 +2945,10 @@ def _get_instrument_user_attribute_value(evaluator, instrument, attribute_user_c
         attribute = GenericAttribute.objects.get(
             attribute_type=attribute_type,
             object_id=pk,
-            content_type=ContentType.objects.get(
-                app_label="instruments", model="instrument"
-            ),
+            content_type=ContentType.objects.get(app_label="instruments", model="instrument"),
         )
-    except GenericAttribute.DoesNotExist:
-        raise ExpressionEvalError("Attribute is not found")
+    except GenericAttribute.DoesNotExist as e:
+        raise ExpressionEvalError("Attribute is not found") from e
 
     # print('formula attribute %s' % attribute)
 
@@ -3126,9 +2983,7 @@ def _calculate_accrued_price(evaluator, instrument, date):
 _calculate_accrued_price.evaluator = True
 
 
-def _get_position_size_on_date(
-    evaluator, instrument, date, accounts=None, portfolios=None
-):
+def _get_position_size_on_date(evaluator, instrument, date, accounts=None, portfolios=None):
     from poms.transactions.models import Transaction
     from poms.users.utils import get_master_user_from_context
 
@@ -3173,7 +3028,7 @@ def _get_position_size_on_date(
         return result
 
     except Exception as e:
-        _l.error("_get_position_size_on_date exception occurred %s" % e)
+        _l.error("_get_position_size_on_date exception occurred %s", e)
         _l.error(traceback.format_exc())
         return 0
 
@@ -3208,9 +3063,7 @@ def _get_principal_on_date(
 
         from poms.users.models import EcosystemDefault
 
-        ecosystem_default = EcosystemDefault.cache.get_cache(
-            master_user_pk=master_user.pk
-        )
+        ecosystem_default = EcosystemDefault.cache.get_cache(master_user_pk=master_user.pk)
 
         if report_currency:
             report_currency = _safe_get_currency(evaluator, report_currency)
@@ -3283,13 +3136,13 @@ def _get_principal_on_date(
                 result = result + result_principal
 
             except Exception as e:
-                _l.error("Could not fetch fx rate %s" % e)
-                raise Exception("Could not calculate principal, missing FX Rates")
+                _l.error("Could not fetch fx rate %s", e)
+                raise Exception("Could not calculate principal, missing FX Rates") from e
 
         return result
 
     except Exception as e:
-        _l.error("_get_principal_on_date exception occurred %s" % e)
+        _l.error("_get_principal_on_date exception occurred %s", e)
         _l.error(traceback.format_exc())
         return 0
 
@@ -3324,9 +3177,7 @@ def _get_principal_on_date(
 
         from poms.users.models import EcosystemDefault
 
-        ecosystem_default = EcosystemDefault.cache.get_cache(
-            master_user_pk=master_user.pk
-        )
+        ecosystem_default = EcosystemDefault.cache.get_cache(master_user_pk=master_user.pk)
 
         if report_currency:
             report_currency = _safe_get_currency(evaluator, report_currency)
@@ -3399,13 +3250,13 @@ def _get_principal_on_date(
                 result = result + result_principal
 
             except Exception as e:
-                _l.error("Could not fetch fx rate %s" % e)
-                raise Exception("Could not calculate principal, missing FX Rates")
+                _l.error("Could not fetch fx rate %s", e)
+                raise Exception("Could not calculate principal, missing FX Rates") from e
 
         return result
 
     except Exception as e:
-        _l.error("_get_principal_on_date exception occurred %s" % e)
+        _l.error("_get_principal_on_date exception occurred %s", e)
         _l.error(traceback.format_exc())
         return 0
 
@@ -3413,7 +3264,7 @@ def _get_principal_on_date(
 _get_principal_on_date.evaluator = True
 
 
-def _get_transactions_amounts_on_date(
+def _get_transactions_amounts_on_date(  # noqa: PLR0912, PLR0915
     evaluator,
     instrument,
     date,
@@ -3447,9 +3298,7 @@ def _get_transactions_amounts_on_date(
 
         from poms.users.models import EcosystemDefault
 
-        ecosystem_default = EcosystemDefault.cache.get_cache(
-            master_user_pk=master_user.pk
-        )
+        ecosystem_default = EcosystemDefault.cache.get_cache(master_user_pk=master_user.pk)
 
         if report_currency:
             report_currency = _safe_get_currency(evaluator, report_currency)
@@ -3478,14 +3327,10 @@ def _get_transactions_amounts_on_date(
         )
 
         if accounts_position and len(accounts_position):
-            transactions = transactions.filter(
-                account_position__user_code__in=accounts_position
-            )
+            transactions = transactions.filter(account_position__user_code__in=accounts_position)
 
         if accounts_cash and len(accounts_cash):
-            transactions = transactions.filter(
-                account_cash__user_code__in=accounts_cash
-            )
+            transactions = transactions.filter(account_cash__user_code__in=accounts_cash)
 
         # _l.info('portfolios %s' % type(portfolios))
 
@@ -3499,7 +3344,7 @@ def _get_transactions_amounts_on_date(
             result_principal = 0
             result_carry = 0
             result_overheads = 0
-            cash_consideration = 0
+            cash_consideration = 0  # noqa: F841
 
             try:
                 if trn.transaction_currency_id == report_currency.id:
@@ -3507,9 +3352,7 @@ def _get_transactions_amounts_on_date(
                     result_principal = trn.principal_with_sign * trn.reference_fx_rate
                     result_carry = trn.carry_with_sign * trn.reference_fx_rate
                     result_overheads = trn.overheads_with_sign * trn.reference_fx_rate
-                    result_cash_consideration = (
-                        trn.cash_consideration * trn.reference_fx_rate
-                    )
+                    result_cash_consideration = trn.cash_consideration * trn.reference_fx_rate
                 else:
                     if trn.transaction_currency_id == default_currency_id:
                         trn_currency_fx_rate = 1
@@ -3537,10 +3380,7 @@ def _get_transactions_amounts_on_date(
                         / report_currency_fx_rate
                     )
                     result_carry = (
-                        trn.carry_with_sign
-                        * trn.reference_fx_rate
-                        * trn_currency_fx_rate
-                        / report_currency_fx_rate
+                        trn.carry_with_sign * trn.reference_fx_rate * trn_currency_fx_rate / report_currency_fx_rate
                     )
                     result_overheads = (
                         trn.overheads_with_sign
@@ -3549,34 +3389,23 @@ def _get_transactions_amounts_on_date(
                         / report_currency_fx_rate
                     )
                     result_cash_consideration = (
-                        trn.cash_consideration
-                        * trn.reference_fx_rate
-                        * trn_currency_fx_rate
-                        / report_currency_fx_rate
+                        trn.cash_consideration * trn.reference_fx_rate * trn_currency_fx_rate / report_currency_fx_rate
                     )
 
-                result["position_size_with_sign"] = (
-                    result["position_size_with_sign"] + result_position_size
-                )
-                result["principal_with_sign"] = (
-                    result["principal_with_sign"] + result_principal
-                )
+                result["position_size_with_sign"] = result["position_size_with_sign"] + result_position_size
+                result["principal_with_sign"] = result["principal_with_sign"] + result_principal
                 result["carry_with_sign"] = result["carry_with_sign"] + result_carry
-                result["overheads_with_sign"] = (
-                    result["overheads_with_sign"] + result_overheads
-                )
-                result["cash_consideration"] = (
-                    result["cash_consideration"] + result_cash_consideration
-                )
+                result["overheads_with_sign"] = result["overheads_with_sign"] + result_overheads
+                result["cash_consideration"] = result["cash_consideration"] + result_cash_consideration
 
             except Exception as e:
-                _l.error("Could not fetch fx rate %s" % e)
-                raise Exception("Could not calculate amounts %s" % e)
+                _l.error("Could not fetch fx rate %s", e)
+                raise Exception(f"Could not calculate amounts {e}") from e
 
         return result
 
     except Exception as e:
-        _l.error("_get_principal_on_date exception occurred %s" % e)
+        _l.error("_get_principal_on_date exception occurred %s", e)
         _l.error(traceback.format_exc())
         return result
 
@@ -3584,9 +3413,7 @@ def _get_transactions_amounts_on_date(
 _get_transactions_amounts_on_date.evaluator = True
 
 
-def _get_net_cost_price_on_date(
-    evaluator, instrument, date, accounts=None, portfolios=None
-):
+def _get_net_cost_price_on_date(evaluator, instrument, date, accounts=None, portfolios=None):
     from poms.transactions.models import Transaction, TransactionClass
     from poms.users.utils import get_master_user_from_context
 
@@ -3639,7 +3466,7 @@ def _get_net_cost_price_on_date(
         return result
 
     except Exception as e:
-        _l.error("_get_net_cost_price_on_date exception occurred %s" % e)
+        _l.error("_get_net_cost_price_on_date exception occurred %s", e)
         _l.error(traceback.format_exc())
         return 0
 
@@ -3673,9 +3500,7 @@ def _get_instrument_report_data(
 
         instrument = _safe_get_instrument(evaluator, instrument)
 
-        ecosystem_default = EcosystemDefault.cache.get_cache(
-            master_user_pk=master_user.pk
-        )
+        ecosystem_default = EcosystemDefault.cache.get_cache(master_user_pk=master_user.pk)
 
         currency = _safe_get_currency(evaluator, report_currency)
         if pricing_policy:
@@ -3687,10 +3512,10 @@ def _get_instrument_report_data(
 
         cost_method = CostMethod.objects.get(user_code=cost_method)
 
-        _l.info("_calculate_balance_report master_user %s" % master_user)
-        _l.info("_calculate_balance_report member %s" % member)
-        _l.info("_calculate_balance_report report_date  %s" % report_date)
-        _l.info("_calculate_balance_report currency %s" % currency)
+        _l.info("_calculate_balance_report master_user %s", master_user)
+        _l.info("_calculate_balance_report member %s", member)
+        _l.info("_calculate_balance_report report_date  %s", report_date)
+        _l.info("_calculate_balance_report currency %s", currency)
 
         report_date_d = datetime.datetime.strptime(report_date, "%Y-%m-%d").date()
 
@@ -3702,15 +3527,11 @@ def _get_instrument_report_data(
 
         if portfolios:
             for portfolio in portfolios:
-                portfolios_instances.append(
-                    Portfolio.objects.get(master_user=master_user, user_code=portfolio)
-                )
+                portfolios_instances.append(Portfolio.objects.get(master_user=master_user, user_code=portfolio))
 
         if accounts:
             for account in accounts:
-                accounts_instances.append(
-                    Account.objects.get(master_user=master_user, user_code=account)
-                )
+                accounts_instances.append(Account.objects.get(master_user=master_user, user_code=account))
 
         instance = Report(
             master_user=master_user,
@@ -3739,7 +3560,7 @@ def _get_instrument_report_data(
         return result
 
     except Exception as e:
-        _l.error("_get_instrument_report_data exception occurred %s" % e)
+        _l.error("_get_instrument_report_data exception occurred %s", e)
         _l.error(traceback.format_exc())
         return 0
 
@@ -3773,8 +3594,8 @@ _get_instrument_accrual_factor.evaluator = True
 
 def _get_instrument_coupon(evaluator, instrument, date):
     try:
-        _l.info("_get_instrument_coupon instrument %s" % instrument)
-        _l.info("_get_instrument_coupon date %s" % date)
+        _l.info("_get_instrument_coupon instrument %s", instrument)
+        _l.info("_get_instrument_coupon date %s", date)
 
         if instrument is None or date is None:
             return 0.0
@@ -3782,12 +3603,12 @@ def _get_instrument_coupon(evaluator, instrument, date):
         date = _parse_date(date)
         cpn_val, is_cpn = instrument.get_coupon(date, with_maturity=False)
 
-        _l.info("_get_instrument_coupon cpn_val %s" % cpn_val)
+        _l.info("_get_instrument_coupon cpn_val %s", cpn_val)
 
         return _check_float(cpn_val)
 
     except Exception as e:
-        _l.info("_get_instrument_coupon exception occurred %s" % e)
+        _l.info("_get_instrument_coupon exception occurred %s", e)
         _l.info(traceback.format_exc())
         return 0.0
 
@@ -3954,7 +3775,7 @@ def _get_default_transaction_type(evaluator):
         return item.transaction_type
 
     except Exception as e:
-        print("get_default_transaction_type error %s" % e)
+        print(f"get_default_transaction_type error {e}")
 
     return None
 
@@ -3977,7 +3798,7 @@ def _get_default_instrument_type(evaluator):
         return item.instrument_type
 
     except Exception as e:
-        print("get_default_instrument_type error %s" % e)
+        print(f"get_default_instrument_type error {e}")
 
     return None
 
@@ -4000,7 +3821,7 @@ def _get_default_account_type(evaluator):
         return item.account_type
 
     except Exception as e:
-        print("get_default_account_type error %s" % e)
+        print(f"get_default_account_type error {e}")
 
     return None
 
@@ -4023,7 +3844,7 @@ def _get_default_pricing_policy(evaluator):
         return item.pricing_policy
 
     except Exception as e:
-        print("get_default_pricing_policy error %s" % e)
+        print(f"get_default_pricing_policy error {e}")
 
     return None
 
@@ -4046,7 +3867,7 @@ def _get_default_responsible(evaluator):
         return item.responsible
 
     except Exception as e:
-        print("get_default_responsible error %s" % e)
+        print("get_default_responsible error %s", e)
 
     return None
 
@@ -4069,7 +3890,7 @@ def _get_default_counterparty(evaluator):
         return item.counterparty
 
     except Exception as e:
-        print("get_default_counterparty error %s" % e)
+        print("get_default_counterparty error %s", e)
 
     return None
 
@@ -4092,7 +3913,7 @@ def _get_default_strategy1(evaluator):
         return item.strategy1
 
     except Exception as e:
-        print("get_default_strategy1 error %s" % e)
+        print("get_default_strategy1 error %s", e)
 
     return None
 
@@ -4115,7 +3936,7 @@ def _get_default_strategy2(evaluator):
         return item.strategy2
 
     except Exception as e:
-        print("get_default_strategy2 error %s" % e)
+        print("get_default_strategy2 error %s", e)
 
     return None
 
@@ -4138,7 +3959,7 @@ def _get_default_strategy3(evaluator):
         return item.strategy3
 
     except Exception as e:
-        print("get_default_strategy3 error %s" % e)
+        print("get_default_strategy3 error %s", e)
 
     return None
 
@@ -4201,16 +4022,12 @@ def _update_task(
     result=None,
     **kwargs,
 ):
-    _l.info("_create_task task_name: %s" % name)
+    _l.info("_create_task task_name: %s", name)
 
     try:
         from poms.celery_tasks.models import CeleryTask
 
-        context = evaluator.context
-        from poms.users.utils import (
-            get_master_user_from_context,
-            get_member_from_context,
-        )
+        context = evaluator.context  # noqa: F841
 
         celery_task = CeleryTask.objects.get(id=id)
 
@@ -4230,16 +4047,19 @@ def _update_task(
         return celery_task.id
 
     except Exception as e:
-        _l.debug("_create_task.exception %s" % e)
+        _l.debug("_create_task.exception %s", e)
 
 
 _update_task.evaluator = True
 
 
-def _run_task(evaluator, task_name, options={}):
+def _run_task(evaluator, task_name, options=None):
     from poms_app import celery_app
 
-    _l.info("_run_task task_name: %s" % task_name)
+    if options is None:
+        options = {}
+
+    _l.info("_run_task task_name: %s", task_name)
 
     try:
         context = evaluator.context
@@ -4292,13 +4112,9 @@ def _run_pricing_procedure(evaluator, user_code, **kwargs):
         master_user = get_master_user_from_context(context)
         member = get_member_from_context(context)
 
-        procedure = PricingProcedure.objects.get(
-            master_user=master_user, user_code=user_code
-        )
+        procedure = PricingProcedure.objects.get(master_user=master_user, user_code=user_code)
 
-        instance = PricingProcedureProcess(
-            procedure=procedure, master_user=master_user, member=member, **kwargs
-        )
+        instance = PricingProcedureProcess(procedure=procedure, master_user=master_user, member=member, **kwargs)
         instance.process()
 
     except Exception as e:
@@ -4309,14 +4125,10 @@ def _run_pricing_procedure(evaluator, user_code, **kwargs):
 _run_pricing_procedure.evaluator = True
 
 
-def _run_data_procedure(
-    evaluator, user_code, user_context=None, linked_task_kwargs=None, **kwargs
-):
+def _run_data_procedure(evaluator, user_code, user_context=None, linked_task_kwargs=None, **kwargs):
     _l.info("_run_data_procedure")
 
     try:
-        from poms.procedures.handlers import DataProcedureProcess
-        from poms.procedures.models import RequestDataFileProcedure
         from poms.procedures.tasks import run_data_procedure_from_formula
         from poms.users.utils import (
             get_master_user_from_context,
@@ -4328,7 +4140,7 @@ def _run_data_procedure(
         master_user = get_master_user_from_context(context)
         member = get_member_from_context(context)
 
-        _l.info("_run_data_procedure.context %s" % context)
+        _l.info("_run_data_procedure.context %s", context)
 
         procedure_kwargs = {
             "master_user_id": master_user.id,
@@ -4351,16 +4163,14 @@ def _run_data_procedure(
                 "realm_code": master_user.realm_code,
             }
 
-            link = [
-                run_data_procedure_from_formula.apply_async(kwargs=linked_task_kwargs)
-            ]
+            link = [run_data_procedure_from_formula.apply_async(kwargs=linked_task_kwargs)]
 
         run_data_procedure_from_formula.apply_async(kwargs=procedure_kwargs, link=link)
 
     except Exception as e:
-        _l.error("_run_data_procedure.exception %s" % e)
-        _l.error("_run_data_procedure.exception traceback %s" % traceback.format_exc())
-        raise Exception(e)
+        _l.error("_run_data_procedure.exception %s", e)
+        _l.error("_run_data_procedure.exception traceback %s", traceback.format_exc())
+        raise Exception(e) from e
 
 
 _run_data_procedure.evaluator = True
@@ -4372,7 +4182,6 @@ def _run_data_procedure_sync(evaluator, user_code, user_context=None, **kwargs):
     try:
         from poms.procedures.handlers import DataProcedureProcess
         from poms.procedures.models import RequestDataFileProcedure
-        from poms.procedures.tasks import run_data_procedure_from_formula
         from poms.users.utils import (
             get_master_user_from_context,
             get_member_from_context,
@@ -4392,11 +4201,9 @@ def _run_data_procedure_sync(evaluator, user_code, user_context=None, **kwargs):
         if user_context:
             merged_context["names"].update(user_context)
 
-        _l.info("merged_context %s" % merged_context)
+        _l.info("merged_context %s", merged_context)
 
-        procedure = RequestDataFileProcedure.objects.get(
-            master_user=master_user, user_code=user_code
-        )
+        procedure = RequestDataFileProcedure.objects.get(master_user=master_user, user_code=user_code)
 
         kwargs.pop("user_context", None)
 
@@ -4410,11 +4217,9 @@ def _run_data_procedure_sync(evaluator, user_code, user_context=None, **kwargs):
         instance.process()
 
     except Exception as e:
-        _l.error("_run_data_procedure_sync.exception %s" % e)
-        _l.error(
-            "_run_data_procedure_sync.exception traceback %s" % traceback.format_exc()
-        )
-        raise Exception(e)
+        _l.error("_run_data_procedure_sync.exception %s", e)
+        _l.error("_run_data_procedure_sync.exception traceback %s", traceback.format_exc())
+        raise Exception(e) from e
 
 
 _run_data_procedure_sync.evaluator = True
@@ -4424,8 +4229,6 @@ def _rebook_transaction(evaluator, code, values=None, user_context=None, **kwarg
     _l.info("_rebook_transaction")
 
     try:
-        from poms.procedures.handlers import DataProcedureProcess
-        from poms.procedures.models import RequestDataFileProcedure
         from poms.transactions.handlers import TransactionTypeProcess
         from poms.transactions.models import ComplexTransaction
         from poms.transactions.serializers import TransactionTypeProcessSerializer
@@ -4436,10 +4239,10 @@ def _rebook_transaction(evaluator, code, values=None, user_context=None, **kwarg
 
         context = evaluator.context
 
-        master_user = get_master_user_from_context(context)
+        master_user = get_master_user_from_context(context)  # noqa: F841
         member = get_member_from_context(context)
 
-        _l.info("_rebook_transaction.context %s" % context)
+        _l.info("_rebook_transaction.context %s", context)
 
         merged_context = {}
         merged_context.update(context)
@@ -4450,14 +4253,12 @@ def _rebook_transaction(evaluator, code, values=None, user_context=None, **kwarg
         if user_context:
             merged_context["names"].update(user_context)
 
-        _l.info("_rebook_transaction.merged_context %s" % merged_context)
+        _l.info("_rebook_transaction.merged_context %s", merged_context)
 
         try:
             complex_transaction = ComplexTransaction.objects.get(code=code)
 
-            _l.debug(
-                "_rebook_transaction.get complex transaction %s" % complex_transaction
-            )
+            _l.debug("_rebook_transaction.get complex transaction %s", complex_transaction)
 
             instance = TransactionTypeProcess(
                 transaction_type=complex_transaction.transaction_type,
@@ -4467,9 +4268,7 @@ def _rebook_transaction(evaluator, code, values=None, user_context=None, **kwarg
                 member=member,
             )
 
-            serializer = TransactionTypeProcessSerializer(
-                instance=instance, context=merged_context
-            )
+            serializer = TransactionTypeProcessSerializer(instance=instance, context=merged_context)
 
             data = serializer.data
 
@@ -4491,33 +4290,22 @@ def _rebook_transaction(evaluator, code, values=None, user_context=None, **kwarg
 
             data["values"].update(values)
 
-            _l.debug("_rebook_transaction.get data to fill with values %s" % values)
-            _l.debug(
-                "_rebook_transaction.get data to fill with result values %s"
-                % data["values"]
-            )
+            _l.debug("_rebook_transaction.get data to fill with values %s", values)
+            _l.debug("_rebook_transaction.get data to fill with result values %s", data["values"])
 
             # _l.info('_rebook_transaction.data %s' % data)
 
-            serializer = TransactionTypeProcessSerializer(
-                instance=instance, data=data, context=merged_context
-            )
+            serializer = TransactionTypeProcessSerializer(instance=instance, data=data, context=merged_context)
             serializer.is_valid(raise_exception=True)
             serializer.save()
 
         except Exception as e:
-            _l.error("_rebook_transaction. could not rebook exception %s" % e)
-            _l.error(
-                "_rebook_transaction. could not rebook traceback %s"
-                % traceback.format_exc()
-            )
+            _l.error("_rebook_transaction. could not rebook exception %s", e)
+            _l.error("_rebook_transaction. could not rebook traceback %s", traceback.format_exc())
 
     except Exception as e:
         _l.error(f"_rebook_transaction. general exception {e}")
-        _l.error(
-            "_rebook_transaction. general exception traceback %s"
-            % traceback.format_exc()
-        )
+        _l.error("_rebook_transaction. general exception traceback %s", traceback.format_exc())
 
 
 _rebook_transaction.evaluator = True
@@ -4561,9 +4349,7 @@ def _download_instrument_from_finmars_database(
         task.options_object = options
         task.save()
 
-        _l.info(
-            "_download_instrument_from_finmars_database. task created init a process"
-        )
+        _l.info("_download_instrument_from_finmars_database. task created init a process")
 
         download_instrument_finmars_database_async.apply_async(
             kwargs={
@@ -4576,11 +4362,8 @@ def _download_instrument_from_finmars_database(
         )
 
     except Exception as e:
-        _l.error("_download_instrument_from_finmars_database. general exception %s" % e)
-        _l.error(
-            "_download_instrument_from_finmars_database. general exception traceback %s"
-            % traceback.format_exc()
-        )
+        _l.error("_download_instrument_from_finmars_database. general exception %s", e)
+        _l.error("_download_instrument_from_finmars_database. general exception traceback %s", traceback.format_exc())
 
 
 _download_instrument_from_finmars_database.evaluator = True
@@ -4597,19 +4380,18 @@ def _get_filenames_from_storage(evaluator, pattern=None, path_to_folder=None):
     context = evaluator.context
 
     master_user = get_master_user_from_context(context)
-    member = get_member_from_context(context)
+    member = get_member_from_context(context)  # noqa: F841
 
     # TODO check that file could be placed either in public or member home folder
 
     if not path_to_folder:
         path_to_folder = master_user.space_code
+    elif path_to_folder[0] == "/":
+        path_to_folder = master_user.space_code + path_to_folder
     else:
-        if path_to_folder[0] == "/":
-            path_to_folder = master_user.space_code + path_to_folder
-        else:
-            path_to_folder = master_user.space_code + "/" + path_to_folder
+        path_to_folder = master_user.space_code + "/" + path_to_folder
 
-    print("path_to_folder %s" % path_to_folder)
+    print("path_to_folder %s", path_to_folder)
 
     items = storage.listdir(path_to_folder)
 
@@ -4639,23 +4421,22 @@ def _delete_file_from_storage(evaluator, path):
     context = evaluator.context
 
     master_user = get_master_user_from_context(context)
-    member = get_member_from_context(context)
+    member = get_member_from_context(context)  # noqa: F841
 
     # TODO check that file could be placed either in public or member home folder
 
     if not path:
         path = master_user.space_code
+    elif path[0] == "/":
+        path = master_user.space_code + path
     else:
-        if path[0] == "/":
-            path = master_user.space_code + path
-        else:
-            path = master_user.space_code + "/" + path
+        path = master_user.space_code + "/" + path
 
     try:
         storage.delete(path)
         return True
     except Exception as e:
-        _l.error("_delete_file_from_storage %s" % e)
+        _l.error("_delete_file_from_storage %s", e)
         return False
 
 
@@ -4673,17 +4454,16 @@ def _put_file_to_storage(evaluator, path, content):
     context = evaluator.context
 
     master_user = get_master_user_from_context(context)
-    member = get_member_from_context(context)
+    member = get_member_from_context(context)  # noqa: F841
 
     # TODO check that file could be placed either in public or member home folder
 
     if not path:
         path = master_user.space_code
+    elif path[0] == "/":
+        path = master_user.space_code + path
     else:
-        if path[0] == "/":
-            path = master_user.space_code + path
-        else:
-            path = master_user.space_code + "/" + path
+        path = master_user.space_code + "/" + path
 
     if master_user.space_code + "/import/" not in path:
         try:
@@ -4692,7 +4472,7 @@ def _put_file_to_storage(evaluator, path, content):
             storage.save(path, ContentFile(content.encode("utf-8")))
             return True
         except Exception as e:
-            _l.error("_put_file_to_storage %s" % e)
+            _l.error("_put_file_to_storage %s", e)
             return False
 
     else:
@@ -4705,7 +4485,7 @@ _put_file_to_storage.evaluator = True
 
 def _run_data_import(evaluator, filepath, scheme):
     try:
-        _l.info("_run_data_import %s" % filepath)
+        _l.info("_run_data_import %s", filepath)
 
         from poms.users.utils import (
             get_master_user_from_context,
@@ -4760,10 +4540,8 @@ def _run_data_import(evaluator, filepath, scheme):
         return {"task_id": celery_task.id}
 
     except Exception as e:
-        _l.error("_run_data_import. general exception %s" % e)
-        _l.error(
-            "_run_data_import. general exception traceback %s" % traceback.format_exc()
-        )
+        _l.error("_run_data_import. general exception %s", e)
+        _l.error("_run_data_import. general exception traceback %s", traceback.format_exc())
 
 
 _run_data_import.evaluator = True
@@ -4795,9 +4573,7 @@ def _run_transaction_import(evaluator, filepath, scheme):
         )
         celery_task.status = CeleryTask.STATUS_DONE
 
-        scheme = ComplexTransactionImportScheme.objects.get(
-            master_user=master_user, user_code=scheme
-        )
+        scheme = ComplexTransactionImportScheme.objects.get(master_user=master_user, user_code=scheme)
 
         options_object = {
             "file_path": filepath,
@@ -4824,10 +4600,7 @@ def _run_transaction_import(evaluator, filepath, scheme):
 
     except Exception as e:
         _l.error(f"_run_transaction_import. general exception {e}")
-        _l.error(
-            "_run_transaction_import. general exception traceback %s"
-            % traceback.format_exc()
-        )
+        _l.error("_run_transaction_import. general exception traceback %s", traceback.format_exc())
 
 
 _run_transaction_import.evaluator = True
@@ -4835,8 +4608,8 @@ _run_transaction_import.evaluator = True
 
 def _simple_group(val, ranges, default=None):
     for begin, end, text in ranges:
-        begin = float("-inf") if begin is None else float(begin)
-        end = float("inf") if end is None else float(end)
+        begin = float("-inf") if begin is None else float(begin)  # noqa: PLW2901
+        end = float("inf") if end is None else float(end)  # noqa: PLW2901
 
         if begin < val <= end:
             return text
@@ -4852,7 +4625,7 @@ def _date_group(evaluator, val, ranges, default=None):
     def _make_name(begin, end, fmt):
         # if end != datetime.date.max:
         #     end -= datetime.timedelta(days=1)
-        if isinstance(fmt, (list, tuple)):
+        if isinstance(fmt, list | tuple):
             ifmt = iter(fmt)
             s1 = str(next(ifmt, "") or "")
             begin_fmt = str(next(ifmt, "") or "")
@@ -4872,20 +4645,17 @@ def _date_group(evaluator, val, ranges, default=None):
     for begin, end, step, fmt in ranges:
         evaluator.check_time()
 
-        begin = _parse_date(begin) if begin else datetime.date(1900, 1, 1)
+        begin = _parse_date(begin) if begin else datetime.date(1900, 1, 1)  # noqa: PLW2901
 
-        end = _parse_date(end) if end else datetime.date(2100, 12, 31)
+        end = _parse_date(end) if end else datetime.date(2100, 12, 31)  # noqa: PLW2901
 
         if begin <= val <= end:
             if step:
                 if not isinstance(
                     step,
-                    (
-                        datetime.timedelta,
-                        relativedelta.relativedelta,
-                    ),
+                    datetime.timedelta | relativedelta.relativedelta,
                 ):
-                    step = _timedelta(days=step)
+                    step = _timedelta(days=step)  # noqa: PLW2901
                 # _l.debug('start=%s, end=%s, step=%s', start, end, step)
 
                 ld = begin
@@ -4893,8 +4663,7 @@ def _date_group(evaluator, val, ranges, default=None):
                     evaluator.check_time()
                     lbegin = ld
                     lend = ld + step - datetime.timedelta(days=1)
-                    if lend > end:
-                        lend = end
+                    lend = min(lend, end)
                     # _l.debug('  lstart=%s, lend=%s', lbegin, lend)
                     if lbegin <= val <= lend:
                         return _make_name(lbegin, lend, fmt)
@@ -4965,23 +4734,15 @@ def _if_valid_isin(evaluator, isin: str) -> bool:
     if not isin[:2].isalpha():
         return False
 
-    converted_digits = [
-        str(ord(char) - 55) if char.isalpha() else char for char in isin[:-1]
-    ]
+    converted_digits = [str(ord(char) - 55) if char.isalpha() else char for char in isin[:-1]]
     converted_digits_str = "".join(converted_digits)
     converted_digits_str_multiplied = [
-        int(char) * 2 if i % 2 == 0 else char
-        for i, char in enumerate(converted_digits_str[::-1])
+        int(char) * 2 if i % 2 == 0 else char for i, char in enumerate(converted_digits_str[::-1])
     ][::-1]
-    summed_digits = sum(
-        int(digit) for char in converted_digits_str_multiplied for digit in str(char)
-    )
+    summed_digits = sum(int(digit) for char in converted_digits_str_multiplied for digit in str(char))
     checksum = (10 - (summed_digits % 10)) % 10
 
-    if isin[-1] != str(checksum):
-        return False
-
-    return True
+    return isin[-1] == str(checksum)
 
 
 _if_valid_isin.evaluator = True
@@ -5033,9 +4794,7 @@ def _clean_str_val(
         sign = 1
         if clean_value[0] == "-":
             sign = -1
-        clean_value = [
-            char for char in clean_value if char.isdigit() or char == decimal_sep
-        ]
+        clean_value = [char for char in clean_value if char.isdigit() or char == decimal_sep]
         clean_value = "".join(clean_value)
         clean_value = clean_value.replace(decimal_sep, ".")
         try:
@@ -5056,9 +4815,7 @@ def _get_issuer_country_of_ccy(evaluator, currency):
 
         from poms.instruments.serializers import CountrySerializer
 
-        return CountrySerializer(
-            instance=currency.country, context=evaluator.context
-        ).data
+        return CountrySerializer(instance=currency.country, context=evaluator.context).data
 
     except Exception:
         return None
@@ -5067,7 +4824,7 @@ def _get_issuer_country_of_ccy(evaluator, currency):
 _get_issuer_country_of_ccy.evaluator = True
 
 
-class SimpleEval2Def(object):
+class SimpleEval2Def:
     def __init__(self, name, func):
         self.name = name
         self.func = func
@@ -5123,9 +4880,7 @@ FINMARS_FUNCTIONS = [
     SimpleEval2Def("add_weeks", _add_weeks),
     SimpleEval2Def("add_workdays", _add_workdays),
     SimpleEval2Def("format_date", _format_date),
-    SimpleEval2Def(
-        "get_list_of_dates_between_two_dates", _get_list_of_dates_between_two_dates
-    ),
+    SimpleEval2Def("get_list_of_dates_between_two_dates", _get_list_of_dates_between_two_dates),
     SimpleEval2Def("get_quarter", _get_quarter),
     SimpleEval2Def("get_year", _get_year),
     SimpleEval2Def("get_month", _get_month),
@@ -5137,12 +4892,8 @@ FINMARS_FUNCTIONS = [
     SimpleEval2Def("to_json", _to_json),
     SimpleEval2Def("last_business_day", _last_business_day),
     SimpleEval2Def("get_date_last_week_end_business", _get_date_last_week_end_business),
-    SimpleEval2Def(
-        "get_date_last_month_end_business", _get_date_last_month_end_business
-    ),
-    SimpleEval2Def(
-        "get_date_last_quarter_end_business", _get_date_last_quarter_end_business
-    ),
+    SimpleEval2Def("get_date_last_month_end_business", _get_date_last_month_end_business),
+    SimpleEval2Def("get_date_last_quarter_end_business", _get_date_last_quarter_end_business),
     SimpleEval2Def("get_date_last_year_end_business", _get_date_last_year_end_business),
     SimpleEval2Def("calculate_period_date", _calculate_period_date),
     SimpleEval2Def("format_number", _format_number),
@@ -5171,9 +4922,7 @@ FINMARS_FUNCTIONS = [
     SimpleEval2Def("calculate_accrued_price", _calculate_accrued_price),
     SimpleEval2Def("get_position_size_on_date", _get_position_size_on_date),
     SimpleEval2Def("get_principal_on_date", _get_principal_on_date),
-    SimpleEval2Def(
-        "get_transactions_amounts_on_date", _get_transactions_amounts_on_date
-    ),
+    SimpleEval2Def("get_transactions_amounts_on_date", _get_transactions_amounts_on_date),
     SimpleEval2Def("get_net_cost_price_on_date", _get_net_cost_price_on_date),
     SimpleEval2Def("get_instrument_report_data", _get_instrument_report_data),
     SimpleEval2Def("get_instrument_factor", _get_instrument_factor),
@@ -5200,17 +4949,11 @@ FINMARS_FUNCTIONS = [
     SimpleEval2Def("get_latest_principal_price", _get_latest_principal_price),
     SimpleEval2Def("get_latest_principal_price_date", _get_latest_principal_price_date),
     SimpleEval2Def("get_latest_fx_rate", _get_latest_fx_rate),
-    SimpleEval2Def(
-        "get_instrument_user_attribute_value", _get_instrument_user_attribute_value
-    ),
+    SimpleEval2Def("get_instrument_user_attribute_value", _get_instrument_user_attribute_value),
     SimpleEval2Def("get_ttype_default_input", _get_ttype_default_input),
     SimpleEval2Def("set_complex_transaction_input", _set_complex_transaction_input),
-    SimpleEval2Def(
-        "set_complex_transaction_user_field", _set_complex_transaction_user_field
-    ),
-    SimpleEval2Def(
-        "set_complex_transaction_form_data", _set_complex_transaction_form_data
-    ),
+    SimpleEval2Def("set_complex_transaction_user_field", _set_complex_transaction_user_field),
+    SimpleEval2Def("set_complex_transaction_form_data", _set_complex_transaction_form_data),
     SimpleEval2Def("get_complex_transaction", _get_complex_transaction),
     SimpleEval2Def("get_relation_by_user_code", _get_relation_by_user_code),
     SimpleEval2Def("get_instruments", _get_instruments),

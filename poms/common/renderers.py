@@ -39,11 +39,7 @@ class CustomJSONEncoder(JSONEncoder):
             # and/or platform-specific, so do tests which don't depend on the
             # internals.
 
-            if o != o:
-                text = "NaN"
-            elif o == _inf:
-                text = "null"
-            elif o == _neginf:
+            if o in (_inf, _neginf):
                 text = "null"
             else:
                 return _repr(o)

@@ -3,7 +3,6 @@ from logging import getLogger
 from django_filters import FilterSet
 
 from poms.common.filters import CharFilter
-
 from poms.common.views import AbstractModelViewSet
 from poms.credentials.models import Credentials
 from poms.credentials.serializers import CredentialsSerializer

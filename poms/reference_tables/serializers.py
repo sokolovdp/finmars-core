@@ -21,9 +21,7 @@ class ReferenceTableRowSerializer(serializers.ModelSerializer):
         ]
 
 
-class ReferenceTableSerializer(
-    ModelWithUserCodeSerializer, ModelWithTimeStampSerializer, ModelMetaSerializer
-):
+class ReferenceTableSerializer(ModelWithUserCodeSerializer, ModelWithTimeStampSerializer, ModelMetaSerializer):
     master_user = MasterUserField()
     rows = ReferenceTableRowSerializer(many=True)
 

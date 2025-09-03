@@ -1,8 +1,8 @@
 from copy import deepcopy
-from poms.common.common_base_test import BaseTestCase
-from poms.clients.models import Client, ClientSecret
-from poms.portfolios.models import Portfolio
 
+from poms.clients.models import Client, ClientSecret
+from poms.common.common_base_test import BaseTestCase
+from poms.portfolios.models import Portfolio
 
 EXPECTED_CLIENT = {
     "id": 1,
@@ -123,9 +123,7 @@ class ClientViewTest(BaseTestCase):
 
         new_name = "new_name"
         update_data = {"name": new_name}
-        response = self.client.patch(
-            path=f"{self.url}{client_id}/", format="json", data=update_data
-        )
+        response = self.client.patch(path=f"{self.url}{client_id}/", format="json", data=update_data)
         self.assertEqual(response.status_code, 200, response.content)
 
         response = self.client.get(path=f"{self.url}?name={new_name}")
@@ -140,9 +138,7 @@ class ClientViewTest(BaseTestCase):
             portfolio.id,
         ]
         update_data = {"portfolios": portfolios}
-        response = self.client.patch(
-            path=f"{self.url}{client_id}/", format="json", data=update_data
-        )
+        response = self.client.patch(path=f"{self.url}{client_id}/", format="json", data=update_data)
         self.assertEqual(response.status_code, 200, response.content)
 
         response = self.client.get(path=f"{self.url}?portfolios={portfolio.user_code}")
@@ -150,9 +146,7 @@ class ClientViewTest(BaseTestCase):
         self.assertEqual(response_json["count"], 1)
         client = response_json["results"][0]
         self.assertEqual(client["portfolios"], portfolios)
-        self.assertEqual(
-            client["portfolios_object"][0]["user_code"], portfolio.user_code
-        )
+        self.assertEqual(client["portfolios_object"][0]["user_code"], portfolio.user_code)
 
     def test__client_secrets_update_patch(self):
         response = self.client.post(path=self.url, format="json", data=CREATE_DATA)
@@ -179,9 +173,7 @@ class ClientViewTest(BaseTestCase):
         update_data = {
             "client_secrets_object": updated_secrets,
         }
-        response = self.client.patch(
-            path=f"{self.url}{client_id}/", format="json", data=update_data
-        )
+        response = self.client.patch(path=f"{self.url}{client_id}/", format="json", data=update_data)
         self.assertEqual(response.status_code, 200, response.content)
 
         response = self.client.get(path=f"{self.url}?id={client_id}")
@@ -217,9 +209,7 @@ class ClientViewTest(BaseTestCase):
         response = self.client.delete(path=f"{self.url}{client_id}/")
         self.assertEqual(response.status_code, 204, response.content)
 
-        response = self.client.get(
-            path=f"{self.url}?user_code={CREATE_DATA['user_code']}"
-        )
+        response = self.client.get(path=f"{self.url}?user_code={CREATE_DATA['user_code']}")
         response_json = response.json()
         self.assertEqual(response_json["count"], 0)
 

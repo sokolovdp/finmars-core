@@ -1,5 +1,7 @@
 from unittest import mock
+
 from django.conf import settings
+
 from poms.common.common_base_test import BaseTestCase
 from poms.currencies.models import Currency
 

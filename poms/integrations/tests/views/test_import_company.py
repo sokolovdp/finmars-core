@@ -2,9 +2,9 @@ from unittest import mock
 
 from poms.celery_tasks.models import CeleryTask
 from poms.common.common_base_test import BaseTestCase
+from poms.counterparties.models import Counterparty
 from poms.integrations.database_client import get_backend_callback_urls
 from poms.integrations.monad import Monad, MonadStatus
-from poms.counterparties.models import Counterparty
 
 
 class ImportCompanyDatabaseViewSetTest(BaseTestCase):

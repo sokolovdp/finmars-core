@@ -34,9 +34,7 @@ class BaseReport:
         (CALCULATION_GROUP_STRATEGY3, "Strategy 3"),
     )
 
-    def __init__(
-        self, id=None, master_user=None, member=None, task_id=None, task_status=None
-    ):
+    def __init__(self, id=None, master_user=None, member=None, task_id=None, task_status=None):
         self.id = id
         self.task_id = task_id
         self.task_status = task_status
@@ -70,7 +68,7 @@ class Report(BaseReport):
         (PERIOD_TYPE_INCEPTION, "Inception"),
     )
 
-    def __init__(
+    def __init__(  # noqa: PLR0913, PLR0915
         self,
         id=None,
         master_user=None,
@@ -123,7 +121,7 @@ class Report(BaseReport):
         count=0,
         period_type=None,
     ):
-        super(Report, self).__init__(
+        super().__init__(
             id=id,
             master_user=master_user,
             member=member,
@@ -131,13 +129,9 @@ class Report(BaseReport):
             task_status=task_status,
         )
 
-        self.ecosystem_default = EcosystemDefault.cache.get_cache(
-            master_user_pk=master_user.pk
-        )
+        self.ecosystem_default = EcosystemDefault.cache.get_cache(master_user_pk=master_user.pk)
 
-        self.report_type = (
-            report_type if report_type is not None else Report.TYPE_BALANCE
-        )
+        self.report_type = report_type if report_type is not None else Report.TYPE_BALANCE
         self.report_currency = report_currency or self.ecosystem_default.currency
         self.pricing_policy = pricing_policy or self.ecosystem_default.pricing_policy
         self.pl_first_date = pl_first_date
@@ -160,9 +154,7 @@ class Report(BaseReport):
         self.expression_iterations_count = expression_iterations_count
         self.allocation_detailing = allocation_detailing
         self.pl_include_zero = pl_include_zero
-        self.only_numbers = (
-            only_numbers  # do not add relations items when process report
-        )
+        self.only_numbers = only_numbers  # do not add relations items when process report
 
         self.instruments = instruments or []
         self.portfolios = portfolios or []
@@ -177,10 +169,7 @@ class Report(BaseReport):
 
         if date_field:
             self.date_field = date_field
-        elif (
-            self.report_type == Report.TYPE_BALANCE
-            or self.report_type != Report.TYPE_PL
-        ):
+        elif self.report_type == Report.TYPE_BALANCE or self.report_type != Report.TYPE_PL:
             self.date_field = "transaction_date"
         else:
             self.date_field = "accounting_date"
@@ -203,9 +192,7 @@ class Report(BaseReport):
         self.item_instrument_accruals = []
         self.calculate_pl = calculate_pl
 
-        self.frontend_request_options = (
-            frontend_request_options  # For Backend Report Calculation
-        )
+        self.frontend_request_options = frontend_request_options  # For Backend Report Calculation
         self.report_instance_id = report_instance_id  # For Backend Report Calculation
 
         self.page = page
@@ -215,10 +202,7 @@ class Report(BaseReport):
         self.period_type = period_type
 
     def __str__(self):
-        return (
-            f"{self.__class__.__name__} for {self.master_user}/{self.member}"
-            f" @ {self.report_date}"
-        )
+        return f"{self.__class__.__name__} for {self.master_user}/{self.member} @ {self.report_date}"
 
     def close(self):
         for item in self.items:
@@ -254,7 +238,7 @@ class ReportItem:
 
 
 class TransactionReport(BaseReport):
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         id=None,
         task_id=None,
@@ -309,9 +293,7 @@ class TransactionReport(BaseReport):
         self.strategies3 = strategies3 or []
         self.custom_fields = custom_fields or []
         self.custom_fields_to_calculate = custom_fields_to_calculate or ""
-        self.complex_transaction_statuses_filter = (
-            complex_transaction_statuses_filter or ""
-        )
+        self.complex_transaction_statuses_filter = complex_transaction_statuses_filter or ""
 
         self.items = items
 
@@ -341,7 +323,7 @@ class TransactionReport(BaseReport):
         self.frontend_request_options = frontend_request_options
         self.report_instance_id = report_instance_id
 
-        _l.debug("TransactionReport.page %s" % page)
+        _l.debug("TransactionReport.page %s", page)
 
         self.page = page
         self.page_size = page_size
@@ -393,7 +375,7 @@ class PerformanceReport(BaseReport):
         (ADJUSTMENT_TYPE_ANNUALIZED, "Annualized"),
     )
 
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         id=None,
         task_id=None,
@@ -445,9 +427,7 @@ class PerformanceReport(BaseReport):
         self.begin_date = begin_date
         self.end_date = end_date or d
 
-        self.ecosystem_default = EcosystemDefault.cache.get_cache(
-            master_user_pk=master_user.pk
-        )
+        self.ecosystem_default = EcosystemDefault.cache.get_cache(master_user_pk=master_user.pk)
 
         self.report_currency = report_currency or self.ecosystem_default.currency
         self.pricing_policy = pricing_policy

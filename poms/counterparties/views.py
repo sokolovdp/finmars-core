@@ -72,12 +72,8 @@ class CounterpartyGroupViewSet(AbstractModelViewSet):
     def perform_destroy(self, instance):
         super().perform_destroy(instance)
 
-        items_qs = Counterparty.objects.filter(
-            master_user=instance.master_user, group=instance
-        )
-        default_group = CounterpartyGroup.objects.get(
-            master_user=instance.master_user, user_code="-"
-        )
+        items_qs = Counterparty.objects.filter(master_user=instance.master_user, group=instance)
+        default_group = CounterpartyGroup.objects.get(master_user=instance.master_user, user_code="-")
 
         items_qs.update(group=default_group)
 
@@ -249,12 +245,8 @@ class ResponsibleGroupViewSet(AbstractModelViewSet):
     def perform_destroy(self, instance):
         super().perform_destroy(instance)
 
-        items_qs = Responsible.objects.filter(
-            master_user=instance.master_user, group=instance
-        )
-        default_group = ResponsibleGroup.objects.get(
-            master_user=instance.master_user, user_code="-"
-        )
+        items_qs = Responsible.objects.filter(master_user=instance.master_user, group=instance)
+        default_group = ResponsibleGroup.objects.get(master_user=instance.master_user, user_code="-")
 
         items_qs.update(group=default_group)
 

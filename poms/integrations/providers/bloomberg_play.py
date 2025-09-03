@@ -1,17 +1,17 @@
 # noinspection PyUnresolvedReferences
-import django
-
-django.setup()
-
-from poms.integrations.providers.bloomberg import (
-    get_certs_from_file,
-    FakeBloombergDataProvider,
-)
-
 import logging
 import os
 import pprint
 from datetime import date
+
+import django
+
+from poms.integrations.providers.bloomberg import (
+    FakeBloombergDataProvider,
+    get_certs_from_file,
+)
+
+django.setup()
 
 __author__ = "alyakhov"
 
@@ -193,9 +193,7 @@ if __name__ == "__main__":
     cert, key = get_certs_from_file(p12cert, password)
 
     # b = BloombergDataProvider(wsdl="https://service.bloomberg.com/assets/dl/dlws.wsdl", cert=cert, key=key)
-    b = FakeBloombergDataProvider(
-        wsdl="https://service.bloomberg.com/assets/dl/dlws.wsdl", cert=cert, key=key
-    )
+    b = FakeBloombergDataProvider(wsdl="https://service.bloomberg.com/assets/dl/dlws.wsdl", cert=cert, key=key)
     # print(b._bbg_instr('10 20'))
     # print(b._bbg_instr('XS0955552178 @BGN Corp'))
     # b.get_fields()

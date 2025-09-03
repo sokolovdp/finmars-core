@@ -1,6 +1,5 @@
 from django.apps import apps
 from django.core.exceptions import ObjectDoesNotExist
-from django.core.validators import RegexValidator
 from rest_framework import serializers
 
 from poms.common.fields import ExpressionField, name_validator
@@ -11,6 +10,11 @@ from poms.common.serializers import (
 )
 from poms.common.storage import get_storage
 from poms.users.fields import HiddenMemberField, MasterUserField
+
+from ..celery_tasks.models import CeleryTask
+from ..file_reports.serializers import FileReportSerializer
+from ..obj_attrs.models import GenericAttributeType
+from ..transaction_import.models import TransactionImportResult
 from .fields import CsvImportContentTypeField, CsvImportSchemeField
 from .models import (
     CsvField,
@@ -19,10 +23,6 @@ from .models import (
     EntityField,
     SimpleImportProcessItem,
 )
-from ..celery_tasks.models import CeleryTask
-from ..file_reports.serializers import FileReportSerializer
-from ..obj_attrs.models import GenericAttributeType
-from ..transaction_import.models import TransactionImportResult
 
 storage = get_storage()
 
@@ -79,10 +79,7 @@ class CsvDataFileImport:
         self.stats_file_report = stats_file_report
 
     def __str__(self):
-        return (
-            f"{getattr(self.master_user, 'name', None)}:"
-            f"{getattr(self.scheme, 'user_code', None)}"
-        )
+        return f"{getattr(self.master_user, 'name', None)}:{getattr(self.scheme, 'user_code', None)}"
 
 
 class CsvFieldSerializer(serializers.ModelSerializer):
@@ -132,16 +129,12 @@ class CsvImportSchemeCalculatedInputSerializer(serializers.ModelSerializer):
         fields = ["id", "name", "column", "name_expr"]
 
 
-class CsvImportSchemeSerializer(
-    ModelWithTimeStampSerializer, ModelWithUserCodeSerializer
-):
+class CsvImportSchemeSerializer(ModelWithTimeStampSerializer, ModelWithUserCodeSerializer):
     master_user = MasterUserField()
     csv_fields = CsvFieldSerializer(many=True)
     entity_fields = EntityFieldSerializer(many=True)
     content_type = CsvImportContentTypeField()
-    calculated_inputs = CsvImportSchemeCalculatedInputSerializer(
-        many=True, read_only=False, required=False
-    )
+    calculated_inputs = CsvImportSchemeCalculatedInputSerializer(many=True, read_only=False, required=False)
     delimiter = serializers.CharField(
         max_length=3,
         required=False,
@@ -204,9 +197,7 @@ class CsvImportSchemeSerializer(
 
         model_fields = model._meta.get_fields()
 
-        content_type_str = (
-            f"{scheme.content_type.app_label}.{scheme.content_type.model}"
-        )
+        content_type_str = f"{scheme.content_type.app_label}.{scheme.content_type.model}"
 
         allowed_fields = {
             "currencies.currency": [
@@ -253,7 +244,7 @@ class CsvImportSchemeSerializer(
                 "portfolio_type",
                 "register_currency",
                 "register_pricing_policy",
-                "register_instrument_type"
+                "register_instrument_type",
             ],
             "portfolios.portfoliotype": [
                 "name",
@@ -356,9 +347,7 @@ class CsvImportSchemeSerializer(
         for model_field in model_fields:
             if model_field.name in allowed_fields[content_type_str]:
                 try:
-                    o = EntityField.objects.get(
-                        scheme=scheme, system_property_key=model_field.name
-                    )
+                    o = EntityField.objects.get(scheme=scheme, system_property_key=model_field.name)
 
                     ids.add(o.id)
 
@@ -380,9 +369,7 @@ class CsvImportSchemeSerializer(
         EntityField.objects.filter(scheme=scheme).exclude(id__in=ids).delete()
 
     def set_entity_fields_mapping(self, scheme, entity_fields):
-        EntityField.objects.filter(
-            scheme=scheme, attribute_user_code__isnull=True
-        ).delete()
+        EntityField.objects.filter(scheme=scheme, attribute_user_code__isnull=True).delete()
 
         self.create_entity_fields_if_not_exist(scheme)
 
@@ -395,9 +382,7 @@ class CsvImportSchemeSerializer(
                     )
                     instance.expression = entity_field.get("expression", "")
                     instance.name = entity_field.get("name", instance.name)
-                    instance.use_default = entity_field.get(
-                        "use_default", instance.use_default
-                    )
+                    instance.use_default = entity_field.get("use_default", instance.use_default)
                     instance.save()
 
                 except EntityField.DoesNotExist:
@@ -406,17 +391,13 @@ class CsvImportSchemeSerializer(
                     #     'system_property_key')))
 
     def create_user_attributes_if_not_exist(self, scheme):
-        attribute_types = GenericAttributeType.objects.filter(
-            content_type=scheme.content_type
-        )
+        attribute_types = GenericAttributeType.objects.filter(content_type=scheme.content_type)
 
         ids = set()
 
         for attribute_type in attribute_types:
             try:
-                o = EntityField.objects.get(
-                    scheme=scheme, attribute_user_code=attribute_type.user_code
-                )
+                o = EntityField.objects.get(scheme=scheme, attribute_user_code=attribute_type.user_code)
 
                 ids.add(o.id)
 
@@ -430,14 +411,10 @@ class CsvImportSchemeSerializer(
 
                 ids.add(o.id)
 
-        EntityField.objects.filter(
-            scheme=scheme, system_property_key__isnull=True
-        ).exclude(id__in=ids).delete()
+        EntityField.objects.filter(scheme=scheme, system_property_key__isnull=True).exclude(id__in=ids).delete()
 
     def set_dynamic_attributes_mapping(self, scheme, entity_fields):
-        fields = EntityField.objects.filter(
-            scheme=scheme, system_property_key__isnull=True
-        )
+        fields = EntityField.objects.filter(scheme=scheme, system_property_key__isnull=True)
 
         for field in fields:
             if not field.expression:
@@ -446,9 +423,7 @@ class CsvImportSchemeSerializer(
         self.create_user_attributes_if_not_exist(scheme)
 
         for entity_field in entity_fields:
-            if entity_field.get("attribute_user_code") is not None and entity_field.get(
-                "expression"
-            ):
+            if entity_field.get("attribute_user_code") is not None and entity_field.get("expression"):
                 try:
                     instance = EntityField.objects.get(
                         scheme=scheme,
@@ -457,15 +432,11 @@ class CsvImportSchemeSerializer(
 
                     instance.expression = entity_field.get("expression", "")
                     instance.name = entity_field.get("name", instance.name)
-                    instance.use_default = entity_field.get(
-                        "use_default", instance.use_default
-                    )
+                    instance.use_default = entity_field.get("use_default", instance.use_default)
                     instance.save()
 
                 except EntityField.DoesNotExist:
-                    print(
-                        f"Unknown attribute {entity_field.get('attribute_user_code')}"
-                    )
+                    print(f"Unknown attribute {entity_field.get('attribute_user_code')}")
 
     def save_calculated_inputs(self, scheme, inputs):
         pk_set = set()
@@ -473,7 +444,7 @@ class CsvImportSchemeSerializer(
             input_id = input_values.pop("id", None)
             input0 = None
             if input_id:
-                try:
+                try:  # noqa: SIM105
                     input0 = scheme.calculated_inputs.get(pk=input_id)
                 except ObjectDoesNotExist:
                     pass
@@ -494,7 +465,7 @@ class CsvImportSchemeSerializer(
             calculated_inputs = validated_data.pop("calculated_inputs")
 
         # scheme = CsvImportScheme.objects.create(**validated_data)
-        scheme = super(CsvImportSchemeSerializer, self).create(validated_data)
+        scheme = super().create(validated_data)
 
         self.set_entity_fields_mapping(scheme=scheme, entity_fields=entity_fields)
         self.set_dynamic_attributes_mapping(scheme=scheme, entity_fields=entity_fields)
@@ -525,9 +496,7 @@ class CsvImportSchemeSerializer(
             "data_preprocess_expression", scheme.data_preprocess_expression
         )
 
-        scheme.spreadsheet_start_cell = validated_data.get(
-            "spreadsheet_start_cell", scheme.spreadsheet_start_cell
-        )
+        scheme.spreadsheet_start_cell = validated_data.get("spreadsheet_start_cell", scheme.spreadsheet_start_cell)
         scheme.spreadsheet_active_tab_name = validated_data.get(
             "spreadsheet_active_tab_name", scheme.spreadsheet_active_tab_name
         )
@@ -537,16 +506,10 @@ class CsvImportSchemeSerializer(
 
         scheme.mode = validated_data.get("mode", scheme.mode)
         scheme.delimiter = validated_data.get("delimiter", scheme.delimiter)
-        scheme.column_matcher = validated_data.get(
-            "column_matcher", scheme.column_matcher
-        )
+        scheme.column_matcher = validated_data.get("column_matcher", scheme.column_matcher)
         scheme.error_handler = validated_data.get("error_handler", scheme.error_handler)
-        scheme.missing_data_handler = validated_data.get(
-            "missing_data_handler", scheme.missing_data_handler
-        )
-        scheme.classifier_handler = validated_data.get(
-            "classifier_handler", scheme.classifier_handler
-        )
+        scheme.missing_data_handler = validated_data.get("missing_data_handler", scheme.missing_data_handler)
+        scheme.classifier_handler = validated_data.get("classifier_handler", scheme.classifier_handler)
 
         self.set_entity_fields_mapping(scheme=scheme, entity_fields=entity_fields)
         self.set_dynamic_attributes_mapping(scheme=scheme, entity_fields=entity_fields)
@@ -662,12 +625,8 @@ class CsvDataImportSerializer(serializers.Serializer):
             validated_data["delimiter"] = validated_data["scheme"].delimiter
             validated_data["error_handler"] = validated_data["scheme"].error_handler
             validated_data["mode"] = validated_data["scheme"].mode
-            validated_data["missing_data_handler"] = validated_data[
-                "scheme"
-            ].missing_data_handler
-            validated_data["classifier_handler"] = validated_data[
-                "scheme"
-            ].classifier_handler
+            validated_data["missing_data_handler"] = validated_data["scheme"].missing_data_handler
+            validated_data["classifier_handler"] = validated_data["scheme"].classifier_handler
 
         filename = None
         if filetmp:

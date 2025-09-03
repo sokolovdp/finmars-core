@@ -1,4 +1,4 @@
-from poms.common.models import ProxyUser, ProxyRequest
+from poms.common.models import ProxyRequest, ProxyUser
 from poms.common.utils import get_serializer
 from poms.configuration.utils import (
     remove_id_key_recursively,
@@ -47,25 +47,19 @@ def export_instrument_types(configuration_code, output_directory, master_user, m
         serialized_data.pop("regular_event_object", None)
 
         if serialized_data["factor_same"]:
-            serialized_data["factor_same"] = TransactionType.objects.get(
-                pk=serialized_data["factor_same"]
-            ).user_code
+            serialized_data["factor_same"] = TransactionType.objects.get(pk=serialized_data["factor_same"]).user_code
             serialized_data.pop("factor_same", None)
 
         serialized_data.pop("factor_same_object", None)
 
         if serialized_data["factor_up"]:
-            serialized_data["factor_up"] = TransactionType.objects.get(
-                pk=serialized_data["factor_up"]
-            ).user_code
+            serialized_data["factor_up"] = TransactionType.objects.get(pk=serialized_data["factor_up"]).user_code
             serialized_data.pop("factor_up", None)
 
         serialized_data.pop("factor_up_object", None)
 
         if serialized_data["factor_down"]:
-            serialized_data["factor_down"] = TransactionType.objects.get(
-                pk=serialized_data["factor_down"]
-            ).user_code
+            serialized_data["factor_down"] = TransactionType.objects.get(pk=serialized_data["factor_down"]).user_code
             serialized_data.pop("factor_down", None)
 
         serialized_data.pop("factor_down_object", None)
@@ -75,12 +69,7 @@ def export_instrument_types(configuration_code, output_directory, master_user, m
         # TODO think how to implement
         # result_item['pricing_policies'] = self.get_instrument_type_pricing_policies(instrument_type["pk"])
 
-        path = (
-            output_directory
-            + "/"
-            + user_code_to_file_name(configuration_code, item.user_code)
-            + ".json"
-        )
+        path = output_directory + "/" + user_code_to_file_name(configuration_code, item.user_code) + ".json"
 
         save_json_to_file(path, serialized_data)
 
@@ -91,9 +80,7 @@ def export_pricing_policies(configuration_code, output_directory, master_user, m
 
     context = {"master_user": master_user, "member": member, "request": proxy_request}
 
-    filtered_objects = PricingPolicy.objects.filter(
-        configuration_code=configuration_code, master_user=master_user
-    )
+    filtered_objects = PricingPolicy.objects.filter(configuration_code=configuration_code, master_user=master_user)
 
     SerializerClass = get_serializer("instruments.pricingpolicy")
 
@@ -107,12 +94,7 @@ def export_pricing_policies(configuration_code, output_directory, master_user, m
         # serialized_data.pop("default_instrument_pricing_scheme", None)
         # serialized_data.pop("default_instrument_pricing_scheme_object", None)
 
-        path = (
-            output_directory
-            + "/"
-            + user_code_to_file_name(configuration_code, item.user_code)
-            + ".json"
-        )
+        path = output_directory + "/" + user_code_to_file_name(configuration_code, item.user_code) + ".json"
 
         save_json_to_file(path, serialized_data)
 
@@ -140,17 +122,10 @@ def export_transaction_types(configuration_code, output_directory, master_user, 
 
         # No need anymore # TODO remove later # careful maybe needed
         try:
-            serialized_data["group"] = TransactionTypeGroup.objects.get(
-                id=serialized_data["group"]
-            ).user_code
-        except Exception as e:
+            serialized_data["group"] = TransactionTypeGroup.objects.get(id=serialized_data["group"]).user_code
+        except Exception:
             serialized_data["group"] = None
 
-        path = (
-            output_directory
-            + "/"
-            + user_code_to_file_name(configuration_code, item.user_code)
-            + ".json"
-        )
+        path = output_directory + "/" + user_code_to_file_name(configuration_code, item.user_code) + ".json"
 
         save_json_to_file(path, serialized_data)

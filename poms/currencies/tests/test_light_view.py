@@ -10,9 +10,7 @@ class CompanyViewTestCase(BaseTestCase):
         self.init_test_case()
         self.realm_code = "realm00000"
         self.space_code = "space00000"
-        self.url = (
-            f"/{self.realm_code}/{self.space_code}/api/v1/currencies/currency/light/"
-        )
+        self.url = f"/{self.realm_code}/{self.space_code}/api/v1/currencies/currency/light/"
 
     @BaseTestCase.cases(
         ("name", "name"),

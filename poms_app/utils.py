@@ -17,7 +17,7 @@ def ENV_BOOL(env_name, default):
     if val.lower() == "false":
         return False
 
-    warnings.warn(f"Boolean var {env_name} has value {val}, return False")
+    warnings.warn(f"Boolean var {env_name} has value {val}, return False")  # noqa: B028
     return False
 
 

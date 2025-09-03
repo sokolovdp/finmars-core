@@ -12,15 +12,14 @@ from poms.csv_import.handlers import SimpleImportProcess
 from poms.csv_import.models import CsvField, CsvImportScheme, EntityField
 from poms.csv_import.tasks import simple_import
 from poms.csv_import.tests.common_test_data import (
-    SCHEME_20,
-    SCHEME_CURRENCY_FIELDS,
-    SCHEME_CURRENCY_ENTITIES,
     CURRENCY,
     CURRENCY_ITEM,
     EXPECTED_RESULT_CURRENCY,
+    SCHEME_20,
+    SCHEME_CURRENCY_ENTITIES,
+    SCHEME_CURRENCY_FIELDS,
 )
 from poms.currencies.models import Currency
-
 
 FILE_CONTENT = json.dumps(CURRENCY).encode("utf-8")
 FILE_NAME = "currency.json"
@@ -58,9 +57,7 @@ class ImportCurrencyTest(BaseTestCase):
                 "short_name": "STD - Currencies (from File)",
             }
         )
-        scheme = CsvImportScheme.objects.using(settings.DB_DEFAULT).create(
-            **scheme_data
-        )
+        scheme = CsvImportScheme.objects.using(settings.DB_DEFAULT).create(**scheme_data)
 
         for field_data in SCHEME_CURRENCY_FIELDS:
             field_data["scheme"] = scheme
@@ -163,9 +160,7 @@ class ImportCurrencyTest(BaseTestCase):
 
         import_process.process()
         result = import_process.task.result_object["items"][0]
-        self.assertEqual(
-            result["final_inputs"], EXPECTED_RESULT_CURRENCY["final_inputs"]
-        )
+        self.assertEqual(result["final_inputs"], EXPECTED_RESULT_CURRENCY["final_inputs"])
 
         currency = Currency.objects.get(user_code="ALL")
         self.assertEqual(currency.country.alpha_3, "ALB")
@@ -190,7 +185,7 @@ class ImportCurrencyTest(BaseTestCase):
         import_process.preprocess()
         import_process.process()
 
-        with self.assertRaises(Currency.DoesNotExist) as e:
+        with self.assertRaises(Currency.DoesNotExist) as e:  # noqa: F841
             Currency.objects.get(user_code="ALL")
 
         # Without default_fx_rate

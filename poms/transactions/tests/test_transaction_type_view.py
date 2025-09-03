@@ -5,18 +5,18 @@ from django.conf import settings
 from poms.common.common_base_test import BaseTestCase
 from poms.transactions.handlers import TransactionTypeProcess
 from poms.transactions.models import (
+    ComplexTransaction,
+    ComplexTransactionStatus,
     TransactionType,
     TransactionTypeAction,
     TransactionTypeGroup,
     TransactionTypeInput,
     TransactionTypeInputSettings,
-    ComplexTransaction,
-    ComplexTransactionStatus,
 )
 from poms.transactions.tests.transaction_test_data import (
-    TRANSACTION_TYPE_WITH_INPUTS_DICT,
-    TRANSACTION_TYPE_DICT,
     TRANSACTION_TYPE_BOOK_DICT,
+    TRANSACTION_TYPE_DICT,
+    TRANSACTION_TYPE_WITH_INPUTS_DICT,
 )
 
 DATE_FORMAT = settings.API_DATE_FORMAT
@@ -171,9 +171,7 @@ class TransactionTypeViewSetTest(BaseTestCase):
         transaction_type = self.get_transaction_type()
         self.create_transaction_type_input(transaction_type)
 
-        response = self.client.get(
-            path=f"{self.url}light-with-inputs/?short_name={transaction_type.short_name}"
-        )
+        response = self.client.get(path=f"{self.url}light-with-inputs/?short_name={transaction_type.short_name}")
         self.assertEqual(response.status_code, 200, response.content)
 
         response_json = response.json()
@@ -215,9 +213,7 @@ class TransactionTypeViewSetTest(BaseTestCase):
 
         new_name = self.random_string()
         update_data = {"name": new_name}
-        response = self.client.patch(
-            path=f"{self.url}{type_id}/", format="json", data=update_data
-        )
+        response = self.client.patch(path=f"{self.url}{type_id}/", format="json", data=update_data)
         self.assertEqual(response.status_code, 200, response.content)
 
         response = self.client.get(path=f"{self.url}{type_id}/")

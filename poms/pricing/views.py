@@ -9,7 +9,6 @@ from rest_framework.settings import api_settings
 from poms.celery_tasks.models import CeleryTask
 from poms.common.filters import GroupsAttributeFilter, NoOpFilter
 from poms.common.pagination import CustomPaginationMixin
-
 from poms.common.views import (
     AbstractEvGroupViewSet,
     AbstractModelViewSet,
@@ -53,9 +52,7 @@ class RunPricingView(AbstractViewSet):
                 },
             }
         )
-        return Response(
-            {"status": "ok", "task_id": task.id}, status=status.HTTP_201_CREATED
-        )
+        return Response({"status": "ok", "task_id": task.id}, status=status.HTTP_201_CREATED)
 
 
 class PriceHistoryErrorFilterSet(FilterSet):

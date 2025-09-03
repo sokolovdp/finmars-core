@@ -5,13 +5,13 @@ from poms.obj_attrs.admin import GenericAttributeInline
 from poms.portfolios.models import (
     Portfolio,
     PortfolioBundle,
-    PortfolioRegister,
-    PortfolioRegisterRecord,
-    PortfolioHistory,
-    PortfolioType,
     PortfolioClass,
+    PortfolioHistory,
     PortfolioReconcileGroup,
     PortfolioReconcileHistory,
+    PortfolioRegister,
+    PortfolioRegisterRecord,
+    PortfolioType,
 )
 
 admin.site.register(PortfolioClass, ClassModelAdmin)

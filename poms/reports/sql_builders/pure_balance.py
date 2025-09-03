@@ -1,44 +1,26 @@
 import logging
-import os
 import time
 from datetime import timedelta
 
 from django.conf import settings
 from django.db import connection
 
-from celery import group
-
-from poms.accounts.models import Account, AccountType
-from poms.celery_tasks import finmars_task
+from poms.accounts.models import Account
 from poms.celery_tasks.models import CeleryTask
 from poms.common.utils import get_last_business_day
-from poms.currencies.models import Currency
 from poms.iam.utils import get_allowed_queryset
-from poms.instruments.models import (
-    Country,
-    ExposureCalculationModel,
-    Instrument,
-    InstrumentType,
-    LongUnderlyingExposure,
-    ShortUnderlyingExposure,
-)
 from poms.portfolios.models import Portfolio
 from poms.reports.common import Report
-from poms.reports.models import BalanceReportCustomField, ReportInstanceModel
+from poms.reports.models import ReportInstanceModel
 from poms.reports.sql_builders.helpers import (
     dictfetchall,
     get_cash_as_position_consolidation_for_select,
     get_cash_consolidation_for_select,
     get_fx_trades_and_fx_variations_transaction_filter_sql_string,
-    get_pl_left_join_consolidation,
     get_position_consolidation_for_select,
-    get_report_fx_rate,
     get_transaction_date_filter_for_initial_position_sql_string,
     get_transaction_filter_sql_string,
-    get_where_expression_for_position_consolidation,
 )
-from poms.reports.sql_builders.pl import PLReportBuilderSql
-from poms.strategies.models import Strategy1, Strategy2, Strategy3
 from poms.users.models import EcosystemDefault
 
 _l = logging.getLogger("poms.reports")
@@ -52,14 +34,9 @@ class PureBalanceReportBuilderSql:
 
         self.instance.allocation_mode = Report.MODE_IGNORE
 
-        self.ecosystem_defaults = EcosystemDefault.cache.get_cache(
-            master_user_pk=self.instance.master_user.pk
-        )
+        self.ecosystem_defaults = EcosystemDefault.cache.get_cache(master_user_pk=self.instance.master_user.pk)
 
-        _l.debug(
-            f"self.instance master_user {self.instance.master_user} "
-            f"report_date {self.instance.report_date}"
-        )
+        _l.debug(f"self.instance master_user {self.instance.master_user} report_date {self.instance.report_date}")
 
         """
         TODO IAM_SECURITY_VERIFY need to check, if user somehow passes 
@@ -72,15 +49,11 @@ class PureBalanceReportBuilderSql:
 
     def transform_to_allowed_portfolios(self):
         if not len(self.instance.portfolios):
-            self.instance.portfolios = get_allowed_queryset(
-                self.instance.member, Portfolio.objects.all()
-            )
+            self.instance.portfolios = get_allowed_queryset(self.instance.member, Portfolio.objects.all())
 
     def transform_to_allowed_accounts(self):
         if not len(self.instance.accounts):
-            self.instance.accounts = get_allowed_queryset(
-                self.instance.member, Account.objects.all()
-            )
+            self.instance.accounts = get_allowed_queryset(self.instance.member, Account.objects.all())
 
     # For internal usage, when celery tasks got simple balances
     def build_balance_sync(self):
@@ -90,34 +63,28 @@ class PureBalanceReportBuilderSql:
 
         self.serial_build()
 
-        self.instance.execution_time = float("{:3.3f}".format(time.perf_counter() - st))
+        self.instance.execution_time = float(f"{time.perf_counter() - st:3.3f}")
 
         _l.debug(f"items total {len(self.instance.items)}")
 
         relation_prefetch_st = time.perf_counter()
 
-        self.instance.relation_prefetch_time = float(
-            "{:3.3f}".format(time.perf_counter() - relation_prefetch_st)
-        )
+        self.instance.relation_prefetch_time = float(f"{time.perf_counter() - relation_prefetch_st:3.3f}")
 
         _l.debug(f"build_st done: {self.instance.execution_time}")
 
         return self.instance
 
-    def build_sync(self, celery_task):
+    def build_sync(self, celery_task):  # noqa: PLR0912, PLR0915
         try:
             report_settings = celery_task.options_object
 
-            instance = ReportInstanceModel(
-                **report_settings, master_user=celery_task.master_user
-            )
+            instance = ReportInstanceModel(**report_settings, master_user=celery_task.master_user)
 
             with connection.cursor() as cursor:
                 st = time.perf_counter()
 
-                transaction_filter_sql_string = get_transaction_filter_sql_string(
-                    instance
-                )
+                transaction_filter_sql_string = get_transaction_filter_sql_string(instance)
                 transaction_date_filter_for_initial_position_sql_string = (
                     get_transaction_date_filter_for_initial_position_sql_string(
                         instance.report_date,
@@ -125,13 +92,11 @@ class PureBalanceReportBuilderSql:
                     )
                 )
 
-                balance_q_consolidated_select_columns = (
-                    get_position_consolidation_for_select(instance, prefix="balance_q.")
+                balance_q_consolidated_select_columns = get_position_consolidation_for_select(
+                    instance, prefix="balance_q."
                 )
                 fx_trades_and_fx_variations_filter_sql_string = (
-                    get_fx_trades_and_fx_variations_transaction_filter_sql_string(
-                        instance
-                    )
+                    get_fx_trades_and_fx_variations_transaction_filter_sql_string(instance)
                 )
 
                 self.bday_yesterday_of_report_date = get_last_business_day(
@@ -934,21 +899,12 @@ class PureBalanceReportBuilderSql:
                 """
 
                 consolidated_cash_columns = get_cash_consolidation_for_select(instance)
-                consolidated_position_columns = get_position_consolidation_for_select(
-                    instance
-                )
-                consolidated_cash_as_position_columns = (
-                    get_cash_as_position_consolidation_for_select(instance)
-                )
+                consolidated_position_columns = get_position_consolidation_for_select(instance)
+                consolidated_cash_as_position_columns = get_cash_as_position_consolidation_for_select(instance)
 
-                _l.debug("consolidated_cash_columns %s" % consolidated_cash_columns)
-                _l.debug(
-                    "consolidated_position_columns %s" % consolidated_position_columns
-                )
-                _l.debug(
-                    "consolidated_cash_as_position_columns %s"
-                    % consolidated_cash_as_position_columns
-                )
+                _l.debug("consolidated_cash_columns %s", consolidated_cash_columns)
+                _l.debug("consolidated_position_columns %s", consolidated_position_columns)
+                _l.debug("consolidated_cash_as_position_columns %s", consolidated_cash_as_position_columns)
 
                 query = query.format(
                     report_date=instance.report_date,
@@ -970,7 +926,7 @@ class PureBalanceReportBuilderSql:
 
                 _l.debug(
                     "Balance report query execute done: %s",
-                    "{:3.3f}".format(time.perf_counter() - st),
+                    f"{time.perf_counter() - st:3.3f}",
                 )
 
                 result = dictfetchall(cursor)
@@ -991,73 +947,49 @@ class PureBalanceReportBuilderSql:
                     result_item["market_value_loc"] = item["market_value_loc"]
 
                     if "portfolio_id" not in item:
-                        result_item["portfolio_id"] = (
-                            self.ecosystem_defaults.portfolio_id
-                        )
+                        result_item["portfolio_id"] = self.ecosystem_defaults.portfolio_id
                     else:
                         result_item["portfolio_id"] = item["portfolio_id"]
 
                     if "account_cash_id" not in item:
-                        result_item["account_cash_id"] = (
-                            self.ecosystem_defaults.account_id
-                        )
+                        result_item["account_cash_id"] = self.ecosystem_defaults.account_id
                     else:
                         result_item["account_cash_id"] = item["account_cash_id"]
 
                     if "strategy1_cash_id" not in item:
-                        result_item["strategy1_cash_id"] = (
-                            self.ecosystem_defaults.strategy1_id
-                        )
+                        result_item["strategy1_cash_id"] = self.ecosystem_defaults.strategy1_id
                     else:
                         result_item["strategy1_cash_id"] = item["strategy1_cash_id"]
 
                     if "strategy2_cash_id" not in item:
-                        result_item["strategy2_cash_id"] = (
-                            self.ecosystem_defaults.strategy2_id
-                        )
+                        result_item["strategy2_cash_id"] = self.ecosystem_defaults.strategy2_id
                     else:
                         result_item["strategy2_cash_id"] = item["strategy2_cash_id"]
 
                     if "strategy3_cash_id" not in item:
-                        result_item["strategy3_cash_id"] = (
-                            self.ecosystem_defaults.strategy3_id
-                        )
+                        result_item["strategy3_cash_id"] = self.ecosystem_defaults.strategy3_id
                     else:
                         result_item["strategy3_cash_id"] = item["strategy3_cash_id"]
 
                     if "account_position_id" not in item:
-                        result_item["account_position_id"] = (
-                            self.ecosystem_defaults.account_id
-                        )
+                        result_item["account_position_id"] = self.ecosystem_defaults.account_id
                     else:
                         result_item["account_position_id"] = item["account_position_id"]
 
                     if "strategy1_position_id" not in item:
-                        result_item["strategy1_position_id"] = (
-                            self.ecosystem_defaults.strategy1_id
-                        )
+                        result_item["strategy1_position_id"] = self.ecosystem_defaults.strategy1_id
                     else:
-                        result_item["strategy1_position_id"] = item[
-                            "strategy1_position_id"
-                        ]
+                        result_item["strategy1_position_id"] = item["strategy1_position_id"]
 
                     if "strategy2_position_id" not in item:
-                        result_item["strategy2_position_id"] = (
-                            self.ecosystem_defaults.strategy2_id
-                        )
+                        result_item["strategy2_position_id"] = self.ecosystem_defaults.strategy2_id
                     else:
-                        result_item["strategy2_position_id"] = item[
-                            "strategy2_position_id"
-                        ]
+                        result_item["strategy2_position_id"] = item["strategy2_position_id"]
 
                     if "strategy3_position_id" not in item:
-                        result_item["strategy3_position_id"] = (
-                            self.ecosystem_defaults.strategy3_id
-                        )
+                        result_item["strategy3_position_id"] = self.ecosystem_defaults.strategy3_id
                     else:
-                        result_item["strategy3_position_id"] = item[
-                            "strategy3_position_id"
-                        ]
+                        result_item["strategy3_position_id"] = item["strategy3_position_id"]
 
                     if "allocation_pl_id" not in item:
                         result_item["allocation_pl_id"] = None
@@ -1071,9 +1003,7 @@ class PureBalanceReportBuilderSql:
                     result_item["fx_rate"] = item["fx_rate"]
 
                     # _l.debug('item %s' % item)
-                    result_item["position_size"] = round(
-                        item["position_size"], settings.ROUND_NDIGITS
-                    )
+                    result_item["position_size"] = round(item["position_size"], settings.ROUND_NDIGITS)
                     # _l.debug('item["nominal_position_size"] %s' % item["nominal_position_size"])
                     if item["nominal_position_size"] is not None:
                         result_item["nominal_position_size"] = round(
@@ -1085,9 +1015,9 @@ class PureBalanceReportBuilderSql:
                     if round(item["position_size"], settings.ROUND_NDIGITS):
                         updated_result.append(result_item)
 
-                _l.debug("build balance result %s " % len(result))
+                _l.debug("build balance result %s", len(result))
 
-                _l.debug("single build done: %s" % (time.perf_counter() - st))
+                _l.debug("single build done: %s", (time.perf_counter() - st))
 
                 return updated_result
 
@@ -1104,19 +1034,11 @@ class PureBalanceReportBuilderSql:
             type="calculate_balance_report",
             options_object={
                 "report_date": self.instance.report_date,
-                "portfolios_ids": [
-                    instance.id for instance in self.instance.portfolios
-                ],
+                "portfolios_ids": [instance.id for instance in self.instance.portfolios],
                 "accounts_ids": [instance.id for instance in self.instance.accounts],
-                "strategies1_ids": [
-                    instance.id for instance in self.instance.strategies1
-                ],
-                "strategies2_ids": [
-                    instance.id for instance in self.instance.strategies2
-                ],
-                "strategies3_ids": [
-                    instance.id for instance in self.instance.strategies3
-                ],
+                "strategies1_ids": [instance.id for instance in self.instance.strategies1],
+                "strategies2_ids": [instance.id for instance in self.instance.strategies2],
+                "strategies3_ids": [instance.id for instance in self.instance.strategies3],
                 "report_currency_id": self.instance.report_currency.id,
                 "pricing_policy_id": self.instance.pricing_policy.id,
                 "cost_method_id": self.instance.cost_method.id,
@@ -1135,4 +1057,4 @@ class PureBalanceReportBuilderSql:
         # 'all_dicts' is now a list of all dicts returned by the tasks
         self.instance.items = result
 
-        _l.debug("parallel_build done: %s", "{:3.3f}".format(time.perf_counter() - st))
+        _l.debug("parallel_build done: %s", f"{time.perf_counter() - st:3.3f}")

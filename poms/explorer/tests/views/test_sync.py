@@ -2,7 +2,6 @@ from django.test import override_settings
 
 from poms.common.common_base_test import BaseTestCase
 
-
 expected_response = {
     "status": "ok",
     "task_id": "1",

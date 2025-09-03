@@ -1,10 +1,8 @@
 from unittest import mock
 
-from django.conf import settings
-
 from poms.celery_tasks.models import CeleryTask
 from poms.common.common_base_test import BaseTestCase
-from poms.configuration.tests.common_test_data import *
+from poms.configuration.tests.common_test_data import *  # noqa: F403
 
 CONFIG_DATA = {
     "id": 1,
@@ -37,9 +35,7 @@ class ConfigurationViewSetTest(BaseTestCase):
         self.init_test_case()
         self.realm_code = "realm00000"
         self.space_code = "space00000"
-        self.url = (
-            f"/{self.realm_code}/{self.space_code}/api/v1/configuration/configuration/"
-        )
+        self.url = f"/{self.realm_code}/{self.space_code}/api/v1/configuration/configuration/"
 
     def test__list(self):
         response = self.client.get(path=self.url)
@@ -68,12 +64,12 @@ class ConfigurationViewSetTest(BaseTestCase):
 
     @mock.patch("poms.configuration.views.get_access_token")
     def test__install_configuration_from_marketplace(self, get_access_token):
-        get_access_token.return_value = TOKEN
+        get_access_token.return_value = TOKEN  # noqa: F405
 
         response = self.client.post(
             path=f"{self.url}install-configuration-from-marketplace/",
             format="json",
-            data=POST_PAYLOAD,
+            data=POST_PAYLOAD,  # noqa: F405
         )
         self.assertEqual(response.status_code, 200, response.content)
         get_access_token.assert_called_once()
@@ -86,4 +82,4 @@ class ConfigurationViewSetTest(BaseTestCase):
 
         self.assertEqual(task.type, "install_configuration_from_marketplace")
 
-        self.assertEqual(task.options_object, OPTIONS)
+        self.assertEqual(task.options_object, OPTIONS)  # noqa: F405

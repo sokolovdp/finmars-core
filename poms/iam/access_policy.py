@@ -1,14 +1,12 @@
 import importlib
 import logging
 from dataclasses import asdict, dataclass, field
-from typing import List, Union
 
 from django.conf import settings
-from django.db.models import prefetch_related_objects
-from rest_framework import permissions
 from django.contrib.contenttypes.models import ContentType
-
+from django.db.models import prefetch_related_objects
 from pyparsing import infixNotation, opAssoc
+from rest_framework import permissions
 
 from .exceptions import AccessPolicyException
 from .models import ResourceGroup
@@ -18,7 +16,7 @@ from .utils import action_statement_into_object
 _l = logging.getLogger("poms.iam")
 
 
-class AnonymousUser(object):
+class AnonymousUser:
     def __init__(self):
         self.pk = None
         self.is_anonymous = True
@@ -26,7 +24,7 @@ class AnonymousUser(object):
         self.is_superuser = False
 
 
-class AccessEnforcement(object):
+class AccessEnforcement:
     _action: str
     _allowed: bool
 
@@ -45,11 +43,11 @@ class AccessEnforcement(object):
 
 @dataclass
 class Statement:
-    principal: Union[List[str], str]
-    action: Union[List[str], str]
+    principal: list[str] | str
+    action: list[str] | str
     effect: str = "deny"  # allow, deny
-    condition: Union[List[str], str] = field(default_factory=list)
-    condition_expression: Union[List[str], str] = field(default_factory=list)
+    condition: list[str] | str = field(default_factory=list)
+    condition_expression: list[str] | str = field(default_factory=list)
 
     def __post_init__(self):
         if self.effect not in ("allow", "deny"):
@@ -59,7 +57,7 @@ class Statement:
 
 
 class AccessPolicy(permissions.BasePermission):
-    statements: List[Union[dict, Statement]] = []
+    statements: list[dict | Statement] = []
     field_permissions: dict = {}
     id = None
     group_prefix = "group:"
@@ -113,7 +111,7 @@ class AccessPolicy(permissions.BasePermission):
         allowed = self._evaluate_statements(statements, request, view, action, obj=None)
         request.access_enforcement = AccessEnforcement(action=action, allowed=allowed)
 
-        _l.info("has_specific_permission.allowed %s" % allowed)
+        _l.info("has_specific_permission.allowed %s", allowed)
 
         if not allowed:
             request.permission_error_message = (
@@ -121,14 +119,14 @@ class AccessPolicy(permissions.BasePermission):
                 f"{action} on resource: {viewset_name} because no access policy allows the '{action}' action."
             )
 
-            _l.info("permission_error_message %s" % request.permission_error_message)
+            _l.info("permission_error_message %s", request.permission_error_message)
 
         return allowed
 
-    def get_policy_statements(self, request, view) -> List[Union[dict, Statement]]:
+    def get_policy_statements(self, request, view) -> list[dict | Statement]:
         return self.statements
 
-    def get_user_group_values(self, user) -> List[str]:
+    def get_user_group_values(self, user) -> list[str]:
         if user.is_anonymous:
             return []
 
@@ -160,7 +158,7 @@ class AccessPolicy(permissions.BasePermission):
 
     def _evaluate_statements(
         self,
-        statements: List[Union[dict, Statement]],
+        statements: list[dict | Statement],
         request,
         view,
         action: str,
@@ -180,9 +178,7 @@ class AccessPolicy(permissions.BasePermission):
         )
 
         if obj is not None:
-            matched = self._get_statements_matching_resource(
-                request, view, action=action, statements=matched, obj=obj
-            )
+            matched = self._get_statements_matching_resource(request, view, action=action, statements=matched, obj=obj)
 
         denied = [_ for _ in matched if _["effect"].lower() != "allow"]
 
@@ -190,19 +186,14 @@ class AccessPolicy(permissions.BasePermission):
         #  if one deny cancels all access"
         _l.debug(f"len(matched) {len(matched)}  len(denied) {len(denied)}")
 
-        if len(matched) == 0 or len(denied) > 0:
-            return False
+        return not (len(matched) == 0 or len(denied) > 0)
 
-        return True
-
-    def _normalize_statements(
-        self, statements: List[Union[dict, Statement]]
-    ) -> List[dict]:
+    def _normalize_statements(self, statements: list[dict | Statement]) -> list[dict]:
         normalized = []
 
         for statement in statements:
             if isinstance(statement, Statement):
-                statement = asdict(statement)
+                statement = asdict(statement)  # noqa: PLW2901
 
             # _l.debug(f"_normalize_statements.statement {statement} ")
 
@@ -227,9 +218,7 @@ class AccessPolicy(permissions.BasePermission):
         return normalized
 
     @classmethod
-    def _get_statements_matching_principal(
-        cls, request, statements: List[dict]
-    ) -> List[dict]:
+    def _get_statements_matching_principal(cls, request, statements: list[dict]) -> list[dict]:
         user = request.user or AnonymousUser()
         user_roles = None
         matched = []
@@ -238,17 +227,18 @@ class AccessPolicy(permissions.BasePermission):
             principals = statement["principal"]
             found = False
 
-            if "*" in principals:
-                found = True
-            elif "admin" in principals and user.is_superuser:
-                found = True
-            elif "staff" in principals and user.is_staff:
-                found = True
-            elif "authenticated" in principals and not user.is_anonymous:
-                found = True
-            elif "anonymous" in principals and user.is_anonymous:
-                found = True
-            elif cls.id_prefix + str(user.pk) in principals:
+            if (
+                "*" in principals
+                or "admin" in principals
+                and user.is_superuser
+                or "staff" in principals
+                and user.is_staff
+                or "authenticated" in principals
+                and not user.is_anonymous
+                or "anonymous" in principals
+                and user.is_anonymous
+                or cls.id_prefix + str(user.pk) in principals
+            ):
                 found = True
             else:
                 if not user_roles:
@@ -264,9 +254,7 @@ class AccessPolicy(permissions.BasePermission):
 
         return matched
 
-    def _get_statements_matching_action(
-        self, request, view, action: str, statements: List[dict]
-    ):
+    def _get_statements_matching_action(self, request, view, action: str, statements: list[dict]):
         """
         Filter statements and return only those that match the specified
         action.
@@ -277,10 +265,7 @@ class AccessPolicy(permissions.BasePermission):
 
         viewset_name = view.__class__.__name__.replace("ViewSet", "")
 
-        _l.debug(
-            f"_get_statements_matching_action.action {action} "
-            f"name {viewset_name.lower()}"
-        )
+        _l.debug(f"_get_statements_matching_action.action {action} name {viewset_name.lower()}")
         # _l.info('_get_statements_matching_action.view %s' % view.__dict__)
         # _l.info('_get_statements_matching_action.self %s' % self)
         # _l.info('_get_statements_matching_action.request %s' % request)
@@ -292,7 +277,8 @@ class AccessPolicy(permissions.BasePermission):
 
                 if settings.SERVICE_NAME in action_object["service"]:
                     """
-                    TODO IAM_SECURITY_VERIFY here is good place, it would work as intended because we have access to view
+                    TODO IAM_SECURITY_VERIFY here is good place, it would work as intended because 
+                    we have access to view
                     but in Field filter we do not have access to view so we compare with model.name
                     maybe its a problem, see  utils.py#get_allowed_resources
 
@@ -302,12 +288,8 @@ class AccessPolicy(permissions.BasePermission):
                         if (
                             action in action_object["action"]
                             or "*" in action_object["action"]
-                        ):
-                            matched.append(statement)
-                        elif http_method in action_object["action"]:
-                            matched.append(statement)
-                        elif (
-                            "<safe_methods>" in action_object["action"]
+                            or http_method in action_object["action"]
+                            or "<safe_methods>" in action_object["action"]
                             and request.method in SAFE_METHODS
                         ):
                             matched.append(statement)
@@ -316,9 +298,7 @@ class AccessPolicy(permissions.BasePermission):
 
         return matched
 
-    def _get_statements_matching_resource(
-        self, request, view, action: str, statements: List[dict], obj
-    ) -> List[dict]:
+    def _get_statements_matching_resource(self, request, view, action: str, statements: list[dict], obj) -> list[dict]:
         """
         Filters statements to find those that match the resource defined in each statement.
         If the resource is "*", it grants access to all objects.
@@ -328,11 +308,7 @@ class AccessPolicy(permissions.BasePermission):
         matched_statements = []
 
         # Determine the content type of the object (e.g., "portfolios:portfolio")
-        content_type = (
-            ContentType.objects.get_for_model(obj).app_label
-            + ":"
-            + obj.__class__.__name__.lower()
-        )
+        content_type = ContentType.objects.get_for_model(obj).app_label + ":" + obj.__class__.__name__.lower()
 
         # Construct the unique resource identifier for the object
         object_resource_identifier = f"frn:finmars:{content_type}:{obj.user_code}"
@@ -341,9 +317,7 @@ class AccessPolicy(permissions.BasePermission):
             resources = statement.get("Resource", [])
 
             # Check if the resource list contains a `ResourceGroup`, and if so, expand it
-            expanded_resources = set(
-                resources
-            )  # Start with a copy of original resources
+            expanded_resources = set(resources)  # Start with a copy of original resources
 
             for resource in resources:
                 if resource.startswith("frn:finmars:iam:resourcegroup:"):
@@ -352,9 +326,7 @@ class AccessPolicy(permissions.BasePermission):
 
                     try:
                         # Fetch the ResourceGroup and its assignments
-                        resource_group = ResourceGroup.objects.get(
-                            user_code=resource_group_code
-                        )
+                        resource_group = ResourceGroup.objects.get(user_code=resource_group_code)
                         assignments = resource_group.assignments.all()
 
                         # Add each assigned object's user_code to the expanded resources list
@@ -365,9 +337,7 @@ class AccessPolicy(permissions.BasePermission):
                         )
 
                     except ResourceGroup.DoesNotExist:
-                        _l.warning(
-                            f"ResourceGroup with user_code {resource_group_code} does not exist."
-                        )
+                        _l.warning(f"ResourceGroup with user_code {resource_group_code} does not exist.")
                         continue
 
             # Allow all if the original or expanded resource list contains "*"
@@ -382,7 +352,7 @@ class AccessPolicy(permissions.BasePermission):
         return matched_statements
 
     def _get_statements_matching_conditions(
-        self, request, view, *, action: str, statements: List[dict], is_expression: bool
+        self, request, view, *, action: str, statements: list[dict], is_expression: bool
     ):
         """
         Filter statements and only return those that match all of their
@@ -405,13 +375,9 @@ class AccessPolicy(permissions.BasePermission):
 
             for condition in conditions:
                 if is_expression:
-                    check_cond_fn = lambda cond: self._check_condition(
-                        cond, request, view, action
-                    )
+                    check_cond_fn = lambda cond: self._check_condition(cond, request, view, action)  # noqa: E731
 
-                    boolOperand.setParseAction(
-                        lambda token: ConditionOperand(token, check_cond_fn)
-                    )
+                    boolOperand.setParseAction(lambda token: ConditionOperand(token, check_cond_fn))  # noqa: B023
 
                     boolExpr = infixNotation(
                         boolOperand,
@@ -453,9 +419,7 @@ class AccessPolicy(permissions.BasePermission):
             result = method(request, view, action)
 
         if type(result) is not bool:
-            raise AccessPolicyException(
-                f"condition '{condition}' must return true/false, not {type(result)}"
-            )
+            raise AccessPolicyException(f"condition '{condition}' must return true/false, not {type(result)}")
 
         return result
 
@@ -467,14 +431,10 @@ class AccessPolicy(permissions.BasePermission):
             module_paths = settings.DRF_ACCESS_POLICY.get("reusable_conditions")
 
             if module_paths:
-                if not isinstance(module_paths, (str, list, tuple)):
-                    raise ValueError(
-                        "Define 'resusable_conditions' as list, tuple or str"
-                    )
+                if not isinstance(module_paths, str | list | tuple):
+                    raise ValueError("Define 'resusable_conditions' as list, tuple or str")
 
-                module_paths = (
-                    [module_paths] if isinstance(module_paths, str) else module_paths
-                )
+                module_paths = [module_paths] if isinstance(module_paths, str) else module_paths
 
                 for module_path in module_paths:
                     module = importlib.import_module(module_path)

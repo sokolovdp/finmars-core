@@ -17,9 +17,7 @@ class ReportsConfig(AppConfig):
     def ready(self):
         post_migrate.connect(self.create_views_for_sql_reports, sender=self)
 
-    def create_views_for_sql_reports(
-        self, app_config, verbosity=2, using=DEFAULT_DB_ALIAS, **kwargs
-    ):
+    def create_views_for_sql_reports(self, app_config, verbosity=2, using=DEFAULT_DB_ALIAS, **kwargs):
         _l.debug("Creating views for SQL reports")
 
         if settings.DROP_VIEWS:

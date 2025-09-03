@@ -1,6 +1,5 @@
 from poms.common.common_base_test import BaseTestCase
-
-from poms.transactions.utils import generate_user_fields, MAX_TEXT, MAX_DATE, MAX_NUMBER
+from poms.transactions.utils import MAX_DATE, MAX_NUMBER, MAX_TEXT, generate_user_fields
 
 
 class TestUtils(BaseTestCase):

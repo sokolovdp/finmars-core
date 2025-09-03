@@ -1,4 +1,5 @@
 from django.core.cache import cache
+
 from poms.common.common_base_test import BaseTestCase
 from poms.users.models import EcosystemDefault, MasterUser
 
@@ -12,9 +13,7 @@ class EcosystemDefaultCacheTest(BaseTestCase):
         cache.clear()
 
     def get_ed_from_cache(self):
-        cache_key = EcosystemDefault.cache.get_cache_key(
-            master_user_pk=self.ed.master_user.pk
-        )
+        cache_key = EcosystemDefault.cache.get_cache_key(master_user_pk=self.ed.master_user.pk)
         return cache.get(cache_key)
 
     def check_ed_is_not_in_cache(self):
@@ -37,9 +36,7 @@ class EcosystemDefaultCacheTest(BaseTestCase):
     def test__get_cache_with_updating_cache(self):
         self.check_ed_is_not_in_cache()
 
-        ed_cheched = EcosystemDefault.cache.get_cache(
-            master_user_pk=self.ed.master_user.pk
-        )
+        ed_cheched = EcosystemDefault.cache.get_cache(master_user_pk=self.ed.master_user.pk)
         self.assertIsNotNone(ed_cheched)
 
         ed_cheched = self.get_ed_from_cache()
@@ -52,9 +49,7 @@ class EcosystemDefaultCacheTest(BaseTestCase):
         EcosystemDefault.cache.set_cache(self.ed)
         self.check_ed_is_in_cache()
 
-        ed_cheched = ed_cheched = EcosystemDefault.cache.get_cache(
-            master_user_pk=self.ed.master_user.pk
-        )
+        ed_cheched = EcosystemDefault.cache.get_cache(master_user_pk=self.ed.master_user.pk)
         self.assertIsNotNone(ed_cheched)
         self.assertEqual(self.ed, ed_cheched)
 

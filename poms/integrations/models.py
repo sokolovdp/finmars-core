@@ -10,10 +10,9 @@ from django.utils.translation import gettext_lazy
 from poms.common.models import (
     EXPRESSION_FIELD_LENGTH,
     AbstractClassModel,
-    TimeStampedModel,
+    FakeDeletableModel,
     NamedModel,
     TimeStampedModel,
-    FakeDeletableModel,
 )
 from poms.common.storage import get_storage
 from poms.configuration.models import ConfigurationModel
@@ -58,17 +57,13 @@ class AccrualScheduleDownloadMethod(AbstractClassModel):
 
 
 def import_cert_upload_to(instance, filename):
-    return "%s/%s-%s" % (
-        instance.master_user_id,
-        instance.provider_id,
-        uuid.uuid4().hex,
-    )
+    return f"{instance.master_user_id}/{instance.provider_id}-{uuid.uuid4().hex}"
 
 
 def bloomberg_cert_upload_to(instance, filename):
     hex = uuid.uuid4().hex[:6]
 
-    return "%s/data_providers/bloomberg/cert_%s.p12" % (instance.master_user.token, hex)
+    return f"{instance.master_user.token}/data_providers/bloomberg/cert_{hex}.p12"
 
 
 class BloombergDataProviderCredential(TimeStampedModel):
@@ -94,17 +89,15 @@ class BloombergDataProviderCredential(TimeStampedModel):
     )
 
     def save(self, *args, **kwargs):
-        qs = BloombergDataProviderCredential.objects.filter(
-            master_user=self.master_user
-        )
+        qs = BloombergDataProviderCredential.objects.filter(master_user=self.master_user)
 
-        _l.debug("self.master_user.pk %s " % self.master_user.pk)
-        _l.debug("qs len %s" % len(qs))
+        _l.debug("self.master_user.pk %s ", self.master_user.pk)
+        _l.debug("qs len %s", len(qs))
         if self.pk:
             qs = qs.exclude(pk=self.pk)
             qs.delete()
 
-        _l.debug("qs len after %s" % len(qs))
+        _l.debug("qs len after %s", len(qs))
 
         super().save(*args, **kwargs)
 
@@ -129,8 +122,8 @@ class BloombergDataProviderCredential(TimeStampedModel):
                     file_data = f.read()
 
                     return get_certs(file_data, self.password, is_base64=False)
-            except FileNotFoundError:
-                raise ValueError(gettext_lazy("Can't read cert file"))
+            except FileNotFoundError as e:
+                raise ValueError(gettext_lazy("Can't read cert file")) from e
         return None, None
 
 
@@ -178,7 +171,7 @@ class ImportConfig(models.Model):
         unique_together = [["master_user", "provider"]]
 
     def __str__(self):
-        return "%s" % self.provider.name
+        return str(self.provider.name)
 
     @property
     def pair(self):
@@ -189,8 +182,8 @@ class ImportConfig(models.Model):
                 from poms.integrations.providers.bloomberg import get_certs
 
                 return get_certs(self.p12cert.read(), self.password, is_base64=False)
-            except FileNotFoundError:
-                raise ValueError(gettext_lazy("Can't read cert file"))
+            except FileNotFoundError as e:
+                raise ValueError(gettext_lazy("Can't read cert file")) from e
         return None, None
 
     @property
@@ -211,9 +204,7 @@ class ImportConfig(models.Model):
 
     @property
     def is_ready(self):
-        return (self.has_p12cert and self.has_password) or (
-            self.has_cert and self.has_key
-        )
+        return (self.has_p12cert and self.has_password) or (self.has_cert and self.has_key)
 
 
 class InstrumentDownloadScheme(NamedModel, TimeStampedModel, ConfigurationModel):
@@ -259,9 +250,7 @@ class InstrumentDownloadScheme(NamedModel, TimeStampedModel, ConfigurationModel)
         verbose_name=gettext_lazy("master user"),
         on_delete=models.CASCADE,
     )
-    provider = models.ForeignKey(
-        ProviderClass, verbose_name=gettext_lazy("provider"), on_delete=models.PROTECT
-    )
+    provider = models.ForeignKey(ProviderClass, verbose_name=gettext_lazy("provider"), on_delete=models.PROTECT)
     reference_for_pricing = models.CharField(
         max_length=255,
         blank=True,
@@ -442,12 +431,10 @@ class InstrumentDownloadSchemeInput(models.Model):
     def __str__(self):
         return self.name
 
-    def save(
-        self, force_insert=False, force_update=False, using=None, update_fields=None
-    ):
+    def save(self, force_insert=False, force_update=False, using=None, update_fields=None):
         if not self.field:
             self.field = self.name
-        return super(InstrumentDownloadSchemeInput, self).save(
+        return super().save(
             force_insert=force_insert,
             force_update=force_update,
             using=using,
@@ -484,7 +471,7 @@ class InstrumentDownloadSchemeAttribute(models.Model):
 
     def __str__(self):
         # return '%s -> %s' % (self.name, self.attribute_type)
-        return "%s" % (self.attribute_type,)
+        return str(self.attribute_type)
 
 
 # DEPRECATED
@@ -634,15 +621,11 @@ class PriceDownloadScheme(models.Model):
 
     @property
     def instrument_yesterday_fields(self):
-        return self._get_fields(
-            "bid0", "bid1", "bid2", "ask0", "ask1", "ask2", "last", "mid"
-        )
+        return self._get_fields("bid0", "bid1", "bid2", "ask0", "ask1", "ask2", "last", "mid")
 
     @property
     def instrument_history_fields(self):
-        return self._get_fields(
-            "bid_history", "ask_history", "mid_history", "last_history"
-        )
+        return self._get_fields("bid_history", "ask_history", "mid_history", "last_history")
 
     @property
     def currency_history_fields(self):
@@ -675,12 +658,8 @@ class MappingTableKeyValue(models.Model):
         related_name="items",
     )
 
-    key = models.CharField(
-        max_length=1024, blank=True, default="", verbose_name=gettext_lazy("key")
-    )
-    value = models.CharField(
-        max_length=1024, blank=True, default="", verbose_name=gettext_lazy("value")
-    )
+    key = models.CharField(max_length=1024, blank=True, default="", verbose_name=gettext_lazy("key"))
+    value = models.CharField(max_length=1024, blank=True, default="", verbose_name=gettext_lazy("value"))
 
     class Meta:
         verbose_name = gettext_lazy("mapping table key value")
@@ -698,19 +677,15 @@ class AbstractMapping(models.Model):
         verbose_name=gettext_lazy("master user"),
         on_delete=models.CASCADE,
     )
-    provider = models.ForeignKey(
-        ProviderClass, verbose_name=gettext_lazy("provider"), on_delete=models.CASCADE
-    )
-    value = models.CharField(
-        max_length=255, blank=True, default="", verbose_name=gettext_lazy("value")
-    )
+    provider = models.ForeignKey(ProviderClass, verbose_name=gettext_lazy("provider"), on_delete=models.CASCADE)
+    value = models.CharField(max_length=255, blank=True, default="", verbose_name=gettext_lazy("value"))
 
     class Meta:
         abstract = True
         ordering = ["value"]
 
     def __str__(self):
-        return "%s / %s -> %s" % (self.provider, self.value, self.content_object)
+        return f"{self.provider} / {self.value} -> {self.content_object}"
 
 
 class CurrencyMapping(AbstractMapping):
@@ -728,7 +703,7 @@ class CurrencyMapping(AbstractMapping):
         ]
 
     def __str__(self):
-        return "%s / %s -> %s" % (self.provider, self.value, self.content_object)
+        return f"{self.provider} / {self.value} -> {self.content_object}"
 
 
 class PricingPolicyMapping(AbstractMapping):
@@ -746,7 +721,7 @@ class PricingPolicyMapping(AbstractMapping):
         ]
 
     def __str__(self):
-        return "%s / %s -> %s" % (self.provider, self.value, self.content_object)
+        return f"{self.provider} / {self.value} -> {self.content_object}"
 
 
 class InstrumentTypeMapping(AbstractMapping):
@@ -764,7 +739,7 @@ class InstrumentTypeMapping(AbstractMapping):
         ]
 
     def __str__(self):
-        return "%s / %s -> %s" % (self.provider, self.value, self.content_object)
+        return f"{self.provider} / {self.value} -> {self.content_object}"
 
 
 class AccountTypeMapping(AbstractMapping):
@@ -782,7 +757,7 @@ class AccountTypeMapping(AbstractMapping):
         ]
 
     def __str__(self):
-        return "%s / %s -> %s" % (self.provider, self.value, self.content_object)
+        return f"{self.provider} / {self.value} -> {self.content_object}"
 
 
 class InstrumentAttributeValueMapping(AbstractMapping):
@@ -822,12 +797,7 @@ class InstrumentAttributeValueMapping(AbstractMapping):
 
     def __str__(self):
         value = self.content_object.get_value(self)
-        return "%s / %s -> %s / %s" % (
-            self.provider,
-            self.value,
-            self.content_object,
-            value,
-        )
+        return f"{self.provider} / {self.value} -> {self.content_object} / {value}"
 
 
 class AccrualCalculationModelMapping(AbstractMapping):
@@ -845,7 +815,7 @@ class AccrualCalculationModelMapping(AbstractMapping):
         ]
 
     def __str__(self):
-        return "%s / %s -> %s" % (self.provider, self.value, self.content_object)
+        return f"{self.provider} / {self.value} -> {self.content_object}"
 
 
 class PeriodicityMapping(AbstractMapping):
@@ -863,7 +833,7 @@ class PeriodicityMapping(AbstractMapping):
         ]
 
     def __str__(self):
-        return "%s / %s -> %s" % (self.provider, self.value, self.content_object)
+        return f"{self.provider} / {self.value} -> {self.content_object}"
 
 
 class AccountMapping(AbstractMapping):
@@ -881,7 +851,7 @@ class AccountMapping(AbstractMapping):
         ]
 
     def __str__(self):
-        return "%s / %s -> %s" % (self.provider, self.value, self.content_object)
+        return f"{self.provider} / {self.value} -> {self.content_object}"
 
 
 class AccountClassifierMapping(AbstractMapping):
@@ -902,7 +872,7 @@ class AccountClassifierMapping(AbstractMapping):
         ]
 
     def __str__(self):
-        return "%s / %s -> %s" % (self.provider, self.value, self.content_object)
+        return f"{self.provider} / {self.value} -> {self.content_object}"
 
 
 class InstrumentMapping(AbstractMapping):
@@ -920,7 +890,7 @@ class InstrumentMapping(AbstractMapping):
         ]
 
     def __str__(self):
-        return "%s / %s -> %s" % (self.provider, self.value, self.content_object)
+        return f"{self.provider} / {self.value} -> {self.content_object}"
 
 
 class InstrumentClassifierMapping(AbstractMapping):
@@ -941,7 +911,7 @@ class InstrumentClassifierMapping(AbstractMapping):
         ]
 
     def __str__(self):
-        return "%s / %s -> %s" % (self.provider, self.value, self.content_object)
+        return f"{self.provider} / {self.value} -> {self.content_object}"
 
 
 class CounterpartyMapping(AbstractMapping):
@@ -959,7 +929,7 @@ class CounterpartyMapping(AbstractMapping):
         ]
 
     def __str__(self):
-        return "%s / %s -> %s" % (self.provider, self.value, self.content_object)
+        return f"{self.provider} / {self.value} -> {self.content_object}"
 
 
 class CounterpartyClassifierMapping(AbstractMapping):
@@ -980,7 +950,7 @@ class CounterpartyClassifierMapping(AbstractMapping):
         ]
 
     def __str__(self):
-        return "%s / %s -> %s" % (self.provider, self.value, self.content_object)
+        return f"{self.provider} / {self.value} -> {self.content_object}"
 
 
 class ResponsibleMapping(AbstractMapping):
@@ -998,7 +968,7 @@ class ResponsibleMapping(AbstractMapping):
         ]
 
     def __str__(self):
-        return "%s / %s -> %s" % (self.provider, self.value, self.content_object)
+        return f"{self.provider} / {self.value} -> {self.content_object}"
 
 
 class ResponsibleClassifierMapping(AbstractMapping):
@@ -1013,7 +983,7 @@ class ResponsibleClassifierMapping(AbstractMapping):
         ]
 
     def __str__(self):
-        return "%s / %s -> %s" % (self.provider, self.value, self.content_object)
+        return f"{self.provider} / {self.value} -> {self.content_object}"
 
 
 class PortfolioMapping(AbstractMapping):
@@ -1031,7 +1001,7 @@ class PortfolioMapping(AbstractMapping):
         ]
 
     def __str__(self):
-        return "%s / %s -> %s" % (self.provider, self.value, self.content_object)
+        return f"{self.provider} / {self.value} -> {self.content_object}"
 
 
 class PortfolioClassifierMapping(AbstractMapping):
@@ -1046,7 +1016,7 @@ class PortfolioClassifierMapping(AbstractMapping):
         ]
 
     def __str__(self):
-        return "%s / %s -> %s" % (self.provider, self.value, self.content_object)
+        return f"{self.provider} / {self.value} -> {self.content_object}"
 
 
 class Strategy1Mapping(AbstractMapping):
@@ -1064,7 +1034,7 @@ class Strategy1Mapping(AbstractMapping):
         ]
 
     def __str__(self):
-        return "%s / %s -> %s" % (self.provider, self.value, self.content_object)
+        return f"{self.provider} / {self.value} -> {self.content_object}"
 
 
 class Strategy2Mapping(AbstractMapping):
@@ -1082,7 +1052,7 @@ class Strategy2Mapping(AbstractMapping):
         ]
 
     def __str__(self):
-        return "%s / %s -> %s" % (self.provider, self.value, self.content_object)
+        return f"{self.provider} / {self.value} -> {self.content_object}"
 
 
 class Strategy3Mapping(AbstractMapping):
@@ -1100,7 +1070,7 @@ class Strategy3Mapping(AbstractMapping):
         ]
 
     def __str__(self):
-        return "%s / %s -> %s" % (self.provider, self.value, self.content_object)
+        return f"{self.provider} / {self.value} -> {self.content_object}"
 
 
 class DailyPricingModelMapping(AbstractMapping):
@@ -1118,7 +1088,7 @@ class DailyPricingModelMapping(AbstractMapping):
         ]
 
     def __str__(self):
-        return "%s / %s -> %s" % (self.provider, self.value, self.content_object)
+        return f"{self.provider} / {self.value} -> {self.content_object}"
 
 
 class PaymentSizeDetailMapping(AbstractMapping):
@@ -1136,7 +1106,7 @@ class PaymentSizeDetailMapping(AbstractMapping):
         ]
 
     def __str__(self):
-        return "%s / %s -> %s" % (self.provider, self.value, self.content_object)
+        return f"{self.provider} / {self.value} -> {self.content_object}"
 
 
 class PriceDownloadSchemeMapping(AbstractMapping):
@@ -1154,7 +1124,7 @@ class PriceDownloadSchemeMapping(AbstractMapping):
         ]
 
     def __str__(self):
-        return "%s / %s -> %s" % (self.provider, self.value, self.content_object)
+        return f"{self.provider} / {self.value} -> {self.content_object}"
 
 
 class PricingConditionMapping(AbstractMapping):
@@ -1197,9 +1167,7 @@ MISSING_DATA_CHOICES = [
 COLUMN_MATCHER_CHOICES = [["index", "Index"], ["name", "Name"]]
 
 
-class ComplexTransactionImportScheme(
-    NamedModel, TimeStampedModel, ConfigurationModel, FakeDeletableModel
-):
+class ComplexTransactionImportScheme(NamedModel, TimeStampedModel, ConfigurationModel, FakeDeletableModel):
     SKIP = 1
     BOOK_WITHOUT_UNIQUE_CODE = 2
     OVERWRITE = 3
@@ -1264,9 +1232,7 @@ class ComplexTransactionImportScheme(
         blank=True,
         null=True,
     )
-    column_matcher = models.CharField(
-        max_length=255, choices=COLUMN_MATCHER_CHOICES, default="index"
-    )
+    column_matcher = models.CharField(max_length=255, choices=COLUMN_MATCHER_CHOICES, default="index")
     filter_expression = models.CharField(
         max_length=255,
         null=True,
@@ -1289,17 +1255,13 @@ class ComplexTransactionImportScheme(
     @property
     def recon_layout(self):
         try:
-            return (
-                json.loads(self.recon_layout_json) if self.recon_layout_json else None
-            )
+            return json.loads(self.recon_layout_json) if self.recon_layout_json else None
         except (ValueError, TypeError):
             return None
 
     @recon_layout.setter
     def recon_layout(self, data):
-        self.recon_layout_json = (
-            json.dumps(data, cls=DjangoJSONEncoder, sort_keys=True) if data else None
-        )
+        self.recon_layout_json = json.dumps(data, cls=DjangoJSONEncoder, sort_keys=True) if data else None
 
     class Meta:
         verbose_name = gettext_lazy("complex transaction import scheme")
@@ -1358,12 +1320,8 @@ class ComplexTransactionImportSchemeCalculatedInput(models.Model):
     )
 
     class Meta:
-        verbose_name = gettext_lazy(
-            "complex transaction import scheme calculated input"
-        )
-        verbose_name_plural = gettext_lazy(
-            "complex transaction import scheme calculated inputs"
-        )
+        verbose_name = gettext_lazy("complex transaction import scheme calculated input")
+        verbose_name_plural = gettext_lazy("complex transaction import scheme calculated inputs")
         order_with_respect_to = "scheme"
 
     def __str__(self):
@@ -1401,9 +1359,7 @@ class ComplexTransactionImportSchemeRuleScenario(models.Model):
     is_default_rule_scenario = models.BooleanField(
         default=False, verbose_name=gettext_lazy("is default rule scenario")
     )
-    is_error_rule_scenario = models.BooleanField(
-        default=False, verbose_name=gettext_lazy("is error rule scenario")
-    )
+    is_error_rule_scenario = models.BooleanField(default=False, verbose_name=gettext_lazy("is error rule scenario"))
 
     scheme = models.ForeignKey(
         ComplexTransactionImportScheme,
@@ -1437,9 +1393,7 @@ class ComplexTransactionImportSchemeRuleScenario(models.Model):
 
     class Meta:
         verbose_name = gettext_lazy("complex transaction import scheme rule scenario")
-        verbose_name_plural = gettext_lazy(
-            "complex transaction import scheme rules scenarios"
-        )
+        verbose_name_plural = gettext_lazy("complex transaction import scheme rules scenarios")
         # ordering = ['order']
         order_with_respect_to = "scheme"
 
@@ -1475,10 +1429,7 @@ class ComplexTransactionImportSchemeField(models.Model):
         verbose_name_plural = gettext_lazy("complex transaction import scheme fields")
 
     def __str__(self):
-        return "%s - %s" % (
-            self.rule_scenario,
-            self.transaction_type_input,
-        )
+        return f"{self.rule_scenario} - {self.transaction_type_input}"
 
 
 class ComplexTransactionImportSchemeReconScenario(models.Model):
@@ -1511,9 +1462,7 @@ class ComplexTransactionImportSchemeReconScenario(models.Model):
 
     class Meta:
         verbose_name = gettext_lazy("complex transaction import scheme recon scenario")
-        verbose_name_plural = gettext_lazy(
-            "complex transaction import scheme recon scenarios"
-        )
+        verbose_name_plural = gettext_lazy("complex transaction import scheme recon scenarios")
 
     def __str__(self):
         if self.name:
@@ -1532,9 +1481,7 @@ class ComplexTransactionImportSchemeReconField(models.Model):
         max_length=255,
         verbose_name=gettext_lazy("reference name "),
     )
-    description = models.TextField(
-        null=True, blank=True, verbose_name=gettext_lazy("description")
-    )
+    description = models.TextField(null=True, blank=True, verbose_name=gettext_lazy("description"))
     value_string = models.CharField(
         max_length=EXPRESSION_FIELD_LENGTH,
         verbose_name=gettext_lazy("value string"),
@@ -1578,9 +1525,7 @@ class TransactionFileResult(TimeStampedModel):
         verbose_name=gettext_lazy("master user"),
         on_delete=models.CASCADE,
     )
-    provider = models.ForeignKey(
-        DataProvider, verbose_name=gettext_lazy("provider"), on_delete=models.CASCADE
-    )
+    provider = models.ForeignKey(DataProvider, verbose_name=gettext_lazy("provider"), on_delete=models.CASCADE)
     scheme_user_code = models.CharField(max_length=255)
     file_path = models.TextField(
         blank=True,

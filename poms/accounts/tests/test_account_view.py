@@ -1,11 +1,10 @@
 from copy import deepcopy
 
-from django.conf import settings
-
-from poms.iam.models import ResourceGroup
 from poms.accounts.models import AccountType
 from poms.common.common_base_test import BaseTestCase
+from poms.iam.models import ResourceGroup
 from poms.users.models import Member
+
 # from poms.accounts.tests.common_procs import print_users_and_members
 
 
@@ -170,9 +169,7 @@ class AccountViewSetTest(BaseTestCase):
         new_name = "new_name"
         update_data = deepcopy(create_data)
         update_data["name"] = new_name
-        response = self.client.put(
-            path=f"{self.url}{account_id}/", format="json", data=update_data
-        )
+        response = self.client.put(path=f"{self.url}{account_id}/", format="json", data=update_data)
         self.assertEqual(response.status_code, 200, response.content)
 
         response = self.client.get(path=f"{self.url}?name={new_name}")
@@ -189,9 +186,7 @@ class AccountViewSetTest(BaseTestCase):
 
         new_name = "new_name"
         update_data = {"name": new_name}
-        response = self.client.patch(
-            path=f"{self.url}{account_id}/", format="json", data=update_data
-        )
+        response = self.client.patch(path=f"{self.url}{account_id}/", format="json", data=update_data)
         self.assertEqual(response.status_code, 200, response.content)
 
         response = self.client.get(path=f"{self.url}?name={new_name}")
@@ -209,9 +204,7 @@ class AccountViewSetTest(BaseTestCase):
         response = self.client.delete(path=f"{self.url}{account_id}/")
         self.assertEqual(response.status_code, 204, response.content)
 
-        response = self.client.get(
-            path=f"{self.url}?user_code={create_data['user_code']}"
-        )
+        response = self.client.get(path=f"{self.url}?user_code={create_data['user_code']}")
         response_json = response.json()
         self.assertEqual(response_json["count"], 0)
 
@@ -225,9 +218,7 @@ class AccountViewSetTest(BaseTestCase):
         )
 
     def test_add_resource_group(self):
-        response = self.client.post(
-            path=self.url, format="json", data=self.prepare_data_for_create()
-        )
+        response = self.client.post(path=self.url, format="json", data=self.prepare_data_for_create())
         self.assertEqual(response.status_code, 201, response.content)
         account_id = response.json()["id"]
 
@@ -250,9 +241,7 @@ class AccountViewSetTest(BaseTestCase):
         self.assertNotIn("assignments", resource_group)
 
     def test_update_resource_groups(self):
-        response = self.client.post(
-            path=self.url, format="json", data=self.prepare_data_for_create()
-        )
+        response = self.client.post(path=self.url, format="json", data=self.prepare_data_for_create())
         self.assertEqual(response.status_code, 201, response.content)
         account_id = response.json()["id"]
 
@@ -286,9 +275,7 @@ class AccountViewSetTest(BaseTestCase):
         self.assertEqual(len(account_data["resource_groups_object"]), 1)
 
     def test_remove_resource_groups(self):
-        response = self.client.post(
-            path=self.url, format="json", data=self.prepare_data_for_create()
-        )
+        response = self.client.post(path=self.url, format="json", data=self.prepare_data_for_create())
         self.assertEqual(response.status_code, 201, response.content)
         account_id = response.json()["id"]
 
@@ -323,9 +310,7 @@ class AccountViewSetTest(BaseTestCase):
         self.assertEqual(account_data["resource_groups_object"], [])
 
     def test_destroy_assignments(self):
-        response = self.client.post(
-            path=self.url, format="json", data=self.prepare_data_for_create()
-        )
+        response = self.client.post(path=self.url, format="json", data=self.prepare_data_for_create())
         self.assertEqual(response.status_code, 201, response.content)
         account_id = response.json()["id"]
 

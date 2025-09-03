@@ -1,15 +1,15 @@
 from rest_framework import serializers
-from django.core.validators import RegexValidator
+
+from poms.clients.models import Client, ClientSecret
 from poms.common.fields import UserCodeField
 from poms.common.serializers import (
-    ModelWithUserCodeSerializer,
     ModelMetaSerializer,
     ModelOwnerSerializer,
+    ModelWithUserCodeSerializer,
 )
-from poms.clients.models import Client, ClientSecret
 from poms.portfolios.models import Portfolio
-from poms.users.fields import MasterUserField
 from poms.system_messages.handlers import send_system_message
+from poms.users.fields import MasterUserField
 from poms.users.utils import (
     get_master_user_from_context,
     get_member_from_context,
@@ -19,20 +19,14 @@ from poms.users.utils import (
 class ClientsSerializer(ModelWithUserCodeSerializer):
     master_user = MasterUserField()
 
-    portfolios = serializers.PrimaryKeyRelatedField(
-        queryset=Portfolio.objects.all(), many=True, required=False
-    )
-    portfolios_object = serializers.PrimaryKeyRelatedField(
-        source="portfolios", many=True, read_only=True
-    )
+    portfolios = serializers.PrimaryKeyRelatedField(queryset=Portfolio.objects.all(), many=True, required=False)
+    portfolios_object = serializers.PrimaryKeyRelatedField(source="portfolios", many=True, read_only=True)
 
     client_secrets = serializers.PrimaryKeyRelatedField(
         many=True,
         read_only=True,
     )
-    client_secrets_object = serializers.PrimaryKeyRelatedField(
-        source="client_secrets", many=True, read_only=True
-    )
+    client_secrets_object = serializers.PrimaryKeyRelatedField(source="client_secrets", many=True, read_only=True)
 
     class Meta:
         model = Client
@@ -74,9 +68,7 @@ class ClientsSerializer(ModelWithUserCodeSerializer):
 
         super().__init__(*args, **kwargs)
 
-        self.fields["portfolios_object"] = PortfolioViewSerializer(
-            source="portfolios", many=True, read_only=True
-        )
+        self.fields["portfolios_object"] = PortfolioViewSerializer(source="portfolios", many=True, read_only=True)
 
         request = self.context.get("request")
         if request and request.method == "GET":
@@ -115,9 +107,7 @@ class ClientsSerializer(ModelWithUserCodeSerializer):
             user_code = secret.get("user_code")
 
             if user_code in secret_user_codes:
-                raise serializers.ValidationError(
-                    f"Duplicate user_code '{user_code}' for Client Secret"
-                )
+                raise serializers.ValidationError(f"Duplicate user_code '{user_code}' for Client Secret")
 
             secret_user_codes.append(user_code)
 
@@ -159,9 +149,7 @@ class ClientsSerializer(ModelWithUserCodeSerializer):
 
             updated_secrets.append(secret)
 
-        ClientSecret.objects.filter(client=instance).exclude(
-            id__in=[secret.id for secret in updated_secrets]
-        ).delete()
+        ClientSecret.objects.filter(client=instance).exclude(id__in=[secret.id for secret in updated_secrets]).delete()
 
         instance.client_secrets_object = updated_secrets
 
@@ -171,12 +159,8 @@ class ClientsSerializer(ModelWithUserCodeSerializer):
 class ClientSecretSerializer(ModelMetaSerializer, ModelOwnerSerializer):
     master_user = MasterUserField()
 
-    client = serializers.SlugRelatedField(
-        slug_field="user_code", queryset=Client.objects.all(), required=True
-    )
-    client_object = serializers.PrimaryKeyRelatedField(
-        source="client", read_only=True, many=False
-    )
+    client = serializers.SlugRelatedField(slug_field="user_code", queryset=Client.objects.all(), required=True)
+    client_object = serializers.PrimaryKeyRelatedField(source="client", read_only=True, many=False)
 
     class Meta:
         model = ClientSecret
@@ -196,9 +180,7 @@ class ClientSecretSerializer(ModelMetaSerializer, ModelOwnerSerializer):
         super().__init__(*args, **kwargs)
         self.fields["user_code"] = UserCodeField()
         self.fields["deleted_user_code"] = UserCodeField(read_only=True)
-        self.fields["client_object"] = ClientsSerializer(
-            source="client", many=False, read_only=True
-        )
+        self.fields["client_object"] = ClientsSerializer(source="client", many=False, read_only=True)
 
     def create(self, validated_data):
         instance = super().create(validated_data)

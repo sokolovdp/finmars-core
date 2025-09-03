@@ -110,10 +110,7 @@ class ComplexTransactionSpecificFilter(BaseFilterBackend):
         is_unlocked = False
         is_canceled = False
 
-        if (
-            "ev_options" in request.data
-            and "complex_transaction_filters" in request.data["ev_options"]
-        ):
+        if "ev_options" in request.data and "complex_transaction_filters" in request.data["ev_options"]:
             if "locked" in request.data["ev_options"]["complex_transaction_filters"]:
                 is_locked = True
 

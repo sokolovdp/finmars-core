@@ -47,12 +47,12 @@ class DestroyModelMixinExt(DestroyModelMixin):
     def destroy(self, request, *args, **kwargs):
         try:
             return super().destroy(request, *args, **kwargs)
-        except ProtectedError:
+        except ProtectedError as e:
             raise FinmarsBaseException(
                 error_key=api_settings.NON_FIELD_ERRORS_KEY,
                 message="Cannot delete instance because they are referenced through a protected foreign key",
                 status_code=409,
-            )
+            ) from e
 
 
 # noinspection PyUnresolvedReferences
@@ -70,16 +70,9 @@ class DestroyModelFakeMixin(DestroyModelMixinExt):
             return qs
 
     def perform_destroy(self, instance):
-        _l.info(
-            f"{self.__class__.__name__}.perform_destroy instance="
-            f"{instance.__class__.__name__}"
-        )
+        _l.info(f"{self.__class__.__name__}.perform_destroy instance={instance.__class__.__name__}")
 
-        if (
-            hasattr(instance, "is_deleted")
-            and hasattr(instance, "fake_delete")
-            and not instance.is_deleted
-        ):
+        if hasattr(instance, "is_deleted") and hasattr(instance, "fake_delete") and not instance.is_deleted:
             instance.fake_delete()
         else:
             super().perform_destroy(instance)
@@ -104,14 +97,9 @@ class DestroyModelFakeMixin(DestroyModelMixinExt):
         collector.collect([instance])
 
         # need to sort items by class name because collect() gets model name from 1st list item
-        protected = sorted(
-            list(collector.protected), key=lambda instance: str(instance.__class__)
-        )
+        protected = sorted(list(collector.protected), key=lambda instance: str(instance.__class__))
         protected_groups = [
-            list(items_group)
-            for _, items_group in itertools.groupby(
-                protected, lambda item: str(item.__class__)
-            )
+            list(items_group) for _, items_group in itertools.groupby(protected, lambda item: str(item.__class__))
         ]
         for protected_items in protected_groups:
             collector.collect(protected_items)
@@ -127,7 +115,7 @@ class DestroyModelFakeMixin(DestroyModelMixinExt):
 # noinspection PyUnresolvedReferences
 class UpdateModelMixinExt(UpdateModelMixin):
     def update(self, request, *args, **kwargs):
-        response = super(UpdateModelMixinExt, self).update(request, *args, **kwargs)
+        response = super().update(request, *args, **kwargs)
         # total reload object, due many to many don't correctly returned
         if response.status_code == status.HTTP_200_OK:
             instance = self.get_object()
@@ -145,7 +133,7 @@ class DestroySystemicModelMixin(DestroyModelMixinExt):
                 detail='Method "DELETE" not allowed. Can not delete entity with is_systemic == true',
             )
         else:
-            super(DestroySystemicModelMixin, self).perform_destroy(instance)
+            super().perform_destroy(instance)
 
 
 # noinspection PyUnresolvedReferences
@@ -203,12 +191,8 @@ class BulkRestoreModelMixin(DestroyModelMixin):
         queryset = self.queryset
 
         if getattr(queryset.model, "deleted_user_code", None):
-            codes_to_restore = queryset.filter(id__in=data["ids"]).values_list(
-                "deleted_user_code", flat=True
-            )
-            if existing_codes := queryset.filter(
-                user_code__in=codes_to_restore
-            ).values_list("user_code", flat=True):
+            codes_to_restore = queryset.filter(id__in=data["ids"]).values_list("deleted_user_code", flat=True)
+            if existing_codes := queryset.filter(user_code__in=codes_to_restore).values_list("user_code", flat=True):
                 return Response(
                     status=409,
                     data={
@@ -216,9 +200,7 @@ class BulkRestoreModelMixin(DestroyModelMixin):
                         "error_key": "field_unique_constraint_violation",
                     },
                 )
-            if missing_ids := [
-                str(id) for id in data["ids"] if not queryset.filter(id=id).exists()
-            ]:
+            if missing_ids := [str(id) for id in data["ids"] if not queryset.filter(id=id).exists()]:
                 return Response(
                     status=404,
                     data={

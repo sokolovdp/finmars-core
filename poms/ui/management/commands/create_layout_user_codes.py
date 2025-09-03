@@ -4,7 +4,7 @@ from django.core.management.base import BaseCommand
 class Command(BaseCommand):
     help = "Copy Name To User Code if not exist"
 
-    def handle(self, *args, **options):
+    def handle(self, *args, **options):  # noqa: PLR0912, PLR0915
         from poms.ui.models import ListLayout
 
         list_layouts = ListLayout.objects.all()
@@ -24,10 +24,10 @@ class Command(BaseCommand):
                     count = count + 1
 
                 except Exception as e:
-                    self.stdout.write("Error occurred. Layout id %s" % layout.id)
-                    self.stdout.write("Error occurred. e %s" % e)
+                    self.stdout.write(f"Error occurred. Layout id {layout.id}")
+                    self.stdout.write(f"Error occurred. e {e}")
 
-        self.stdout.write("Job Done. ListLayout Affected %s " % count)
+        self.stdout.write(f"Job Done. ListLayout Affected {count}")
 
         from poms.ui.models import ContextMenuLayout
 
@@ -48,11 +48,11 @@ class Command(BaseCommand):
                     count = count + 1
 
                 except Exception as e:
-                    self.stdout.write("Error occurred. Layout id %s" % layout.id)
-                    self.stdout.write("Error occurred. e %s" % e)
+                    self.stdout.write(f"Error occurred. Layout id {layout.id}")
+                    self.stdout.write(f"Error occurred. e {e}")
                     pass
 
-        self.stdout.write("Job Done. ContextMenuLayout Affected %s " % count)
+        self.stdout.write(f"Job Done. ContextMenuLayout Affected {count}")
 
         from poms.ui.models import DashboardLayout
 
@@ -73,12 +73,12 @@ class Command(BaseCommand):
                     count = count + 1
 
                 except Exception as e:
-                    self.stdout.write("Error occurred. Layout id %s" % layout.id)
-                    self.stdout.write("Error occurred. e %s" % e)
+                    self.stdout.write(f"Error occurred. Layout id {layout.id}")
+                    self.stdout.write(f"Error occurred. e {e}")
 
                     pass
 
-        self.stdout.write("Job Done. DashboardLayout Affected %s " % count)
+        self.stdout.write(f"Job Done. DashboardLayout Affected {count}")
 
         from poms.ui.models import TemplateLayout
 
@@ -99,8 +99,8 @@ class Command(BaseCommand):
                     count = count + 1
 
                 except Exception as e:
-                    self.stdout.write("Error occurred. Layout id %s" % layout.id)
-                    self.stdout.write("Error occurred. e %s" % e)
+                    self.stdout.write(f"Error occurred. Layout id {layout.id}")
+                    self.stdout.write(f"Error occurred. e {e}")
                     pass
 
-        self.stdout.write("Job Done. TemplateLayout Affected %s " % count)
+        self.stdout.write(f"Job Done. TemplateLayout Affected {count}")

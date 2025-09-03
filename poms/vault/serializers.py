@@ -17,33 +17,25 @@ class VaultStatusSerializer(serializers.Serializer):
 
 
 class VaultSecretSerializer(serializers.Serializer):
-    engine_name = serializers.CharField(
-        required=True, allow_null=False, allow_blank=False
-    )
+    engine_name = serializers.CharField(required=True, allow_null=False, allow_blank=False)
     path = serializers.CharField(required=True, allow_null=False, allow_blank=False)
     data = serializers.JSONField(allow_null=False)
 
 
 class UpdateVaultSecretSerializer(serializers.Serializer):
-    engine_name = serializers.CharField(
-        required=True, allow_null=False, allow_blank=False
-    )
+    engine_name = serializers.CharField(required=True, allow_null=False, allow_blank=False)
     path = serializers.CharField(required=True, allow_null=False, allow_blank=False)
     version = serializers.IntegerField(required=True)
     data = serializers.JSONField(allow_null=False)
 
 
 class GetVaultSecretSerializer(serializers.Serializer):
-    engine_name = serializers.CharField(
-        required=True, allow_null=False, allow_blank=False
-    )
+    engine_name = serializers.CharField(required=True, allow_null=False, allow_blank=False)
     path = serializers.CharField(required=True, allow_null=False, allow_blank=False)
 
 
 class DeleteVaultSecretSerializer(serializers.Serializer):
-    engine_name = serializers.CharField(
-        required=True, allow_null=False, allow_blank=False
-    )
+    engine_name = serializers.CharField(required=True, allow_null=False, allow_blank=False)
     path = serializers.CharField(required=True, allow_null=False, allow_blank=False)
 
 
@@ -79,8 +71,8 @@ class VaultRecordSerializer(ModelWithUserCodeSerializer, ModelWithTimeStampSeria
 
     def to_representation(self, instance):
         response = super().to_representation(instance)
-        try:
+        try:  # noqa: SIM105
             response["data"] = json.loads(response["data"])
-        except Exception as e:
+        except Exception:
             pass
         return response

@@ -5,7 +5,7 @@ from poms.reports.common import Report
 def dictfetchall(cursor):
     "Return all rows from a cursor as a dict"
     columns = [col[0] for col in cursor.description]
-    return [dict(zip(columns, row)) for row in cursor.fetchall()]
+    return [dict(zip(columns, row, strict=False)) for row in cursor.fetchall()]
 
 
 def get_transaction_date_filter_for_initial_position_sql_string(date, has_where):
@@ -16,11 +16,7 @@ def get_transaction_date_filter_for_initial_position_sql_string(date, has_where)
     else:
         result_string = "where "
 
-    result_string = (
-        result_string
-        + "((transaction_class_id IN (14,15) and min_date = '%s') or (transaction_class_id NOT IN (14,15)))"
-        % date
-    )
+    result_string = f"{result_string}((transaction_class_id IN (14,15) and min_date = '{date}') or (transaction_class_id NOT IN (14,15)))"
 
     return result_string
 
@@ -46,35 +42,27 @@ def get_transaction_filter_sql_string(instance):
         for account in instance.accounts:
             accounts_ids.append(str(account.id))
 
-        filter_sql_list.append(
-            "account_position_id in (" + ", ".join(accounts_ids) + ")"
-        )
+        filter_sql_list.append("account_position_id in (" + ", ".join(accounts_ids) + ")")
 
     if len(instance.strategies1):
         for strategy in instance.strategies1:
             strategies1_ids.append(str(strategy.id))
 
-        filter_sql_list.append(
-            "strategy1_position_id in (" + ", ".join(strategies1_ids) + ")"
-        )
+        filter_sql_list.append("strategy1_position_id in (" + ", ".join(strategies1_ids) + ")")
 
     if len(instance.strategies2):
         for strategy in instance.strategies2:
             strategies2_ids.append(str(strategy.id))
 
-        filter_sql_list.append(
-            "strategy2_position_id in (" + ", ".join(strategies2_ids) + ")"
-        )
+        filter_sql_list.append("strategy2_position_id in (" + ", ".join(strategies2_ids) + ")")
 
     if len(instance.strategies3):
         for strategy in instance.strategies3:
             strategies3_ids.append(str(strategy.id))
 
-        filter_sql_list.append(
-            "strategy3_position_id in (" + ", ".join(strategies3_ids) + ")"
-        )
+        filter_sql_list.append("strategy3_position_id in (" + ", ".join(strategies3_ids) + ")")
 
-    if len(filter_sql_list):
+    if filter_sql_list:
         result_string = result_string + "where "
         result_string = result_string + " and ".join(filter_sql_list)
 
@@ -120,86 +108,57 @@ def get_fx_trades_and_fx_variations_transaction_filter_sql_string(instance):
         for account in instance.accounts:
             accounts_ids.append(str(account.id))
 
-        filter_sql_list.append(
-            "account_position_id in (" + ", ".join(accounts_ids) + ")"
-        )
+        filter_sql_list.append("account_position_id in (" + ", ".join(accounts_ids) + ")")
 
     if len(instance.strategies1):
         for strategy in instance.strategies1:
             strategies1_ids.append(str(strategy.id))
 
-        filter_sql_list.append(
-            "strategy1_position_id in (" + ", ".join(strategies1_ids) + ")"
-        )
+        filter_sql_list.append("strategy1_position_id in (" + ", ".join(strategies1_ids) + ")")
 
     if len(instance.strategies2):
         for strategy in instance.strategies2:
             strategies2_ids.append(str(strategy.id))
 
-        filter_sql_list.append(
-            "strategy2_position_id in (" + ", ".join(strategies2_ids) + ")"
-        )
+        filter_sql_list.append("strategy2_position_id in (" + ", ".join(strategies2_ids) + ")")
 
     if len(instance.strategies3):
         for strategy in instance.strategies3:
             strategies3_ids.append(str(strategy.id))
 
-        filter_sql_list.append(
-            "strategy3_position_id in (" + ", ".join(strategies3_ids) + ")"
-        )
+        filter_sql_list.append("strategy3_position_id in (" + ", ".join(strategies3_ids) + ")")
 
-    if len(filter_sql_list):
+    if filter_sql_list:
         result_string = result_string + " and "
         result_string = result_string + " and ".join(filter_sql_list)
 
     return result_string
 
 
-def get_where_expression_for_position_consolidation(
-    instance, prefix, prefix_second, use_allocation=True
-):
+def get_where_expression_for_position_consolidation(instance, prefix, prefix_second, use_allocation=True):
     result = []
 
     if instance.portfolio_mode == Report.MODE_INDEPENDENT:
         result.append(prefix + "portfolio_id = " + prefix_second + "portfolio_id")
 
     if instance.account_mode == Report.MODE_INDEPENDENT:
-        result.append(
-            prefix + "account_position_id = " + prefix_second + "account_position_id"
-        )
+        result.append(prefix + "account_position_id = " + prefix_second + "account_position_id")
 
     if instance.strategy1_mode == Report.MODE_INDEPENDENT:
-        result.append(
-            prefix
-            + "strategy1_position_id = "
-            + prefix_second
-            + "strategy1_position_id"
-        )
+        result.append(prefix + "strategy1_position_id = " + prefix_second + "strategy1_position_id")
 
     if instance.strategy2_mode == Report.MODE_INDEPENDENT:
-        result.append(
-            prefix
-            + "strategy2_position_id = "
-            + prefix_second
-            + "strategy2_position_id"
-        )
+        result.append(prefix + "strategy2_position_id = " + prefix_second + "strategy2_position_id")
 
     if instance.strategy3_mode == Report.MODE_INDEPENDENT:
-        result.append(
-            prefix
-            + "strategy3_position_id = "
-            + prefix_second
-            + "strategy3_position_id"
-        )
+        result.append(prefix + "strategy3_position_id = " + prefix_second + "strategy3_position_id")
 
     if instance.allocation_mode == Report.MODE_INDEPENDENT:
-        result.append(
-            prefix + "allocation_pl_id = " + prefix_second + "allocation_pl_id"
-        )
+        result.append(prefix + "allocation_pl_id = " + prefix_second + "allocation_pl_id")
 
     resultString = ""
 
-    if len(result):
+    if result:
         resultString = " and ".join(result) + " and "
 
     return resultString
@@ -228,7 +187,7 @@ def get_position_consolidation_for_select(instance, prefix=""):
 
     resultString = ""
 
-    if len(result):
+    if result:
         resultString = ", ".join(result) + ", "
 
     return resultString
@@ -257,7 +216,7 @@ def get_pl_left_join_consolidation(instance):
 
     resultString = ""
 
-    if len(result):
+    if result:
         resultString = resultString + "and "
         resultString = resultString + " and ".join(result)
 
@@ -287,7 +246,7 @@ def get_cash_consolidation_for_select(instance):
 
     resultString = ""
 
-    if len(result):
+    if result:
         resultString = ", ".join(result) + ", "
 
     return resultString
@@ -316,7 +275,7 @@ def get_cash_as_position_consolidation_for_select(instance):
 
     resultString = ""
 
-    if len(result):
+    if result:
         resultString = ", ".join(result) + ", "
 
     return resultString
@@ -343,35 +302,27 @@ def get_transaction_report_filter_sql_string(instance):
         for account in instance.accounts:
             accounts_ids.append(str(account.id))
 
-        filter_sql_list.append(
-            "t.account_position_id in (" + ", ".join(accounts_ids) + ")"
-        )
+        filter_sql_list.append("t.account_position_id in (" + ", ".join(accounts_ids) + ")")
 
     if len(instance.strategies1):
         for strategy in instance.strategies1:
             strategies1_ids.append(str(strategy.id))
 
-        filter_sql_list.append(
-            "t.strategy1_position_id in (" + ", ".join(strategies1_ids) + ")"
-        )
+        filter_sql_list.append("t.strategy1_position_id in (" + ", ".join(strategies1_ids) + ")")
 
     if len(instance.strategies2):
         for strategy in instance.strategies2:
             strategies2_ids.append(str(strategy.id))
 
-        filter_sql_list.append(
-            "t.strategy2_position_id in (" + ", ".join(strategies2_ids) + ")"
-        )
+        filter_sql_list.append("t.strategy2_position_id in (" + ", ".join(strategies2_ids) + ")")
 
     if len(instance.strategies3):
         for strategy in instance.strategies3:
             strategies3_ids.append(str(strategy.id))
 
-        filter_sql_list.append(
-            "t.strategy3_position_id in (" + ", ".join(strategies3_ids) + ")"
-        )
+        filter_sql_list.append("t.strategy3_position_id in (" + ", ".join(strategies3_ids) + ")")
 
-    if len(filter_sql_list):
+    if filter_sql_list:
         result_string = result_string + "and "
         result_string = result_string + " and ".join(filter_sql_list)
 
@@ -382,7 +333,7 @@ def get_transaction_report_date_filter_sql_string(instance):
     result_string = ""
 
     if (
-        "user_" in instance.date_field or "date" == instance.date_field
+        "user_" in instance.date_field or instance.date_field == "date"
     ):  # for complex transaction.user_date_N fields (note tc.)
         result_string = (
             "((t.transaction_class_id IN (14,15) AND tc."

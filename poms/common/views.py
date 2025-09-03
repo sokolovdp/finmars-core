@@ -6,7 +6,6 @@ import traceback
 from os.path import getsize
 
 from celery.result import AsyncResult
-
 from django.apps import apps
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import FieldDoesNotExist
@@ -54,12 +53,8 @@ class CustomSwaggerAutoSchema(SwaggerAutoSchema):
 
         # e.g. operation_keys might be ("api", "v1", "accounts", "account-attribute-type", "list")
         # We skip the first two:
-        relevant = operation_keys[
-            2:
-        ]  # e.g. ("accounts", "account-attribute-type", "list")
-        summary_words = operation_keys[
-            4:
-        ]  # e.g. ("accounts", "account-attribute-type", "list")
+        relevant = operation_keys[2:]  # e.g. ("accounts", "account-attribute-type", "list")
+        summary_words = operation_keys[4:]  # e.g. ("accounts", "account-attribute-type", "list")
 
         # split on dashes and underscores
         splitted = []
@@ -72,9 +67,7 @@ class CustomSwaggerAutoSchema(SwaggerAutoSchema):
         # capitalize each piece: e.g. "accounts" -> "Accounts", "list" -> "List"
         capitalized = [word.capitalize() for word in splitted]
 
-        summary_capitalized = [
-            " ".join(word.capitalize().split("_")) for word in summary_words
-        ]
+        summary_capitalized = [" ".join(word.capitalize().split("_")) for word in summary_words]
 
         # join with underscores so we get "Accounts_Account_Attribute_Type_List"
         operation.operationId = "_".join(capitalized)
@@ -100,7 +93,7 @@ class AbstractApiView(APIView):
     def perform_authentication(self, request):
         auth_st = time.perf_counter()
 
-        super(AbstractApiView, self).perform_authentication(request)
+        super().perform_authentication(request)
 
         if request.user.is_authenticated:
             try:
@@ -113,7 +106,7 @@ class AbstractApiView(APIView):
                 request.user.member, request.user.master_user = None, None
                 _l.debug(f"perform_authentication exception {e}")
 
-        self.auth_time = float("{:3.3f}".format(time.perf_counter() - auth_st))
+        self.auth_time = float(f"{time.perf_counter() - auth_st:3.3f}")
 
     swagger_schema = CustomSwaggerAutoSchema
 
@@ -163,17 +156,13 @@ class AbstractModelViewSet(
 
         queryset = self.filter_queryset(self.get_queryset())
 
-        content_type = ContentType.objects.get_for_model(
-            self.serializer_class.Meta.model
-        )
+        content_type = ContentType.objects.get_for_model(self.serializer_class.Meta.model)
 
         ordering = request.GET.get("ordering")
         master_user = request.user.master_user
 
         if ordering:
-            queryset = sort_by_dynamic_attrs(
-                queryset, ordering, master_user, content_type
-            )
+            queryset = sort_by_dynamic_attrs(queryset, ordering, master_user, content_type)
 
         try:
             queryset.model._meta.get_field("is_enabled")
@@ -228,9 +217,7 @@ class AbstractModelViewSet(
         _l.debug(f"ordering {ordering}")
 
         if ordering:
-            queryset = sort_by_dynamic_attrs(
-                queryset, ordering, master_user, content_type
-            )
+            queryset = sort_by_dynamic_attrs(queryset, ordering, master_user, content_type)
 
         if global_table_search:
             queryset = handle_global_table_search(
@@ -252,9 +239,7 @@ class AbstractModelViewSet(
         groups_values = request.data.get("groups_values", None)
         groups_order = request.data.get("groups_order", None)
         master_user = request.user.master_user
-        content_type = ContentType.objects.get_for_model(
-            self.serializer_class.Meta.model
-        )
+        content_type = ContentType.objects.get_for_model(self.serializer_class.Meta.model)
         filter_settings = request.data.get("filter_settings", None)
         global_table_search = request.data.get("global_table_search", "")
         ev_options = request.data.get("ev_options", "")
@@ -267,9 +252,7 @@ class AbstractModelViewSet(
 
         filtered_qs = filtered_qs.filter(id__in=qs)
 
-        filtered_qs = handle_filters(
-            filtered_qs, filter_settings, master_user, content_type
-        )
+        filtered_qs = handle_filters(filtered_qs, filter_settings, master_user, content_type)
 
         if global_table_search:
             filtered_qs = handle_global_table_search(
@@ -323,9 +306,7 @@ class AbstractModelViewSet(
             # maybe we need to refactor this whole module, or just provide user_codes and frontend app will
 
             for item in page:
-                ttype_group = TransactionTypeGroup.objects.filter(
-                    user_code=item["group_identifier"]
-                ).first()
+                ttype_group = TransactionTypeGroup.objects.filter(user_code=item["group_identifier"]).first()
                 if ttype_group:
                     item["group_name"] = ttype_group.short_name
 
@@ -340,9 +321,7 @@ class AbstractModelViewSet(
         self.perform_create(serializer)
         headers = self.get_success_headers(serializer.data)
 
-        return Response(
-            serializer.data, status=status.HTTP_201_CREATED, headers=headers
-        )
+        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
     def update(self, request, *args, **kwargs):
         partial = kwargs.pop("partial", False)
@@ -374,7 +353,7 @@ class AbstractAsyncViewSet(AbstractViewSet):
     celery_task = None
 
     def get_serializer_context(self):
-        context = super(AbstractAsyncViewSet, self).get_serializer_context()
+        context = super().get_serializer_context()
         context["show_object_permissions"] = False
         return context
 
@@ -430,7 +409,7 @@ class AbstractSyncViewSet(AbstractViewSet):
     task = None
 
     def get_serializer_context(self):
-        context = super(AbstractSyncViewSet, self).get_serializer_context()
+        context = super().get_serializer_context()
         context["show_object_permissions"] = False
         return context
 
@@ -477,12 +456,7 @@ def _get_values_for_select(model, value_type, key, filter_kw, include_deleted=Fa
             filter_kw["is_deleted"] = False
 
     if value_type in {10, 20, 40}:
-        return (
-            model.objects.filter(**filter_kw)
-            .order_by(key)
-            .values_list(key, flat=True)
-            .distinct(key)
-        )
+        return model.objects.filter(**filter_kw).order_by(key).values_list(key, flat=True).distinct(key)
 
     elif value_type == "field":
         return (
@@ -580,16 +554,14 @@ def _get_values_from_report(content_type, report_instance_id, key):
     # for item in full_items:
     #     if key in item and item[key] not in (None, ''):
     #         values.add(item[key])
-    values = {
-        item[key] for item in full_items if key in item and item[key] not in (None, "")
-    }
+    values = {item[key] for item in full_items if key in item and item[key] not in (None, "")}
 
     values = sorted(values)
     return values
 
 
 class ValuesForSelectViewSet(AbstractApiView, ViewSet):
-    def list(self, request, *args, **kwargs):
+    def list(self, request, *args, **kwargs):  # noqa: PLR0911, PLR0912
         content_type_name = request.query_params.get("content_type", None)
         key = request.query_params.get("key", None)
         value_type = request.query_params.get("value_type", None)
@@ -632,7 +604,7 @@ class ValuesForSelectViewSet(AbstractApiView, ViewSet):
         if value_type != "field":
             try:
                 value_type = int(value_type)
-            except Exception as e:
+            except Exception:
                 return Response(
                     {
                         "status": status.HTTP_404_NOT_FOUND,
@@ -650,9 +622,7 @@ class ValuesForSelectViewSet(AbstractApiView, ViewSet):
         content_type_pieces = content_type_name.split(".")
 
         try:
-            content_type = ContentType.objects.get(
-                app_label=content_type_pieces[0], model=content_type_pieces[1]
-            )
+            content_type = ContentType.objects.get(app_label=content_type_pieces[0], model=content_type_pieces[1])
         except ContentType.DoesNotExist:
             return Response(
                 {
@@ -672,16 +642,12 @@ class ValuesForSelectViewSet(AbstractApiView, ViewSet):
 
         if is_report:
             report_system_attrs_keys_list = [
-                item["key"]
-                for item in model.get_system_attrs()
-                if item["value_type"] != "field"
+                item["key"] for item in model.get_system_attrs() if item["value_type"] != "field"
             ]
 
         if "attributes." in key:
             try:
-                results = _get_values_of_generic_attribute(
-                    master_user, value_type, content_type, key
-                )
+                results = _get_values_of_generic_attribute(master_user, value_type, content_type, key)
 
                 if "Cash & Equivalents" not in results:
                     results.append("Cash & Equivalents")
@@ -695,9 +661,7 @@ class ValuesForSelectViewSet(AbstractApiView, ViewSet):
                     }
                 )
 
-        elif is_report and (
-            key in report_system_attrs_keys_list or "custom_fields." in key
-        ):
+        elif is_report and (key in report_system_attrs_keys_list or "custom_fields." in key):
             if report_instance_id is None:
                 return Response(
                     {
@@ -707,9 +671,7 @@ class ValuesForSelectViewSet(AbstractApiView, ViewSet):
                     }
                 )
 
-            results = _get_values_from_report(
-                content_type_name, report_instance_id, key
-            )
+            results = _get_values_from_report(content_type_name, report_instance_id, key)
 
         elif content_type_name == "instruments.pricehistory":
             results = _get_values_for_select(
@@ -733,12 +695,7 @@ class ValuesForSelectViewSet(AbstractApiView, ViewSet):
             "transactions.transactionclass",
             "instruments.country",
         ]:
-            results = (
-                model.objects.all()
-                .order_by(key)
-                .values_list(key, flat=True)
-                .distinct(key)
-            )
+            results = model.objects.all().order_by(key).values_list(key, flat=True).distinct(key)
 
         else:
             results = _get_values_for_select(
@@ -756,14 +713,14 @@ class ValuesForSelectViewSet(AbstractApiView, ViewSet):
 
 class DebugLogViewSet(AbstractViewSet):
     def iter_json(self, context):
-        yield '{"starts": "%d","data": "' % context["starts"]
+        yield '{"starts": "%d","data": "', context["starts"]
 
         while True:
             line = context["log"].readline()
             if line:
                 yield json.dumps(line).strip('"')
             else:
-                yield '", "ends": "%d"}' % context["log"].tell()
+                yield '", "ends": "%d"}', context["log"].tell()
                 context["log"].close()
                 return
 
@@ -790,10 +747,10 @@ class DebugLogViewSet(AbstractViewSet):
 
         context = {}
         try:
-            context["log"] = open(log_file, "r")
+            context["log"] = open(log_file)  # noqa: SIM115
             context["log"].seek(seek_to)
             context["starts"] = seek_to
-        except IOError as exc:
+        except OSError as exc:
             raise Http404("Cannot access file") from exc
 
         return HttpResponse(self.iter_json(context), content_type="application/json")
@@ -826,9 +783,7 @@ class RealmMigrateSchemeView(APIView):
             space_code = serializer.validated_data.get("space_code")
             realm_code = serializer.validated_data.get("realm_code")
 
-            apply_migration_to_space.apply_async(
-                kwargs={"space_code": space_code, "realm_code": realm_code}
-            )
+            apply_migration_to_space.apply_async(kwargs={"space_code": space_code, "realm_code": realm_code})
 
             # Optionally, reset the search path to default after migrating
             # with connection.cursor() as cursor:
@@ -837,10 +792,7 @@ class RealmMigrateSchemeView(APIView):
             return Response({"status": "ok"})
 
         except Exception as e:
-            _l.error(
-                f"RealmMigrateSchemeView.exception: {str(e)} "
-                f"trace: {traceback.format_exc()}"
-            )
+            _l.error(f"RealmMigrateSchemeView.exception: {str(e)} trace: {traceback.format_exc()}")
 
             return Response({"status": "error", "message": str(e)})
 
@@ -906,9 +858,7 @@ class AbstractEvGroupViewSet(
             else:
                 filtered_qs = filtered_qs.filter(is_deleted=False)
 
-        filtered_qs = handle_groups(
-            filtered_qs, request, self.get_queryset(), content_type
-        )
+        filtered_qs = handle_groups(filtered_qs, request, self.get_queryset(), content_type)
         page = self.paginate_queryset(filtered_qs)
 
         _l.debug(f"List {time.time() - start_time} seconds ")
@@ -944,9 +894,7 @@ class AbstractEvGroupViewSet(
 
         # print('len before handle filters %s' % len(filtered_qs))
 
-        filtered_qs = handle_filters(
-            filtered_qs, filter_settings, master_user, content_type
-        )
+        filtered_qs = handle_filters(filtered_qs, filter_settings, master_user, content_type)
 
         if global_table_search:
             filtered_qs = handle_global_table_search(

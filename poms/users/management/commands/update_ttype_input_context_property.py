@@ -18,4 +18,4 @@ class Command(BaseCommand):
                     item.save()
                     processed = processed + 1
 
-        print("Inputs processed: %s" % processed)
+        print("Inputs processed: %s", processed)

@@ -24,12 +24,10 @@ class Command(BaseCommand):
         master_user = MasterUser.objects.all().first()
         # Encrypt files recursively
         try:
-            self.encrypt_files_recursively(
-                storage, symmetric_key, master_user.space_code
-            )
+            self.encrypt_files_recursively(storage, symmetric_key, master_user.space_code)
         except Exception as e:
-            print("Error encrypting files: %s " % traceback.format_exc())
-            print("Error encrypting files: %s" % e)
+            print(f"Error encrypting files: {traceback.format_exc()}")
+            print(f"Error encrypting files: {e}")
 
         self.stdout.write(self.style.SUCCESS("All files have been encrypted."))
 
@@ -38,11 +36,9 @@ class Command(BaseCommand):
         for file_name in files:
             file_path = os.path.join(directory, file_name)
 
-            print("File_path %s" % file_path)
+            print(f"File_path {file_path}")
 
-            if (
-                not ".system/vault" in file_path
-            ):  # TODO be careful about another services
+            if ".system/vault" not in file_path:  # TODO be careful about another services
                 file = storage.open_skip_decrypt(file_path, "rb")
                 file_content = ContentFile(file.read())
                 storage.save(file_path, file_content)

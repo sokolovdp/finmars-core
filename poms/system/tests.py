@@ -8,7 +8,7 @@ from poms.explorer.utils import is_true_value
 from poms.system.models import WhitelabelModel
 from poms.system.utils import get_image_content
 
-CSS_CONTENT = """
+CSS_CONTENT = b"""
 .file-upload-form {
     display: flex;
     flex-direction: column;
@@ -22,7 +22,7 @@ CSS_CONTENT = """
     padding: 10px;
     border: none;
     border-radius: 5px;
-}""".encode()
+}"""
 
 
 UI_ROOT = ".system/ui"
@@ -78,21 +78,11 @@ class WhitelabelViewSetTest(BaseTestCase):
         self.assertEqual(response_json[0]["id"], model.id)
         self.assertIn("company_name", response_json[0])
         self.assertIn("theme_code", response_json[0])
-        self.assertEqual(
-            response_json[0]["theme_css_url"], "https://example.com/theme.css"
-        )
-        self.assertEqual(
-            response_json[0]["logo_dark_url"], "https://example.com/logo_dark.png"
-        )
-        self.assertEqual(
-            response_json[0]["logo_light_url"], "https://example.com/logo_light.png"
-        )
-        self.assertEqual(
-            response_json[0]["favicon_url"], "https://example.com/favicon.png"
-        )
-        self.assertEqual(
-            response_json[0]["custom_css"], "body { background-color: #aaa; }"
-        )
+        self.assertEqual(response_json[0]["theme_css_url"], "https://example.com/theme.css")
+        self.assertEqual(response_json[0]["logo_dark_url"], "https://example.com/logo_dark.png")
+        self.assertEqual(response_json[0]["logo_light_url"], "https://example.com/logo_light.png")
+        self.assertEqual(response_json[0]["favicon_url"], "https://example.com/favicon.png")
+        self.assertEqual(response_json[0]["custom_css"], "body { background-color: #aaa; }")
 
     def test__retrieve(self):
         model = self.create_whitelabel()
@@ -104,21 +94,11 @@ class WhitelabelViewSetTest(BaseTestCase):
         self.assertEqual(response_json["id"], model.id)
         self.assertIn("company_name", response_json)
         self.assertIn("theme_code", response_json)
-        self.assertEqual(
-            response_json["theme_css_url"], "https://example.com/theme.css"
-        )
-        self.assertEqual(
-            response_json["logo_dark_url"], "https://example.com/logo_dark.png"
-        )
-        self.assertEqual(
-            response_json["logo_light_url"], "https://example.com/logo_light.png"
-        )
-        self.assertEqual(
-            response_json["favicon_url"], "https://example.com/favicon.png"
-        )
-        self.assertEqual(
-            response_json["custom_css"], "body { background-color: #aaa; }"
-        )
+        self.assertEqual(response_json["theme_css_url"], "https://example.com/theme.css")
+        self.assertEqual(response_json["logo_dark_url"], "https://example.com/logo_dark.png")
+        self.assertEqual(response_json["logo_light_url"], "https://example.com/logo_light.png")
+        self.assertEqual(response_json["favicon_url"], "https://example.com/favicon.png")
+        self.assertEqual(response_json["custom_css"], "body { background-color: #aaa; }")
 
     def create_request_data(self):
         name, configuration_code = self._create_name_and_configuration_code()
@@ -126,18 +106,10 @@ class WhitelabelViewSetTest(BaseTestCase):
         return {
             "configuration_code": configuration_code,
             "name": name,
-            "theme_css_file": SimpleUploadedFile(
-                "theme.css", CSS_CONTENT, content_type="text/css"
-            ),
-            "logo_dark_image": SimpleUploadedFile(
-                "dark.png", self.image_content, content_type="image/png"
-            ),
-            "logo_light_image": SimpleUploadedFile(
-                "light.png", self.image_content, content_type="image/png"
-            ),
-            "favicon_image": SimpleUploadedFile(
-                "favicon.png", self.image_content, content_type="image/png"
-            ),
+            "theme_css_file": SimpleUploadedFile("theme.css", CSS_CONTENT, content_type="text/css"),
+            "logo_dark_image": SimpleUploadedFile("dark.png", self.image_content, content_type="image/png"),
+            "logo_light_image": SimpleUploadedFile("light.png", self.image_content, content_type="image/png"),
+            "favicon_image": SimpleUploadedFile("favicon.png", self.image_content, content_type="image/png"),
             "custom_css": "body { background-color: #fff; }",
             "notes": "some notes",
         }
@@ -174,12 +146,8 @@ class WhitelabelViewSetTest(BaseTestCase):
         self.assertEqual(storage_call_args[0][0], f"{STORAGE_PREFIX}favicon.png")
 
         response_json = response.json()
-        self.validate_response(
-            response_json, request_data["name"], request_data["configuration_code"]
-        )
-        self.assertEqual(
-            response_json["custom_css"], "body { background-color: #fff; }"
-        )
+        self.validate_response(response_json, request_data["name"], request_data["configuration_code"])
+        self.assertEqual(response_json["custom_css"], "body { background-color: #fff; }")
 
     def test__update_patch(self):
         model = self.create_whitelabel()
@@ -194,13 +162,9 @@ class WhitelabelViewSetTest(BaseTestCase):
 
         response_json = response.json()
 
-        self.validate_response(
-            response_json, request_data["name"], request_data["configuration_code"]
-        )
+        self.validate_response(response_json, request_data["name"], request_data["configuration_code"])
         # should be old value
-        self.assertEqual(
-            response_json["custom_css"], "body { background-color: #aaa; }"
-        )
+        self.assertEqual(response_json["custom_css"], "body { background-color: #aaa; }")
 
     def test__update_put(self):
         model = self.create_whitelabel()
@@ -213,12 +177,8 @@ class WhitelabelViewSetTest(BaseTestCase):
         self.assertEqual(response.status_code, 200, response.json())
 
         response_json = response.json()
-        self.validate_response(
-            response_json, request_data["name"], request_data["configuration_code"]
-        )
-        self.assertEqual(
-            response_json["custom_css"], "body { background-color: #fff; }"
-        )
+        self.validate_response(response_json, request_data["name"], request_data["configuration_code"])
+        self.assertEqual(response_json["custom_css"], "body { background-color: #fff; }")
 
     def test__delete(self):
         model = self.create_whitelabel()
@@ -300,18 +260,10 @@ class WhitelabelViewSetTest(BaseTestCase):
             "user_code": configuration_code,
             "configuration_code": configuration_code,
             "name": name,
-            "theme_css_file": SimpleUploadedFile(
-                "theme 1.css", CSS_CONTENT, content_type="text/css"
-            ),
-            "logo_dark_image": SimpleUploadedFile(
-                "dark 2.png", self.image_content, content_type="image/png"
-            ),
-            "logo_light_image": SimpleUploadedFile(
-                "пыжый 3.png", self.image_content, content_type="image/png"
-            ),
-            "favicon_image": SimpleUploadedFile(
-                "зюфьянка 4.png", self.image_content, content_type="image/png"
-            ),
+            "theme_css_file": SimpleUploadedFile("theme 1.css", CSS_CONTENT, content_type="text/css"),
+            "logo_dark_image": SimpleUploadedFile("dark 2.png", self.image_content, content_type="image/png"),
+            "logo_light_image": SimpleUploadedFile("пыжый 3.png", self.image_content, content_type="image/png"),
+            "favicon_image": SimpleUploadedFile("зюфьянка 4.png", self.image_content, content_type="image/png"),
         }
 
     def test__utf8_names(self):
@@ -390,9 +342,7 @@ class WhitelabelViewSetTest(BaseTestCase):
     def test__bad_extension_css(self):
         request_data = {
             "company_name": "BAD extension",
-            "theme_css_file": SimpleUploadedFile(
-                "theme.png", CSS_CONTENT, content_type="text/css"
-            ),
+            "theme_css_file": SimpleUploadedFile("theme.png", CSS_CONTENT, content_type="text/css"),
         }
         response = self.client.post(
             path=self.url,

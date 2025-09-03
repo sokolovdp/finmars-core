@@ -37,9 +37,7 @@ class ImportPriceHistoryTest(BaseTestCase):
         self.storage = mock.Mock()
         self.storage.save.return_value = None
         self.storage.open.return_value = self.file_content
-        self.instrument = self.create_instrument_for_price_history(
-            isin=PRICE_HISTORY[0]["Instrument"]
-        )
+        self.instrument = self.create_instrument_for_price_history(isin=PRICE_HISTORY[0]["Instrument"])
         self.pricing_policy = PricingPolicy.objects.using(settings.DB_DEFAULT).create(
             master_user=self.master_user,
             owner=self.member,
@@ -64,9 +62,7 @@ class ImportPriceHistoryTest(BaseTestCase):
                 "owner_id": self.member.id,
             }
         )
-        scheme = CsvImportScheme.objects.using(settings.DB_DEFAULT).create(
-            **scheme_data
-        )
+        scheme = CsvImportScheme.objects.using(settings.DB_DEFAULT).create(**scheme_data)
 
         for field_data in SCHEME_20_FIELDS:
             field_data["scheme"] = scheme
@@ -206,7 +202,6 @@ class ImportPriceHistoryTest(BaseTestCase):
         #     "principal_price": 109.72,
         # }
         self.assertIn("final_inputs", result)
-
 
         ph: PriceHistory = list(PriceHistory.objects.all())[0]
         self.assertEqual(ph.instrument.user_code, PRICE_HISTORY_ITEM["instrument"])

@@ -5,15 +5,14 @@ import sys
 import time
 import traceback
 
+import psutil
+import requests
 from django.apps import AppConfig
 from django.conf import settings
 from django.db import DEFAULT_DB_ALIAS, connection
 from django.db.models import Q
 from django.db.models.signals import post_migrate
 from django.utils.translation import gettext_lazy
-
-import psutil
-import requests
 
 from poms.common.exceptions import FinmarsBaseException
 
@@ -64,9 +63,7 @@ class BootstrapConfig(AppConfig):
                     total_memory += proc.info["memory_info"].rss
             except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
                 pass  # Process terminated or access denied
-        _l.info(
-            f"Total Memory Usage by Gunicorn Workers: {total_memory / 1024**2:.2f} MB"
-        )
+        _l.info(f"Total Memory Usage by Gunicorn Workers: {total_memory / 1024**2:.2f} MB")
 
     def ready(self):
         _l.info("bootstrap: Bootstrapping Finmars Application")
@@ -91,7 +88,7 @@ class BootstrapConfig(AppConfig):
             gunicorn_start_time = float(gunicorn_start_time)
             ready_time = time.time()
             startup_duration = ready_time - gunicorn_start_time
-            _l.info("Finmars bootstrap time: %s" % "{:3.3f}".format(startup_duration))
+            _l.info("Finmars bootstrap time: %s", f"{startup_duration:3.3f}")
 
     def bootstrap(self, app_config, verbosity=2, using=DEFAULT_DB_ALIAS, **kwargs):
         """
@@ -194,11 +191,7 @@ class BootstrapConfig(AppConfig):
 
         try:
             old_members = list(
-                Member.objects.exclude(
-                    Q(is_owner=True)
-                    | Q(status=Member.STATUS_DELETED)
-                    | Q(username="finmars_bot")
-                )
+                Member.objects.exclude(Q(is_owner=True) | Q(status=Member.STATUS_DELETED) | Q(username="finmars_bot"))
             )
             total_count = len(old_members)
 
@@ -216,7 +209,7 @@ class BootstrapConfig(AppConfig):
             _l.error(f"{log} failed due to {repr(e)}")
 
     @staticmethod
-    def sync_space_data():
+    def sync_space_data():  # noqa: PLR0915
         from django.contrib.auth.models import User
 
         from poms.auth_tokens.utils import generate_random_string
@@ -228,16 +221,15 @@ class BootstrapConfig(AppConfig):
 
         # TODO improve logic for Community Edition
         owner_username = settings.ADMIN_USERNAME
-        owner_email = os.environ.get("ADMIN_EMAIL", 'admin@finmars.com')
-        master_user_name = 'Local'
+        owner_email = os.environ.get("ADMIN_EMAIL", "admin@finmars.com")
+        master_user_name = "Local"
         backend_status = None
         old_backup_name = None
 
-        base_api_url = 'space00000'
+        base_api_url = "space00000"
 
-        if settings.AUTHORIZER_URL and settings.EDITION_TYPE == 'entreprise':
-
-            _l.info(f"Making API Call to Authorizer")
+        if settings.AUTHORIZER_URL and settings.EDITION_TYPE == "entreprise":
+            _l.info("Making API Call to Authorizer")
 
             # Probably its a Legacy space
             # Remove that in 1.9.0
@@ -263,8 +255,7 @@ class BootstrapConfig(AppConfig):
                 )
 
                 _l.info(
-                    f"{log} api '/space/sync/' responded with "
-                    f"status_code={response.status_code} text={response.text}"
+                    f"{log} api '/space/sync/' responded with status_code={response.status_code} text={response.text}"
                 )
 
                 response.raise_for_status()
@@ -284,15 +275,12 @@ class BootstrapConfig(AppConfig):
                     current_space_code = settings.BASE_API_URL
 
                 if base_api_url != current_space_code:
-                    raise ValueError(
-                        f"received {base_api_url} != expected {current_space_code}"
-                    )
+                    raise ValueError(f"received {base_api_url} != expected {current_space_code}")
 
             except Exception as e:
                 err_msg = f"{log} call to 'backend-master-user-data' resulted in {repr(e)}"
                 _l.error(err_msg)
                 raise BootstrapError("fatal", message=err_msg) from e
-
 
         # Non-Authorizer related bootstrap logic goes below
 
@@ -304,30 +292,22 @@ class BootstrapConfig(AppConfig):
                     password=generate_random_string(10),
                 ),
             )
-            _l.info(
-                f"{log} owner {owner_username} {'created' if created else 'exists'}"
-            )
+            _l.info(f"{log} owner {owner_username} {'created' if created else 'exists'}")
 
-            user_profile, created = UserProfile.objects.using(
-                settings.DB_DEFAULT
-            ).get_or_create(user_id=user.pk)
+            user_profile, created = UserProfile.objects.using(settings.DB_DEFAULT).get_or_create(user_id=user.pk)
             _l.info(f"{log} owner's user_profile {'created' if created else 'exists'}")
 
             if backend_status == 0:
                 # status is initial (0), remove old members from workspace
                 BootstrapConfig.deactivate_old_members()
             else:
-                _l.info(
-                    f"{log} backend_status={backend_status} "
-                    f"no need to deactivate old members"
-                )
+                _l.info(f"{log} backend_status={backend_status} no need to deactivate old members")
 
             master_user = MasterUser.objects.using(settings.DB_DEFAULT).first()
 
             if master_user:
                 _l.info(
-                    f"{log} master_user with name {master_user.name} and "
-                    f"base_api_url {master_user.space_code} exists"
+                    f"{log} master_user with name {master_user.name} and base_api_url {master_user.space_code} exists"
                 )
 
                 master_user.name = master_user_name
@@ -352,8 +332,7 @@ class BootstrapConfig(AppConfig):
                 )
 
                 _l.info(
-                    f"{log} created master_user with name {master_user.name} & "
-                    f"base_api_url {master_user.space_code}"
+                    f"{log} created master_user with name {master_user.name} & base_api_url {master_user.space_code}"
                 )
 
             current_owner_member, created = Member.objects.using(
@@ -504,11 +483,9 @@ class BootstrapConfig(AppConfig):
                     _l.error(err_msg)
                     raise BootstrapError("fatal", message=err_msg) from e
 
-                _l.info(
-                    f"create_member_layouts.created_member_layout_for: {member.username}"
-                )
+                _l.info(f"create_member_layouts.created_member_layout_for: {member.username}")
 
-    def create_base_folders(self):
+    def create_base_folders(self):  # noqa: PLR0915
         from tempfile import NamedTemporaryFile
 
         from poms.common.storage import get_storage
@@ -542,13 +519,8 @@ class BootstrapConfig(AppConfig):
                     self._save_tmp_to_storage(tmpf, storage, path)
                     _l.info("create system log folder")
 
-            if not storage.exists(
-                f"{master_user.space_code}/.system/new-member-setup-configurations/.init"
-            ):
-                path = (
-                    master_user.space_code
-                    + "/.system/new-member-setup-configurations/.init"
-                )
+            if not storage.exists(f"{master_user.space_code}/.system/new-member-setup-configurations/.init"):
+                path = master_user.space_code + "/.system/new-member-setup-configurations/.init"
                 with NamedTemporaryFile() as tmpf:
                     self._save_tmp_to_storage(tmpf, storage, path)
                     _l.info("create system new-member-setup-configurations folder")
@@ -574,9 +546,7 @@ class BootstrapConfig(AppConfig):
             members = Member.objects.using(settings.DB_DEFAULT).all()
 
             for member in members:
-                if not storage.exists(
-                    f"{master_user.space_code}/{member.username}/.init"
-                ):
+                if not storage.exists(f"{master_user.space_code}/{member.username}/.init"):
                     path = f"{master_user.space_code}/{member.username}/.init"
                     with NamedTemporaryFile() as tmpf:
                         self._save_tmp_to_storage(tmpf, storage, path)

@@ -17,9 +17,7 @@ def handle_schedules(using=settings.DB_DEFAULT):
 
     for schedule in schedules:
         try:
-            periodic_task = PeriodicTask.objects.using(using).get(
-                name=schedule.user_code
-            )
+            periodic_task = PeriodicTask.objects.using(using).get(name=schedule.user_code)
         except PeriodicTask.DoesNotExist:
             periodic_task = PeriodicTask(name=schedule.user_code)
 
@@ -34,7 +32,7 @@ def handle_schedules(using=settings.DB_DEFAULT):
 
         periodic_task.task = "schedules.process"
         periodic_task.crontab = crontab
-        periodic_task.kwargs = '{"schedule_user_code": "%s"}' % schedule.user_code
+        periodic_task.kwargs = f'{"schedule_user_code": "{schedule.user_code}"}'
         periodic_task.save()
 
         existing_ids.append(periodic_task.id)

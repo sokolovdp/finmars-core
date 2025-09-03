@@ -1,16 +1,14 @@
-from __future__ import unicode_literals
-
 from django.contrib import admin
 
 from poms.common.admin import AbstractModelAdmin
 from poms.strategies.models import (
+    Strategy1,
     Strategy1Group,
+    Strategy1Subgroup,
+    Strategy2,
+    Strategy2Group,
     Strategy2Subgroup,
     Strategy3,
-    Strategy1Subgroup,
-    Strategy1,
-    Strategy2Group,
-    Strategy2,
     Strategy3Group,
     Strategy3Subgroup,
 )

@@ -27,9 +27,7 @@ class InstrumentsConfig(AppConfig):
         post_migrate.connect(self.update_transaction_classes, sender=self)
         post_migrate.connect(self.fill_with_countries, sender=self)
 
-    def fill_with_countries(
-        self, app_config, verbosity=2, using=DEFAULT_DB_ALIAS, **kwargs
-    ):
+    def fill_with_countries(self, app_config, verbosity=2, using=DEFAULT_DB_ALIAS, **kwargs):
         countries = load_countries()
 
         from .models import Country
@@ -55,9 +53,7 @@ class InstrumentsConfig(AppConfig):
 
             item.save()
 
-    def update_transaction_classes(
-        self, app_config, verbosity=2, using=DEFAULT_DB_ALIAS, **kwargs
-    ):
+    def update_transaction_classes(self, app_config, verbosity=2, using=DEFAULT_DB_ALIAS, **kwargs):
         from poms.common.utils import db_class_check_data
 
         from .models import (

@@ -1,10 +1,7 @@
 from copy import deepcopy
 
-from django.conf import settings
-
 from poms.accounts.models import AccountType
 from poms.common.common_base_test import BaseTestCase
-
 
 EXPECTED_ACCOUNT_TYPE = {
     "id": 2,
@@ -127,9 +124,7 @@ class AccountTypeViewSetTest(BaseTestCase):
 
     def test__get_filters(self):  # sourcery skip: extract-duplicate-method
         account_type = self.create_account_type()
-        response = self.client.get(
-            path=f"{self.url}?user_code={account_type.user_code}"
-        )
+        response = self.client.get(path=f"{self.url}?user_code={account_type.user_code}")
         self.assertEqual(response.status_code, 200, response.content)
         response_json = response.json()
         self.assertEqual(response_json["count"], 1)
@@ -155,9 +150,7 @@ class AccountTypeViewSetTest(BaseTestCase):
         new_name = "new_name"
         update_data = deepcopy(CREATE_DATA)
         update_data["name"] = new_name
-        response = self.client.put(
-            path=f"{self.url}{account_type_id}/", format="json", data=update_data
-        )
+        response = self.client.put(path=f"{self.url}{account_type_id}/", format="json", data=update_data)
         self.assertEqual(response.status_code, 200, response.content)
 
         response = self.client.get(path=f"{self.url}?name={new_name}")
@@ -172,9 +165,7 @@ class AccountTypeViewSetTest(BaseTestCase):
 
         new_name = "new_name"
         update_data = {"name": new_name}
-        response = self.client.patch(
-            path=f"{self.url}{account_type_id}/", format="json", data=update_data
-        )
+        response = self.client.patch(path=f"{self.url}{account_type_id}/", format="json", data=update_data)
         self.assertEqual(response.status_code, 200, response.content)
 
         response = self.client.get(path=f"{self.url}?name={new_name}")

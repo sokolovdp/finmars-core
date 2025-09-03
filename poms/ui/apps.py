@@ -11,17 +11,11 @@ class UiConfig(AppConfig):
     def ready(self):
         post_migrate.connect(self.update_transaction_classes, sender=self)
 
-    def update_transaction_classes(
-        self, app_config, verbosity=2, using=DEFAULT_DB_ALIAS, **kwargs
-    ):
+    def update_transaction_classes(self, app_config, verbosity=2, using=DEFAULT_DB_ALIAS, **kwargs):
         from .models import PortalInterfaceAccessModel
 
         try:
-            exists = set(
-                PortalInterfaceAccessModel.objects.using(using).values_list(
-                    "user_code", flat=True
-                )
-            )
+            exists = set(PortalInterfaceAccessModel.objects.using(using).values_list("user_code", flat=True))
         except ProgrammingError as e:
             print(f"ProgrammingError {repr(e)}")
             return
@@ -36,9 +30,7 @@ class UiConfig(AppConfig):
                     print(f"Error {repr(e)}")
 
             else:
-                obj = PortalInterfaceAccessModel.objects.using(using).get(
-                    user_code=code
-                )
+                obj = PortalInterfaceAccessModel.objects.using(using).get(user_code=code)
                 obj.value = value
                 if not obj.name:
                     obj.name = name

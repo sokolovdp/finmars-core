@@ -26,9 +26,7 @@ def serialize_price_checker_item(item):
         result["transaction_currency_name"] = item["transaction_currency_name"]
 
     if "transaction_currency_user_code" in item:
-        result["transaction_currency_user_code"] = item[
-            "transaction_currency_user_code"
-        ]
+        result["transaction_currency_user_code"] = item["transaction_currency_user_code"]
 
     if "settlement_currency_name" in item:
         result["settlement_currency_name"] = item["settlement_currency_name"]
@@ -126,7 +124,7 @@ def serialize_price_checker_item_instrument(item):
     return result
 
 
-def serialize_transaction_report_item(item):
+def serialize_transaction_report_item(item):  # noqa: PLR0915
     result = {
         "id": item.get("id", None),
         "is_locked": item.get("is_locked", None),
@@ -180,9 +178,7 @@ def serialize_transaction_report_item(item):
     result["complex_transaction.code"] = item["complex_transaction_code"]
     result["complex_transaction.text"] = item["complex_transaction_text"]
     result["complex_transaction.date"] = item["complex_transaction_date"]
-    result["complex_transaction.transaction_unique_code"] = item[
-        "transaction_unique_code"
-    ]
+    result["complex_transaction.transaction_unique_code"] = item["transaction_unique_code"]
     result["complex_transaction.is_canceled"] = item["is_canceled"]
     result["complex_transaction.is_locked"] = item["is_locked"]
 
@@ -195,100 +191,38 @@ def serialize_transaction_report_item(item):
     result["complex_transaction.user_text_7"] = item["complex_transaction_user_text_7"]
     result["complex_transaction.user_text_8"] = item["complex_transaction_user_text_8"]
     result["complex_transaction.user_text_9"] = item["complex_transaction_user_text_9"]
-    result["complex_transaction.user_text_10"] = item[
-        "complex_transaction_user_text_10"
-    ]
-    result["complex_transaction.user_text_11"] = item[
-        "complex_transaction_user_text_11"
-    ]
-    result["complex_transaction.user_text_12"] = item[
-        "complex_transaction_user_text_12"
-    ]
-    result["complex_transaction.user_text_13"] = item[
-        "complex_transaction_user_text_13"
-    ]
-    result["complex_transaction.user_text_14"] = item[
-        "complex_transaction_user_text_14"
-    ]
-    result["complex_transaction.user_text_15"] = item[
-        "complex_transaction_user_text_15"
-    ]
-    result["complex_transaction.user_text_16"] = item[
-        "complex_transaction_user_text_16"
-    ]
-    result["complex_transaction.user_text_17"] = item[
-        "complex_transaction_user_text_17"
-    ]
-    result["complex_transaction.user_text_18"] = item[
-        "complex_transaction_user_text_18"
-    ]
-    result["complex_transaction.user_text_19"] = item[
-        "complex_transaction_user_text_19"
-    ]
-    result["complex_transaction.user_text_20"] = item[
-        "complex_transaction_user_text_20"
-    ]
+    result["complex_transaction.user_text_10"] = item["complex_transaction_user_text_10"]
+    result["complex_transaction.user_text_11"] = item["complex_transaction_user_text_11"]
+    result["complex_transaction.user_text_12"] = item["complex_transaction_user_text_12"]
+    result["complex_transaction.user_text_13"] = item["complex_transaction_user_text_13"]
+    result["complex_transaction.user_text_14"] = item["complex_transaction_user_text_14"]
+    result["complex_transaction.user_text_15"] = item["complex_transaction_user_text_15"]
+    result["complex_transaction.user_text_16"] = item["complex_transaction_user_text_16"]
+    result["complex_transaction.user_text_17"] = item["complex_transaction_user_text_17"]
+    result["complex_transaction.user_text_18"] = item["complex_transaction_user_text_18"]
+    result["complex_transaction.user_text_19"] = item["complex_transaction_user_text_19"]
+    result["complex_transaction.user_text_20"] = item["complex_transaction_user_text_20"]
 
-    result["complex_transaction.user_number_1"] = item[
-        "complex_transaction_user_number_1"
-    ]
-    result["complex_transaction.user_number_2"] = item[
-        "complex_transaction_user_number_2"
-    ]
-    result["complex_transaction.user_number_3"] = item[
-        "complex_transaction_user_number_3"
-    ]
-    result["complex_transaction.user_number_4"] = item[
-        "complex_transaction_user_number_4"
-    ]
-    result["complex_transaction.user_number_5"] = item[
-        "complex_transaction_user_number_5"
-    ]
-    result["complex_transaction.user_number_6"] = item[
-        "complex_transaction_user_number_6"
-    ]
-    result["complex_transaction.user_number_7"] = item[
-        "complex_transaction_user_number_7"
-    ]
-    result["complex_transaction.user_number_8"] = item[
-        "complex_transaction_user_number_8"
-    ]
-    result["complex_transaction.user_number_9"] = item[
-        "complex_transaction_user_number_9"
-    ]
-    result["complex_transaction.user_number_10"] = item[
-        "complex_transaction_user_number_10"
-    ]
-    result["complex_transaction.user_number_11"] = item[
-        "complex_transaction_user_number_11"
-    ]
-    result["complex_transaction.user_number_12"] = item[
-        "complex_transaction_user_number_12"
-    ]
-    result["complex_transaction.user_number_13"] = item[
-        "complex_transaction_user_number_13"
-    ]
-    result["complex_transaction.user_number_14"] = item[
-        "complex_transaction_user_number_14"
-    ]
-    result["complex_transaction.user_number_15"] = item[
-        "complex_transaction_user_number_15"
-    ]
-    result["complex_transaction.user_number_16"] = item[
-        "complex_transaction_user_number_16"
-    ]
-    result["complex_transaction.user_number_17"] = item[
-        "complex_transaction_user_number_17"
-    ]
-    result["complex_transaction.user_number_18"] = item[
-        "complex_transaction_user_number_18"
-    ]
-    result["complex_transaction.user_number_19"] = item[
-        "complex_transaction_user_number_19"
-    ]
-    result["complex_transaction.user_number_20"] = item[
-        "complex_transaction_user_number_20"
-    ]
+    result["complex_transaction.user_number_1"] = item["complex_transaction_user_number_1"]
+    result["complex_transaction.user_number_2"] = item["complex_transaction_user_number_2"]
+    result["complex_transaction.user_number_3"] = item["complex_transaction_user_number_3"]
+    result["complex_transaction.user_number_4"] = item["complex_transaction_user_number_4"]
+    result["complex_transaction.user_number_5"] = item["complex_transaction_user_number_5"]
+    result["complex_transaction.user_number_6"] = item["complex_transaction_user_number_6"]
+    result["complex_transaction.user_number_7"] = item["complex_transaction_user_number_7"]
+    result["complex_transaction.user_number_8"] = item["complex_transaction_user_number_8"]
+    result["complex_transaction.user_number_9"] = item["complex_transaction_user_number_9"]
+    result["complex_transaction.user_number_10"] = item["complex_transaction_user_number_10"]
+    result["complex_transaction.user_number_11"] = item["complex_transaction_user_number_11"]
+    result["complex_transaction.user_number_12"] = item["complex_transaction_user_number_12"]
+    result["complex_transaction.user_number_13"] = item["complex_transaction_user_number_13"]
+    result["complex_transaction.user_number_14"] = item["complex_transaction_user_number_14"]
+    result["complex_transaction.user_number_15"] = item["complex_transaction_user_number_15"]
+    result["complex_transaction.user_number_16"] = item["complex_transaction_user_number_16"]
+    result["complex_transaction.user_number_17"] = item["complex_transaction_user_number_17"]
+    result["complex_transaction.user_number_18"] = item["complex_transaction_user_number_18"]
+    result["complex_transaction.user_number_19"] = item["complex_transaction_user_number_19"]
+    result["complex_transaction.user_number_20"] = item["complex_transaction_user_number_20"]
 
     result["complex_transaction.user_date_1"] = item["complex_transaction_user_date_1"]
     result["complex_transaction.user_date_2"] = item["complex_transaction_user_date_2"]
@@ -299,13 +233,9 @@ def serialize_transaction_report_item(item):
     # Complex Transaction Transaction Type Fields
 
     result["complex_transaction.transaction_type.id"] = item["transaction_type_id"]
-    result["complex_transaction.transaction_type.user_code"] = item[
-        "transaction_type_user_code"
-    ]
+    result["complex_transaction.transaction_type.user_code"] = item["transaction_type_user_code"]
     result["complex_transaction.transaction_type.name"] = item["transaction_type_name"]
-    result["complex_transaction.transaction_type.short_name"] = item[
-        "transaction_type_short_name"
-    ]
+    result["complex_transaction.transaction_type.short_name"] = item["transaction_type_short_name"]
     result["complex_transaction.transaction_type.group"] = item.get(
         "transaction_type_group_name", None
     )  # TODO refactor to get group name
@@ -339,7 +269,7 @@ def serialize_transaction_report_item(item):
     return result
 
 
-def serialize_balance_report_item(item):
+def serialize_balance_report_item(item):  # noqa: PLR0915
     result = {
         # "id": ','.join(str(x) for x in item['pk']),
         "id": "-",
@@ -377,12 +307,8 @@ def serialize_balance_report_item(item):
         result["allocation"] = item["allocation_pl_id"]
 
     # Check if logic is right
-    result["instrument_pricing_currency_fx_rate"] = item[
-        "instrument_pricing_currency_fx_rate"
-    ]
-    result["instrument_accrued_currency_fx_rate"] = item[
-        "instrument_accrued_currency_fx_rate"
-    ]
+    result["instrument_pricing_currency_fx_rate"] = item["instrument_pricing_currency_fx_rate"]
+    result["instrument_accrued_currency_fx_rate"] = item["instrument_accrued_currency_fx_rate"]
     result["instrument_principal_price"] = item["instrument_principal_price"]
     result["instrument_accrued_price"] = item["instrument_accrued_price"]
     result["instrument_factor"] = item["instrument_factor"]
@@ -499,7 +425,7 @@ def serialize_balance_report_item(item):
     return result
 
 
-def serialize_pl_report_item(item):
+def serialize_pl_report_item(item):  # noqa: PLR0915
     result = {
         # "id": ','.join(str(x) for x in item['pk']),
         "id": "-",
@@ -573,26 +499,19 @@ def serialize_pl_report_item(item):
 
     result["id"] = ",".join(ids)
 
-    result["instrument_pricing_currency_fx_rate"] = item[
-        "instrument_pricing_currency_fx_rate"
-    ]
-    result["instrument_accrued_currency_fx_rate"] = item[
-        "instrument_accrued_currency_fx_rate"
-    ]
+    result["instrument_pricing_currency_fx_rate"] = item["instrument_pricing_currency_fx_rate"]
+    result["instrument_accrued_currency_fx_rate"] = item["instrument_accrued_currency_fx_rate"]
     result["instrument_principal_price"] = item["instrument_principal_price"]
     result["instrument_accrued_price"] = item["instrument_accrued_price"]
     result["instrument_factor"] = item["instrument_factor"]
     result["instrument_ytm"] = item["instrument_ytm"]
     result["daily_price_change"] = item["daily_price_change"]
 
-    #
     result["position_size"] = item["position_size"]
     result["nominal_position_size"] = item["nominal_position_size"]
 
     result["period_start_position_size"] = item["period_start_position_size"]
-    result["period_start_nominal_position_size"] = item[
-        "period_start_nominal_position_size"
-    ]
+    result["period_start_nominal_position_size"] = item["period_start_nominal_position_size"]
 
     result["position_return"] = item["position_return"]
     result["position_return_loc"] = item["position_return_loc"]
@@ -670,9 +589,7 @@ def serialize_report_item_instrument(item):
     content_type = ContentType.objects.get(app_label="instruments", model="instrument")
     # szhitenev 2024-06-27
     # Important: could be solution to missing attributes in report
-    instrument_attributes = GenericAttribute.objects.filter(
-        object_id=item.id, content_type=content_type
-    )
+    instrument_attributes = GenericAttribute.objects.filter(object_id=item.id, content_type=content_type)
 
     for attribute in instrument_attributes:
         attr_result = {

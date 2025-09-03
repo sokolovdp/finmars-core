@@ -1,8 +1,7 @@
 from django.conf import settings
-from poms.clients.models import Client
-from poms.clients.models import ClientSecret
-from poms.common.common_base_test import BaseTestCase
 
+from poms.clients.models import Client, ClientSecret
+from poms.common.common_base_test import BaseTestCase
 
 EXPECTED_DATA = {
     "id": 1,
@@ -115,9 +114,7 @@ class ClientViewTest(BaseTestCase):
 
         new_user_code = "new_user_code"
         update_data = {"user_code": new_user_code}
-        response = self.client.patch(
-            path=f"{self.url}{client_secret_id}/", format="json", data=update_data
-        )
+        response = self.client.patch(path=f"{self.url}{client_secret_id}/", format="json", data=update_data)
         self.assertEqual(response.status_code, 200, response.content)
 
         response = self.client.get(path=f"{self.url}?user_code={new_user_code}")
@@ -135,8 +132,6 @@ class ClientViewTest(BaseTestCase):
         response = self.client.delete(path=f"{self.url}{client_id}/")
         self.assertEqual(response.status_code, 204, response.content)
 
-        response = self.client.get(
-            path=f"{self.url}?user_code={CREATE_DATA['user_code']}"
-        )
+        response = self.client.get(path=f"{self.url}?user_code={CREATE_DATA['user_code']}")
         response_json = response.json()
         self.assertEqual(response_json["count"], 0)

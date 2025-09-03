@@ -12,15 +12,14 @@ from poms.csv_import.handlers import SimpleImportProcess
 from poms.csv_import.models import CsvField, CsvImportScheme, EntityField
 from poms.csv_import.tasks import simple_import
 from poms.csv_import.tests.common_test_data import (
+    ACCRUAL_CALCULATION,
+    ACCRUAL_CALCULATION_ITEM,
     EXPECTED_RESULT_ACCRUAL_CALCULATION,
     SCHEME_20,
     SCHEME_ACCRUAL_CALCULATION_ENTITIES,
     SCHEME_ACCRUAL_CALCULATION_FIELDS,
-    ACCRUAL_CALCULATION,
-    ACCRUAL_CALCULATION_ITEM,
 )
-
-from poms.instruments.models import AccrualCalculationSchedule, Instrument
+from poms.instruments.models import AccrualCalculationSchedule
 
 FILE_CONTENT = json.dumps(ACCRUAL_CALCULATION).encode("utf-8")
 FILE_NAME = "accrual_calculation.json"
@@ -58,14 +57,14 @@ class ImportAccrualCalculationTest(BaseTestCase):
                 "content_type_id": content_type.id,
                 "master_user_id": self.master_user.id,
                 "owner_id": self.member.id,
-                "user_code": "com.finmars.standard-import-from-file:instruments.accrualcalculationschedule:accrued_schedule",
+                "user_code": (
+                    "com.finmars.standard-import-from-file:instruments.accrualcalculationschedule:accrued_schedule"
+                ),
                 "name": "STD - Accrued Schedule",
                 "short_name": "STD - Accrued Schedule",
             }
         )
-        scheme = CsvImportScheme.objects.using(settings.DB_DEFAULT).create(
-            **scheme_data
-        )
+        scheme = CsvImportScheme.objects.using(settings.DB_DEFAULT).create(**scheme_data)
 
         for field_data in SCHEME_ACCRUAL_CALCULATION_FIELDS:
             field_data["scheme"] = scheme
@@ -139,13 +138,7 @@ class ImportAccrualCalculationTest(BaseTestCase):
 
     @mock.patch("poms.csv_import.handlers.send_system_message")
     def test_create_and_run_simple_import_process(self, mock_send_message):
-        self.assertFalse(
-            bool(
-                AccrualCalculationSchedule.objects.filter(
-                    accrual_start_date="2017-11-22"
-                )
-            )
-        )
+        self.assertFalse(bool(AccrualCalculationSchedule.objects.filter(accrual_start_date="2017-11-22")))
         task = self.create_task()
         import_process = SimpleImportProcess(task_id=task.id)
 
@@ -171,26 +164,14 @@ class ImportAccrualCalculationTest(BaseTestCase):
 
         import_process.process()
         result = import_process.task.result_object["items"][0]
-        self.assertEqual(
-            result["final_inputs"], EXPECTED_RESULT_ACCRUAL_CALCULATION["final_inputs"]
-        )
+        self.assertEqual(result["final_inputs"], EXPECTED_RESULT_ACCRUAL_CALCULATION["final_inputs"])
 
-        accrual = AccrualCalculationSchedule.objects.get(
-            accrual_start_date="2017-11-22"
-        )
-        self.assertEqual(
-            accrual.instrument.user_code, "commitment-startup-2-round-a-debt"
-        )
+        accrual = AccrualCalculationSchedule.objects.get(accrual_start_date="2017-11-22")
+        self.assertEqual(accrual.instrument.user_code, "commitment-startup-2-round-a-debt")
 
     @mock.patch("poms.csv_import.handlers.send_system_message")
     def test_run_simple_import_process_missing_fields(self, mock_send_message):
-        self.assertFalse(
-            bool(
-                AccrualCalculationSchedule.objects.filter(
-                    accrual_start_date="2017-11-22"
-                )
-            )
-        )
+        self.assertFalse(bool(AccrualCalculationSchedule.objects.filter(accrual_start_date="2017-11-22")))
         task = self.create_task(remove_instrument=True)
         import_process = SimpleImportProcess(task_id=task.id)
 
@@ -206,5 +187,5 @@ class ImportAccrualCalculationTest(BaseTestCase):
         import_process.preprocess()
         import_process.process()
 
-        with self.assertRaises(AccrualCalculationSchedule.DoesNotExist) as e:
+        with self.assertRaises(AccrualCalculationSchedule.DoesNotExist) as e:  # noqa: F841
             AccrualCalculationSchedule.objects.get(accrual_start_date="2017-11-22")

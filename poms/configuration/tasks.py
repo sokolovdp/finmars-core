@@ -1,12 +1,10 @@
-from urllib.parse import unquote
 import io
 import json
 import logging
 import os
 import traceback
 from datetime import date
-
-from rest_framework.authtoken.models import Token
+from urllib.parse import unquote
 
 import requests
 from django.contrib.auth import get_user_model
@@ -47,7 +45,7 @@ storage = get_storage()
 
 
 def _run_action(task: CeleryTask, action: dict):
-    workflow = action.get("workflow", None)
+    workflow = action.get("workflow")
     if workflow:
         try:
             _l.info(f"import_configuration.going to execute workflow {workflow}")
@@ -59,13 +57,11 @@ def _run_action(task: CeleryTask, action: dict):
             _l.info(f"import_configuration.workflow finished {response_data}")
 
         except Exception as e:
-            _l.error(
-                f"Could not execute workflow {e} traceback {traceback.format_exc()}"
-            )
+            _l.error(f"Could not execute workflow {e} traceback {traceback.format_exc()}")
 
 
 @finmars_task(name="configuration.import_configuration", bind=True)
-def import_configuration(self, task_id: int, *args, **kwargs) -> None:
+def import_configuration(self, task_id: int, *args, **kwargs) -> None:  # noqa: PLR0912, PLR0915
     _l.info("import_configuration")
     _l.info(f"import_configuration {task_id}")
 
@@ -74,7 +70,7 @@ def import_configuration(self, task_id: int, *args, **kwargs) -> None:
     task.status = CeleryTask.STATUS_PENDING
     task.save()
 
-    _l.info("import_configuration.task master_user %s" % task.master_user)
+    _l.info("import_configuration.task master_user %s", task.master_user)
 
     def generate_json_report(task, stats):
         result = stats
@@ -92,9 +88,7 @@ def import_configuration(self, task_id: int, *args, **kwargs) -> None:
             master_user=task.master_user,
         )
         file_report.master_user = task.master_user
-        file_report.name = (
-            f"Configuration Import {current_date_time} (Task {task.id}).json"
-        )
+        file_report.name = f"Configuration Import {current_date_time} (Task {task.id}).json"
         file_report.file_name = file_name
         file_report.type = "configuration.import_configuration"
         file_report.notes = "System File"
@@ -126,9 +120,7 @@ def import_configuration(self, task_id: int, *args, **kwargs) -> None:
     if not os.path.exists(output_directory):
         os.makedirs(output_directory, exist_ok=True)
 
-    local_file_path = storage.download_file_and_save_locally(
-        file_path, f"{output_directory}file.zip"
-    )
+    local_file_path = storage.download_file_and_save_locally(file_path, f"{output_directory}file.zip")
 
     _l.info(f"import_configuration got {file_path}")
 
@@ -247,9 +239,7 @@ def import_configuration(self, task_id: int, *args, **kwargs) -> None:
 
                     try:  # if member specific entity
                         Model.objects.model._meta.get_field("member")
-                        instance = Model.objects.filter(
-                            user_code=user_code, member=task.member
-                        ).first()
+                        instance = Model.objects.filter(user_code=user_code, member=task.member).first()
                     except FieldDoesNotExist:
                         instance = Model.objects.filter(user_code=user_code).first()
                 else:
@@ -257,9 +247,7 @@ def import_configuration(self, task_id: int, *args, **kwargs) -> None:
 
                 if content_type == "system.whitelabelmodel":
                     model_name = content_type = json_data["meta"]["model_name"]
-                    directory_with_files = (
-                        f"{output_directory}/{model_name}/{user_code.split(':')[-1]}"
-                    )
+                    directory_with_files = f"{output_directory}/{model_name}/{user_code.split(':')[-1]}"
 
                     files_key = [
                         "favicon_url",
@@ -270,9 +258,7 @@ def import_configuration(self, task_id: int, *args, **kwargs) -> None:
                     for key in files_key:
                         relative_file_path = json_data.get(key)
                         file_name = os.path.basename(relative_file_path)
-                        file_path = os.path.join(
-                            directory_with_files, unquote(file_name)
-                        )
+                        file_path = os.path.join(directory_with_files, unquote(file_name))
 
                         if "css" in key:
                             data_key = key.replace("url", "file")
@@ -281,9 +267,7 @@ def import_configuration(self, task_id: int, *args, **kwargs) -> None:
 
                         json_data[data_key] = load_file(file_path)
 
-                serializer = SerializerClass(
-                    instance=instance, data=json_data, context=context
-                )
+                serializer = SerializerClass(instance=instance, data=json_data, context=context)
 
                 if serializer.is_valid():
                     # Perform any desired actions, such as saving the data to the database
@@ -325,15 +309,11 @@ def import_configuration(self, task_id: int, *args, **kwargs) -> None:
 
         configuration_code_as_path = "/".join(manifest["configuration_code"].split("."))
 
-        dest_workflow_directory = (
-            f"{task.master_user.space_code}/workflows/{configuration_code_as_path}"
-        )
+        dest_workflow_directory = f"{task.master_user.space_code}/workflows/{configuration_code_as_path}"
 
         _l.info(f"dest_workflow_directory {dest_workflow_directory}")
 
-        upload_directory_to_storage(
-            f"{output_directory}/workflows", dest_workflow_directory
-        )
+        upload_directory_to_storage(f"{output_directory}/workflows", dest_workflow_directory)
 
         if manifest.get("actions", None):
             for action in manifest["actions"]:
@@ -374,18 +354,14 @@ def export_configuration(self, task_id, *args, **kwargs):
 
     _l.info("export_configuration.Configuration exporting...")
 
-    export_configuration_to_directory(
-        source_directory, configuration, task.master_user, task.member
-    )
+    export_configuration_to_directory(source_directory, configuration, task.master_user, task.member)
 
     _l.info("export_configuration.Configuration exported to directory")
 
     _l.info("export_configuration.Workflows exporting...")
 
     try:
-        export_workflows_to_directory(
-            source_directory, configuration, task.master_user, task.member
-        )
+        export_workflows_to_directory(source_directory, configuration, task.master_user, task.member)
     except Exception as e:
         if not task.notes:
             task.notes = ""
@@ -406,8 +382,7 @@ def export_configuration(self, task_id, *args, **kwargs):
     save_json_to_file(manifest_filepath, manifest)
 
     storage_directory = (
-        f"{task.master_user.space_code}/configurations/{configuration.configuration_code}"
-        f"/{configuration.version}/"
+        f"{task.master_user.space_code}/configurations/{configuration.configuration_code}/{configuration.version}/"
         if configuration.is_from_marketplace
         else f"{task.master_user.space_code}/configurations/custom/"
         f"{configuration.configuration_code}/{configuration.version}/"
@@ -440,9 +415,7 @@ def push_configuration_to_marketplace(self, task_id, *args, **kwargs):
     task.options_object = options_object
     task.save()
 
-    configuration = Configuration.objects.get(
-        configuration_code=options_object["configuration_code"]
-    )
+    configuration = Configuration.objects.get(configuration_code=options_object["configuration_code"])
 
     path = (
         f"/configurations/{configuration.configuration_code}/{configuration.version}/"
@@ -465,11 +438,9 @@ def push_configuration_to_marketplace(self, task_id, *args, **kwargs):
         "manifest": json.dumps(configuration.manifest),
     }
 
-    _l.info(
-        f"push_configuration_to_marketplace.data {data} zip_file_path {zip_file_path}"
-    )
+    _l.info(f"push_configuration_to_marketplace.data {data} zip_file_path {zip_file_path}")
 
-    files = {"file": open(zip_file_path, "rb")}
+    files = {"file": open(zip_file_path, "rb")}  # noqa: SIM115
 
     headers = {"Content-type": "application/json", "Accept": "application/json"}
 
@@ -509,7 +480,7 @@ def push_configuration_to_marketplace(self, task_id, *args, **kwargs):
 
 
 @finmars_task(name="configuration.install_configuration_from_marketplace", bind=True)
-def install_configuration_from_marketplace(self, *args, **kwargs):
+def install_configuration_from_marketplace(self, *args, **kwargs):  # noqa: PLR0915
     task_id = kwargs.get("task_id")
 
     task = CeleryTask.objects.get(id=task_id)
@@ -517,14 +488,9 @@ def install_configuration_from_marketplace(self, *args, **kwargs):
     task.status = CeleryTask.STATUS_PENDING
     task.save()
 
-    ecosystem_defaults = EcosystemDefault.cache.get_cache(
-        master_user_pk=task.master_user.pk
-    )
+    ecosystem_defaults = EcosystemDefault.cache.get_cache(master_user_pk=task.master_user.pk)
 
-    _l.info(
-        f"install_configuration_from_marketplace started: task.id={task.id} "
-        f"options={task.options_object}"
-    )
+    _l.info(f"install_configuration_from_marketplace started: task.id={task.id} options={task.options_object}")
 
     options_object = task.options_object
     #
@@ -539,12 +505,10 @@ def install_configuration_from_marketplace(self, *args, **kwargs):
     headers = {}
     # headers['Authorization'] = 'Token ' + access_token
 
-
     if ecosystem_defaults.license_key:
+        _l.info("license_key found. add to headers request to marketplace")
 
-        _l.info(f"license_key found. add to headers request to marketplace")
-
-        headers['X-License'] = ecosystem_defaults.license_key
+        headers["X-License"] = ecosystem_defaults.license_key
 
     if "^" in options_object["version"]:  # latest
         data = {"configuration_code": options_object["configuration_code"]}
@@ -579,9 +543,7 @@ def install_configuration_from_marketplace(self, *args, **kwargs):
     _l.info(f"remote_configuration {remote_configuration_release}")
 
     try:
-        configuration = Configuration.objects.get(
-            configuration_code=remote_configuration["configuration_code"]
-        )
+        configuration = Configuration.objects.get(configuration_code=remote_configuration["configuration_code"])
     except Exception:
         configuration = Configuration.objects.create(
             configuration_code=remote_configuration["configuration_code"],
@@ -604,9 +566,7 @@ def install_configuration_from_marketplace(self, *args, **kwargs):
             task.parent.refresh_from_db()
 
             step = task.options_object["step"]
-            total = len(task.parent.options_object["dependencies"]) + len(
-                task.parent.options_object["actions"]
-            )
+            total = len(task.parent.options_object["dependencies"]) + len(task.parent.options_object["actions"])
             percent = int((step / total) * 100)
 
             description = f"Step {step}/{total} is installing {configuration.name}"
@@ -671,9 +631,7 @@ def install_configuration_from_marketplace(self, *args, **kwargs):
             task.parent.refresh_from_db()
 
             step = task.options_object["step"]
-            total = len(task.parent.options_object["dependencies"]) + len(
-                task.parent.options_object["actions"]
-            )
+            total = len(task.parent.options_object["dependencies"]) + len(task.parent.options_object["actions"])
             percent = int((step / total) * 100)
 
             description = f"Step {step}/{total} is installed. {configuration.name}"
@@ -687,9 +645,7 @@ def install_configuration_from_marketplace(self, *args, **kwargs):
                 }
             )
 
-    result_object = {
-        "configuration_import": {"task_id": import_configuration_celery_task.id}
-    }
+    result_object = {"configuration_import": {"task_id": import_configuration_celery_task.id}}
     task.result_object = result_object
 
     task.status = CeleryTask.STATUS_DONE
@@ -707,9 +663,7 @@ def finish_package_install(self, task_id, *args, **kwargs):
         _l.info(f"finish_package_install task.id={task.id}  options={options}")
 
         if "dependencies" not in options:
-            raise ValueError(
-                "finish_package_install: invalid configuration, no dependencies !"
-            )
+            raise ValueError("finish_package_install: invalid configuration, no dependencies !")
 
         task.update_progress(
             {
@@ -725,7 +679,7 @@ def finish_package_install(self, task_id, *args, **kwargs):
 
 
 @finmars_task(name="configuration.install_package_from_marketplace", bind=True)
-def install_package_from_marketplace(self, task_id, *args, **kwargs):
+def install_package_from_marketplace(self, task_id, *args, **kwargs):  # noqa: PLR0915
     _l.info("install_package_from_marketplace")
 
     parent_task = CeleryTask.objects.get(id=task_id)
@@ -772,13 +726,9 @@ def install_package_from_marketplace(self, task_id, *args, **kwargs):
     _l.info(f"remote_configuration {remote_configuration_release}")
 
     try:
-        configuration = Configuration.objects.get(
-            configuration_code=remote_configuration["configuration_code"]
-        )
+        configuration = Configuration.objects.get(configuration_code=remote_configuration["configuration_code"])
     except Exception:
-        configuration = Configuration.objects.create(
-            configuration_code=remote_configuration["configuration_code"]
-        )
+        configuration = Configuration.objects.create(configuration_code=remote_configuration["configuration_code"])
 
     configuration.name = remote_configuration["name"]
     configuration.description = remote_configuration["description"]
@@ -857,7 +807,7 @@ def install_package_from_marketplace(self, task_id, *args, **kwargs):
             install_configuration_from_marketplace(task_id=celery_task.id)
         except Exception as e:
             celery_task_list = celery_task_list[i + 1 :]
-            for celery_task in celery_task_list:
+            for celery_task in celery_task_list:  # noqa: PLW2901
                 celery_task.status = CeleryTask.STATUS_CANCELED
             CeleryTask.objects.bulk_update(celery_task_list, ["status"])
             raise e

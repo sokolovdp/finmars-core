@@ -4,12 +4,11 @@ from django.contrib.contenttypes.models import ContentType
 
 from poms.common.admin import AbstractModelAdmin
 from poms.obj_attrs.models import (
-    GenericAttributeType,
-    GenericClassifier,
     GenericAttribute,
+    GenericAttributeType,
     GenericAttributeTypeOption,
+    GenericClassifier,
 )
-
 
 # class AbstractAttributeTypeAdmin(admin.ModelAdmin):
 #     list_display = ['id', 'master_user', 'user_code', 'name', 'value_type', ]
@@ -161,7 +160,7 @@ class GenericAttributeAdmin(AbstractModelAdmin):
     save_as = True
 
     def get_queryset(self, request):
-        qs = super(GenericAttributeAdmin, self).get_queryset(request)
+        qs = super().get_queryset(request)
         return qs.prefetch_related("content_object")
 
     def master_user(self, obj):
@@ -188,6 +187,4 @@ class GenericAttributeInline(GenericTabularInline):
             kwargs["queryset"] = qs.select_related("content_type").filter(
                 content_type=ContentType.objects.get_for_model(self.parent_model)
             )
-        return super(GenericAttributeInline, self).formfield_for_foreignkey(
-            db_field, request=request, **kwargs
-        )
+        return super().formfield_for_foreignkey(db_field, request=request, **kwargs)

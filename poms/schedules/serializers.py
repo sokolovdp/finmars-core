@@ -79,9 +79,7 @@ class ScheduleSerializer(ModelMetaSerializer):
             procedures = self.save_procedures(instance, procedures)
 
         if procedures is not empty:
-            instance.procedures.exclude(
-                id__in=[proc.id for proc in procedures]
-            ).delete()
+            instance.procedures.exclude(id__in=[proc.id for proc in procedures]).delete()
 
         return instance
 
@@ -90,7 +88,7 @@ class ScheduleSerializer(ModelMetaSerializer):
 
         current_procedures = {i.id: i for i in instance.procedures.all()}
         new_procedures = []
-        for order, procedure_data in enumerate(procedures_data):
+        for order, procedure_data in enumerate(procedures_data):  # noqa: B007
             pk = procedure_data.pop("id", None)
             procedure = current_procedures.pop(pk, None)
 
@@ -98,9 +96,7 @@ class ScheduleSerializer(ModelMetaSerializer):
 
             if procedure is None:
                 try:
-                    procedure = ScheduleProcedure.objects.get(
-                        schedule=instance, order=procedure_data["order"]
-                    )
+                    procedure = ScheduleProcedure.objects.get(schedule=instance, order=procedure_data["order"])
                 except ScheduleProcedure.DoesNotExist:
                     procedure = ScheduleProcedure(schedule=instance)
 

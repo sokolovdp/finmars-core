@@ -11,9 +11,7 @@ class ObjectPermissionBackend(BaseFilterBackend):
     def filter_queryset(self, request, queryset, view):
         # _l.info('ObjectPermissionBackend.filter_queryset.request %s' % request)
 
-        result = filter_queryset_with_access_policies(
-            request.user.member, queryset, view
-        )
+        result = filter_queryset_with_access_policies(request.user.member, queryset, view)
 
         # _l.info('ObjectPermissionBackend.filter_queryset after access filter: %s' % result.count())
 

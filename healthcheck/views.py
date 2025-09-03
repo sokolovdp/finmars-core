@@ -1,16 +1,15 @@
-from django.http import JsonResponse
-from django.views.decorators.cache import never_cache
-from rest_framework.views import APIView
-from rest_framework.permissions import AllowAny
 from concurrent.futures import ThreadPoolExecutor
+
+from django.http import JsonResponse
 from django.utils.decorators import method_decorator
+from django.views.decorators.cache import never_cache
+from rest_framework.permissions import AllowAny
+from rest_framework.views import APIView
 
-
-from healthcheck.handlers import DatabasePlugin, MemoryUsagePlugin, DiskUsagePlugin, UptimePlugin, CeleryPlugin
+from healthcheck.handlers import CeleryPlugin, DatabasePlugin, DiskUsagePlugin, MemoryUsagePlugin, UptimePlugin
 
 
 class HealthcheckView(APIView):
-
     permission_classes = [AllowAny]
     authentication_classes = []
 
@@ -26,20 +25,11 @@ class HealthcheckView(APIView):
     @property
     def plugins(self):
         if not self._plugins:
-            self._plugins = [
-                DiskUsagePlugin(),
-                MemoryUsagePlugin(),
-                DatabasePlugin(),
-                UptimePlugin(),
-                CeleryPlugin()
-            ]
+            self._plugins = [DiskUsagePlugin(), MemoryUsagePlugin(), DatabasePlugin(), UptimePlugin(), CeleryPlugin()]
         return self._plugins
 
     def unlock(self, request):
-
-        key = request.data["SPACE_SECRET_KEY"]
-
-
+        key = request.data["SPACE_SECRET_KEY"]  # noqa: F841
 
     def run_check(self):
         errors = []
@@ -50,24 +40,24 @@ class HealthcheckView(APIView):
                 return plugin
             finally:
                 from django.db import connections
+
                 connections.close_all()
 
         with ThreadPoolExecutor(max_workers=len(self.plugins) or 1) as executor:
             for plugin in executor.map(_run, self.plugins):
-                    errors.extend(plugin.errors)
+                errors.extend(plugin.errors)
 
         return errors
 
-    @method_decorator(never_cache, name='dispatch')
+    @method_decorator(never_cache, name="dispatch")
     def get(self, request, *args, **kwargs):
-
         data = {}
-        data['version'] = 1
-        data['checks'] = {}
-        data['status'] = 'pass'
-        data['notes'] = ''
-        data['description'] = ''
-        data['output'] = ''
+        data["version"] = 1
+        data["checks"] = {}
+        data["status"] = "pass"
+        data["notes"] = ""
+        data["description"] = ""
+        data["output"] = ""
         status_code = 200
 
         # if self.errors:
@@ -80,7 +70,4 @@ class HealthcheckView(APIView):
         #
         #     data['checks'][key] = item.pretty_status()
 
-        return JsonResponse(
-            data,
-            status=status_code
-        )
+        return JsonResponse(data, status=status_code)

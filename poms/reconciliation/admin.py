@@ -1,8 +1,8 @@
 from django.contrib import admin
 
 from poms.reconciliation.models import (
-    ReconciliationComplexTransactionField,
     ReconciliationBankFileField,
+    ReconciliationComplexTransactionField,
     ReconciliationNewBankFileField,
 )
 
@@ -27,9 +27,7 @@ class ReconciliationComplexTransactionFieldAdmin(admin.ModelAdmin):
     inlines = []
 
 
-admin.site.register(
-    ReconciliationComplexTransactionField, ReconciliationComplexTransactionFieldAdmin
-)
+admin.site.register(ReconciliationComplexTransactionField, ReconciliationComplexTransactionFieldAdmin)
 
 
 class ReconciliationBankFileFieldAdmin(admin.ModelAdmin):

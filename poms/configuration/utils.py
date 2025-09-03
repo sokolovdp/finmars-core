@@ -4,9 +4,9 @@ import logging
 import os
 import re
 import time
+import zipfile
 from typing import Any
 from urllib.parse import unquote
-import zipfile
 
 import requests
 from django.apps import apps
@@ -14,10 +14,10 @@ from django.core.exceptions import FieldDoesNotExist
 from django.core.files.base import ContentFile, File
 from django.http import FileResponse
 
+from poms.auth_tokens.utils import get_refresh_token
 from poms.common.http_client import HttpClient
 from poms.common.storage import get_storage
 from poms.common.utils import get_content_type_by_name, get_serializer
-from poms.auth_tokens.utils import get_refresh_token
 from poms.users.models import MasterUser
 
 _l = logging.getLogger("poms.configuration")
@@ -49,7 +49,7 @@ def remove_id_key_recursively(data):
     data.pop("id", None)
 
     # Recursively process nested dictionaries
-    for key, value in data.items():
+    for key, value in data.items():  # noqa: B007
         if isinstance(value, dict):
             remove_id_key_recursively(value)
         elif isinstance(value, list):
@@ -85,7 +85,7 @@ def save_json_to_file(file_path, json_data):
 
 
 def read_json_file(file_path):
-    with open(file_path, "r", encoding="utf-8") as file:
+    with open(file_path, encoding="utf-8") as file:
         data = json.load(file)
     return data
 
@@ -111,9 +111,7 @@ def model_has_field(model, field_name):
         return False
 
 
-def save_whitelable_files_from_storage(
-    folder_path: str, json_data: dict[str, Any], context: dict[str, Any]
-) -> None:
+def save_whitelable_files_from_storage(folder_path: str, json_data: dict[str, Any], context: dict[str, Any]) -> None:
     try:
         if not os.path.exists(folder_path):
             os.makedirs(folder_path)
@@ -124,7 +122,7 @@ def save_whitelable_files_from_storage(
         files_key = ["favicon_url", "logo_dark_url", "logo_light_url", "theme_css_url"]
         for key in files_key:
             file_url: str = json_data.get(key)
-            file_path = unquote(file_url.lstrip("api/storage/"))
+            file_path = unquote(file_url.lstrip("api/storage/"))  # noqa: PLE1310, B005
             src_file_path = os.path.join(space_code, file_path)
 
             with storage.open(src_file_path, "rb") as src_file:
@@ -151,20 +149,16 @@ def save_serialized_entity(content_type, configuration_code, source_directory, c
     try:
         model = apps.get_model(content_type)
     except Exception as e:
-        raise RuntimeError(
-            f"Could not find model for content type: {content_type}"
-        ) from e
+        raise RuntimeError(f"Could not find model for content type: {content_type}") from e
 
     dash = f"{configuration_code}:-"
 
     if model_has_field(model, "is_deleted"):
-        filtered_objects = model.objects.filter(
-            configuration_code=configuration_code, is_deleted=False
-        ).exclude(user_code=dash)
+        filtered_objects = model.objects.filter(configuration_code=configuration_code, is_deleted=False).exclude(
+            user_code=dash
+        )
     else:
-        filtered_objects = model.objects.filter(
-            configuration_code=configuration_code
-        ).exclude(user_code=dash)
+        filtered_objects = model.objects.filter(configuration_code=configuration_code).exclude(user_code=dash)
 
     serializer_class = get_serializer(content_type)
 
@@ -201,21 +195,15 @@ def save_serialized_entity(content_type, configuration_code, source_directory, c
             save_whitelable_files_from_storage(path, serialized_data, context)
 
 
-def save_serialized_attribute_type(
-    content_type, configuration_code, content_type_key, source_directory, context
-):
+def save_serialized_attribute_type(content_type, configuration_code, content_type_key, source_directory, context):
     try:
         model = apps.get_model(content_type)
     except Exception as e:
-        raise RuntimeError(
-            f"Could not find model for content type: {content_type}"
-        ) from e
+        raise RuntimeError(f"Could not find model for content type: {content_type}") from e
 
     entity_content_type = get_content_type_by_name(content_type_key)
 
-    filtered_objects = model.objects.filter(
-        configuration_code=configuration_code, content_type=entity_content_type
-    )
+    filtered_objects = model.objects.filter(configuration_code=configuration_code, content_type=entity_content_type)
 
     SerializerClass = get_serializer(content_type)
 
@@ -233,13 +221,12 @@ def save_serialized_attribute_type(
         save_json_to_file(path, serialized_data)
 
 
-def save_serialized_custom_fields(
-    configuration_code, report_content_type, source_directory, context
-):
+def save_serialized_custom_fields(configuration_code, report_content_type, source_directory, context):
     """
 
     :param configuration_code:
-    :param report_content_type: Allowed values: 'reports.balancereport', 'reports.plreport', 'reports.transactionreport'
+    :param report_content_type: Allowed values: 'reports.balancereport', 'reports.plreport',
+        'reports.transactionreport'
     :type report_content_type: str
     :param source_directory:
     :param context:
@@ -272,16 +259,12 @@ def save_serialized_custom_fields(
     }
 
     if report_content_type not in custom_fields_map:
-        raise RuntimeError(
-            f"Could not find report with content type: {report_content_type}"
-        )
+        raise RuntimeError(f"Could not find report with content type: {report_content_type}")
 
     model = custom_fields_map[report_content_type][0]
     SerializerClass = custom_fields_map[report_content_type][1]
 
-    filtered_objects = model.objects.filter(
-        configuration_code=configuration_code, master_user=context["master_user"]
-    )
+    filtered_objects = model.objects.filter(configuration_code=configuration_code, master_user=context["master_user"])
 
     for item in filtered_objects:
         serializer = SerializerClass(item, context=context)
@@ -296,13 +279,9 @@ def save_serialized_layout(content_type, configuration_code, source_directory, c
     try:
         model = apps.get_model(content_type)
     except Exception as e:
-        raise RuntimeError(
-            f"Could not find model for content type: {content_type}"
-        ) from e
+        raise RuntimeError(f"Could not find model for content type: {content_type}") from e
 
-    filtered_objects = model.objects.filter(
-        configuration_code=configuration_code, member=context["member"]
-    )
+    filtered_objects = model.objects.filter(configuration_code=configuration_code, member=context["member"])
 
     _l.info(f"filtered_objects {filtered_objects}")
 
@@ -315,25 +294,16 @@ def save_serialized_layout(content_type, configuration_code, source_directory, c
 
         serialized_data.pop("id")
 
-        path = (
-            source_directory
-            + "/"
-            + user_code_to_file_name(configuration_code, item.user_code)
-            + ".json"
-        )
+        path = source_directory + "/" + user_code_to_file_name(configuration_code, item.user_code) + ".json"
 
         save_json_to_file(path, serialized_data)
 
 
-def save_serialized_entity_layout(
-    content_type, configuration_code, content_type_key, source_directory, context
-):
+def save_serialized_entity_layout(content_type, configuration_code, content_type_key, source_directory, context):
     try:
         model = apps.get_model(content_type)
     except Exception as e:
-        raise RuntimeError(
-            f"Could not find model for content type: {content_type}"
-        ) from e
+        raise RuntimeError(f"Could not find model for content type: {content_type}") from e
 
     entity_content_type = get_content_type_by_name(content_type_key)
 
@@ -362,12 +332,7 @@ def save_serialized_entity_layout(
             serialized_data["data"]["reportOptions"]["portfolios"] = []
             serialized_data["data"]["reportOptions"]["portfolios_object"] = []
 
-        path = (
-            source_directory
-            + "/"
-            + user_code_to_file_name(configuration_code, item.user_code)
-            + ".json"
-        )
+        path = source_directory + "/" + user_code_to_file_name(configuration_code, item.user_code) + ".json"
 
         save_json_to_file(path, serialized_data)
 
@@ -381,9 +346,7 @@ def list_json_files(directory: str) -> list[str]:
     json_files = []
 
     for root, _, files in os.walk(directory):
-        json_files.extend(
-            os.path.join(root, file) for file in files if file.endswith(".json")
-        )
+        json_files.extend(os.path.join(root, file) for file in files if file.endswith(".json"))
     return json_files
 
 
@@ -412,12 +375,10 @@ def copy_directory(src_dir, dst_dir):
 
 
 def upload_directory_to_storage(local_directory, storage_directory):
-    for root, dirs, files in os.walk(local_directory):
+    for root, dirs, files in os.walk(local_directory):  # noqa: B007
         for file in files:
             local_file_path = os.path.join(root, file)
-            storage_file_path = os.path.join(
-                storage_directory, os.path.relpath(local_file_path, local_directory)
-            )
+            storage_file_path = os.path.join(storage_directory, os.path.relpath(local_file_path, local_directory))
 
             with open(local_file_path, "rb") as local_file:
                 content = local_file.read()
@@ -434,8 +395,6 @@ def get_headers_with_token(token: str):
 
 def run_workflow(user_code, payload, master_task):
     from django.contrib.auth import get_user_model
-
-    from rest_framework_simplejwt.tokens import RefreshToken
 
     from poms_app import settings
 
@@ -466,8 +425,6 @@ def run_workflow(user_code, payload, master_task):
 
 def get_workflow(workflow_id: int, master_task):
     from django.contrib.auth import get_user_model
-
-    from rest_framework_simplejwt.tokens import RefreshToken
 
     from poms_app import settings
 
@@ -523,9 +480,7 @@ def create_or_update_workflow_template(platform, json_data: dict[str, Any]):
     refresh = get_refresh_token(bot, platform)
     headers = get_headers_with_token(refresh.access_token)
 
-    base_url = (
-        f"https://{settings.DOMAIN_NAME}/{platform.realm_code}/{platform.space_code}"
-    )
+    base_url = f"https://{settings.DOMAIN_NAME}/{platform.realm_code}/{platform.space_code}"
     api_endpoint = "workflow/api/v1/workflow-template"
 
     workflow_template_data = {

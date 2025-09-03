@@ -18,18 +18,16 @@ class EmailSerializer(serializers.Serializer):
     message = serializers.CharField(max_length=1000)
     # from_email = serializers.EmailField()
     recipient_list = serializers.ListField(child=serializers.EmailField())
-    html_message = serializers.CharField(
-        max_length=1000, allow_blank=True, required=False
-    )
+    html_message = serializers.CharField(max_length=1000, allow_blank=True, required=False)
 
 
-class Language(object):
+class Language:
     def __init__(self, code="", name=""):
         self.code = code
         self.name = name
 
     def __str__(self):
-        return "{}: {}".format(self.code, self.name)
+        return f"{self.code}: {self.name}"
 
 
 class LanguageSerializer(serializers.Serializer):
@@ -45,14 +43,14 @@ class LanguageSerializer(serializers.Serializer):
         return instance
 
 
-class Timezone(object):
+class Timezone:
     def __init__(self, code="", name="", offset=0):
         self.code = code
         self.name = name
         self.offset = offset
 
     def __str__(self):
-        return "{}: {}".format(self.code, self.name)
+        return f"{self.code}: {self.name}"
 
 
 class TimezoneSerializer(serializers.Serializer):
@@ -69,12 +67,8 @@ class TimezoneSerializer(serializers.Serializer):
 
 
 class ExpressionSerializer(serializers.Serializer):
-    expression = ExpressionField(
-        required=True, style={"base_template": "textarea.html"}
-    )
-    names1 = serializers.DictField(
-        required=False, allow_null=True, help_text="Raw names as JSON object"
-    )
+    expression = ExpressionField(required=True, style={"base_template": "textarea.html"})
+    names1 = serializers.DictField(required=False, allow_null=True, help_text="Raw names as JSON object")
     # names2 = ExpressionField(required=False, allow_null=True, help_text='Names as expression',
     #                          style={'base_template': 'textarea.html'})
     names = serializers.ReadOnlyField()
@@ -85,7 +79,7 @@ class ExpressionSerializer(serializers.Serializer):
     # help = serializers.SerializerMethodField()
 
     def __init__(self, *args, **kwargs):
-        super(ExpressionSerializer, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         request = self.context.get("request", None)
         if request and request.query_params.get("help", "1") == "0":
             self.fields.pop("help_raw")
@@ -101,9 +95,7 @@ class ExpressionSerializer(serializers.Serializer):
                 try:
                     names2 = formula.safe_eval(names2, context=self.context)
                 except formula.InvalidExpression as e:
-                    raise ValidationError(
-                        {"names2": gettext_lazy("Invalid expression.")}
-                    )
+                    raise ValidationError({"names2": gettext_lazy("Invalid expression.")}) from e
             names = {}
             if names1:
                 names.update(names1)
@@ -111,18 +103,16 @@ class ExpressionSerializer(serializers.Serializer):
                 names.update(names2)
             attrs["names"] = names
             try:
-                attrs["result"], attrs["log"] = formula.safe_eval_with_logs(
-                    expression, names, context=self.context
-                )
+                attrs["result"], attrs["log"] = formula.safe_eval_with_logs(expression, names, context=self.context)
             except formula.InvalidExpression as e:
-                _l.error("Manual expression error %s" % e)
-                _l.error("Manual expression traceback %s" % traceback.format_exc())
+                _l.error("Manual expression error %s", e)
+                _l.error("Manual expression traceback %s", traceback.format_exc())
                 raise ValidationError(
                     {
                         "expression": gettext_lazy("Invalid expression."),
                         "error_message": str(e),
                     }
-                )
+                ) from e
         return attrs
 
     def get_help(self, obj):
@@ -135,9 +125,7 @@ class ExpressionSerializer(serializers.Serializer):
 class SplitDateRangeSerializer(serializers.Serializer):
     start_date = serializers.DateField(required=True, format=API_DATE_FORMAT)
     end_date = serializers.DateField(required=True, format=API_DATE_FORMAT)
-    frequency = serializers.CharField(
-        required=True, max_length=1, help_text="D (dayly), W, M, Q, Y, C"
-    )
+    frequency = serializers.CharField(required=True, max_length=1, help_text="D (dayly), W, M, Q, Y, C")
     is_only_bday = serializers.BooleanField(required=True)
 
     def validate(self, data):
@@ -162,9 +150,7 @@ class PickDatesFromRangeSerializer(SplitDateRangeSerializer):
 
 class CalcPeriodDateSerializer(serializers.Serializer):
     date = serializers.DateField(required=True, format=API_DATE_FORMAT)
-    frequency = serializers.CharField(
-        required=True, max_length=1, help_text="D (dayly), W, M, Q, Y, C"
-    )
+    frequency = serializers.CharField(required=True, max_length=1, help_text="D (dayly), W, M, Q, Y, C")
     is_only_bday = serializers.BooleanField(required=True)
     shift = serializers.IntegerField(required=True)
     start = serializers.BooleanField(required=True)

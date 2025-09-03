@@ -1,9 +1,9 @@
 import json
 from unittest import mock
 
-from django.test import override_settings
 from django.contrib.contenttypes.models import ContentType
 from django.core.files.uploadedfile import SimpleUploadedFile
+from django.test import override_settings
 
 from poms.celery_tasks.models import CeleryTask
 from poms.common.common_base_test import BaseTestCase

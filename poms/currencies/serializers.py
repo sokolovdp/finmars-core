@@ -1,5 +1,3 @@
-from typing import Dict, List
-
 from django.utils.timezone import now
 from rest_framework import serializers
 from rest_framework.fields import ReadOnlyField
@@ -65,15 +63,11 @@ class CurrencySerializer(
 
         super().__init__(*args, **kwargs)
 
-        self.fields["pricing_policies"] = CurrencyPricingPolicySerializer(
-            allow_null=True, many=True, required=False
-        )
+        self.fields["pricing_policies"] = CurrencyPricingPolicySerializer(allow_null=True, many=True, required=False)
 
         from poms.instruments.serializers import CountrySerializer
 
-        self.fields["country_object"] = CountrySerializer(
-            source="country", read_only=True
-        )
+        self.fields["country_object"] = CountrySerializer(source="country", read_only=True)
 
     def create(self, validated_data):
         pricing_policies = validated_data.pop("pricing_policies", None)
@@ -104,7 +98,7 @@ class CurrencySerializer(
             ids.add(obj.id)
 
         to_delete = CurrencyPricingPolicy.objects.filter(currency=instance)
-        if len(ids):
+        if ids:
             to_delete = to_delete.exclude(id__in=ids)
         to_delete.delete()
 
@@ -151,9 +145,7 @@ class CurrencyHistorySerializer(ModelMetaSerializer, ModelWithTimeStampSerialize
     currency = CurrencyField()
     currency_object = CurrencyViewSerializer(source="currency", read_only=True)
     pricing_policy = PricingPolicyField(allow_null=False)
-    pricing_policy_object = serializers.PrimaryKeyRelatedField(
-        source="pricing_policy", read_only=True
-    )
+    pricing_policy_object = serializers.PrimaryKeyRelatedField(source="pricing_policy", read_only=True)
     fx_rate = FloatEvalField()
     procedure_modified_datetime = ReadOnlyField()
 
@@ -177,9 +169,7 @@ class CurrencyHistorySerializer(ModelMetaSerializer, ModelWithTimeStampSerialize
 
         super().__init__(*args, **kwargs)
 
-        self.fields["pricing_policy_object"] = PricingPolicyViewSerializer(
-            source="pricing_policy", read_only=True
-        )
+        self.fields["pricing_policy_object"] = PricingPolicyViewSerializer(source="pricing_policy", read_only=True)
 
     def get_unique_together_validators(self):
         return []
@@ -208,10 +198,7 @@ class CurrencyHistorySerializer(ModelMetaSerializer, ModelWithTimeStampSerialize
             section="prices",
             type="success",
             title="New FX rate (manual)",
-            description=(
-                f"{instance.currency.user_code} {str(instance.date)} "
-                f"{str(instance.fx_rate)}",
-            ),
+            description=(f"{instance.currency.user_code} {str(instance.date)} {str(instance.fx_rate)}",),
         )
 
         return instance
@@ -292,14 +279,14 @@ class CurrencyDatabaseSearchRequestSerializer(serializers.Serializer):
     numeric_code = serializers.CharField(required=False)
 
     @staticmethod
-    def _filter_list(items: List[Dict], key: str, value: str) -> List[Dict]:
+    def _filter_list(items: list[dict], key: str, value: str) -> list[dict]:
         if key and value and items:
             value_lower = value.lower()
             return list(filter(lambda x: value_lower in x[key].lower(), items))
         else:
             return []
 
-    def filter_results(self, results: List[Dict]) -> List[Dict]:
+    def filter_results(self, results: list[dict]) -> list[dict]:
         if not results:
             return []
 

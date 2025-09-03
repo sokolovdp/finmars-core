@@ -2,6 +2,7 @@ import logging
 import random
 import string
 import time
+from datetime import timedelta
 
 import jwt
 from django.conf import settings
@@ -11,26 +12,23 @@ from django.utils.translation import gettext_lazy as _
 from rest_framework import exceptions
 from rest_framework.authentication import TokenAuthentication, get_authorization_header
 
-from datetime import timedelta
 from poms.common.keycloak import KeycloakConnect
 
 _l = logging.getLogger("poms.common")
 
+
 def generate_random_string(N):
-    return "".join(
-        random.choice(string.ascii_lowercase + string.digits) for _ in range(N)
-    )
+    return "".join(random.choice(string.ascii_lowercase + string.digits) for _ in range(N))
+
 
 def get_access_token(request):
     auth = get_authorization_header(request).split()
 
     try:
         token = auth[1].decode()
-    except UnicodeError:
-        msg = _(
-            "Invalid token header. Token string should not contain invalid characters."
-        )
-        raise exceptions.AuthenticationFailed(msg)
+    except UnicodeError as e:
+        msg = _("Invalid token header. Token string should not contain invalid characters.")
+        raise exceptions.AuthenticationFailed(msg) from e
 
     return token
 
@@ -51,8 +49,8 @@ class KeycloakAuthentication(TokenAuthentication):
 
         if not auth:
             for key, value in request.COOKIES.items():
-                if "access_token" == key:
-                    auth = ["Token".encode(), value.encode()]
+                if key == "access_token":
+                    auth = [b"Token", value.encode()]
 
         if not auth or auth[0].lower() != self.keyword.lower().encode():
             return None
@@ -66,11 +64,9 @@ class KeycloakAuthentication(TokenAuthentication):
 
         try:
             token = auth[1].decode()
-        except UnicodeError:
-            msg = _(
-                "Invalid token header. Token string should not contain invalid characters."
-            )
-            raise exceptions.AuthenticationFailed(msg)
+        except UnicodeError as e:
+            msg = _("Invalid token header. Token string should not contain invalid characters.")
+            raise exceptions.AuthenticationFailed(msg) from e
 
         return token
 
@@ -78,7 +74,7 @@ class KeycloakAuthentication(TokenAuthentication):
         # print('KeycloakAuthentication.authenticate')
         # print('KeycloakAuthentication.request.method %s' % request.method)
 
-        user_model = get_user_model()
+        user_model = get_user_model()  # noqa: F841
 
         if request.method == "OPTIONS":
             finmars_bot = User.objects.get(username="finmars_bot")
@@ -87,16 +83,14 @@ class KeycloakAuthentication(TokenAuthentication):
 
         token = self.get_auth_token_from_request(request)
         if token is None:
-            return (
-                None  # No token or not a Bearer token, continue to next authentication
-            )
+            return None  # No token or not a Bearer token, continue to next authentication
 
         return self.authenticate_credentials(token, request)
 
     def authenticate_credentials(self, key, request=None):
         from poms.users.models import MasterUser, Member
 
-        auth_start_time = time.perf_counter()
+        auth_start_time = time.perf_counter()  # noqa: F841
         """
         Validate user Berarer token in keycloak
 
@@ -117,23 +111,23 @@ class KeycloakAuthentication(TokenAuthentication):
         #     raise exceptions.AuthenticationFailed(msg)
         try:
             userinfo = self.keycloak.userinfo(key)
-        except Exception as e:
+        except Exception:
             msg = _("Invalid or expired token.")
-            raise exceptions.AuthenticationFailed(msg)
+            raise exceptions.AuthenticationFailed(msg) from e  # noqa: F821
 
         logging.info(f"userinfo: {userinfo}")
 
         try:
             user = User.objects.get(username=userinfo["preferred_username"])
         except Exception as e:
-            if settings.EDITION_TYPE != "community" or settings.ADMIN_USERNAME != userinfo["preferred_username"]:
-                _l.error("User not found %s" % e)
-                raise exceptions.AuthenticationFailed(e)
+            if settings.EDITION_TYPE != "community" or userinfo["preferred_username"] != settings.ADMIN_USERNAME:
+                _l.error("User not found %s", e)
+                raise exceptions.AuthenticationFailed(e) from e
 
             user = User.objects.create_superuser(
-                    username=userinfo["preferred_username"],
-                    password=settings.ADMIN_PASSWORD,
-                )
+                username=userinfo["preferred_username"],
+                password=settings.ADMIN_PASSWORD,
+            )
             logging.info(f"user: {user}")
 
             master_user = MasterUser.objects.all().first()
@@ -146,7 +140,8 @@ class KeycloakAuthentication(TokenAuthentication):
             logging.info(f"master_user: {master_user}")
 
             member = Member.objects.get_or_create(
-                user=user, master_user=master_user, 
+                user=user,
+                master_user=master_user,
                 defaults=dict(is_owner=True, is_admin=True, username=user.username),
             )
             logging.info(f"member: {member}")
@@ -192,8 +187,8 @@ class JWTAuthentication(TokenAuthentication):
 
         if not auth:
             for key, value in request.COOKIES.items():
-                if "bearer_token" == key:
-                    auth = ["Bearer".encode(), value.encode()]
+                if key == "bearer_token":
+                    auth = [b"Bearer", value.encode()]
 
         if not auth or auth[0].lower() != self.keyword.lower().encode():
             return None  # Ensure that if there's no 'Bearer', None is returned.
@@ -207,16 +202,14 @@ class JWTAuthentication(TokenAuthentication):
 
         try:
             token = auth[1].decode()
-        except UnicodeError:
-            msg = _(
-                "Invalid token header. Token string should not contain invalid characters."
-            )
-            raise exceptions.AuthenticationFailed(msg)
+        except UnicodeError as e:
+            msg = _("Invalid token header. Token string should not contain invalid characters.")
+            raise exceptions.AuthenticationFailed(msg) from e
 
         return token
 
     def authenticate(self, request):
-        user_model = get_user_model()
+        user_model = get_user_model()  # noqa: F841
 
         if request.method == "OPTIONS":
             finmars_bot = User.objects.get(username="finmars_bot")
@@ -225,14 +218,12 @@ class JWTAuthentication(TokenAuthentication):
 
         token = self.get_auth_token_from_request(request)
         if token is None:
-            return (
-                None  # No token or not a Bearer token, continue to next authentication
-            )
+            return None  # No token or not a Bearer token, continue to next authentication
 
         return self.authenticate_credentials(token, request)
 
     def authenticate_credentials(self, key, request=None):
-        user_model = get_user_model()
+        user_model = get_user_model()  # noqa: F841
 
         # user = user_model.objects.get(username=userinfo['preferred_username'])
 
@@ -245,18 +236,18 @@ class JWTAuthentication(TokenAuthentication):
                 options={"leeway": timedelta(seconds=5)},
             )
 
-        except jwt.ExpiredSignatureError:
-            raise exceptions.AuthenticationFailed("Token has expired")
+        except jwt.ExpiredSignatureError as e:
+            raise exceptions.AuthenticationFailed("Token has expired") from e
         except jwt.InvalidTokenError as e:
-            raise exceptions.AuthenticationFailed(f"Invalid token: {str(e)}")
+            raise exceptions.AuthenticationFailed(f"Invalid token: {str(e)}") from e
         except Exception as e:
-            raise exceptions.AuthenticationFailed(str(e))
+            raise exceptions.AuthenticationFailed(str(e)) from e
 
         try:
             user = User.objects.get(username=payload["username"])
         except Exception as e:
             # _l.error("User not found %s" % e)
 
-            raise exceptions.AuthenticationFailed(e)
+            raise exceptions.AuthenticationFailed(e) from e
 
         return user, key

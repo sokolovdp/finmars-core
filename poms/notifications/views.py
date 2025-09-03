@@ -8,7 +8,6 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from poms.common.filters import CharFilter, NoOpFilter
-
 from poms.common.views import AbstractReadOnlyModelViewSet
 from poms.notifications.filters import (
     NotificationContentTypeMultipleChoiceFilter,
@@ -77,9 +76,7 @@ class NotificationViewSet(AbstractReadOnlyModelViewSet):
         serializer_class=serializers.Serializer,
     )
     def mark_all_as_read(self, request, pk=None, realm_code=None, space_code=None):
-        request.user.notifications.filter(read_date__isnull=True).update(
-            read_date=timezone.now()
-        )
+        request.user.notifications.filter(read_date__isnull=True).update(read_date=timezone.now())
         serializer = self.get_serializer(instance=[], many=True)
         return Response(serializer.data)
 

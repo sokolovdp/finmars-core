@@ -9,13 +9,13 @@ from poms.configuration_import.serializers import ConfigurationImportAsJsonSeria
 from poms.configuration_import.tasks import configuration_import_as_json
 from poms.configuration_sharing.filters import OwnerByRecipient, OwnerBySender
 from poms.configuration_sharing.models import (
-    SharedConfigurationFile,
     InviteToSharedConfigurationFile,
+    SharedConfigurationFile,
 )
 from poms.configuration_sharing.serializers import (
-    SharedConfigurationFileSerializer,
     InviteToSharedConfigurationFileSerializer,
     MyInviteToSharedConfigurationFileSerializer,
+    SharedConfigurationFileSerializer,
 )
 from poms.ui.models import ListLayout
 
@@ -55,11 +55,9 @@ class SharedConfigurationFileViewSet(AbstractModelViewSet):
 
         if is_force:
             master_user = request.user.master_user
-            layouts = ListLayout.objects.filter(
-                member__master_user=master_user, sourced_from_global_layout=instance
-            )
+            layouts = ListLayout.objects.filter(member__master_user=master_user, sourced_from_global_layout=instance)
 
-            _l.info("layouts to force update %s" % len(layouts))
+            _l.info("layouts to force update %s", len(layouts))
 
             processed = 0
 
@@ -87,7 +85,7 @@ class SharedConfigurationFileViewSet(AbstractModelViewSet):
                 )
                 processed = processed + 1
 
-            _l.info("Processed layouts %s" % processed)
+            _l.info("Processed layouts %s", processed)
 
         return Response(serializer.data)
 

@@ -27,11 +27,11 @@ class Command(BaseCommand):
 
         version_path = os.path.join(settings.BASE_DIR, "data", "version.txt")
 
-        print("version_path %s" % version_path)
-        print("options %s" % options)
+        print("version_path %s", version_path)
+        print("options %s", options)
 
         if os.path.isfile(version_path):
-            with open(version_path, "r") as f:
+            with open(version_path) as f:
                 try:
                     line = f.read()
 
@@ -43,7 +43,7 @@ class Command(BaseCommand):
                     self.current_revision = int(parts[2])
 
                 except Exception as e:
-                    print("Can't parse version file. Error:  %s" % e)
+                    print(f"Can't parse version file. Error:  {e}")
 
             with open(version_path, "w") as f:
                 version = self.get_version_str(options, version_date)
@@ -86,6 +86,6 @@ class Command(BaseCommand):
             + version_date
         )
 
-        print("New version: %s" % result_version)
+        print("New version: %s", result_version)
 
         return result_version

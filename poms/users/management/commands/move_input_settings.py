@@ -21,4 +21,4 @@ class Command(BaseCommand):
 
                 input.save()
 
-        self.stdout.write("Job Done. Inputs Affected %s " % count)
+        self.stdout.write(f"Job Done. Inputs Affected {count}")

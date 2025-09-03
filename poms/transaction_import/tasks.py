@@ -28,9 +28,7 @@ def transaction_import(self, task_id, procedure_instance_id=None, *args, **kwarg
 
         if instance.scheme.data_preprocess_expression:
             try:
-                _l.info(
-                    f"Going to execute {instance.scheme.data_preprocess_expression}"
-                )
+                _l.info(f"Going to execute {instance.scheme.data_preprocess_expression}")
 
                 self.finmars_task.update_progress(
                     {
@@ -85,7 +83,5 @@ def transaction_import(self, task_id, procedure_instance_id=None, *args, **kwarg
         return json.dumps(instance.import_result, default=str)
 
     except Exception as e:
-        _l.error(
-            f"transaction_import error {repr(e)} traceback {traceback.format_exc()}"
-        )
+        _l.error(f"transaction_import error {repr(e)} traceback {traceback.format_exc()}")
         raise e

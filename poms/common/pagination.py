@@ -51,9 +51,7 @@ class PageNumberPaginationExt(PageNumberPagination):
             self.page = paginator.page(page_number)
 
         except InvalidPage as exc:
-            msg = self.invalid_page_message.format(
-                page_number=page_number, message=str(exc)
-            )
+            msg = self.invalid_page_message.format(page_number=page_number, message=str(exc))
             raise NotFound(msg) from exc
 
         if paginator.num_pages > 1 and self.template is not None:
@@ -72,7 +70,7 @@ class PageNumberPaginationExt(PageNumberPagination):
 
         _l.debug(
             "post_paginate_queryset list page done: %s",
-            "{:3.3f}".format(time.perf_counter() - list_page_st),
+            f"{time.perf_counter() - list_page_st:3.3f}",
         )
 
         return res
@@ -84,7 +82,7 @@ class BigPagination(PageNumberPagination):
     page_size = sys.maxsize
 
 
-class CustomPaginationMixin(object):
+class CustomPaginationMixin:
     @property
     def paginator(self):
         """

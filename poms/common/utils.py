@@ -9,7 +9,7 @@ from http import HTTPStatus
 
 import pandas as pd
 
-from django.conf import settings
+# from django.conf import settings
 from django.contrib.admin.utils import NestedObjects
 from django.contrib.contenttypes.models import ContentType
 from django.db import connection, router
@@ -32,9 +32,7 @@ calc_shift_date_map = {
     "Q": lambda date: pd.Timestamp(date) - pd.offsets.QuarterBegin(startingMonth=1),
     "Y": lambda date: pd.Timestamp(date) - pd.offsets.YearBegin(1),
     "ED": lambda date: pd.Timestamp(date) + pd.offsets.Day(0),
-    "EW": lambda date: pd.Timestamp(date) + pd.DateOffset(days=6)
-    if date.weekday() != 6
-    else date,
+    "EW": lambda date: pd.Timestamp(date) + pd.DateOffset(days=6) if date.weekday() != 6 else date,
     "EM": lambda date: pd.Timestamp(date) + pd.offsets.MonthEnd(0),
     "EQ": lambda date: pd.Timestamp(date) + pd.offsets.QuarterEnd(startingMonth=3),
     "EY": lambda date: pd.Timestamp(date) + pd.offsets.YearEnd(1),
@@ -72,9 +70,7 @@ def db_class_check_data(model, verbosity, using):
             if verbosity >= 2:
                 print(f"create {model._meta.verbose_name} class -> {id}:{name}")
             with contextlib.suppress(IntegrityError, ProgrammingError):
-                model.objects.using(using).create(
-                    pk=id, user_code=code, short_name=name, name=name, description=name
-                )
+                model.objects.using(using).create(pk=id, user_code=code, short_name=name, name=name, description=name)
         else:
             obj = model.objects.using(using).get(pk=id)
             obj.user_code = code
@@ -119,28 +115,28 @@ class sfloat(float):
     def __truediv__(self, other):
         # print('__truediv__: self=%s, other=%s' % (self, other))
         try:
-            return super(sfloat, self).__truediv__(other)
+            return super().__truediv__(other)
         except (ZeroDivisionError, OverflowError):
             return 0.0
 
     def __rtruediv__(self, other):
         # print('__rtruediv__: self=%s, other=%s' % (self, other))
         try:
-            return super(sfloat, self).__rtruediv__(other)
+            return super().__rtruediv__(other)
         except (ZeroDivisionError, OverflowError):
             return 0.0
 
     def __floordiv__(self, other):
         # print('__floordiv__: self=%s, other=%s' % (self, other))
         try:
-            return super(sfloat, self).__floordiv__(other)
+            return super().__floordiv__(other)
         except (ZeroDivisionError, OverflowError):
             return 0.0
 
     def __rfloordiv__(self, other):
         # print('__floordiv__: self=%s, other=%s' % (self, other))
         try:
-            return super(sfloat, self).__rfloordiv__(other)
+            return super().__rfloordiv__(other)
         except (ZeroDivisionError, OverflowError):
             return 0.0
 
@@ -209,7 +205,7 @@ def recursive_callback(dict, callback, prop="children"):
             recursive_callback(item, callback)
 
 
-class MemorySavingQuerysetIterator(object):
+class MemorySavingQuerysetIterator:
     def __init__(self, queryset, max_obj_num=1000):
         self._base_queryset = queryset
         self._generator = self._setup()
@@ -220,9 +216,7 @@ class MemorySavingQuerysetIterator(object):
             # By making a copy of the queryset and using that to actually access
             # the object, we ensure that there are only `max_obj_num` objects in
             # memory at any given time
-            smaller_queryset = copy.deepcopy(self._base_queryset)[
-                i : i + self.max_obj_num
-            ]
+            smaller_queryset = copy.deepcopy(self._base_queryset)[i : i + self.max_obj_num]
             # logger.debug('Grabbing next %s objects from DB' % self.max_obj_num)
             yield from smaller_queryset.iterator()
 
@@ -291,9 +285,7 @@ def get_first_transaction(portfolio_instance) -> object:
     """
     from poms.transactions.models import Transaction
 
-    return Transaction.objects.filter(portfolio=portfolio_instance).order_by(
-        "accounting_date"
-    )[0]
+    return Transaction.objects.filter(portfolio=portfolio_instance).order_by("accounting_date")[0]
 
 
 def str_to_date(d):
@@ -508,7 +500,7 @@ def compare_versions(version1, version2):
     v1_parts = version1.split(".")
     v2_parts = version2.split(".")
 
-    for v1_part, v2_part in zip(v1_parts, v2_parts):
+    for v1_part, v2_part in zip(v1_parts, v2_parts, strict=False):
         v1_number = int(v1_part)
         v2_number = int(v2_part)
 
@@ -576,22 +568,16 @@ def get_list_of_dates_between_two_dates(date_from, date_to, to_string=False):
     )
 
     if date_from > date_to:
-        raise ValueError(
-            f"Parameter 'date_from' {date_from} must be less or equal 'date_to' {date_to}"
-        )
+        raise ValueError(f"Parameter 'date_from' {date_from} must be less or equal 'date_to' {date_to}")
 
-    dates = [
-        date_from + timedelta(days=i) for i in range((date_to - date_from).days + 1)
-    ]
+    dates = [date_from + timedelta(days=i) for i in range((date_to - date_from).days + 1)]
 
     return [str(date) for date in dates] if to_string else dates
 
 
 def get_list_of_business_days_between_two_dates(date_from, date_to, to_string=False):
     if not isinstance(date_from, datetime.date):
-        date_from = datetime.datetime.strptime(
-            date_from, settings.API_DATE_FORMAT
-        ).date()
+        date_from = datetime.datetime.strptime(date_from, settings.API_DATE_FORMAT).date()
 
     if not isinstance(date_to, datetime.date):
         date_to = datetime.datetime.strptime(date_to, settings.API_DATE_FORMAT).date()
@@ -613,9 +599,7 @@ def get_list_of_business_days_between_two_dates(date_from, date_to, to_string=Fa
 
 def get_list_of_months_between_two_dates(date_from, date_to, to_string=False):
     if not isinstance(date_from, datetime.date):
-        date_from = datetime.datetime.strptime(
-            date_from, settings.API_DATE_FORMAT
-        ).date()
+        date_from = datetime.datetime.strptime(date_from, settings.API_DATE_FORMAT).date()
 
     if not isinstance(date_to, datetime.date):
         date_to = datetime.datetime.strptime(date_to, settings.API_DATE_FORMAT).date()
@@ -805,9 +789,7 @@ def split_date_range(
     freq_end = f"E{frequency}"
 
     start_date = calc_shift_date_map[freq_start](start_date)
-    ranges = pd.date_range(
-        start=start_date, end=end_date, freq=frequency_map[frequency]()
-    )
+    ranges = pd.date_range(start=start_date, end=end_date, freq=frequency_map[frequency]())
 
     date_pairs: list[tuple] = []
     for sd in ranges:
@@ -816,7 +798,7 @@ def split_date_range(
         if is_only_bday:
             if frequency == "D" and not is_business_day(sd):
                 continue
-            sd = shift_to_bday(sd, 1)
+            sd = shift_to_bday(sd, 1)  # noqa: PLW2901
             ed = shift_to_bday(ed, -1)
 
         sd_str = str(sd.strftime(settings.API_DATE_FORMAT))
@@ -861,9 +843,7 @@ def pick_dates_from_range(
     end_date = get_validated_date(end_date)
     frequency = frequency if start else f"E{frequency}"
 
-    dates = pd.date_range(
-        start=start_date, end=end_date, freq=frequency_map[frequency]()
-    )
+    dates = pd.date_range(start=start_date, end=end_date, freq=frequency_map[frequency]())
     dates = [d.date() for d in dates]
 
     # don't meets conditions
@@ -880,7 +860,7 @@ def pick_dates_from_range(
     pick_dates: list[str] = []
     for date in dates:
         if "W" in frequency:
-            date = shift_to_week_boundary(date, start_date, end_date, start, frequency)
+            date = shift_to_week_boundary(date, start_date, end_date, start, frequency)  # noqa: PLW2901
 
         if is_only_bday:
             if "D" in frequency and not is_business_day(date):
@@ -888,9 +868,9 @@ def pick_dates_from_range(
 
             if not is_business_day(date):
                 if start:
-                    date = shift_to_bday(date, 1)
+                    date = shift_to_bday(date, 1)  # noqa: PLW2901
                 else:
-                    date = shift_to_bday(date, -1)
+                    date = shift_to_bday(date, -1)  # noqa: PLW2901
 
         date_str = str(date.strftime(settings.API_DATE_FORMAT))
         if date_str not in pick_dates:

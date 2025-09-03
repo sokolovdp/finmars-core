@@ -20,8 +20,8 @@ _l = logging.getLogger("poms.iam")
 
 
 def generate_full_access_policies_for_viewsets(viewset_classes: list):
-    from poms.users.models import Member
     from poms.iam.all_actions_names import FULL_ACCESS_ACTIONS
+    from poms.users.models import Member
 
     service_name = settings.SERVICE_NAME
     for viewset_class in viewset_classes:
@@ -76,8 +76,8 @@ def generate_full_access_policies_for_viewsets(viewset_classes: list):
 
 
 def generate_readonly_access_policies_for_viewsets(viewset_classes: list) -> list:
-    from poms.users.models import Member
     from poms.iam.all_actions_names import READ_ACCESS_ACTIONS
+    from poms.users.models import Member
 
     service_name = settings.SERVICE_NAME
     readonly_access_policies = []
@@ -97,9 +97,7 @@ def generate_readonly_access_policies_for_viewsets(viewset_classes: list) -> lis
         )
 
         configuration_code = get_default_configuration_code()
-        user_code = (
-            f"{configuration_code}:{service_name}-{viewset_name.lower()}-readonly"
-        )
+        user_code = f"{configuration_code}:{service_name}-{viewset_name.lower()}-readonly"
         finmars_bot = Member.objects.get(username="finmars_bot")
 
         access_policy, created = AccessPolicy.objects.get_or_create(
@@ -120,9 +118,7 @@ def generate_readonly_access_policies_for_viewsets(viewset_classes: list) -> lis
                 ],
             }
             access_policy.configuration_code = configuration_code
-            access_policy.name = (
-                f"{capitalize_first_letter(viewset_name)} Readonly Access"
-            )
+            access_policy.name = f"{capitalize_first_letter(viewset_name)} Readonly Access"
             access_policy.policy = access_policy_json
             if not created:
                 access_policy.owner = finmars_bot
@@ -149,7 +145,7 @@ def generate_balance_report_access_policy():
 
     try:
         access_policy = AccessPolicy.objects.get(user_code=user_code)
-    except Exception as e:
+    except Exception:
         access_policy = AccessPolicy.objects.create(
             user_code=user_code,
             owner=finmars_bot,
@@ -191,7 +187,7 @@ def generate_pl_report_access_policy():
 
     try:
         access_policy = AccessPolicy.objects.get(user_code=user_code)
-    except Exception as e:
+    except Exception:
         access_policy = AccessPolicy.objects.create(
             user_code=user_code,
             owner=finmars_bot,
@@ -233,7 +229,7 @@ def generate_transaction_report_access_policy():
 
     try:
         access_policy = AccessPolicy.objects.get(user_code=user_code)
-    except Exception as e:
+    except Exception:
         access_policy = AccessPolicy.objects.create(
             user_code=user_code,
             owner=finmars_bot,
@@ -275,7 +271,7 @@ def generate_transaction_view_access_policy():
 
     try:
         access_policy = AccessPolicy.objects.get(user_code=user_code)
-    except Exception as e:
+    except Exception:
         access_policy = AccessPolicy.objects.create(
             user_code=user_code,
             owner=finmars_bot,
@@ -317,7 +313,7 @@ def generate_transaction_book_access_policy():
 
     try:
         access_policy = AccessPolicy.objects.get(user_code=user_code)
-    except Exception as e:
+    except Exception:
         access_policy = AccessPolicy.objects.create(
             user_code=user_code,
             owner=finmars_bot,
@@ -359,7 +355,7 @@ def generate_transaction_rebook_access_policy():
 
     try:
         access_policy = AccessPolicy.objects.get(user_code=user_code)
-    except Exception as e:
+    except Exception:
         access_policy = AccessPolicy.objects.create(
             user_code=user_code,
             owner=finmars_bot,
@@ -393,9 +389,7 @@ def generate_init_configuration_install_access_policy():
     service_name = settings.SERVICE_NAME
 
     configuration_code = get_default_configuration_code()
-    user_code = (
-        f"{configuration_code}:{service_name}-newmembersetupconfiguration-install"
-    )
+    user_code = f"{configuration_code}:{service_name}-newmembersetupconfiguration-install"
 
     name = "NewMemberSetupConfiguration Install"
 
@@ -403,7 +397,7 @@ def generate_init_configuration_install_access_policy():
 
     try:
         access_policy = AccessPolicy.objects.get(user_code=user_code)
-    except Exception as e:
+    except Exception:
         access_policy = AccessPolicy.objects.create(
             user_code=user_code,
             owner=finmars_bot,
@@ -450,7 +444,7 @@ def generate_viewer_role(readonly_access_policies):
 
     try:
         role = Role.objects.get(user_code=f"{configuration_code}:viewer")
-    except Exception as e:
+    except Exception:
         role = Role.objects.create(
             user_code=f"{configuration_code}:viewer",
             owner=finmars_bot,
@@ -470,9 +464,7 @@ def generate_viewer_role(readonly_access_policies):
         f"{configuration_code}:finmars-newmembersetupconfiguration-install",
     ]
 
-    extra_policies = list(
-        AccessPolicy.objects.all().filter(user_code__in=extra_policies_user_codes)
-    )
+    extra_policies = list(AccessPolicy.objects.all().filter(user_code__in=extra_policies_user_codes))
 
     role.name = "Viewer"
     role.description = "Read Only Access to Data. Can view Reports, Transactions, Instruments, Portfolios etc."
@@ -491,7 +483,7 @@ def generate_full_data_manager_role():
 
     try:
         role = Role.objects.get(user_code=f"{configuration_code}:full-data-manager")
-    except Exception as e:
+    except Exception:
         role = Role.objects.create(
             user_code=f"{configuration_code}:full-data-manager",
             owner=finmars_bot,
@@ -500,8 +492,7 @@ def generate_full_data_manager_role():
 
     role.name = "Full Data Manager"
     role.description = (
-        "Full Access to Data. Can book Transactions, create, edit and delete "
-        "Instruments, Portfolios,  Accounts etc."
+        "Full Access to Data. Can book Transactions, create, edit and delete Instruments, Portfolios,  Accounts etc."
     )
     access_policy_user_codes = [
         f"{configuration_code}:finmars-complextransaction-view",
@@ -546,9 +537,7 @@ def generate_full_data_manager_role():
         f"{configuration_code}:finmars-transactionreportcustomfield-full",
     ]
 
-    access_policies = AccessPolicy.objects.filter(
-        user_code__in=access_policy_user_codes
-    )
+    access_policies = AccessPolicy.objects.filter(user_code__in=access_policy_user_codes)
 
     role.access_policies.set(access_policies)
     role.save()
@@ -563,16 +552,14 @@ def generate_base_data_manager_role():
 
     try:
         role = Role.objects.get(user_code=f"{configuration_code}:base-data-manager")
-    except Exception as e:
+    except Exception:
         role = Role.objects.create(
             user_code=f"{configuration_code}:base-data-manager",
             owner=finmars_bot,
             configuration_code=configuration_code,
         )
 
-    role.description = (
-        "Only access to essentials. Can book Transactions, View Reports, View Prices."
-    )
+    role.description = "Only access to essentials. Can book Transactions, View Reports, View Prices."
 
     role.name = "Base Data Manager"
     access_policy_user_codes = [
@@ -615,9 +602,7 @@ def generate_base_data_manager_role():
         f"{configuration_code}:finmars-transactionreportcustomfield-full",
     ]
 
-    access_policies = AccessPolicy.objects.filter(
-        user_code__in=access_policy_user_codes
-    )
+    access_policies = AccessPolicy.objects.filter(user_code__in=access_policy_user_codes)
 
     role.access_policies.set(access_policies)
     role.save()
@@ -632,7 +617,7 @@ def generate_member_role():
 
     try:
         role = Role.objects.get(user_code=f"{configuration_code}:member")
-    except Exception as e:
+    except Exception:
         role = Role.objects.create(
             user_code=f"{configuration_code}:member",
             owner=finmars_bot,
@@ -642,7 +627,9 @@ def generate_member_role():
     # _l.debug('generate_viewer_role.readonly_access_policies %s' % readonly_access_policies)
 
     role.name = "Member"
-    role.description = "Full Access to own Report/Data Layouts, Input Form Layouts, Dashboard Layouts, Color Pallets etc."
+    role.description = (
+        "Full Access to own Report/Data Layouts, Input Form Layouts, Dashboard Layouts, Color Pallets etc."
+    )
 
     access_policy_user_codes = [
         f"{configuration_code}:finmars-listlayout-full",
@@ -659,9 +646,7 @@ def generate_member_role():
         f"{configuration_code}:finmars-configuration-readonly",
     ]
 
-    access_policies = AccessPolicy.objects.filter(
-        user_code__in=access_policy_user_codes
-    )
+    access_policies = AccessPolicy.objects.filter(user_code__in=access_policy_user_codes)
 
     role.access_policies.set(access_policies)
     role.save()
@@ -676,7 +661,7 @@ def generate_configuration_manager_role():
 
     try:
         role = Role.objects.get(user_code=f"{configuration_code}:configuration-manager")
-    except Exception as e:
+    except Exception:
         role = Role.objects.create(
             user_code=f"{configuration_code}:configuration-manager",
             owner=finmars_bot,
@@ -686,7 +671,10 @@ def generate_configuration_manager_role():
     # _l.debug('generate_viewer_role.readonly_access_policies %s' % readonly_access_policies)
 
     role.name = "Configuration Manager"
-    role.description = "Full Access to Space Settings. Can create, edit and delete Transaction Types, Instrument Types, Transaction Import Schemes, Procedures etc."
+    role.description = (
+        "Full Access to Space Settings. Can create, edit and delete Transaction Types, Instrument Types, "
+        "Transaction Import Schemes, Procedures etc."
+    )
 
     """
     Exclude IAM and Members Access Policies from Configuration Manager Role
@@ -700,9 +688,7 @@ def generate_configuration_manager_role():
     ]
 
     access_policies = (
-        AccessPolicy.objects.all()
-        .filter(user_code__icontains="-full")
-        .exclude(user_code__in=exclude_policies)
+        AccessPolicy.objects.all().filter(user_code__icontains="-full").exclude(user_code__in=exclude_policies)
     )
 
     role.access_policies.set(access_policies)
@@ -714,11 +700,7 @@ def get_viewsets_from_module(module) -> list:
     return [
         obj
         for name, obj in inspect.getmembers(module)
-        if (
-            inspect.isclass(obj)
-            and issubclass(obj, viewsets.ViewSetMixin)
-            and obj != viewsets.ViewSetMixin
-        )
+        if (inspect.isclass(obj) and issubclass(obj, viewsets.ViewSetMixin) and obj != viewsets.ViewSetMixin)
         and "abstract" not in name.lower()
     ]
 
@@ -733,7 +715,7 @@ def get_viewsets_from_app_with_models(app_name: str) -> list:
     app_config = apps.get_app_config(app_name)
     viewset_classes = []
 
-    for model_name, model_class in app_config.models.items():
+    for model_name, model_class in app_config.models.items():  # noqa: B007
         # _l.info('get_viewsets_from_app.model_name %s' % model_name)
         # _l.info('get_viewsets_from_app.app_config.name %s' % app_config.name)
 
@@ -783,9 +765,7 @@ def get_viewsets_from_all_apps():
 
 def _create_access_policy(configuration_code, suffix):
     policy = AccessPolicy.objects.get(user_code=f"{configuration_code}:{suffix}")
-    add_to_list_if_not_exists(
-        "finmars:ListLayout:ping", policy.policy["Statement"][0]["Action"]
-    )
+    add_to_list_if_not_exists("finmars:ListLayout:ping", policy.policy["Statement"][0]["Action"])
     policy.save()
 
 
@@ -807,42 +787,24 @@ def create_base_iam_access_policies_templates():
     configuration_code = get_default_configuration_code()
 
     if AccessPolicy.objects.filter(configuration_code=configuration_code).count() == 0:
-        _l.info(
-            "create_base_iam_access_policies_templates Access Policies are not found. "
-            "Generating..."
-        )
+        _l.info("create_base_iam_access_policies_templates Access Policies are not found. Generating...")
 
         generate_full_access_policies_for_viewsets(viewsets)
 
-        _l.info(
-            "create_base_iam_access_policies_templates."
-            "generate_full_access_policies_for_viewsets done"
-        )
-        readonly_access_policies = generate_readonly_access_policies_for_viewsets(
-            viewsets
-        )
+        _l.info("create_base_iam_access_policies_templates.generate_full_access_policies_for_viewsets done")
+        readonly_access_policies = generate_readonly_access_policies_for_viewsets(viewsets)
 
-        _l.info(
-            "create_base_iam_access_policies_templates."
-            "generate_readonly_access_policies_for_viewsets done"
-        )
+        _l.info("create_base_iam_access_policies_templates.generate_readonly_access_policies_for_viewsets done")
 
-        _l.info(
-            "create_base_iam_access_policies_templates.readonly_access_policies %s"
-            % len(readonly_access_policies)
-        )
+        _l.info("create_base_iam_access_policies_templates.readonly_access_policies %s", len(readonly_access_policies))
 
         generate_specific_policies_for_viewsets()
 
-        _l.info(
-            "create_base_iam_access_policies_templates.generate_speicifc_policies_for_viewsets done"
-        )
+        _l.info("create_base_iam_access_policies_templates.generate_speicifc_policies_for_viewsets done")
 
         patch_generated_policies()
 
-        _l.info(
-            "create_base_iam_access_policies_templates.patch_generated_policies done"
-        )
+        _l.info("create_base_iam_access_policies_templates.patch_generated_policies done")
 
         generate_viewer_role(readonly_access_policies)
 

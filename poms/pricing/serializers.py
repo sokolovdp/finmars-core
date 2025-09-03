@@ -8,21 +8,13 @@ from poms.pricing.models import CurrencyHistoryError, PriceHistoryError
 class RunPricingSerializer(serializers.Serializer):
     date_from = serializers.DateField()
     date_to = serializers.DateField()
-    pricing_policies = serializers.ListField(
-        child=serializers.CharField(), required=False
-    )
-    instrument_types = serializers.ListField(
-        child=serializers.CharField(), required=False
-    )
+    pricing_policies = serializers.ListField(child=serializers.CharField(), required=False)
+    instrument_types = serializers.ListField(child=serializers.CharField(), required=False)
     instruments = serializers.ListField(child=serializers.CharField(), required=False)
     currencies = serializers.ListField(child=serializers.CharField(), required=False)
 
     def validate(self, data):
-        if (
-            not data.get("instrument_types")
-            and not data.get("instruments")
-            and not data.get("currencies")
-        ):
+        if not data.get("instrument_types") and not data.get("instruments") and not data.get("currencies"):
             raise serializers.ValidationError(
                 'Either "instrument_types", "instruments" or "currencies" must be provided.'
             )
@@ -40,12 +32,8 @@ class PriceHistoryErrorSerializer(serializers.ModelSerializer):
         )
 
         super().__init__(*args, **kwargs)
-        self.fields["instrument_object"] = InstrumentLightSerializer(
-            source="instrument", read_only=True
-        )
-        self.fields["pricing_policy_object"] = PricingPolicyLightSerializer(
-            source="pricing_policy", read_only=True
-        )
+        self.fields["instrument_object"] = InstrumentLightSerializer(source="instrument", read_only=True)
+        self.fields["pricing_policy_object"] = PricingPolicyLightSerializer(source="pricing_policy", read_only=True)
 
     class Meta:
         model = PriceHistoryError
@@ -99,12 +87,8 @@ class CurrencyHistoryErrorSerializer(serializers.ModelSerializer):
         from poms.instruments.serializers import PricingPolicyLightSerializer
 
         super().__init__(*args, **kwargs)
-        self.fields["currency_object"] = CurrencyViewSerializer(
-            source="currency", read_only=True
-        )
-        self.fields["pricing_policy_object"] = PricingPolicyLightSerializer(
-            source="pricing_policy", read_only=True
-        )
+        self.fields["currency_object"] = CurrencyViewSerializer(source="currency", read_only=True)
+        self.fields["pricing_policy_object"] = PricingPolicyLightSerializer(source="pricing_policy", read_only=True)
 
     class Meta:
         model = CurrencyHistoryError

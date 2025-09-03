@@ -53,10 +53,8 @@ class Command(BaseCommand):
         # WARNING Do not delete
         # important, its inits celery listeners for global state
         # it uses for record history in post_save post_delete signals for proper context
+        from poms.common.celery import cancel_existing_procedures, cancel_existing_tasks
         from poms_app import celery_app
-
-        from poms.common.celery import cancel_existing_tasks
-        from poms.common.celery import cancel_existing_procedures
 
         for schema in get_all_tenant_schemas():
             with connection.cursor() as cursor:

@@ -4,7 +4,7 @@ from django.utils.translation import gettext_lazy
 from poms.common.models import TimeStampedModel
 from poms.common.utils import date_now
 from poms.currencies.models import Currency
-from poms.instruments.models import PricingPolicy, CostMethod
+from poms.instruments.models import CostMethod, PricingPolicy
 from poms.users.models import MasterUser
 
 
@@ -16,9 +16,7 @@ class BalanceReportHistory(TimeStampedModel):
         on_delete=models.CASCADE,
     )
 
-    date = models.DateField(
-        db_index=True, default=date_now, verbose_name=gettext_lazy("date")
-    )
+    date = models.DateField(db_index=True, default=date_now, verbose_name=gettext_lazy("date"))
 
     report_currency = models.ForeignKey(
         Currency,
@@ -49,13 +47,9 @@ class BalanceReportHistory(TimeStampedModel):
         verbose_name=gettext_lazy("portfolio"),
     )
 
-    report_settings_data = models.TextField(
-        null=True, blank=True, verbose_name=gettext_lazy("report settings data")
-    )
+    report_settings_data = models.TextField(null=True, blank=True, verbose_name=gettext_lazy("report settings data"))
 
-    nav = models.FloatField(
-        default=0.0, null=True, blank=True, verbose_name=gettext_lazy("nav")
-    )
+    nav = models.FloatField(default=0.0, null=True, blank=True, verbose_name=gettext_lazy("nav"))
 
     class Meta:
         unique_together = [
@@ -63,9 +57,7 @@ class BalanceReportHistory(TimeStampedModel):
         ]
 
     def __str__(self):
-        return (
-            str(self.date) + " " + self.portfolio.name + " " + self.report_currency.name
-        )
+        return str(self.date) + " " + self.portfolio.name + " " + self.report_currency.name
 
 
 class BalanceReportHistoryItem(models.Model):
@@ -76,32 +68,18 @@ class BalanceReportHistoryItem(models.Model):
         on_delete=models.CASCADE,
     )
 
-    category = models.CharField(
-        max_length=255, blank=True, default="", verbose_name=gettext_lazy("category")
-    )
-    name = models.CharField(
-        max_length=255, blank=True, default="", verbose_name=gettext_lazy("name")
-    )
-    key = models.CharField(
-        max_length=255, blank=True, default="", verbose_name=gettext_lazy("key")
-    )
-    value = models.FloatField(
-        default=0.0, null=True, blank=True, verbose_name=gettext_lazy("value")
-    )
+    category = models.CharField(max_length=255, blank=True, default="", verbose_name=gettext_lazy("category"))
+    name = models.CharField(max_length=255, blank=True, default="", verbose_name=gettext_lazy("name"))
+    key = models.CharField(max_length=255, blank=True, default="", verbose_name=gettext_lazy("key"))
+    value = models.FloatField(default=0.0, null=True, blank=True, verbose_name=gettext_lazy("value"))
 
 
 class PLReportHistory(TimeStampedModel):
-    master_user = models.ForeignKey(
-        MasterUser, verbose_name=gettext_lazy("master user"), on_delete=models.CASCADE
-    )
+    master_user = models.ForeignKey(MasterUser, verbose_name=gettext_lazy("master user"), on_delete=models.CASCADE)
 
-    date = models.DateField(
-        db_index=True, default=date_now, verbose_name=gettext_lazy("date")
-    )
+    date = models.DateField(db_index=True, default=date_now, verbose_name=gettext_lazy("date"))
 
-    pl_first_date = models.DateField(
-        db_index=True, default=date_now, verbose_name=gettext_lazy("pl first date")
-    )
+    pl_first_date = models.DateField(db_index=True, default=date_now, verbose_name=gettext_lazy("pl first date"))
 
     report_currency = models.ForeignKey(
         Currency,
@@ -132,13 +110,9 @@ class PLReportHistory(TimeStampedModel):
         verbose_name=gettext_lazy("portfolio"),
     )
 
-    report_settings_data = models.TextField(
-        null=True, blank=True, verbose_name=gettext_lazy("report settings data")
-    )
+    report_settings_data = models.TextField(null=True, blank=True, verbose_name=gettext_lazy("report settings data"))
 
-    total = models.FloatField(
-        default=0.0, null=True, blank=True, verbose_name=gettext_lazy("total")
-    )
+    total = models.FloatField(default=0.0, null=True, blank=True, verbose_name=gettext_lazy("total"))
 
     class Meta:
         unique_together = [
@@ -146,9 +120,7 @@ class PLReportHistory(TimeStampedModel):
         ]
 
     def __str__(self):
-        return (
-            str(self.date) + " " + self.portfolio.name + " " + self.report_currency.name
-        )
+        return str(self.date) + " " + self.portfolio.name + " " + self.report_currency.name
 
 
 class PLReportHistoryItem(models.Model):
@@ -159,18 +131,10 @@ class PLReportHistoryItem(models.Model):
         on_delete=models.CASCADE,
     )
 
-    category = models.CharField(
-        max_length=255, blank=True, default="", verbose_name=gettext_lazy("category")
-    )
-    name = models.CharField(
-        max_length=255, blank=True, default="", verbose_name=gettext_lazy("name")
-    )
-    key = models.CharField(
-        max_length=255, blank=True, default="", verbose_name=gettext_lazy("key")
-    )
-    value = models.FloatField(
-        default=0.0, null=True, blank=True, verbose_name=gettext_lazy("value")
-    )
+    category = models.CharField(max_length=255, blank=True, default="", verbose_name=gettext_lazy("category"))
+    name = models.CharField(max_length=255, blank=True, default="", verbose_name=gettext_lazy("name"))
+    key = models.CharField(max_length=255, blank=True, default="", verbose_name=gettext_lazy("key"))
+    value = models.FloatField(default=0.0, null=True, blank=True, verbose_name=gettext_lazy("value"))
 
 
 # "nav": stats_handler.get_balance_nav(),  # done
@@ -187,13 +151,9 @@ class PLReportHistoryItem(models.Model):
 
 
 class WidgetStats(models.Model):
-    master_user = models.ForeignKey(
-        MasterUser, verbose_name=gettext_lazy("master user"), on_delete=models.CASCADE
-    )
+    master_user = models.ForeignKey(MasterUser, verbose_name=gettext_lazy("master user"), on_delete=models.CASCADE)
 
-    date = models.DateField(
-        db_index=True, default=date_now, verbose_name=gettext_lazy("date")
-    )
+    date = models.DateField(db_index=True, default=date_now, verbose_name=gettext_lazy("date"))
 
     # period = YTD, QTD, MTD, INCEPTION
     # date_from = calculate_based_on_period
@@ -211,16 +171,10 @@ class WidgetStats(models.Model):
     # cost_method = avco/fifo
     # performance_method = dietz/..
 
-    benchmark = models.CharField(
-        max_length=255, blank=True, default="", verbose_name=gettext_lazy("benchmark")
-    )
+    benchmark = models.CharField(max_length=255, blank=True, default="", verbose_name=gettext_lazy("benchmark"))
 
-    nav = models.FloatField(
-        default=0.0, null=True, blank=True, verbose_name=gettext_lazy("nav")
-    )
-    total = models.FloatField(
-        default=0.0, null=True, blank=True, verbose_name=gettext_lazy("total")
-    )
+    nav = models.FloatField(default=0.0, null=True, blank=True, verbose_name=gettext_lazy("nav"))
+    total = models.FloatField(default=0.0, null=True, blank=True, verbose_name=gettext_lazy("total"))
 
     cumulative_return = models.FloatField(
         default=0.0,
@@ -246,24 +200,16 @@ class WidgetStats(models.Model):
         blank=True,
         verbose_name=gettext_lazy("annualized portfolio volatility"),
     )
-    sharpe_ratio = models.FloatField(
-        default=0.0, null=True, blank=True, verbose_name=gettext_lazy("sharpe_ratio")
-    )
+    sharpe_ratio = models.FloatField(default=0.0, null=True, blank=True, verbose_name=gettext_lazy("sharpe_ratio"))
     max_annualized_drawdown = models.FloatField(
         default=0.0,
         null=True,
         blank=True,
         verbose_name=gettext_lazy("max_annualized_drawdown"),
     )
-    betta = models.FloatField(
-        default=0.0, null=True, blank=True, verbose_name=gettext_lazy("betta")
-    )
-    alpha = models.FloatField(
-        default=0.0, null=True, blank=True, verbose_name=gettext_lazy("alpha")
-    )
-    correlation = models.FloatField(
-        default=0.0, null=True, blank=True, verbose_name=gettext_lazy("correlation")
-    )
+    betta = models.FloatField(default=0.0, null=True, blank=True, verbose_name=gettext_lazy("betta"))
+    alpha = models.FloatField(default=0.0, null=True, blank=True, verbose_name=gettext_lazy("alpha"))
+    correlation = models.FloatField(default=0.0, null=True, blank=True, verbose_name=gettext_lazy("correlation"))
 
     class Meta:
         unique_together = [

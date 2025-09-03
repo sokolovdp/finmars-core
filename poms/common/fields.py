@@ -62,7 +62,7 @@ class PrimaryKeyRelatedFilteredField(PrimaryKeyRelatedField):
             return value.pk
 
         except Exception:
-            if type(value) == dict:
+            if isinstance(value, dict):
                 return value["pk"]
 
 
@@ -75,7 +75,7 @@ class SlugRelatedFilteredField(SlugRelatedField):
         super().__init__(**kwargs)
 
     def get_queryset(self):
-        queryset = super(SlugRelatedFilteredField, self).get_queryset()
+        queryset = super().get_queryset()
         queryset = self.filter_queryset(queryset)
         return queryset
 
@@ -89,9 +89,7 @@ class SlugRelatedFilteredField(SlugRelatedField):
 
 class UserCodeOrPrimaryKeyRelatedField(IamProtectedRelatedField):
     default_error_messages = {
-        "does_not_exist": _(
-            "Object with user_code or id that equals {value} does not exist."
-        ),
+        "does_not_exist": _("Object with user_code or id that equals {value} does not exist."),
         "invalid": _("Invalid value."),
     }
 
@@ -110,7 +108,7 @@ class UserCodeOrPrimaryKeyRelatedField(IamProtectedRelatedField):
             self.fail("invalid", value=str(value))
 
     def to_representation(self, obj):
-        return getattr(obj, "id")
+        return obj.id
         # return getattr(obj, 'user_code') # TODO someday move to user_code completely
 
 
@@ -198,7 +196,7 @@ class ContentTypeOrPrimaryKeyRelatedField(RelatedField):
             self.fail("invalid")
 
     def to_representation(self, obj):
-        return getattr(obj, "id")
+        return obj.id
 
 
 class ResourceGroupsField(ArrayField):

@@ -1,7 +1,6 @@
 from poms.common.common_base_test import BaseTestCase
 from poms.ui.models import UserInterfaceAccessModel
 
-
 EXPECTED_DATA = {
     "id": 1,
     "name": "Data Manager Access Menu",
@@ -37,9 +36,7 @@ class MemberLayoutViewSetTest(BaseTestCase):
         self.init_test_case()
         self.realm_code = "realm00000"
         self.space_code = "space00000"
-        self.url = (
-            f"/{self.realm_code}/{self.space_code}/api/v1/ui/user-interface-access/"
-        )
+        self.url = f"/{self.realm_code}/{self.space_code}/api/v1/ui/user-interface-access/"
 
     def prepare_data(self, user_code):
         UserInterfaceAccessModel.objects.create(
@@ -71,9 +68,7 @@ class MemberLayoutViewSetTest(BaseTestCase):
         response = self.client.post(path=self.url, format="json", data=CREATE_DATA)
         self.assertEqual(response.status_code, 201, response.content)
 
-        access = UserInterfaceAccessModel.objects.filter(
-            user_code=EXPECTED_DATA["user_code"]
-        )
+        access = UserInterfaceAccessModel.objects.filter(user_code=EXPECTED_DATA["user_code"])
         self.assertTrue(access.exists())
 
     def test__create_uniqueness_error(self):

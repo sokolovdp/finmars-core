@@ -2,7 +2,8 @@ import logging
 
 from django.conf import settings
 from django.core.cache import cache
-from django.db.models import QuerySet
+from django.db.models import Q, QuerySet
+
 from poms.iam.models import AccessPolicy, ResourceGroup
 from poms.users.models import Member
 
@@ -23,10 +24,7 @@ def lowercase_keys_and_values(dictionary):
         elif isinstance(value, str):
             new_value = value.lower()
         elif isinstance(value, list):
-            new_value = [
-                lowercase_keys_and_values(item) if isinstance(item, dict) else item
-                for item in value
-            ]
+            new_value = [lowercase_keys_and_values(item) if isinstance(item, dict) else item for item in value]
         else:
             new_value = value
 
@@ -106,9 +104,7 @@ def get_member_access_policies(member: Member) -> QuerySet:
 
     if access_policies is None:
         access_policies = AccessPolicy.objects.filter(
-            Q(members=member)
-            | Q(iam_roles__members=member)
-            | Q(iam_groups__members=member)
+            Q(members=member) | Q(iam_roles__members=member) | Q(iam_groups__members=member)
         ).distinct()
 
         # Cache the result for a specific duration (e.g., 5 minutes)
@@ -130,17 +126,12 @@ def get_statements(member: Member) -> list:
     for item in get_member_access_policies(member):
         policy = lowercase_keys_and_values(item.policy)
 
-        statements.extend(
-            lowercase_keys_and_values(statement) for statement in policy["statement"]
-        )
+        statements.extend(lowercase_keys_and_values(statement) for statement in policy["statement"])
 
     return statements
 
 
-from django.db.models import Q
-
-
-def filter_queryset_with_access_policies(member, queryset, view):
+def filter_queryset_with_access_policies(member, queryset, view):  # noqa: PLR0912
     if not member:
         return queryset.none()
 
@@ -156,7 +147,7 @@ def filter_queryset_with_access_policies(member, queryset, view):
     if not len(statements):
         return queryset.none()
 
-    _l.debug("filter_queryset_with_access_policies.statements %s" % len(statements))
+    _l.debug("filter_queryset_with_access_policies.statements %s", len(statements))
 
     app_label = queryset.model._meta.app_label
     model_name = queryset.model._meta.model_name
@@ -168,16 +159,10 @@ def filter_queryset_with_access_policies(member, queryset, view):
 
     # Filter statements related to the current view
     for statement in statements:
-        if any(
-            viewset_name == action_statement_into_object(act)["viewset"]
-            for act in statement["action"]
-        ):
+        if any(viewset_name == action_statement_into_object(act)["viewset"] for act in statement["action"]):
             view_related_statements.append(statement)
 
-    _l.debug(
-        "filter_queryset_with_access_policies.view_related_statements %s"
-        % len(view_related_statements)
-    )
+    _l.debug("filter_queryset_with_access_policies.view_related_statements %s", len(view_related_statements))
 
     for statement in view_related_statements:
         if statement["effect"] == "allow":
@@ -195,9 +180,7 @@ def filter_queryset_with_access_policies(member, queryset, view):
                     # Handle ResourceGroup resource
                     resource_group_code = resource.split(":")[-1]
                     try:
-                        resource_group = ResourceGroup.objects.get(
-                            user_code=resource_group_code
-                        )
+                        resource_group = ResourceGroup.objects.get(user_code=resource_group_code)
                         assignments = resource_group.assignments.all()
 
                         # Add each assigned object's user_code as a resource
@@ -207,9 +190,7 @@ def filter_queryset_with_access_policies(member, queryset, view):
                             if assignment.object_user_code
                         )
                     except ResourceGroup.DoesNotExist:
-                        _l.warning(
-                            f"ResourceGroup with user_code {resource_group_code} does not exist."
-                        )
+                        _l.warning(f"ResourceGroup with user_code {resource_group_code} does not exist.")
                         continue
                 else:
                     expanded_resources.add(resource)
@@ -217,16 +198,10 @@ def filter_queryset_with_access_policies(member, queryset, view):
             # Apply the filters for expanded resources
             for resource in expanded_resources:
                 parsed_resource = parse_resource_into_object(resource)
-                _l.info(
-                    "filter_queryset_with_access_policies.parsed_resource %s"
-                    % parsed_resource
-                )
+                _l.info("filter_queryset_with_access_policies.parsed_resource %s", parsed_resource)
 
                 # Match the content type and apply filters
-                if (
-                    f"{parsed_resource['app_label']}.{parsed_resource['model']}"
-                    == content_type_key
-                ):
+                if f"{parsed_resource['app_label']}.{parsed_resource['model']}" == content_type_key:
                     user_code_val = parsed_resource["user_code"]
                     if "*" in user_code_val:
                         # Apply wildcard match
@@ -237,7 +212,7 @@ def filter_queryset_with_access_policies(member, queryset, view):
                         # in future release enforce user_code to asci lowercase only
                         q |= Q(user_code__icontains=user_code_val)
 
-    _l.debug("filter_queryset_with_access_policies.q %s" % len(q))
+    _l.debug("filter_queryset_with_access_policies.q %s", len(q))
 
     """
     Important clause:
@@ -246,13 +221,10 @@ def filter_queryset_with_access_policies(member, queryset, view):
     if not q:
         return queryset.none()
 
-    _l.debug(
-        "ObjectPermissionBackend.filter_queryset before access filter: %s"
-        % queryset.count()
-    )
+    _l.debug("ObjectPermissionBackend.filter_queryset before access filter: %s", queryset.count())
 
     result = queryset.filter(q)
-    _l.info("ObjectPermissionBackend.filter_queryset q %s" % q)
+    _l.info("ObjectPermissionBackend.filter_queryset q %s", q)
 
     return result
 
@@ -288,7 +260,7 @@ def action_statement_into_object(action):
         return result
 
     except Exception as e:
-        raise Exception("Action is invalid %s" % action)
+        raise Exception(f"Action is invalid {action}") from e
 
 
 def capitalize_first_letter(string):
@@ -309,14 +281,14 @@ def get_allowed_queryset(member, queryset):
     allowed_resources = get_allowed_resources(member, queryset.model, queryset)
     allowed_user_codes = []
 
-    _l.debug("get_allowed_queryset.allowed_resources %s" % allowed_resources)
+    _l.debug("get_allowed_queryset.allowed_resources %s", allowed_resources)
 
     # Extract user codes from allowed resources
     for resource in allowed_resources:
         parsed_resource = parse_resource_into_object(resource)
         allowed_user_codes.append(parsed_resource["user_code"])
 
-    _l.debug("get_allowed_queryset.allowed_user_codes %s" % allowed_user_codes)
+    _l.debug("get_allowed_queryset.allowed_user_codes %s", allowed_user_codes)
 
     # Filter queryset based on allowed user codes
     # Build a Q object for filtering using icontains for each user_code
@@ -371,9 +343,7 @@ def get_allowed_resources(member, model, queryset):
                         # Handle ResourceGroup resource
                         resource_group_code = resource.split(":")[-1]
                         try:
-                            resource_group = ResourceGroup.objects.get(
-                                user_code=resource_group_code
-                            )
+                            resource_group = ResourceGroup.objects.get(user_code=resource_group_code)
                             assignments = resource_group.assignments.all()
 
                             # Add each assigned object's user_code to the expanded resources list
@@ -383,9 +353,7 @@ def get_allowed_resources(member, model, queryset):
                                 if assignment.object_user_code
                             )
                         except ResourceGroup.DoesNotExist:
-                            _l.warning(
-                                f"ResourceGroup with user_code {resource_group_code} does not exist."
-                            )
+                            _l.warning(f"ResourceGroup with user_code {resource_group_code} does not exist.")
                             continue
                     else:
                         expanded_resources.add(resource)

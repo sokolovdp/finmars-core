@@ -4,7 +4,6 @@ from django_filters.rest_framework import FilterSet
 from rest_framework.exceptions import ValidationError
 
 from poms.common.views import AbstractModelViewSet
-
 from poms.system.models import EcosystemConfiguration, WhitelabelModel
 from poms.system.serializers import (
     EcosystemConfigurationSerializer,
