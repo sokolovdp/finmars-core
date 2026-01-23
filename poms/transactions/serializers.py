@@ -472,6 +472,27 @@ class TransactionTypeActionInstrumentSerializer(serializers.ModelSerializer):
         default="0.0",
     )
 
+    provider_input = TransactionInputField(
+        required=False,
+        allow_null=True,
+    )
+    provider_version_input = TransactionInputField(
+        required=False,
+        allow_null=True,
+    )
+    source_input = TransactionInputField(
+        required=False,
+        allow_null=True,
+    )
+    source_version_input = TransactionInputField(
+        required=False,
+        allow_null=True,
+    )
+    platform_version_input = TransactionInputField(
+        required=False,
+        allow_null=True,
+    )
+
     class Meta:
         model = TransactionTypeActionInstrument
         fields = [
@@ -501,6 +522,16 @@ class TransactionTypeActionInstrumentSerializer(serializers.ModelSerializer):
             "maturity_date",
             "maturity_price",
             "action_notes",
+            "provider",
+            "provider_input",
+            "provider_version",
+            "provider_version_input",
+            "source",
+            "source_input",
+            "source_version",
+            "source_version_input",
+            "platform_version",
+            "platform_version_input",
         ]
 
     def __init__(self, *args, **kwargs):
