@@ -2729,6 +2729,22 @@ class TransactionTypeProcess:
 
         self.record_execution_progress(f"Unique Code: {self.complex_transaction.transaction_unique_code} ")
 
+    def assign_provenance_fields(self):
+        try:
+            transactions = self.complex_transaction.transactions.all()
+
+            if len(transactions):
+                self.complex_transaction.provider = transactions[0].provider
+                self.complex_transaction.provider_version = transactions[0].provider_version
+                self.complex_transaction.source = transactions[0].source
+                self.complex_transaction.source_version = transactions[0].source_version
+                self.complex_transaction.platform_version = transactions[0].platform_version
+            else:
+                _l.warning("No transactions for provenance fields")
+        except Exception as e:
+            _l.warning(f"Could not assign provenance fields {e}")
+            pass
+
     def skipped_book_unique_code_error(self):
         # Do not create a new transaction if transaction with that code already exists
         self.uniqueness_status = "skip"
@@ -2916,6 +2932,7 @@ class TransactionTypeProcess:
         """
         execute_uniqueness_expression_st = time.perf_counter()
         self.execute_uniqueness_expression()
+        self.assign_provenance_fields()
         _l.debug(
             "TransactionTypeProcess: execute_uniqueness_expression done: %s",
             f"{time.perf_counter() - execute_uniqueness_expression_st:3.3f}",

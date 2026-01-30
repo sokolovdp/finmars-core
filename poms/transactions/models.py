@@ -1424,6 +1424,89 @@ class TransactionTypeActionInstrument(TransactionTypeAction):
         verbose_name=gettext_lazy("default price"),
     )
 
+    # Provenance
+
+    provider = models.CharField(
+        max_length=EXPRESSION_FIELD_LENGTH,
+        blank=True,
+        default="",
+        null=True,
+        verbose_name=gettext_lazy("provider"),
+    )
+    provider_input = models.ForeignKey(
+        TransactionTypeInput,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="+",
+        verbose_name=gettext_lazy("provider input"),
+    )
+
+    provider_version = models.CharField(
+        max_length=EXPRESSION_FIELD_LENGTH,
+        blank=True,
+        default="",
+        null=True,
+        verbose_name=gettext_lazy("provider_version"),
+    )
+    provider_version_input = models.ForeignKey(
+        TransactionTypeInput,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="+",
+        verbose_name=gettext_lazy("provider_version input"),
+    )
+
+    source = models.CharField(
+        max_length=EXPRESSION_FIELD_LENGTH,
+        blank=True,
+        default="",
+        null=True,
+        verbose_name=gettext_lazy("source"),
+    )
+    source_input = models.ForeignKey(
+        TransactionTypeInput,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="+",
+        verbose_name=gettext_lazy("source_input input"),
+    )
+
+    source_version = models.CharField(
+        max_length=EXPRESSION_FIELD_LENGTH,
+        blank=True,
+        default="",
+        null=True,
+        verbose_name=gettext_lazy("source_version"),
+    )
+    source_version_input = models.ForeignKey(
+        TransactionTypeInput,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="+",
+        verbose_name=gettext_lazy("source_version input"),
+    )
+
+    platform_version = models.CharField(
+        max_length=EXPRESSION_FIELD_LENGTH,
+        blank=True,
+        default="",
+        null=True,
+        verbose_name=gettext_lazy("platform_version"),
+    )
+
+    platform_version_input = models.ForeignKey(
+        TransactionTypeInput,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="+",
+        verbose_name=gettext_lazy("platform_version input"),
+    )
+
     class Meta:
         verbose_name = gettext_lazy("transaction type action instrument")
         verbose_name_plural = gettext_lazy("transaction type action instruments")

@@ -58,7 +58,14 @@ from poms.obj_attrs.serializers import ModelWithAttributesSerializer
 from poms.portfolios.fields import PortfolioDefault, PortfolioField
 from poms.portfolios.models import Portfolio
 from poms.provenance.models import PlatformVersion, Provider, ProviderVersion, Source, SourceVersion
-from poms.provenance.serializers import ModelWithProvenanceSerializer
+from poms.provenance.serializers import (
+    ModelWithProvenanceSerializer,
+    PlatformVersionSerializer,
+    ProviderSerializer,
+    ProviderVersionSerializer,
+    SourceSerializer,
+    SourceVersionSerializer,
+)
 from poms.reconciliation.models import TransactionTypeReconField
 from poms.reconciliation.serializers import (
     ReconciliationComplexTransactionFieldSerializer,
@@ -472,6 +479,27 @@ class TransactionTypeActionInstrumentSerializer(serializers.ModelSerializer):
         default="0.0",
     )
 
+    provider_input = TransactionInputField(
+        required=False,
+        allow_null=True,
+    )
+    provider_version_input = TransactionInputField(
+        required=False,
+        allow_null=True,
+    )
+    source_input = TransactionInputField(
+        required=False,
+        allow_null=True,
+    )
+    source_version_input = TransactionInputField(
+        required=False,
+        allow_null=True,
+    )
+    platform_version_input = TransactionInputField(
+        required=False,
+        allow_null=True,
+    )
+
     class Meta:
         model = TransactionTypeActionInstrument
         fields = [
@@ -501,6 +529,16 @@ class TransactionTypeActionInstrumentSerializer(serializers.ModelSerializer):
             "maturity_date",
             "maturity_price",
             "action_notes",
+            "provider",
+            "provider_input",
+            "provider_version",
+            "provider_version_input",
+            "source",
+            "source_input",
+            "source_version",
+            "source_version_input",
+            "platform_version",
+            "platform_version_input",
         ]
 
     def __init__(self, *args, **kwargs):
@@ -3588,6 +3626,15 @@ class TransactionSerializer(ModelWithObjectStateSerializer, ModelWithProvenanceS
         )
         self.fields["allocation_pl_object"] = InstrumentViewSerializer(source="allocation_pl", read_only=True)
 
+        self.fields["provider_object"] = ProviderSerializer(source="provider", read_only=True)
+        self.fields["provider_version_object"] = ProviderVersionSerializer(source="provider_version", read_only=True)
+
+        self.fields["source_object"] = SourceSerializer(source="source", read_only=True)
+
+        self.fields["source_version_object"] = SourceVersionSerializer(source="source_version", read_only=True)
+
+        self.fields["platform_version_object"] = PlatformVersionSerializer(source="platform_version", read_only=True)
+
 
 # TODO check permissions?
 class TransactionViewOnlySerializer(serializers.ModelSerializer):
@@ -4174,6 +4221,15 @@ class ComplexTransactionEvItemSerializer(ModelWithAttributesSerializer):
             source="transaction_type", read_only=True
         )
 
+        self.fields["provider_object"] = ProviderSerializer(source="provider", read_only=True)
+        self.fields["provider_version_object"] = ProviderVersionSerializer(source="provider_version", read_only=True)
+
+        self.fields["source_object"] = SourceSerializer(source="source", read_only=True)
+
+        self.fields["source_version_object"] = SourceVersionSerializer(source="source_version", read_only=True)
+
+        self.fields["platform_version_object"] = PlatformVersionSerializer(source="platform_version", read_only=True)
+
     class Meta:
         model = ComplexTransaction
         fields = [
@@ -4245,6 +4301,11 @@ class ComplexTransactionEvItemSerializer(ModelWithAttributesSerializer):
             "user_date_3",
             "user_date_4",
             "user_date_5",
+            "provider",
+            "provider_version",
+            "source",
+            "source_version",
+            "platform_version",
         ]
 
     def get_first_transaction_accounting_date(self, instance):
