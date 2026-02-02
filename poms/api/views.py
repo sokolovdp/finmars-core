@@ -628,7 +628,7 @@ class SystemInfoViewSet(AbstractViewSet):
         )
 
         shell_cmd = "ps aux | grep [b]ackend"
-        c = pexpect.spawn("/bin/bash", ["-c", shell_cmd])
+        c = pexpect.spawn("sh", ["-c", shell_cmd])
         pexpect_result = c.read()
 
         celery_worker_state = True
@@ -647,7 +647,7 @@ class SystemInfoViewSet(AbstractViewSet):
         )
 
         shell_cmd = "ps aux | grep [d]jango_celery_beat"
-        c = pexpect.spawn("/bin/bash", ["-c", shell_cmd])
+        c = pexpect.spawn("sh", ["-c", shell_cmd])
         pexpect_result = c.read()
 
         celery_beat_state = True
@@ -678,7 +678,7 @@ class SystemInfoViewSet(AbstractViewSet):
         if not getattr(self, "pip_freeze_data", None):
             self.pip_freeze_data = {"all": {}, "django": "-"}
 
-            c = pexpect.spawn("/bin/bash", ["-c", "pip3 freeze"])
+            c = pexpect.spawn("sh", ["-c", "pip3 freeze"])
 
             for freeze_item in c.readlines():
                 if freeze_item:
@@ -871,7 +871,7 @@ class SystemLogsViewSet(AbstractViewSet):
         result = {}
 
         shell_cmd = "ls -la /var/log/finmars/backend/  | awk '{print $9}'"
-        c = pexpect.spawn("/bin/bash", ["-c", shell_cmd])
+        c = pexpect.spawn("sh", ["-c", shell_cmd])
         pexpect_result = c.read().decode("utf-8")
 
         # items = pexpect_result.split('\')
