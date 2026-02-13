@@ -885,6 +885,7 @@ def attr_is_relation(content_type_key: str, attribute_key: str) -> bool:
         "group",
         "pricing_policy",
         "portfolio",
+        "portfolio_type",
         "transaction_type",
         "transaction_currency",
         "settlement_currency",
