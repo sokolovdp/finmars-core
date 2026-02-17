@@ -1010,7 +1010,6 @@ class PerformanceReportBuilder:
 
         if date_to > date_from:
             no_first_date = []
-            no_register_records = []
             for register in portfolio_registers:
                 portfolio = register.portfolio
                 first_transaction_date = portfolio.first_transaction_date
@@ -1028,10 +1027,6 @@ class PerformanceReportBuilder:
                         TransactionClass.DISTRIBUTION,
                     ],
                 ).order_by("transaction_date")
-
-                if not portfolio_records:
-                    no_register_records.append(portfolio.user_code)
-                    continue
 
                 portfolio_records = portfolio_records.filter(
                     transaction_date__gte=max(
@@ -1124,15 +1119,6 @@ class PerformanceReportBuilder:
             #             f"for the specified period: {', '.join(no_register_records)}"
             #         ),
             #     )
-
-            if no_register_records:
-                raise FinmarsBaseException(
-                    error_key="no_portfolio_register_records",
-                    message=(
-                        f"No portfolio register records found for the following portfolios "
-                        f"for the specified period: {', '.join(no_register_records)}"
-                    ),
-                )
 
             try:
                 cf_adjusted_total_nav = total_nav + grand_cash_flow
