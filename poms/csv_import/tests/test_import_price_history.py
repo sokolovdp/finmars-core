@@ -209,6 +209,30 @@ class ImportPriceHistoryTest(BaseTestCase):
         self.assertEqual(ph.factor, 1.0)
 
     @mock.patch("poms.csv_import.handlers.send_system_message")
+    def test_pricehistory_missing_pricing_policy_treat_as_error_does_not_book(self, mock_send_message):
+        self.assertFalse(bool(PriceHistory.objects.all()))
+
+        EntityField.objects.using(settings.DB_DEFAULT).filter(
+            scheme=self.scheme_20,
+            system_property_key="pricing_policy",
+        ).update(expression="'com.finmars.standard-pricing:doesnt_exist'")
+
+        task = self.create_task()
+        import_process = SimpleImportProcess(task_id=task.id)
+
+        import_process.fill_with_file_items()
+        import_process.fill_with_raw_items()
+        import_process.apply_conversion_to_raw_items()
+        import_process.preprocess()
+        import_process.process()
+
+        result = import_process.task.result_object["items"][0]
+        self.assertEqual(result["status"], "error")
+        self.assertIn("pricing_policy", result.get("error_message") or "")
+
+        self.assertFalse(bool(PriceHistory.objects.all()))
+
+    @mock.patch("poms.csv_import.handlers.send_system_message")
     def test_run_simple_import_process_missing_fields(self, mock_send_message):
         """
         Imitate all steps to handle file with price history datta
