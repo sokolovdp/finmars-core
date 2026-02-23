@@ -1275,7 +1275,14 @@ class SimpleImportProcess:
                 if result_item[key] in relation_models_to_ids[key]:
                     result_item[key] = relation_models_to_ids[key][result_item[key]]
                 else:
+                    missing_user_code = result_item[key]
                     result_item[key] = None
+
+                    if getattr(self.scheme, "missing_data_handler", None) == "throw_error":
+                        item.status = "error"
+                        if not item.error_message:
+                            item.error_message = ""
+                        item.error_message = f"{item.error_message} Relation not found: {key}={missing_user_code}"
 
         return result_item
 
@@ -1578,6 +1585,8 @@ class SimpleImportProcess:
 
         models_q_filter_list = []
         for item_index in batch_indexes:
+            if self.items[item_index].status == "error" or "skip" in (self.items[item_index].status or ""):
+                continue
             try:
                 if self.scheme.content_type.model == "pricehistory":
                     models_q_filter_list.append(
@@ -1746,6 +1755,9 @@ class SimpleImportProcess:
 
     def handle_successful_items_by_batch_import(self, batch_indexes: list[int]):
         for item_index in batch_indexes:
+            if self.items[item_index].status == "error" or "skip" in (self.items[item_index].status or ""):
+                continue
+
             self.items[item_index].status = "success"
             self.items[item_index].message = f"Item Imported {self.scheme.content_type.model}"
 
