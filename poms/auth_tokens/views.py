@@ -53,7 +53,7 @@ class ObtainAuthToken(APIView):
 
     serializer_class = AuthTokenSerializer
 
-    if coreapi_schema.is_enabled():
+    if coreapi_schema.is_enabled() and coreapi is not None and coreschema is not None:
         schema = ManualSchema(
             fields=[
                 coreapi.Field(
