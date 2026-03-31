@@ -1,4 +1,7 @@
 import json
+import math
+
+from django.conf import settings
 
 MAX_TEXT = 40
 MAX_NUMBER = 40
@@ -28,3 +31,32 @@ def _read_json_text(raw: str):
         except json.JSONDecodeError:
             return v  # it was a JSON string literal
     return v
+
+
+def _sanitize_ytm(value):
+    if value is None:
+        return 0.0
+
+    # Any complex → zero
+    if isinstance(value, complex):
+        return 0.0
+
+    # Handle complex numbers
+    if isinstance(value, complex):
+        if abs(value.imag) < 1e-10:
+            value = value.real
+        else:
+            return 0.0  # imaginary is significant → fallback
+
+    # Handle NaN / inf
+    if not isinstance(value, int | float) or not math.isfinite(value):
+        return 0.0
+
+    # Round
+    value = round(value, settings.ROUND_NDIGITS)
+
+    # Treat near-zero as zero
+    if abs(value) < 10 ** (-settings.ROUND_NDIGITS):
+        return 0.0
+
+    return value
