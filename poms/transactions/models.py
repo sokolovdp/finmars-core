@@ -35,6 +35,7 @@ from poms.obj_attrs.models import GenericAttribute
 from poms.portfolios.models import Portfolio
 from poms.provenance.models import ProvenanceModel
 from poms.strategies.models import Strategy1, Strategy2, Strategy3
+from poms.transactions.utils import _sanitize_ytm
 from poms.users.models import EcosystemDefault, FakeSequence, MasterUser
 
 _l = logging.getLogger("poms.transactions")
@@ -3676,7 +3677,7 @@ class Transaction(ObjectStateModel, ProvenanceModel):
                 self.transaction_code = self.complex_transaction.code + self.complex_transaction_order
 
         try:
-            self.ytm_at_cost = self.calculate_ytm()
+            self.ytm_at_cost = _sanitize_ytm(self.calculate_ytm())
         except Exception as error:
             _l.error(f"Transaction.save: Cant calculate transaction ytm_at_cost {error}")
 
