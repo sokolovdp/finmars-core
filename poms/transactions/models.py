@@ -3680,8 +3680,9 @@ class Transaction(ObjectStateModel, ProvenanceModel):
             self.ytm_at_cost = _sanitize_ytm(self.calculate_ytm())
         except Exception as error:
             _l.error(f"Transaction.save: Cant calculate transaction ytm_at_cost {error}")
+            self.ytm_at_cost = 0
 
-        if self.ytm_at_cost is None:
+        if self.ytm_at_cost is None or isinstance(self.ytm_at_cost, complex):
             self.ytm_at_cost = 0
 
         _l.debug(f"Transaction.save: ytm is {self.ytm_at_cost}")
