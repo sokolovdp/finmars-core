@@ -680,9 +680,14 @@ def f_xirr(data, x0=0.0, tol=0.000001, maxiter=100):
         # Update the rate using Newton-Raphson
         new_rate = rate - npv / npv_derivative
 
+        if isinstance(new_rate, complex):
+            new_rate = new_rate.real
+        if new_rate <= -1:
+            return 0.0
+
         # Check for convergence
         if abs(new_rate - rate) < tol:
-            return new_rate
+            return float(new_rate)
 
         rate = new_rate
 
