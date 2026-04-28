@@ -18,7 +18,15 @@ code below just clears the cache when access policy is updated
 def clear_member_access_policies_cache(member):
     cache_key = f"member_access_policies_{member.id}"
     _l.debug("clear_member_access_policies_cache.going to clear cache for %s", member)
-    cache.delete(cache_key)
+    try:
+        cache.delete(cache_key)
+    except Exception:
+        _l.warning(
+            "clear_member_access_policies_cache: failed to delete cache key %s for member %s — "
+            "stale access policies may persist until TTL expires",
+            cache_key,
+            member,
+        )
 
 
 @receiver(post_save, sender=AccessPolicy)
