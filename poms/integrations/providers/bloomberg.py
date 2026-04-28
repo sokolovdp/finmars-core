@@ -1085,7 +1085,10 @@ class FakeBloombergDataProvider(BloombergDataProvider):
         key = self._make_key(response_id)
         req = self._cache.get(key)
         if not req:
-            raise RuntimeError("invalid response_id")
+            raise RuntimeError(
+                f"invalid response_id={response_id!r}: cache returned no data "
+                "(cache may be unavailable or the request expired)"
+            )
 
         # instr = req['instrument'].split(maxsplit=2)
         # instr_id = instr[0]
@@ -1257,7 +1260,10 @@ class FakeBloombergDataProvider(BloombergDataProvider):
         key = self._make_key(response_id)
         req = self._cache.get(key)
         if not req:
-            raise RuntimeError("invalid response_id")
+            raise RuntimeError(
+                f"invalid response_id={response_id!r}: cache returned no data "
+                "(cache may be unavailable or the request expired)"
+            )
 
         instruments = req["instruments"] or []
         fields = req["fields"]
@@ -1345,7 +1351,10 @@ class FakeBloombergDataProvider(BloombergDataProvider):
         key = self._make_key(response_id)
         req = self._cache.get(key)
         if not req:
-            raise RuntimeError("invalid response_id")
+            raise RuntimeError(
+                f"invalid response_id={response_id!r}: cache returned no data "
+                "(cache may be unavailable or the request expired)"
+            )
 
         instrs = req["instruments"] or []
         fields = req["fields"]
