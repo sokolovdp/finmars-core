@@ -615,9 +615,6 @@ CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TASK_SERIALIZER = "json"
 CELERY_RESULT_SERIALIZER = "json"
 
-CELERY_TASK_SEND_SENT_EVENT = True
-# CELERY_TASK_REJECT_ON_WORKER_LOST = True # mark task as failed if worker beign killed
-# Enabling this can cause message loops; make sure you know what you’re doing.
 
 if CELERY_RESULT_BACKEND in {"django-db"}:
     CELERY_RESULT_EXPIRES = 2 * 24 * 60 * 60
@@ -652,28 +649,11 @@ CELERY_WORKER_PREFETCH_MULTIPLIER = ENV_INT("CELERY_WORKER_PREFETCH_MULTIPLIER",
 
 CELERY_TASK_SEND_SENT_EVENT = ENV_BOOL("CELERY_TASK_SEND_SENT_EVENT", True)
 CELERY_TASK_ACKS_LATE = ENV_BOOL("CELERY_TASK_ACKS_LATE", True)
-CELERY_TASK_REJECT_ON_WORKER_LOST = ENV_BOOL("CELERY_TASK_REJECT_ON_WORKER_LOST", True)
+CELERY_TASK_REJECT_ON_WORKER_LOST = ENV_BOOL("CELERY_TASK_REJECT_ON_WORKER_LOST", False)
 
 CELERY_SEND_EVENTS = ENV_BOOL("CELERY_SEND_EVENTS", True)
 CELERY_WORKER_SEND_TASK_EVENTS = ENV_BOOL("CELERY_WORKER_SEND_TASK_EVENTS", True)
 
-# CELERY_ACKS_LATE: If this is True, the task messages will be acknowledged after
-# the task has been executed, not just before, which is the default behavior.
-# This means the tasks can be recovered when a worker crashes, as the tasks
-# won't be removed from the queue until they are completed.
-# However, keep in mind that this could lead to tasks being executed multiple times
-# if the worker crashes during execution, so ensure that your tasks are idempotent.
-CELERY_ACKS_LATE = True
-
-# CELERY_TASK_REJECT_ON_WORKER_LOST: If this is True, when the worker of a task
-# is lost (e.g., crashes), the task will be returned back to the queue,
-# so it can be picked up by another worker.
-# This increases the resiliency of the system as the tasks are not lost,
-# they are retried.
-# But it can also increase the load on the system as tasks
-# could potentially be executed multiple times in the event of frequent worker failures.
-# Make sure your tasks are safe to be retried in such cases (idempotent).
-CELERY_TASK_REJECT_ON_WORKER_LOST = False  # Make tasks rejected
 
 # ===================
 # = Django Storages =
