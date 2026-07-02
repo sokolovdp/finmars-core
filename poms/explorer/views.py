@@ -119,33 +119,44 @@ class ExplorerViewSet(AbstractViewSet):
             for dir_name in directories
             if path == f"{space_code}/" and dir_name not in members_usernames or path != f"{space_code}/"
         ]
-        for file in files:
-            created_at = storage.get_created_time(f"{path}/{file}")
-            modified_at = storage.get_modified_time(f"{path}/{file}")
-            mime_type, encoding = mimetypes.guess_type(file)
-
-            item = {
-                "type": "file",
-                "mime_type": mime_type,
-                "name": file,
-                "created_at": created_at,
-                "modified_at": modified_at,
-                "file_path": f"/{remove_first_dir_from_path(os.path.join(path, file))}",
-                "size": storage.size(f"{path}/{file}"),
-                "size_pretty": storage.convert_size(storage.size(f"{path}/{file}")),
-            }
-
-            results.append(item)
+        results += [{"type": "file", "name": file} for file in files]
 
         page = serializer.validated_data["page"]
         page_size = serializer.validated_data["page_size"]
         api_url = f"{request.build_absolute_uri(location='')}?path={original_path}"
         page_dict = paginate(results, page_size, page, api_url)
 
+        # Fetch per-file metadata only for the current page. Otherwise every
+        # request issues storage (S3) round-trips for the whole directory and
+        # then throws away all but one page, which makes large directories
+        # such as .system/file_reports extremely slow.
+        items = []
+        for entry in page_dict["items"]:
+            if entry["type"] != "file":
+                items.append(entry)
+                continue
+
+            file = entry["name"]
+            size = storage.size(f"{path}/{file}")
+            mime_type, encoding = mimetypes.guess_type(file)
+
+            items.append(
+                {
+                    "type": "file",
+                    "mime_type": mime_type,
+                    "name": file,
+                    "created_at": storage.get_created_time(f"{path}/{file}"),
+                    "modified_at": storage.get_modified_time(f"{path}/{file}"),
+                    "file_path": f"/{remove_first_dir_from_path(os.path.join(path, file))}",
+                    "size": size,
+                    "size_pretty": storage.convert_size(size),
+                }
+            )
+
         result = {
             "status": "ok",
             "path": path,
-            "results": page_dict["items"],
+            "results": items,
             "count": page_dict["count"],
             "previous": page_dict["previous_url"],
             "next": page_dict["next_url"],
