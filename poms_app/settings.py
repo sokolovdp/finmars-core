@@ -812,14 +812,14 @@ REDOC_SETTINGS = {
 
 VAULT_TOKEN = ENV_STR("VAULT_TOKEN", None)
 
-SENTRY_DSN = ENV_STR("SENTRY_DSN", "https://bbc302cc7bd5bbb2719b030ace26222a@sentry.finmars.com/2")
-if SERVER_TYPE != "local":
+SENTRY_DSN = ENV_STR("SENTRY_DSN", "")
+if SERVER_TYPE != "local" and SENTRY_DSN:
     sentry_sdk.init(
         dsn=SENTRY_DSN,
         environment=SERVER_TYPE,
-        traces_sample_rate=1.0,
+        traces_sample_rate=float(ENV_STR("SENTRY_TRACES_SAMPLE_RATE", "0.1")),
         send_default_pii=True,
-        profiles_sample_rate=1.0,
+        profiles_sample_rate=float(ENV_STR("SENTRY_PROFILES_SAMPLE_RATE", "0.1")),
     )
 
 INSTRUMENT_TYPE_PREFIX = ENV_STR(
