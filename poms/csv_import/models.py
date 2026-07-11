@@ -214,6 +214,13 @@ class EntityField(models.Model):
         max_length=255,
         null=True,
     )
+    classifier_handler = models.CharField(
+        max_length=255,
+        choices=CLASSIFIER_HANDLER,
+        null=True,
+        blank=True,
+        default=None,
+    )
     scheme = models.ForeignKey(
         CsvImportScheme,
         related_name="entity_fields",
