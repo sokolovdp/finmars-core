@@ -1100,6 +1100,38 @@ class SimpleImportProcess:
 
         _l.info(f"SimpleImportProcess.Task {self.task}. preprocess DONE items {len(self.preprocessed_items)}")
 
+    def _resolve_import_classifier(self, entity_field, name, attribute_type=None, attribute_type_id=None):
+        """Resolve a CLASSIFIER value to a GenericClassifier id, honouring the
+        missing-classifier policy.
+
+        Precedence: the per-field ``EntityField.classifier_handler`` when set,
+        otherwise the scheme-level ``CsvImportScheme.classifier_handler``
+        (default ``skip``):
+
+          * value found          -> its id
+          * missing + ``append`` -> create a flat classifier, return its id
+          * missing + ``skip``   -> ``None`` silently (no item error)
+
+        Only :class:`GenericClassifier.DoesNotExist` counts as "missing"; any
+        other error propagates to the caller so genuine failures are still
+        recorded against the item.
+        """
+        try:
+            if attribute_type is not None:
+                return GenericClassifier.objects.get(attribute_type=attribute_type, name=name).id
+            return GenericClassifier.objects.get(attribute_type_id=attribute_type_id, name=name).id
+        except GenericClassifier.DoesNotExist:
+            handler = getattr(entity_field, "classifier_handler", None) or self.scheme.classifier_handler
+            if handler == "append":
+                if attribute_type is None:
+                    attribute_type = GenericAttributeType.objects.get(id=attribute_type_id)
+                return GenericClassifier.objects.create(
+                    attribute_type=attribute_type,
+                    name=name,
+                    parent=None,
+                ).id
+            return None
+
     def fill_result_item_with_attributes(self, item, all_entity_fields_models=None):
         if not all_entity_fields_models:
             all_entity_fields_models = self.scheme.entity_fields.all()
@@ -1127,10 +1159,11 @@ class SimpleImportProcess:
                         and item.final_inputs[entity_field.attribute_user_code]
                     ):
                         try:
-                            attribute["classifier"] = GenericClassifier.objects.get(
+                            attribute["classifier"] = self._resolve_import_classifier(
+                                entity_field,
+                                item.final_inputs[entity_field.attribute_user_code],
                                 attribute_type=attribute_type,
-                                name=item.final_inputs[entity_field.attribute_user_code],
-                            ).id
+                            )
                         except Exception as e:
                             _l.error(f"fill_result_item_with_attributes classifier error - item {item} e {e}")
 
@@ -1176,10 +1209,11 @@ class SimpleImportProcess:
                     elif attribute["attribute_type_object"]["value_type"] == GenericAttributeType.CLASSIFIER:
                         if item.final_inputs[entity_field.attribute_user_code]:
                             try:
-                                attribute["classifier"] = GenericClassifier.objects.get(
+                                attribute["classifier"] = self._resolve_import_classifier(
+                                    entity_field,
+                                    item.final_inputs[entity_field.attribute_user_code],
                                     attribute_type_id=attribute["attribute_type_object"]["id"],
-                                    name=item.final_inputs[entity_field.attribute_user_code],
-                                ).id
+                                )
                             except Exception as e:
                                 _l.error(f"fill_result_item_with_attributes classifier error - item {item} e {e}")
 

@@ -108,6 +108,7 @@ class EntityFieldSerializer(serializers.ModelSerializer):
             "system_property_key",
             "attribute_user_code",
             "use_default",
+            "classifier_handler",
         )
         extra_kwargs = {
             "id": {
